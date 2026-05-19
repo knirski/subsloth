@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Data extraction rules for Android 12+ device-to-device transfers.
+  Credential files and Keystore key material are excluded.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="subsloth_encrypted_credentials.xml" />
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="downloads/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="subsloth_encrypted_credentials.xml" />
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="downloads/" />
+    </device-transfer>
+</data-extraction-rules>

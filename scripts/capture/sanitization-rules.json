@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "description": "Sanitization and redaction patterns for Media capture workflow. Applied to HAR files before export to committed fixtures.  URL rules are applied top-to-bottom: specific path-based patterns first (streams, downloads, posters, ...), then the catch-all host replacement, then domain-name safety nets for non-URL text.",
+  "redact_fields": [
+    "password",
+    "auth_token",
+    "access_token",
+    "refresh_token",
+    "api_key",
+    "session_id",
+    "authorization",
+    "set-cookie",
+    "cookie",
+    "credentials",
+    "email",
+    "phone",
+    "phone_number",
+    "first_name",
+    "last_name",
+    "address",
+    "ip_address",
+    "ipaddress",
+    "geolocation",
+    "latitude",
+    "longitude",
+    "device_id",
+    "fingerprint",
+    "credit_card",
+    "card_number",
+    "cvv",
+    "expiry",
+    "payment_method",
+    "billing_address",
+    "transaction_id",
+    "stripe_token",
+    "paypal_token",
+    "viewing_history",
+    "behavioral_data",
+    "user_agent",
+    "x-forwarded-for",
+    "cf-ray",
+    "trace_id",
+    "span_id",
+    "request_id"
+  ],
+  "url_patterns": [
+    {
+      "match": "signed_url",
+      "pattern": "(\\?|&)(exp|sig|signature|token|access_token|policy|key-pair-id|X-Amz-Signature|X-Amz-Credential|X-Amz-Algorithm|X-Amz-Date|X-Amz-SignedHeaders|X-Amz-Expires|Signature|AWSAccessKeyId)=[^&]+",
+      "replacement": "$1=obfuscated"
+    },
+    {
+      "match": "stream_url",
+      "pattern": "https?://[^/]+/streams/[^?]+",
+      "replacement": "https://media.subsloth.invalid/streams/obfuscated/master.m3u8"
+    },
+    {
+      "match": "download_url",
+      "pattern": "https?://[^/]+/downloads/[^?]+",
+      "replacement": "https://media.subsloth.invalid/downloads/obfuscated/download.mp4"
+    },
+    {
+      "match": "subtitle_url",
+      "pattern": "https?://[^/]+/subtitles/[^?]+",
+      "replacement": "https://media.subsloth.invalid/subtitles/obfuscated/en.vtt"
+    },
+    {
+      "match": "poster_url",
+      "pattern": "https?://[^/]+/posters/[^?]+",
+      "replacement": "https://media.subsloth.invalid/posters/obfuscated/poster.jpg"
+    },
+    {
+      "match": "backdrop_url",
+      "pattern": "https?://[^/]+/backdrops/[^?]+",
+      "replacement": "https://media.subsloth.invalid/backdrops/obfuscated/backdrop.jpg"
+    },
+    {
+      "match": "avatar_url",
+      "pattern": "https?://[^/]+/avatars/[^?]+",
+      "replacement": "https://media.subsloth.invalid/avatars/obfuscated/avatar.jpg"
+    },
+    {
+      "match": "fanart_url",
+      "pattern": "https?://[^/]+/fanart/[^?]+",
+      "replacement": "https://media.subsloth.invalid/fanart/obfuscated/fanart.jpg"
+    },
+    {
+      "match": "trailer_url",
+      "pattern": "https?://[^/]+/trailers/[^?]+",
+      "replacement": "https://media.subsloth.invalid/trailers/obfuscated/trailer.mp4"
+    },
+    {
+      "match": "absolute_host_replacement",
+      "pattern": "https?://[a-zA-Z0-9.-]+/",
+      "replacement": "https://media.subsloth.invalid/"
+    },
+    {
+      "match": "media_domain",
+      "comment": "Safety net — catches non-URL text mentions of media.tv after URLs have been rewritten by the patterns above",
+      "pattern": "media\\.tv",
+      "replacement": "media.invalid"
+    },
+    {
+      "match": "media_mirror",
+      "comment": "Safety net — catches non-URL text mentions of media-mirror.tv after URLs have been rewritten by the patterns above",
+      "pattern": "media-mirror\\.tv",
+      "replacement": "media-mirror.invalid"
+    }
+  ],
+  "host_blocklist": [
+    "media.tv",
+    "media-mirror.tv",
+    "example.com",
+    "localhost",
+    "127.0.0.1",
+    "placehold.co"
+  ],
+  "response_header_redactions": [
+    "set-cookie",
+    "authorization",
+    "www-authenticate",
+    "x-amz-request-id",
+    "x-amz-id-2",
+    "x-amz-cf-id",
+    "x-amz-cf-pop",
+    "x-cache",
+    "x-request-id",
+    "cf-ray",
+    "cf-request-id",
+    "server-timing",
+    "timing-allow-origin"
+  ],
+  "request_header_redactions": [
+    "authorization",
+    "cookie",
+    "x-api-key",
+    "x-forwarded-for",
+    "x-real-ip",
+    "x-request-id",
+    "traceparent",
+    "tracestate",
+    "user-agent"
+  ]
+}

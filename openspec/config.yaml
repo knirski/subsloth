@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  subsloth is a greenfield native Kotlin Android app with application id and
+  namespace net.subsloth. It targets Android TV 8, Android tablet 13, and
+  Android phone 16.
+
+  V1 requirements currently live in active changes under
+  openspec/changes/*/specs/. The openspec/specs/ directory is intentionally
+  empty until implementation changes are archived. After archive, accepted
+  requirements live under openspec/specs/.
+
+  Architecture follows Functional Core / Imperative Shell. Core model and
+  domain modules stay Android-free. Android shell modules own Compose UI,
+  Media3, Room, DataStore, encrypted credentials, WorkManager, networking,
+  filesystem access, and platform notifications.
+
+  The native data source is the Kodi-compatible Media API surface. Do not add
+  browser/WebView verification flows, web-page scraping, web-only frontend
+  APIs, or comments endpoints/UI to v1.
+
+  Raw credentials, Basic auth headers, signed stream/download/subtitle URLs,
+  authenticated screenshots, browser traces, HAR files, and other sensitive
+  artifacts must not be committed or uploaded.
+
+rules:
+  proposal:
+    - State affected capabilities under openspec/changes/*/specs/ until baseline archive, then under openspec/specs/.
+    - Keep non-goals explicit when touching v1 scope exclusions.
+    - Call out any live Media discovery dependency and how it remains local-only.
+  design:
+    - Preserve Functional Core / Imperative Shell boundaries.
+    - Keep generated network DTOs out of domain and UI modules.
+    - Document any dependency version exception and rollback condition.
+  tasks:
+    - Include verification commands for each implementation slice.
+    - Keep live drift tests optional, local-only, and skipped without credentials.
+    - Include no-comments and sensitive-artifact checks when relevant.

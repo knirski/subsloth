@@ -1,0 +1,343 @@
+# detekt configuration file
+# https://detekt.dev/docs/getting-started/configurations
+#
+# These rules serve as AI agent guardrails — catching patterns that
+# automated generators commonly produce incorrectly.
+
+# ── SubSloth custom rules ─────────────────────────────────────────────────
+subsloth:
+  NoFullyQualifiedNames:
+    active: true
+
+# ── Compose rules (io.nlopez.compose.rules:detekt) ───────────────────────
+Compose:
+  active: true
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentTrailingLambda:
+    active: true
+  ContentSlotReused:
+    active: true
+  DefaultsVisibility:
+    active: true
+  LambdaParameterEventTrailing:
+    active: true
+  LambdaParameterInRestartableEffect:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierMissing:
+    active: true
+    checkModifiersForVisibility: public_and_internal
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  ParameterNaming:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  PreviewPublic:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  StateParam:
+    active: true
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true
+
+# ── Complexity ────────────────────────────────────────────────────────────
+complexity:
+  active: true
+  TooManyFunctions:
+    active: true
+    excludes:
+      - "**/test/**"
+    allowedFunctionsPerFile: 11
+    allowedFunctionsPerClass: 11
+    allowedFunctionsPerInterface: 11
+    allowedFunctionsPerObject: 11
+    allowedFunctionsPerEnum: 11
+    ignoreDeprecated: false
+    ignoreInternal: false
+    ignoreOverridden: false
+    ignorePrivate: false
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 15
+    ignoreSingleWhenExpression: true
+    ignoreSimpleWhenEntries: false
+    ignoreNestingFunctions: false
+    nestingFunctions:
+      - "also"
+      - "apply"
+      - "let"
+      - "run"
+      - "use"
+      - "with"
+  LongParameterList:
+    active: true
+    allowedFunctionParameters: 6
+    allowedConstructorParameters: 7
+    ignoreDefaultParameters: false
+    ignoreDataClasses: true
+  LargeClass:
+    active: true
+    allowedLines: 600
+  ComplexCondition:
+    active: true
+    allowedConditions: 3
+  NestedBlockDepth:
+    active: true
+    allowedDepth: 4
+
+# ── Coroutines ───────────────────────────────────────────────────────────
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: true
+  RedundantSuspendModifier:
+    active: true
+  SleepInsteadOfDelay:
+    active: true
+  InjectDispatcher:
+    active: true
+
+# ── Exceptions ───────────────────────────────────────────────────────────
+exceptions:
+  active: true
+  NotImplementedDeclaration:
+    active: true
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+  ThrowingNewInstanceOfSameException:
+    active: true
+  TooGenericExceptionCaught:
+    active: true
+  ExceptionRaisedInUnexpectedLocation:
+    active: true
+
+# ── Naming ───────────────────────────────────────────────────────────────
+naming:
+  active: true
+  BooleanPropertyNaming:
+    active: true
+    allowedPattern: "^(is|has|are|can|should|will|did)[a-zA-Z0-9]*$"
+  ClassNaming:
+    active: true
+    classPattern: "[A-Z][a-zA-Z0-9]*"
+  ConstructorParameterNaming:
+    active: true
+    parameterPattern: "[a-z][a-zA-Z0-9]*"
+  EnumNaming:
+    active: true
+    enumEntryPattern: "[A-Z][_a-zA-Z0-9]*"
+  ForbiddenClassName:
+    active: false
+  FunctionNaming:
+    active: true
+    excludes:
+      - "**/test/**"
+      - "**/*Test.kt"
+      - "**/*Spec.kt"
+    functionPattern: "[a-z][a-zA-Z0-9]*"
+    ignoreAnnotated:
+      - "Composable"
+  FunctionParameterNaming:
+    active: true
+    parameterPattern: "[a-z][a-zA-Z0-9]*"
+  InvalidPackageDeclaration:
+    active: true
+    rootPackage: "net.subsloth"
+  LambdaParameterNaming:
+    active: true
+    parameterPattern: "[a-z][a-zA-Z0-9]*|_"
+  MemberNameEqualsClassName:
+    active: true
+    ignoreOverridden: true
+  NoNameShadowing:
+    active: true
+  NonBooleanPropertyPrefixedWithIs:
+    active: true
+  ObjectPropertyNaming:
+    active: true
+    propertyPattern: "[A-Z][_a-zA-Z0-9]*"
+  PackageNaming:
+    active: true
+    packagePattern: "[a-z][a-zA-Z0-9._]*"
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: "[A-Z][_A-Z0-9]*"
+    propertyPattern: "[a-z][a-zA-Z0-9]*"
+    privatePropertyPattern: "_?[a-z][a-zA-Z0-9]*"
+  VariableMaxLength:
+    active: true
+    maximumVariableNameLength: 40
+  VariableMinLength:
+    active: true
+    minimumVariableNameLength: 1
+  VariableNaming:
+    active: true
+    variablePattern: "[a-z][a-zA-Z0-9]*"
+
+# ── Performance ──────────────────────────────────────────────────────────
+performance:
+  active: true
+  CouldBeSequence:
+    active: true
+  UnnecessaryTemporaryInstantiation:
+    active: true
+
+# ── Potential Bugs ───────────────────────────────────────────────────────
+potential-bugs:
+  active: true
+  LateinitUsage:
+    active: false
+  UnreachableCatchBlock:
+    active: true
+  UnsafeCast:
+    active: true
+  UnsafeCallOnNullableType:
+    active: true
+  CastNullableToNonNullableType:
+    active: true
+  Deprecation:
+    active: true
+  EqualsWithHashCodeExist:
+    active: true
+  MissingPackageDeclaration:
+    active: true
+  MissingUseCall:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+  UnreachableCode:
+    active: true
+
+# ── Style ────────────────────────────────────────────────────────────────
+style:
+  active: true
+  MagicNumber:
+    active: true
+    excludes:
+      - "**/test/**"
+      - "**/build.gradle.kts"
+    ignoreNumbers:
+      - "-1"
+      - "0"
+      - "1"
+      - "2"
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: false
+    ignoreAnnotation: false
+    ignoreEnums: false
+    ignoreRanges: false
+    ignoreExtensionFunctions: true
+  RedundantVisibilityModifier:
+    active: true
+  UnnecessaryApply:
+    active: true
+  UnnecessaryLet:
+    active: true
+  UnnecessaryFilter:
+    active: true
+  UnnecessaryParentheses:
+    active: true
+  UnnecessaryBackticks:
+    active: true
+  UnnecessaryInnerClass:
+    active: true
+  UnusedImport:
+    active: false # ktlint handles unused imports as auto-format
+  UnusedParameter:
+    active: true
+  UnusedPrivateClass:
+    active: true
+  UnusedPrivateFunction:
+    active: true
+  UnusedPrivateProperty:
+    active: true
+  UnusedVariable:
+    active: true
+  UseCheckOrError:
+    active: true
+  UseCheckNotNull:
+    active: true
+  UseRequire:
+    active: true
+  UseRequireNotNull:
+    active: true
+  WildcardImport:
+    active: true
+    excludeImports:
+      - "java.util.*"
+      - "kotlinx.serialization.*"
+  # Additional style rules:
+  AlsoCouldBeApply:
+    active: true
+  CanBeNonNullable:
+    active: true
+  ClassOrdering:
+    active: true
+    excludes:
+      - "**/test/**"
+  DataClassShouldBeImmutable:
+    active: true
+  ExpressionBodySyntax:
+    active: true
+  ForbiddenComment:
+    active: true
+    comments:
+      - "FIXME:"
+      - "STOPSHIP:"
+  MandatoryBracesLoops:
+    active: true
+  MayBeConstant:
+    active: true
+  OptionalUnit:
+    active: true
+  ReturnCount:
+    active: true
+    max: 3
+  UnderscoresInNumericLiterals:
+    active: true
+  UseDataClass:
+    active: true
+  UseIfEmptyOrIfBlank:
+    active: true
+  UseIsNullOrEmpty:
+    active: true
+  UseLet:
+    active: false
+  UtilityClassWithPublicConstructor:
+    active: true
+  VarCouldBeVal:
+    active: true

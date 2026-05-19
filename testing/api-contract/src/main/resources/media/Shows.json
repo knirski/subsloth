@@ -1,0 +1,544 @@
+{
+  "shows": [
+    {
+      "id": 3381,
+      "name": "The Lost Flowers of Alice Hart",
+      "imdb_rating": 7.8,
+      "year": "2023",
+      "desc": "After losing her parents to a mysterious fire, nine-year-old Alice Hart is raised by her grandmother June on a flower farm where she learns there are secrets within secrets. But years on, an unearthed betrayal sees Alice forced to face her past.",
+      "slug": "the-lost-flowers-of-alice-hart",
+      "ended": true,
+      "length": null,
+      "user_popularity": 4,
+      "array_genres": [
+        "Drama",
+        "Mystery"
+      ],
+      "array_countries": [
+        "AU"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3381/a3zbH3tR4Oy99LKB8mduNuhNR8T.jpg",
+      "imdb_id": "9174718",
+      "kinopoisk_id": "",
+      "tmdb_id": "125816",
+      "myshows_id": 78209,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/3381/sNeGAamuke1a2I4ndcaE0bnukh4.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3381/thumb_sNeGAamuke1a2I4ndcaE0bnukh4.jpg",
+      "newest_video": 1693498934,
+      "updated_at": 1777660951
+    },
+    {
+      "id": 2360,
+      "name": "Rebel",
+      "imdb_rating": 7.2,
+      "year": "2021",
+      "desc": "A legal advocate with a blue collar background helps those in need without a law degree.",
+      "slug": "rebel",
+      "ended": false,
+      "length": 44,
+      "user_popularity": 0,
+      "array_genres": [
+        "Crime",
+        "Drama"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": null,
+      "imdb_id": "11237708",
+      "kinopoisk_id": "",
+      "tmdb_id": "117908",
+      "myshows_id": 71507,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2360/1kHjlwy17Nwokkph9FHDDrBR79A.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2360/thumb_1kHjlwy17Nwokkph9FHDDrBR79A.jpg",
+      "newest_video": 1623390133,
+      "updated_at": 1758578120
+    },
+    {
+      "id": 3644,
+      "name": "Alexander: The Making of a God",
+      "imdb_rating": 5.5,
+      "year": "2024",
+      "desc": "Expert interviews and gripping reenactments combine to reveal the extraordinary life of Alexander the Great and his burning desire to conquer the world.",
+      "slug": "alexander-the-making-of-a-god",
+      "ended": true,
+      "length": null,
+      "user_popularity": 0,
+      "array_genres": [
+        "Documentary",
+        "Drama"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3644/q78bZF6LIOIUonmIFOgUTX2JqEA.jpg",
+      "imdb_id": "27494999",
+      "kinopoisk_id": "",
+      "tmdb_id": "242392",
+      "myshows_id": 87978,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/3644/tKUTpdyg0wGfIYplIAfkN6hDbRw.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3644/thumb_tKUTpdyg0wGfIYplIAfkN6hDbRw.jpg",
+      "newest_video": 1708809854,
+      "updated_at": 1777770131
+    },
+    {
+      "id": 1850,
+      "name": "V-Wars",
+      "imdb_rating": 6.0,
+      "year": "2019",
+      "desc": "After a mysterious disease begins transforming people into vampires, Dr. Luther Swann is pitted against his best friend, now a powerful vampire leader.",
+      "slug": "v-wars",
+      "ended": false,
+      "length": 43,
+      "user_popularity": 0,
+      "array_genres": [
+        "Sci-Fi",
+        "Fantasy",
+        "Drama"
+      ],
+      "array_countries": [],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1850/12Mo9OkBwj32QJKCGV5xKBko9OV.jpg",
+      "imdb_id": "7403736",
+      "kinopoisk_id": "",
+      "tmdb_id": "81559",
+      "myshows_id": 57513,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/1850/jn83i9bsfpGF26kaDzIeSAliHR3.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1850/thumb_jn83i9bsfpGF26kaDzIeSAliHR3.jpg",
+      "newest_video": 1575558256,
+      "updated_at": 1773571949
+    },
+    {
+      "id": 3605,
+      "name": "True Crime Story: Citizen Detective",
+      "imdb_rating": 7.3,
+      "year": "2023",
+      "desc": "The gripping stories of everyday citizens who have solved or are attempting to solve a murder. Each episode focuses on an individual citizen detective \u2013 or a group working together \u2013 and the case that they\u2019re consumed by, unpacking the details of the case and exploring the psyches of those who simply need to know what happened and why?",
+      "slug": "true-crime-story-citizen-detective",
+      "ended": true,
+      "length": null,
+      "user_popularity": 3,
+      "array_genres": [
+        "Documentary",
+        "Crime"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3605/ab6H7hdMgKmrD4tThkJaoqKUu86.jpg",
+      "imdb_id": "29335921",
+      "kinopoisk_id": "",
+      "tmdb_id": "234994",
+      "myshows_id": 86905,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/3605/tJQkRJH5nnoiqd2LxC7SM4wQFwN.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3605/thumb_tJQkRJH5nnoiqd2LxC7SM4wQFwN.jpg",
+      "newest_video": 1706022131,
+      "updated_at": 1778121536
+    },
+    {
+      "id": 2285,
+      "name": "Lupin",
+      "imdb_rating": 7.5,
+      "year": "2021",
+      "desc": "Inspired by the adventures of Ars\u00e8ne Lupin, gentleman thief Assane Diop sets out to avenge his father for an injustice inflicted by a wealthy family.",
+      "slug": "lupin",
+      "ended": false,
+      "length": 48,
+      "user_popularity": 9,
+      "array_genres": [
+        "Crime",
+        "Drama",
+        "Mystery"
+      ],
+      "array_countries": [
+        "FR"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2285/jgAZYiuRV37pCxmhx8NTdhE36RL.jpg",
+      "imdb_id": "2531336",
+      "kinopoisk_id": "",
+      "tmdb_id": "96677",
+      "myshows_id": 70795,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2285/Screenshot_1.png",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2285/thumb_Screenshot_1.png",
+      "newest_video": 1696526654,
+      "updated_at": 1776887458
+    },
+    {
+      "id": 1951,
+      "name": "Get Even",
+      "imdb_rating": 6.4,
+      "year": "2020",
+      "desc": "On the surface Kitty, Margot, Bree and Olivia appear to have nothing in common - but there\u2019s one passion which unites them: to expose injustice. They form their own secret society, DGM - they Don\u2019t Get Mad, they Get Even - playing anonymous pranks to expose bullies.",
+      "slug": "get-even",
+      "ended": true,
+      "length": 26,
+      "user_popularity": 0,
+      "array_genres": [
+        "Thriller"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1951/enVwFLjnIKVaAwXQL2fDGydfkwE.jpg",
+      "imdb_id": "9724628",
+      "kinopoisk_id": "",
+      "tmdb_id": "99335",
+      "myshows_id": 65529,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/1951/pBdetJCfSof9XrHAY1mTicclXRr.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1951/thumb_pBdetJCfSof9XrHAY1mTicclXRr.jpg",
+      "newest_video": 1584397589,
+      "updated_at": 1773571945
+    },
+    {
+      "id": 2725,
+      "name": "Our Flag Means Death",
+      "imdb_rating": 7.8,
+      "year": "2022",
+      "desc": "After trading in the seemingly charmed life of a gentleman for one of a swashbuckling buccaneer, Stede Bonnet becomes captain of the pirate ship Revenge. Struggling to earn the respect of his potentially mutinous crew, Stede\u2019s fortunes change after a fateful run-in with the infamous Captain Blackbeard. Stede and crew attempt to get their ship together and survive life on the high seas.",
+      "slug": "our-flag-means-death",
+      "ended": true,
+      "length": null,
+      "user_popularity": 5,
+      "array_genres": [
+        "Comedy"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2725/rcBgH1RlxeJpZXyunZ6bDfUDbmE.jpg",
+      "imdb_id": "11000902",
+      "kinopoisk_id": "",
+      "tmdb_id": "109939",
+      "myshows_id": 69392,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2725/vFp7rQeMnGG7cOJLHah8CoqNLR8.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2725/thumb_vFp7rQeMnGG7cOJLHah8CoqNLR8.jpg",
+      "newest_video": 1698310274,
+      "updated_at": 1773571960
+    },
+    {
+      "id": 2533,
+      "name": "Annika",
+      "imdb_rating": 7.3,
+      "year": "2021",
+      "desc": "The sharp, witty and enigmatic DI Annika Strandhed, as she heads up a new specialist Marine Homicide Unit (MHU) that is tasked with investigating the unexplained, brutal, and seemingly unfathomable murders.",
+      "slug": "annika",
+      "ended": true,
+      "length": null,
+      "user_popularity": 6,
+      "array_genres": [
+        "Mystery",
+        "Crime",
+        "Drama"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2533/g7l0xDb4abjjfV5ZckMeB2NM755.jpg",
+      "imdb_id": "13643704",
+      "kinopoisk_id": "",
+      "tmdb_id": "130273",
+      "myshows_id": 73718,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2533/8jRoGLyOnTMyLhWajG0ye6KKw0h.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2533/thumb_8jRoGLyOnTMyLhWajG0ye6KKw0h.jpg",
+      "newest_video": 1694637135,
+      "updated_at": 1778107220
+    },
+    {
+      "id": 2106,
+      "name": "The Deceived",
+      "imdb_rating": 5.9,
+      "year": "2020",
+      "desc": "English student Ophelia falls in love with her married lecturer, seeing in him all the answers to her needs. When their affair is interrupted by a shocking and tragic death, Ophelia finds herself trapped in a world where she can no longer trust her own mind.",
+      "slug": "the-deceived",
+      "ended": true,
+      "length": 44,
+      "user_popularity": 0,
+      "array_genres": [
+        "Drama"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2106/jSZL4DdWxzZPdnXE0FdmG5PveYR.jpg",
+      "imdb_id": "10681614",
+      "kinopoisk_id": "",
+      "tmdb_id": "106755",
+      "myshows_id": 68157,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2106/hoMp2mrNd2dgM5xcFZ1zHGFrx58.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2106/thumb_hoMp2mrNd2dgM5xcFZ1zHGFrx58.jpg",
+      "newest_video": 1596760091,
+      "updated_at": 1764894651
+    },
+    {
+      "id": 1945,
+      "name": "Noughts And Crosses",
+      "imdb_rating": 6.2,
+      "year": "2020",
+      "desc": "In an alternate history where black \u201cCross\u201d people rule over white \u201cNoughts\u201d, young couple Sephy and Callum are divided by their colour but united by love.",
+      "slug": "noughts-and-crosses",
+      "ended": true,
+      "length": 56,
+      "user_popularity": 0,
+      "array_genres": [
+        "Sci-Fi"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1945/tRHML16irVmFXqKDoIwP8Sk8rQU.jpg",
+      "imdb_id": "8098956",
+      "kinopoisk_id": "",
+      "tmdb_id": "99896",
+      "myshows_id": 65601,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/1945/fiJUbXvKTb2kFPwVEhO390iasOI.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1945/thumb_fiJUbXvKTb2kFPwVEhO390iasOI.jpg",
+      "newest_video": 1651350856,
+      "updated_at": 1767982611
+    },
+    {
+      "id": 690,
+      "name": "F is for Family",
+      "imdb_rating": 8.0,
+      "year": "2015",
+      "desc": "A lower middle class family living in the 1970s. Based on comedian Bill Burr's childhood.",
+      "slug": "f-is-for-family",
+      "ended": true,
+      "length": 27,
+      "user_popularity": 2,
+      "array_genres": [
+        "Animation",
+        "Comedy"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/690/bdntcURJ4dSr7zoLeyB6ZGrMynD.jpg",
+      "imdb_id": "4326894",
+      "kinopoisk_id": "891600",
+      "tmdb_id": "63522",
+      "myshows_id": 45124,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/690/zFMXNvxjapU2eElK4ovR5gw2ax5.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/690/thumb_zFMXNvxjapU2eElK4ovR5gw2ax5.jpg",
+      "newest_video": 1637877679,
+      "updated_at": 1777490433
+    },
+    {
+      "id": 1524,
+      "name": "Patriot Act with Hasan Minhaj",
+      "imdb_rating": 8.3,
+      "year": "2018",
+      "desc": "Every Sunday, Hasan Minhaj brings an incisive and nuanced perspective to global news, politics and culture in his unique comedy series.",
+      "slug": "patriot-act-with-hasan-minhaj",
+      "ended": false,
+      "length": 26,
+      "user_popularity": 1,
+      "array_genres": [
+        "Comedy",
+        "Talk-Show"
+      ],
+      "array_countries": [],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1524/qr27Gj60SVzp2hkN4HQL4IfTWrH.jpg",
+      "imdb_id": "8080054",
+      "kinopoisk_id": "",
+      "tmdb_id": "83519",
+      "myshows_id": 58655,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/1524/94czhCAMAv8ZDPCS76z6JtOFP7d.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1524/thumb_94czhCAMAv8ZDPCS76z6JtOFP7d.jpg",
+      "newest_video": 1593345191,
+      "updated_at": 1773256338
+    },
+    {
+      "id": 784,
+      "name": "DC's Legends of Tomorrow",
+      "imdb_rating": 6.8,
+      "year": "2016",
+      "desc": "Focuses on time-traveling rogue Rip Hunter, who has to recruit a rag-tag team of heroes and villains to help prevent an apocalypse that could impact not only Earth, but all of time.",
+      "slug": "dc-s-legends-of-tomorrow",
+      "ended": true,
+      "length": 42,
+      "user_popularity": 4,
+      "array_genres": [
+        "Action",
+        "Sci-Fi"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/784/isPWZirQUCHpQ8aJZHa5s3EVXv1.jpg",
+      "imdb_id": "4532368",
+      "kinopoisk_id": "893459",
+      "tmdb_id": "62643",
+      "myshows_id": 44455,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/784/dMqqzCs0TQQRWy6jjo9XX1O71YU.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/784/thumb_dMqqzCs0TQQRWy6jjo9XX1O71YU.jpg",
+      "newest_video": 1646278333,
+      "updated_at": 1773571964
+    },
+    {
+      "id": 2972,
+      "name": "Karen Pirie",
+      "imdb_rating": 7.6,
+      "year": "2022",
+      "desc": "Karen is a refreshingly normal and charmingly unfashionable young woman \u2013 slick, maverick cop she is not \u2013 but her quick mouth and ingenuity make her an impressive investigator. Following her promotion to Police Scotland\u2019s Historic Cases Unit, Karen is tasked with reopening the investigation into a murder that has been the subject of a provocative true crime podcast. When teenage barmaid Rosie Duff was stabbed to death in 1995, suspicion fell on the three drunken students who discovered her body. But despite police suspicion, the boys were never charged.\r\n\r\nNearly 25 years on, DS Karen Pirie is determined to uncover what happened that fateful night. Do the men know more than they previously revealed? When Karen uncovers flaws in the initial investigation, she finds herself in conflict with the very officers who led the original hunt for the killer.",
+      "slug": "karen-pirie",
+      "ended": false,
+      "length": null,
+      "user_popularity": 2,
+      "array_genres": [
+        "Crime"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2972/nZrQGyPhCZNqaYraR3HV2Uw4fQi.jpg",
+      "imdb_id": "11725900",
+      "kinopoisk_id": "",
+      "tmdb_id": "194636",
+      "myshows_id": 73606,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2972/pfkvL8awxLlaR0jZ0OBWhGfKPA0.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2972/thumb_pfkvL8awxLlaR0jZ0OBWhGfKPA0.jpg",
+      "newest_video": 1753010511,
+      "updated_at": 1776294605
+    },
+    {
+      "id": 2587,
+      "name": "Arcane",
+      "imdb_rating": 9.0,
+      "year": "2021",
+      "desc": "Amid the stark discord of twin cities Piltover and Zaun, two sisters fight on rival sides of a war between magic technologies and clashing convictions.",
+      "slug": "arcane",
+      "ended": true,
+      "length": 43,
+      "user_popularity": 50,
+      "array_genres": [
+        "Animation",
+        "Sci-Fi",
+        "Fantasy",
+        "Action",
+        "Adventure"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/2587/rkB4LyZHo1NHXFEDHl9vSD9r1lI.jpg",
+      "imdb_id": "11126994",
+      "kinopoisk_id": "",
+      "tmdb_id": "94605",
+      "myshows_id": 73219,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/2587/ohGz4HDYGTite1GmRhRuBMVAn03.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/2587/thumb_ohGz4HDYGTite1GmRhRuBMVAn03.jpg",
+      "newest_video": 1732353854,
+      "updated_at": 1777316260
+    },
+    {
+      "id": 1191,
+      "name": "Strike",
+      "imdb_rating": 7.9,
+      "year": "2017",
+      "desc": "Private investigator Cormoran Strike is hired to find out if a supermodel's suicide in London may have been a murder.",
+      "slug": "strike",
+      "ended": false,
+      "length": 57,
+      "user_popularity": 30,
+      "array_genres": [
+        "Crime",
+        "Drama",
+        "Mystery",
+        "Thriller"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1191/ydDAi3xMCk7ZkRSpITaeoq4Q1Qd.jpg",
+      "imdb_id": "4276618",
+      "kinopoisk_id": "0",
+      "tmdb_id": "72748",
+      "myshows_id": 54349,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/1191/season-6.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1191/thumb_season-6.jpg",
+      "newest_video": 1734362133,
+      "updated_at": 1778329260
+    },
+    {
+      "id": 3959,
+      "name": "Devil in the Family: The Fall of Ruby Franke",
+      "imdb_rating": 7.3,
+      "year": "2025",
+      "desc": "When popular vlogger Ruby Franke is arrested for child abuse in August 2023, it quickly becomes one of the biggest trending stories in America. For years, the Frankes' YouTube channel had documented a wholesome, happy family life, with nearly 3 million subscribers tuning in at its peak. But as the cracks began to show, the family turned to counselor Jodi Hildebrandt for guidance \u2013 and rapidly found themselves trapped in a nightmare.",
+      "slug": "devil-in-the-family-the-fall-of-ruby-franke",
+      "ended": true,
+      "length": null,
+      "user_popularity": 2,
+      "array_genres": [
+        "Documentary",
+        "Crime"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3959/3cSUwMHJfOdrQb1SiNpUB2H81Zy.jpg",
+      "imdb_id": "35309276",
+      "kinopoisk_id": "",
+      "tmdb_id": "281371",
+      "myshows_id": 93472,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/3959/mPE2Urjd1ut4fdOioyPj1CdRTnN.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3959/thumb_mPE2Urjd1ut4fdOioyPj1CdRTnN.jpg",
+      "newest_video": 1744123853,
+      "updated_at": 1775508971
+    },
+    {
+      "id": 3939,
+      "name": "Long Bright River",
+      "imdb_rating": 6.8,
+      "year": "2025",
+      "desc": "A police officer patrols a Philadelphia neighborhood hard-hit by the opioid crisis. When a series of murders begins in the neighborhood, Mickey realizes that her personal history might be related to the case.",
+      "slug": "long-bright-river",
+      "ended": true,
+      "length": null,
+      "user_popularity": 9,
+      "array_genres": [
+        "Drama",
+        "Crime"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3939/o0K73juT83iZKHLUFtDp5Gey6OL.jpg",
+      "imdb_id": "8332798",
+      "kinopoisk_id": "",
+      "tmdb_id": "244628",
+      "myshows_id": 88210,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/3939/63TQf8V5ED8YSNupPVWVaiueMpZ.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3939/thumb_63TQf8V5ED8YSNupPVWVaiueMpZ.jpg",
+      "newest_video": 1741878921,
+      "updated_at": 1773572010
+    },
+    {
+      "id": 554,
+      "name": "Humans",
+      "imdb_rating": 7.9,
+      "year": "2015",
+      "desc": "In a parallel present where the latest must-have gadget for any busy family is a 'Synth' - a highly-developed robotic servant that's so similar to a real human it's transforming the way we live.",
+      "slug": "humans",
+      "ended": false,
+      "length": 47,
+      "user_popularity": 7,
+      "array_genres": [
+        "Drama",
+        "Sci-Fi"
+      ],
+      "array_countries": [
+        "GB",
+        "US"
+      ],
+      "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/554/kC3jZ6RKnA7VUYQBnVFB5EbZtvu.jpg",
+      "imdb_id": "4122068",
+      "kinopoisk_id": "855925",
+      "tmdb_id": "62822",
+      "myshows_id": 42707,
+      "poster": "https://media.subsloth.invalid/uploads/show/poster/554/bqENXJpmYNRuuSpbSga8I9Pk5RC.jpg",
+      "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/554/thumb_bqENXJpmYNRuuSpbSga8I9Pk5RC.jpg",
+      "newest_video": 1530830531,
+      "updated_at": 1773571991
+    }
+  ]
+}

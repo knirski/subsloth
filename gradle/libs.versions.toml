@@ -1,0 +1,147 @@
+[versions]
+agp = "9.2.1"
+kotlin = "2.3.21"
+ksp = "2.3.7"
+composeBom = "2026.05.00"
+material3Adaptive = "1.2.0"
+androidxCore = "1.18.0"
+activityCompose = "1.13.0"
+lifecycle = "2.10.0"
+androidxNavigation3 = "1.1.1"
+metro = "1.1.1"
+tvFoundation = "1.0.0"
+tvMaterial = "1.1.0"
+room = "2.8.4"
+datastore = "1.2.1"
+detekt = "2.0.0-alpha.3"
+media3 = "1.10.1"
+coil = "3.4.0"
+retrofit = "3.0.0"
+okhttp = "5.3.2"
+kotlinxSerialization = "1.11.0"
+work = "2.11.2"
+coroutines = "1.11.0"
+turbine = "1.2.1"
+roborazzi = "1.61.0"
+benchmark = "1.4.1"
+jsonSchemaValidator = "3.0.2"
+junit = "5.14.1"
+junitPlatform = "1.14.1"
+spotless = "8.5.1"
+wiremock = "3.13.2"
+composeRules = "0.5.8"
+ktlint = "1.5.0"
+androidJunit = "2.0.1"
+androidxTest = "1.7.0"
+
+
+[libraries]
+# AndroidX core
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Compose
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "material3Adaptive" }
+androidx-material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "material3Adaptive" }
+androidx-material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "material3Adaptive" }
+
+# TV
+androidx-tv-foundation = { module = "androidx.tv:tv-foundation", version.ref = "tvFoundation" }
+androidx-tv-material = { module = "androidx.tv:tv-material", version.ref = "tvMaterial" }
+
+# Lifecycle
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+
+# Navigation3 (Compose-first navigation)
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidxNavigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "androidxNavigation3" }
+
+# Room
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# DataStore
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
+# Media3
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+media3-datasource-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "media3" }
+
+# Coil
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+
+# Retrofit + kotlinx.serialization
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# OkHttp
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
+mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
+
+# Coroutines
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# WorkManager
+work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+
+# Testing (JUnit 5 + Turbine + AndroidX Test)
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTest" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTest" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "jsonSchemaValidator" }
+wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+
+# Roborazzi (screenshot tests)
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+
+# Detekt
+detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
+detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
+compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
+
+# Benchmark
+benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+
+# Gradle plugins on classpath of build-logic (so .gradle.kts convention scripts can import them)
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+kotlin-power-assert-gradlePlugin = { module = "org.jetbrains.kotlin.plugin.power-assert:org.jetbrains.kotlin.plugin.power-assert.gradle.plugin", version.ref = "kotlin" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-junit = { id = "de.mannodermaus.android-junit", version.ref = "androidJunit" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

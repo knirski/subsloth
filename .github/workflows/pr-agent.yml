@@ -1,0 +1,42 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pr-agent:
+    if: ${{ github.event.sender.type != 'Bot' && github.event.pull_request.head.repo.fork == false }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check Gemini API key secret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY repository secret is required for PR Agent."
+            exit 1
+          fi
+
+      - name: PR Agent action step
+        uses: the-pr-agent/pr-agent@v0.35.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          config.model: gemini/gemini-3-flash-preview
+          config.fallback_models: '["gemini/gemini-3.1-flash-lite-preview"]'
+          GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review"]'

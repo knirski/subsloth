@@ -1,0 +1,27 @@
+1
+00:00:01,000 --> 00:00:04,500
+The signal is repeating. I have never seen this pattern before.
+
+2
+00:00:05,000 --> 00:00:09,200
+Check the frequency logs from last night. Compare them with the offshore buoy data.
+
+3
+00:00:10,000 --> 00:00:14,800
+If the correlation holds, we need to alert the mainland relay station.
+
+4
+00:00:15,500 --> 00:00:19,000
+This is beyond standard interference. Someone is sending these pulses deliberately.
+
+5
+00:00:20,000 --> 00:00:24,300
+The window closes in three hours. We do not have the luxury of waiting for confirmation.
+
+6
+00:00:25,000 --> 00:00:28,500
+Then we trace it ourselves. I will call the team.
+
+7
+00:00:29,000 --> 00:00:32,000
+The reply window opens at 23:00. Be ready.

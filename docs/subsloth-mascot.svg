@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="fur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8B7355"/>
+      <stop offset="100%" stop-color="#6B5B3E"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F5E6CC"/>
+      <stop offset="100%" stop-color="#E8D5B0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="195" fill="url(#bg)"/>
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.3"/>
+
+  <!-- Body -->
+  <ellipse cx="200" cy="280" rx="80" ry="65" fill="url(#fur)"/>
+
+  <!-- Head -->
+  <ellipse cx="200" cy="170" rx="85" ry="75" fill="url(#fur)"/>
+
+  <!-- Face mask -->
+  <ellipse cx="200" cy="180" rx="60" ry="50" fill="url(#face)"/>
+
+  <!-- Eye patches (dark circles around eyes - sloth trademark) -->
+  <ellipse cx="172" cy="170" rx="22" ry="18" fill="#3D2B1F"/>
+  <ellipse cx="228" cy="170" rx="22" ry="18" fill="#3D2B1F"/>
+
+  <!-- Eyes -->
+  <ellipse cx="172" cy="168" rx="10" ry="9" fill="#1a1a1a"/>
+  <ellipse cx="228" cy="168" rx="10" ry="9" fill="#1a1a1a"/>
+
+  <!-- Eye shine -->
+  <circle cx="176" cy="165" r="4" fill="white" opacity="0.8"/>
+  <circle cx="232" cy="165" r="4" fill="white" opacity="0.8"/>
+
+  <!-- Nose -->
+  <ellipse cx="200" cy="190" rx="8" ry="5" fill="#3D2B1F"/>
+
+  <!-- Smile -->
+  <path d="M190 198 Q200 208 210 198" fill="none" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Eyebrows -->
+  <path d="M155 152 Q172 145 190 150" fill="none" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+  <path d="M210 150 Q228 145 245 152" fill="none" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Left arm hanging down (relaxed) -->
+  <path d="M125 260 Q90 300 80 340" fill="none" stroke="url(#fur)" stroke-width="20" stroke-linecap="round"/>
+  <!-- Left claws -->
+  <path d="M80 340 Q75 350 72 348" fill="none" stroke="#3D2B1F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M80 340 Q80 352 77 350" fill="none" stroke="#3D2B1F" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Right arm holding remote -->
+  <path d="M275 260 Q310 290 305 320" fill="none" stroke="url(#fur)" stroke-width="20" stroke-linecap="round"/>
+  <!-- Right claws -->
+  <path d="M305 320 Q300 332 297 330" fill="none" stroke="#3D2B1F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M305 320 Q305 334 302 332" fill="none" stroke="#3D2B1F" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Remote control -->
+  <rect x="288" y="305" width="20" height="40" rx="4" fill="#333"/>
+  <rect x="292" y="309" width="12" height="6" rx="2" fill="#FFD700"/>
+  <rect x="292" y="318" width="12" height="6" rx="2" fill="#e74c3c"/>
+  <rect x="292" y="327" width="12" height="6" rx="2" fill="#2ecc71"/>
+  <rect x="292" y="336" width="12" height="6" rx="2" fill="#3498db"/>
+
+  <!-- Tree branch (sloth hanging spot) -->
+  <path d="M30 100 Q120 85 200 90 Q280 95 370 100" fill="none" stroke="#5D4037" stroke-width="12" stroke-linecap="round"/>
+  <path d="M30 100 Q20 105 15 110" fill="none" stroke="#5D4037" stroke-width="6" stroke-linecap="round"/>
+  <path d="M370 100 Q380 105 385 110" fill="none" stroke="#5D4037" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Subtitle bar at bottom -->
+  <rect x="60" y="355" width="280" height="30" rx="8" fill="rgba(0,0,0,0.7)"/>
+  <rect x="60" y="355" width="280" height="30" rx="8" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.5"/>
+
+  <!-- Subtitle text -->
+  <text x="200" y="375" text-anchor="middle" font-family="monospace" font-size="13" fill="#FFD700" font-weight="bold">
+    ¡Hola! ¿Cómo estás?
+  </text>
+
+  <!-- Subtitle translation -->
+  <text x="200" y="390" text-anchor="middle" font-family="monospace" font-size="10" fill="#aaa">
+    Hello! How are you?
+  </text>
+
+  <!-- Play triangle on top -->
+  <polygon points="200,130 185,145 215,145" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.4"/>
+
+  <!-- Small stars -->
+  <circle cx="100" cy="140" r="2" fill="#FFD700" opacity="0.5"/>
+  <circle cx="300" cy="135" r="2" fill="#FFD700" opacity="0.5"/>
+  <circle cx="150" cy="110" r="1.5" fill="#FFD700" opacity="0.4"/>
+  <circle cx="250" cy="108" r="1.5" fill="#FFD700" opacity="0.4"/>
+</svg>

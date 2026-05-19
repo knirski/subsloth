@@ -1,0 +1,6 @@
+# vacuum custom ruleset
+# Extends all built-in OAS rules except camel-case-properties,
+# which conflicts with the upstream Media API's snake_case convention.
+extends: [[vacuum:oas, all]]
+rules:
+  camel-case-properties: off

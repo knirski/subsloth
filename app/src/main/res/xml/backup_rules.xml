@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup rules for auto backup (API < 33).
+  Credential files and Keystore key material are excluded from backup
+  to prevent device-to-device credential transfer.
+-->
+<full-backup-content>
+    <!-- Exclude encrypted credential SharedPreferences -->
+    <exclude domain="sharedpref" path="subsloth_encrypted_credentials.xml" />
+    <!-- Exclude DataStore files containing profile salt (non-credential but app-private) -->
+    <exclude domain="file" path="datastore/" />
+    <!-- Exclude downloaded media files (large, device-local) -->
+    <exclude domain="file" path="downloads/" />
+</full-backup-content>

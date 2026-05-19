@@ -1,0 +1,83 @@
+{
+  "id": 137,
+  "name": "Shooter",
+  "imdb_id": "0822854",
+  "imdb_rating": 7.1,
+  "year": "2007",
+  "desc": "A marksman living in exile is coaxed back into action after learning of a plot to kill the president. Ultimately double-crossed and framed for the attempt, he goes on the run to track the real killer and find out who exactly set him up, and why.",
+  "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/137/uy2trYgO8MOQfQXlvMaLhBnkUqg.jpg",
+  "array_genres": [
+    "Action",
+    "Crime",
+    "Drama",
+    "Mystery",
+    "Thriller"
+  ],
+  "array_countries": [
+    "US"
+  ],
+  "resolution": "HD",
+  "slug": "shooter",
+  "user_popularity": 0,
+  "trailer": "-6jgkXHdNi4",
+  "watched_media_count": 1097,
+  "info": {
+    "smil": "/uploads/movie/file/137/Shooter__0822854_1486996001.smil",
+    "thumbs": 1508,
+    "original": "/uploads/movie/file/137/Shooter__0822854_1486996001.mp4"
+  },
+  "versions": {
+    "240p": "/uploads/movie/file/137/Shooter__0822854_1486996001_240p.mp4",
+    "360p": "/uploads/movie/file/137/Shooter__0822854_1486996001_360p.mp4",
+    "480p": "/uploads/movie/file/137/Shooter__0822854_1486996001_480p.mp4",
+    "720p": "/uploads/movie/file/137/Shooter__0822854_1486996001_720p.mp4"
+  },
+  "subtitles": [
+    {
+      "lang": "ru",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/42793/track_1441572316.vtt"
+    },
+    {
+      "lang": "it",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/221105/shooter.vtt"
+    },
+    {
+      "lang": "es",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/149249/shooter.2007.720p.bluray.x264-rude-spa.vtt"
+    },
+    {
+      "lang": "fr",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/151758/shooter_2007_dvdrip_eng_-axxo.fr.vtt"
+    },
+    {
+      "lang": "de",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/150489/shooter.vtt"
+    },
+    {
+      "lang": "pl",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/221106/shooter.2007.720p.hddvd.x264.proper-hv.vtt"
+    },
+    {
+      "lang": "tr",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/219622/shooter.2007.720p.hddvd.x264.proper-hv.vtt"
+    },
+    {
+      "lang": "cs",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/218786/shooter_2007_dvdrip_eng_-axxo.cz.vtt"
+    },
+    {
+      "lang": "en",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/20605/Shooter__0822854.vtt"
+    },
+    {
+      "lang": "pt",
+      "url": "https://media.subsloth.invalid/uploads/subtitle/file/152070/atirador.vtt"
+    }
+  ],
+  "length": 125,
+  "updated_at": 1776609394,
+  "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/137/thumb_wCZv0lNx58sfuLT698RYYJVEeTr.jpg",
+  "poster": "https://media.subsloth.invalid/uploads/movie/poster/137/wCZv0lNx58sfuLT698RYYJVEeTr.jpg",
+  "url": "https://media.subsloth.invalid/uploads/movie/file/137/Shooter__0822854_1486996001.smil/playlist.m3u8?wmsAuthSign=aWQ9MzAxNzkyMCsrbW92aWUrMTM3JnNlcnZlcl90aW1lPTUvOS8yMDI2IDEwOjI4OjM4IFBNJmhhc2hfdmFsdWU9bWg0NnQ0YVkvNTIrSzIzL0NMR0phZz09JnZhbGlkbWludXRlcz0xOTIwJnN0cm1fbGVuPTU1",
+  "download_url": "https://media.subsloth.invalid/uploads/movie/file/137/Shooter__0822854_1486996001_720p.mp4?attachment=true&wmsAuthSign=aWQ9MzAxNzkyMCsrbW92aWUrMTM3JnNlcnZlcl90aW1lPTUvOS8yMDI2IDEwOjI4OjM4IFBNJmhhc2hfdmFsdWU9dlZPQWZ0LzV5OFdLRjRlamtUbll6UT09JnZhbGlkbWludXRlcz0xOTIwJnN0cm1fbGVuPTU5"
+}

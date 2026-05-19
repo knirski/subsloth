@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `all error types are DomainError`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `available episode is playable`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `download state covers all statuses`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `download state stores quality descriptor without ephemeral URLs`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `fully watched progress marks as complete`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `playback progress computes fraction`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `quality carries resolution and ephemeral URLs`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `resolution compares by pixel count`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `resolution label is human-readable`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `show status enum covers all states`</ID>
+    <ID>FunctionNaming:CoreModelTest.kt:CoreModelTest$@Test fun `upcoming episode prevents playable intent`</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$1080</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$1440</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$2160</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$360</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$480</ID>
+    <ID>MagicNumber:Resolution.kt:Resolution$720</ID>
+    <ID>ObjectPropertyNaming:Resolution.kt:Resolution.Companion$public val FULL_HD: Resolution = Resolution(1920, 1080)</ID>
+    <ID>ObjectPropertyNaming:Resolution.kt:Resolution.Companion$public val HD_720: Resolution = Resolution(1280, 720)</ID>
+    <ID>ObjectPropertyNaming:Resolution.kt:Resolution.Companion$public val UHD_4K: Resolution = Resolution(3840, 2160)</ID>
+    <ID>RedundantVisibilityModifier:AccountProfileKey.kt:AccountProfileKey</ID>
+    <ID>RedundantVisibilityModifier:Availability.kt:Availability</ID>
+    <ID>RedundantVisibilityModifier:Availability.kt:Availability$GeoRestricted : Availability</ID>
+    <ID>RedundantVisibilityModifier:Availability.kt:Availability$Upcoming : Availability</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:AuthError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:DecodeError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:DecodeError$MissingFields : DecodeError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:DownloadError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:LibraryError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:MediaError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:NetworkError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:NetworkError$HttpError : NetworkError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:NetworkError$RateLimited : NetworkError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:PaymentLimitError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DomainError.kt:QualityError : DomainError</ID>
+    <ID>RedundantVisibilityModifier:DownloadState.kt:DownloadState</ID>
+    <ID>RedundantVisibilityModifier:DownloadState.kt:DownloadStatus</ID>
+    <ID>RedundantVisibilityModifier:Episode.kt:Episode</ID>
+    <ID>RedundantVisibilityModifier:Episode.kt:Episode$/** * Whether this episode is scheduled for future release based on its * premiere date metadata. Upcoming episodes must not be playable or * downloadable. */ public val isUpcoming: Boolean get() = availability is Availability.Upcoming</ID>
+    <ID>RedundantVisibilityModifier:ExternalId.kt:ExternalId</ID>
+    <ID>RedundantVisibilityModifier:ExternalId.kt:ExternalIdSource</ID>
+    <ID>RedundantVisibilityModifier:LanguageCode.kt:LanguageCode</ID>
+    <ID>RedundantVisibilityModifier:LibraryItem.kt:LibraryCollection</ID>
+    <ID>RedundantVisibilityModifier:LibraryItem.kt:LibraryItem</ID>
+    <ID>RedundantVisibilityModifier:LocalMediaIdentifier.kt:LocalMediaIdentifier</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Availability state (available, upcoming, expired, etc.). */ public val availability: Availability</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Average user rating (0–10 scale). */ public val rating: Double?</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Display title or name. */ public val title: String</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Duration in minutes. */ public val durationMinutes: Int?</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** List of genre descriptors. */ public val genres: List&lt;String&gt;</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Short plot synopsis. */ public val plot: String?</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Unique identifier for this media item. */ public val id: MediaId</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$/** Year of release. */ public val year: Int?</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media$MediaId</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media.MediaId$Episode : MediaId</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media.MediaId$Movie : MediaId</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:Media.MediaId$Show : MediaId</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:MovieSummary : Media</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:ShowStatus</ID>
+    <ID>RedundantVisibilityModifier:Media.kt:ShowSummary : Media</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val availability: Availability</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val description: String?</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val durationMinutes: Int?</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val genres: List&lt;String&gt;</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val id: Media.MediaId</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val plot: String?</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val qualities: List&lt;Quality&gt;</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val rating: Double?</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val subtitles: List&lt;Subtitle&gt;</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val title: String</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MediaDetails$public val year: Int?</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:MovieDetails : MediaDetails</ID>
+    <ID>RedundantVisibilityModifier:MediaDetails.kt:ShowDetails : MediaDetails</ID>
+    <ID>RedundantVisibilityModifier:EpisodeId.kt:EpisodeId</ID>
+    <ID>RedundantVisibilityModifier:MovieId.kt:MovieId</ID>
+    <ID>RedundantVisibilityModifier:ShowId.kt:ShowId</ID>
+    <ID>RedundantVisibilityModifier:PlaybackProgress.kt:PlaybackProgress</ID>
+    <ID>RedundantVisibilityModifier:PlaybackProgress.kt:PlaybackProgress$/** Fractional progress (0.0–1.0). */ public val fraction: Double get() = if (durationSeconds &gt; 0L) { positionSeconds.toDouble() / durationSeconds.toDouble() } else { 0.0 }</ID>
+    <ID>RedundantVisibilityModifier:Quality.kt:Quality</ID>
+    <ID>RedundantVisibilityModifier:Quality.kt:QualityDescriptor</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution : Comparable</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution$/** Human-readable label such as "1080p" or "4K". */ public val label: String get() = when { height &lt;= 360 -&gt; "SD" height &lt;= 480 -&gt; "480p" height &lt;= 720 -&gt; "720p" height &lt;= 1080 -&gt; "1080p" height &lt;= 1440 -&gt; "1440p" height &lt;= 2160 -&gt; "4K" else -&gt; "${height}p" }</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution$/** Total pixel count used for quality comparisons. */ public val pixelCount: Long get() = width.toLong() * height</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution.Companion$public val FULL_HD: Resolution = Resolution(1920, 1080)</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution.Companion$public val HD_720: Resolution = Resolution(1280, 720)</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution.Companion$public val QHD: Resolution = Resolution(2560, 1440)</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution.Companion$public val SD: Resolution = Resolution(640, 360)</ID>
+    <ID>RedundantVisibilityModifier:Resolution.kt:Resolution.Companion$public val UHD_4K: Resolution = Resolution(3840, 2160)</ID>
+    <ID>RedundantVisibilityModifier:Season.kt:Season</ID>
+    <ID>RedundantVisibilityModifier:Season.kt:Season$/** Total number of episodes in this season. */ public val episodeCount: Int get() = episodes.size</ID>
+    <ID>RedundantVisibilityModifier:Season.kt:Season$/** Whether every episode in this season is available for playback. */ public val isFullyAvailable: Boolean get() = episodes.all { it.availability is Availability.Available }</ID>
+    <ID>RedundantVisibilityModifier:Subtitle.kt:Subtitle</ID>
+    <ID>RedundantVisibilityModifier:Subtitle.kt:SubtitleFormat</ID>
+    <ID>RedundantVisibilityModifier:VideoSource.kt:PlaybackSession</ID>
+    <ID>RedundantVisibilityModifier:VideoSource.kt:VideoSource</ID>
+  </CurrentIssues>
+</SmellBaseline>

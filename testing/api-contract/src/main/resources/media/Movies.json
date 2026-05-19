@@ -1,0 +1,428 @@
+{
+  "movies": [
+    {
+      "id": 137,
+      "name": "Shooter",
+      "imdb_id": "0822854",
+      "imdb_rating": 7.1,
+      "year": "2007",
+      "desc": "A marksman living in exile is coaxed back into action after learning of a plot to kill the president. Ultimately double-crossed and framed for the attempt, he goes on the run to track the real killer and find out who exactly set him up, and why.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/137/uy2trYgO8MOQfQXlvMaLhBnkUqg.jpg",
+      "array_genres": [
+        "Action",
+        "Crime",
+        "Drama",
+        "Mystery",
+        "Thriller"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 125,
+      "updated_at": 1776609394,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/137/thumb_wCZv0lNx58sfuLT698RYYJVEeTr.jpg"
+    },
+    {
+      "id": 2464,
+      "name": "Sleuth",
+      "imdb_id": "0069281",
+      "imdb_rating": 8.0,
+      "year": "1972",
+      "desc": "A man who loves games and theater invites his wife's lover to meet him, setting up a battle of wits with potentially deadly results.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/2464/7Pc719slk1WDC4fH1pk28pdPemv.jpg",
+      "array_genres": [
+        "Mystery",
+        "Thriller"
+      ],
+      "array_countries": [
+        "GB",
+        "US"
+      ],
+      "resolution": "SD",
+      "length": 138,
+      "updated_at": 1773226003,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/2464/thumb_MV5BM2EzZmFmMmItODY3Zi00NjdjLWE0MTYtZWQ3MGIyM2M4YjZhXkEyXkFqcGdeQXVyMzg2MzE2OTE_._V1_UX182_CR0_0_182_268_AL_.jpg"
+    },
+    {
+      "id": 8678,
+      "name": "Holy Days",
+      "imdb_id": "14734016",
+      "imdb_rating": 5.7,
+      "year": "2026",
+      "desc": "When young Brian discovers plans to close a convent of delightfully eccentric nuns, he sets off with them on a wild road trip across New Zealand to save their home.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/8678/mSdaNfnszAhI14ZEJCJbz3vXSWD.jpg",
+      "array_genres": [
+        "Comedy",
+        "Adventure",
+        "Drama"
+      ],
+      "array_countries": [
+        "NZ",
+        "CA"
+      ],
+      "resolution": "HD",
+      "length": 101,
+      "updated_at": 1778361124,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/8678/thumb_bQuH4CVkdKoHtOksYu8q4g3nsNa.jpg"
+    },
+    {
+      "id": 2851,
+      "name": "Get Out",
+      "imdb_id": "5052448",
+      "imdb_rating": 7.7,
+      "year": "2017",
+      "desc": "It's time for a young African American to meet with his white girlfriend's parents for a weekend in their secluded estate in the woods, but before long, the friendly and polite ambience will give way to a nightmare.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/2851/o8dPH0ZSIyyViP6rjRX1djwCUwI.jpg",
+      "array_genres": [
+        "Horror",
+        "Mystery"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 104,
+      "updated_at": 1778150925,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/2851/thumb_1SwAVYpuLj8KsHxllTF8Dt9dSSX.jpg"
+    },
+    {
+      "id": 7753,
+      "name": "Rumble Through the Dark",
+      "imdb_id": "10950320",
+      "imdb_rating": 5.5,
+      "year": "2023",
+      "desc": "Set in the dark landscape of the Mississippi Delta, where a former bare-knuckle fighter must win one last fight to pay off his debts to the local mob boss and save his childhood home\u2014the stakes nothing less than life or death.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/7753/rb3QQ2TQfJoCpCZlfXBlBbzYy1D.jpg",
+      "array_genres": [
+        "Thriller",
+        "Action"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 116,
+      "updated_at": 1773496219,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/7753/thumb_19UbYIT9WEQS5qSD3BREDxVXk8g.jpg"
+    },
+    {
+      "id": 2622,
+      "name": "Johnny English",
+      "imdb_id": "0274166",
+      "imdb_rating": 6.2,
+      "year": "2003",
+      "desc": "After a sudden attack on the MI5, Johnny English, Britain's most confident yet unintelligent spy, becomes Britain's only spy.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/2622/gtDuUEprJkTIrzcO2vFsXgdkJ0R.jpg",
+      "array_genres": [
+        "Action",
+        "Adventure",
+        "Comedy"
+      ],
+      "array_countries": [
+        "GB",
+        "FR",
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 87,
+      "updated_at": 1775738703,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/2622/thumb_oSsisFLSeRJJaTX5l13jMqDKpwH.jpg"
+    },
+    {
+      "id": 3583,
+      "name": "20,000 Leagues Under the Sea",
+      "imdb_id": "0046672",
+      "imdb_rating": 7.2,
+      "year": "1954",
+      "desc": "A ship sent to investigate a wave of mysterious sinkings encounters the advanced submarine, the Nautilus, commanded by Captain Nemo.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/3583/pIBZpX9H6U6Nk6gbyWTD4rFKEqq.jpg",
+      "array_genres": [
+        "Adventure",
+        "Drama",
+        "Sci-Fi"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 127,
+      "updated_at": 1777666120,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/3583/thumb_yhoL2CxBp9IwMhHrCj6FIb2lrYR.jpg"
+    },
+    {
+      "id": 5808,
+      "name": "St. Trinian's",
+      "imdb_id": "0964587",
+      "imdb_rating": 5.8,
+      "year": "2007",
+      "desc": "In order to save their bankrupt school, a group of troublesome girls stage a robbery with a group of geniuses on their backs",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/5808/4AgksenI4v7RMB27HX8PZ9LfZ4c.jpg",
+      "array_genres": [
+        "Comedy",
+        "Family"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "resolution": "HD",
+      "length": 96,
+      "updated_at": 1764936533,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/5808/thumb_MV5BMTg5MjIwMzgwNF5BMl5BanBnXkFtZTcwOTg3NzI3Mg__._V1_SY1000_CR0_0_674_1000_AL_.jpg"
+    },
+    {
+      "id": 1806,
+      "name": "Funny Lady",
+      "imdb_id": "0073026",
+      "imdb_rating": 6.2,
+      "year": "1975",
+      "desc": "Story of singer Fanny Brice's stormy relationship with showman Billy Rose.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/1806/wuZn3zmyYJISfxa3FyevEkVSwtN.jpg",
+      "array_genres": [
+        "Biography",
+        "Comedy",
+        "Drama",
+        "Music",
+        "Romance"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 138,
+      "updated_at": 1773523230,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/1806/thumb_jQyvauYZyEiTD6Nj7jjdU03UonS.jpg"
+    },
+    {
+      "id": 3596,
+      "name": "The Shipping News",
+      "imdb_id": "0120824",
+      "imdb_rating": 6.7,
+      "year": "2001",
+      "desc": "An emotionally-beaten man with his young daughter moves to his ancestral home in Newfoundland to reclaim his life.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/3596/gnyGSoVKOIz1BR34lIBuuTq0Znl.jpg",
+      "array_genres": [
+        "Drama",
+        "Romance"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 111,
+      "updated_at": 1773598904,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/3596/thumb_ivFi3VUUOKFVemEugtDn0pjx7v9.jpg"
+    },
+    {
+      "id": 1817,
+      "name": "Stonehearst Asylum",
+      "imdb_id": "1772264",
+      "imdb_rating": 6.8,
+      "year": "2014",
+      "desc": "An Oxford graduate takes up a job in a mental asylum, only to discover that the \"revolutionary\" new treatments are inhumane and that there is  going on than meets the eye.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/1817/7t4OgKvzqfvDcB2nA6oPyEHWd2G.jpg",
+      "array_genres": [
+        "Drama",
+        "Horror",
+        "Mystery",
+        "Thriller"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 112,
+      "updated_at": 1773598956,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/1817/thumb_6PXtqaYOpLTpxfKtwvAK3xCQfXZ.jpg"
+    },
+    {
+      "id": 2008,
+      "name": "Submarine",
+      "imdb_id": "1440292",
+      "imdb_rating": 7.3,
+      "year": "2010",
+      "desc": "15-year-old Oliver Tate has two objectives: To lose his virginity before his next birthday, and to extinguish the flame between his mother and an ex-lover who has resurfaced in her life.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/2008/rzy12BNlags49s3UoUuDEfv2h5P.jpg",
+      "array_genres": [
+        "Comedy",
+        "Drama",
+        "Romance"
+      ],
+      "array_countries": [
+        "GB",
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 96,
+      "updated_at": 1773598942,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/2008/thumb_ibYScMoDmBktoIZzUDFrhPpTPlH.jpg"
+    },
+    {
+      "id": 6539,
+      "name": "Made in Italy",
+      "imdb_id": "9207700",
+      "imdb_rating": 5.9,
+      "year": "2020",
+      "desc": "A bohemian artist travels from London to Italy with his estranged son to sell the house they inherited from his late wife.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/6539/5nRyaVklxyA9OkxqZaPv1KBRqpd.jpg",
+      "array_genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "array_countries": [
+        "IT",
+        "GB"
+      ],
+      "resolution": "HD",
+      "length": 93,
+      "updated_at": 1777071515,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/6539/thumb_erl30EcM8b8S84mvw8QXhNIeSfi.jpg"
+    },
+    {
+      "id": 6913,
+      "name": "Unpregnant",
+      "imdb_id": "10556022",
+      "imdb_rating": 6.5,
+      "year": "2020",
+      "desc": "A 17-year old Missouri teen named Veronica discovers she has gotten pregnant, a development that threatens to end her dreams of matriculating at an Ivy League college, and the career that could follow.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/6913/7QaItfwAzp0jY0gFgPSzpY8ZrBv.jpg",
+      "array_genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 103,
+      "updated_at": 1773600158,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/6913/thumb_1BqjLXnPkGzIFR5CRBTYfXdu2DV.jpg"
+    },
+    {
+      "id": 2009,
+      "name": "Men of Honor",
+      "imdb_id": "0203019",
+      "imdb_rating": 7.2,
+      "year": "2000",
+      "desc": "The story of Carl Brashear, the first African American, then also the first amputee, US Navy Diver and the man who trained him.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/2009/laNHiehbOHYM3y9FVFfqmLuX8X5.jpg",
+      "array_genres": [
+        "Biography",
+        "Drama"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 128,
+      "updated_at": 1773599023,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/2009/thumb_4mCuFJ0r3lV1A8Vj5tq6O9aBpjZ.jpg"
+    },
+    {
+      "id": 1482,
+      "name": "Taxi Driver",
+      "imdb_id": "0075314",
+      "imdb_rating": 8.2,
+      "year": "1976",
+      "desc": "A mentally unstable Vietnam War veteran works as a night-time taxi driver in New York City where the perceived decadence and sleaze feeds his urge for violent action, attempting to save a preadolescent prostitute in the process.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/1482/6aoyUbvu0419XLKLIMoH0TkEicH.jpg",
+      "array_genres": [
+        "Crime",
+        "Drama"
+      ],
+      "array_countries": [
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 113,
+      "updated_at": 1778169525,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/1482/thumb_yxq4pk1xGmro8tQABuQIrWrvdaE.jpg"
+    },
+    {
+      "id": 650,
+      "name": "Original Sin",
+      "imdb_id": "0218922",
+      "imdb_rating": 6.0,
+      "year": "2001",
+      "desc": "A young man is plunged into a life of subterfuge, deceit and mistaken identity in pursuit of a femme fatale whose heart is never quite within his grasp. Remake of Fran\u00e7ois Truffaut's 1969 film 'Mississippi Mermaid'",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/650/yZvCpMjiqbwyJ0RrS9m3SqmELVv.jpg",
+      "array_genres": [
+        "Drama",
+        "Mystery",
+        "Romance",
+        "Thriller"
+      ],
+      "array_countries": [
+        "FR",
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 118,
+      "updated_at": 1778080862,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/650/thumb_i8FEQy5IWAqOzXm4uDHy2r3Swym.jpg"
+    },
+    {
+      "id": 8309,
+      "name": "Riff-Raff",
+      "imdb_id": "27775403",
+      "imdb_rating": 5.7,
+      "year": "2025",
+      "desc": "A retired hitman's life is turned upside down when his ex-wife and son arrive unannounced during the holidays because they are on the run from his former mob associates.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/8309/dAeubkAjzTCoP3VFFxu0Btm4mFp.jpg",
+      "array_genres": [
+        "Comedy",
+        "Crime",
+        "Drama"
+      ],
+      "array_countries": [
+        "US",
+        "CN"
+      ],
+      "resolution": "HD",
+      "length": 103,
+      "updated_at": 1764937274,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/8309/thumb_eLWoG5YllDZbG41kt67SkHvNCME.jpg"
+    },
+    {
+      "id": 8313,
+      "name": "Holland",
+      "imdb_id": "3045628",
+      "imdb_rating": 5.0,
+      "year": "2025",
+      "desc": "Nancy is a teacher whose life with her husband in Holland, Michigan, tumbles into a twisted tale when she and her colleague become suspicious of a secret.",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/8313/3xN4vNPWBSVDsiiOzL5sB95Sa1J.jpg",
+      "array_genres": [
+        "Drama",
+        "Thriller"
+      ],
+      "array_countries": [
+        "GB",
+        "US"
+      ],
+      "resolution": "HD",
+      "length": 109,
+      "updated_at": 1777484138,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/8313/thumb_iN5Ay7qbKwky8Zv3yKV3QpkbZfV.jpg"
+    },
+    {
+      "id": 7271,
+      "name": "Scum",
+      "imdb_id": "0079871",
+      "imdb_rating": 7.6,
+      "year": "1979",
+      "desc": "Powerful, uncompromising drama about two boys' struggle for survival in the nightmare world of Britain's notorious Borstal Reformatory. [This is the feature film version Alan Clarke made after the BBC banned the original before its scheduled TV broadcast (see Scum (1977)].",
+      "backdrop_url": "https://media.subsloth.invalid/uploads/movie/backdrop/7271/aLwCAYMGhjx2TgSRvEbLUFg3sJc.jpg",
+      "array_genres": [
+        "Crime",
+        "Drama"
+      ],
+      "array_countries": [
+        "GB"
+      ],
+      "resolution": "HD",
+      "length": 97,
+      "updated_at": 1770677805,
+      "poster_thumb": "https://media.subsloth.invalid/uploads/movie/poster/7271/thumb_7jgzCmnF4QwRGbv2ubK9VIOAkJp.jpg"
+    }
+  ]
+}

@@ -1,0 +1,869 @@
+openapi: 3.1.0
+info:
+  title: Media API for subsloth
+  version: 0.1.0
+  summary: Initial Media API contract for the native subsloth Android app.
+  description: |
+    Initial OpenAPI contract for subsloth.
+
+    This contract is based on the Media Kodi add-on API baseline, with
+    sanitized authenticated browser discovery used only as supplemental field
+    evidence captured on 2026-05-04. It intentionally excludes comments.
+    Authenticated browser pages can auto-load web-only frontend comments
+    resources, so the native app must use the Kodi add-on API contract and must
+    not scrape web detail pages as its data source.
+
+    The schemas are intentionally tolerant until credentialed live API drift
+    tests record sanitized fixtures and tighten the exact JSON shapes. This
+    OpenAPI file may require tweaks once implementation starts, especially
+    when fixture validation and live drift tests expose exact optional fields,
+    unions, and media URL shapes.
+  x-subsloth-contract-status: initial-discovery-contract
+  x-implementation-caveat: >
+    Treat this as the current best contract, not a frozen public API. Keep it
+    synchronized with sanitized fixtures, generated DTO behavior, mapper tests,
+    and docs/api-discovery.md during implementation.
+  x-kodi-source-reference:
+    repository_zip: https://media.tv/kodi/repository.mediatv/repository.mediatv-1.0.2.zip
+    plugin_zip: https://media.tv/kodi/plugin.video.mediatv/plugin.video.mediatv-4.0.1.zip
+    inspected_files:
+      - plugin.video.mediatv-4.0.1/mediaAPI.py
+      - plugin.video.mediatv-4.0.1/default.py
+      - plugin.video.mediatv-4.0.1/resources/settings.xml
+    findings:
+      - API host is front.media-mirror.tv with prefix /api/v2.
+      - Kodi add-on sends Accept application/json, Content-Type application/json, Basic auth, and User-Agent "Kodi ({version})".
+      - subsloth must match the Kodi add-on request identity as closely as practical, including the Kodi-style User-Agent and API-only request surface.
+      - /movies returns an object containing movies.
+      - /shows returns an object containing shows.
+      - /movies/{id}, /shows/{id}, and /episodes/{id} return direct detail objects.
+      - 401 means failed login; 402 means free/subscription limit reached.
+  x-authenticated-browser-discovery:
+    date: "2026-05-04"
+    sanitized: true
+    notes:
+      - Web detail pages expose movie/show metadata, subtitles, watch/download actions, quality labels, and playback controls.
+      - Web detail pages can auto-load frontend comments resources; comments are out of scope and are excluded from this contract.
+      - Observed web player quality labels:
+          ["auto", "1080p", "720p", "480p", "360p", "240p"]
+      - Observed web player speed labels:
+          [
+            "0.50",
+            "0.60",
+            "0.70",
+            "0.80",
+            "0.90",
+            "1.00",
+            "1.25",
+            "1.50",
+            "2.00",
+          ]
+      - Observed subtitle web path shapes are recorded as notes only; API responses must be verified by live drift tests.
+  x-excluded-web-resources:
+    - /api/frontend/comments
+servers:
+  - url: https://front.media-mirror.tv/api/v2
+    description: Kodi add-on API base URL discovered for Media.
+security:
+  - basicAuth: []
+tags:
+  - name: Movies
+    description: Movie catalog and detail resources.
+  - name: Shows
+    description: Show catalog and season/episode detail resources.
+  - name: Episodes
+    description: Episode playback detail resources.
+paths:
+  /movies:
+    get:
+      tags: [Movies]
+      operationId: listMovies
+      summary: List movies.
+      description: |
+        Returns movies visible to the authenticated account. Exact pagination,
+        sorting, and filter names must be verified by live drift tests.
+      parameters:
+        - $ref: "#/components/parameters/KodiUserAgent"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Genre"
+        - $ref: "#/components/parameters/Country"
+        - $ref: "#/components/parameters/SubtitleLanguageQuery"
+        - $ref: "#/components/parameters/YearFrom"
+        - $ref: "#/components/parameters/YearTo"
+        - $ref: "#/components/parameters/RatingFrom"
+        - $ref: "#/components/parameters/RatingTo"
+      responses:
+        "200":
+          description: Movie list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+        "302":
+          $ref: "#/components/responses/UnexpectedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /movies/{movieId}:
+    get:
+      tags: [Movies]
+      operationId: getMovie
+      summary: Get movie detail.
+      parameters:
+        - $ref: "#/components/parameters/KodiUserAgent"
+        - name: movieId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Movie numeric id, as observed in live Kodi API responses.
+      responses:
+        "200":
+          description: Movie detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieDetailResponse"
+        "302":
+          $ref: "#/components/responses/UnexpectedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /shows:
+    get:
+      tags: [Shows]
+      operationId: listShows
+      summary: List TV shows.
+      description: |
+        Returns shows visible to the authenticated account. Exact pagination,
+        sorting, and filter names must be verified by live drift tests.
+      parameters:
+        - $ref: "#/components/parameters/KodiUserAgent"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Genre"
+        - $ref: "#/components/parameters/Country"
+        - $ref: "#/components/parameters/SubtitleLanguageQuery"
+        - $ref: "#/components/parameters/YearFrom"
+        - $ref: "#/components/parameters/YearTo"
+        - $ref: "#/components/parameters/RatingFrom"
+        - $ref: "#/components/parameters/RatingTo"
+      responses:
+        "200":
+          description: Show list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowListResponse"
+        "302":
+          $ref: "#/components/responses/UnexpectedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /shows/{showId}:
+    get:
+      tags: [Shows]
+      operationId: getShow
+      summary: Get show detail with seasons and episodes.
+      parameters:
+        - $ref: "#/components/parameters/KodiUserAgent"
+        - name: showId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Show numeric id, as observed in live Kodi API responses.
+      responses:
+        "200":
+          description: Show detail with seasons and episodes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowDetailResponse"
+        "302":
+          $ref: "#/components/responses/UnexpectedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /episodes/{episodeId}:
+    get:
+      tags: [Episodes]
+      operationId: getEpisode
+      summary: Get episode playback detail.
+      parameters:
+        - $ref: "#/components/parameters/KodiUserAgent"
+        - name: episodeId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Episode numeric id, as observed in live Kodi API responses.
+      responses:
+        "200":
+          description: Episode playback detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeDetailResponse"
+        "302":
+          $ref: "#/components/responses/UnexpectedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic auth using the user's Media credentials.
+  parameters:
+    KodiUserAgent:
+      name: User-Agent
+      in: header
+      required: true
+      description: |
+        Kodi add-on User-Agent in the observed form `Kodi ({version})`.
+        Production Media API requests should match the add-on request identity
+        as closely as practical instead of presenting as Android WebView,
+        OkHttp, Dalvik, browser automation, test, or emulator traffic.
+      schema:
+        type: string
+        pattern: "^Kodi \\(.+\\)$"
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Page number for catalog pagination. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise paginate locally over fetched data.
+      schema:
+        type: integer
+        minimum: 1
+    PerPage:
+      name: per_page
+      in: query
+      required: false
+      description: Results per page for catalog pagination. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise paginate locally over fetched data.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+    SearchQuery:
+      name: q
+      in: query
+      required: false
+      description: Free-text search query for catalog filtering. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise search locally over fetched data.
+      schema:
+        type: string
+    Sort:
+      name: sort
+      in: query
+      required: false
+      description: Sort order for catalog results. Sort values and production use must be verified against the Kodi plugin request surface by live drift tests; otherwise sort locally over fetched data.
+      schema:
+        type: string
+        enum: [publication_date, popularity, rating, name, year]
+    Genre:
+      name: genre
+      in: query
+      required: false
+      description: Filter catalog by genre slug. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: string
+    Country:
+      name: country
+      in: query
+      required: false
+      description: Filter catalog by country code. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: string
+    SubtitleLanguageQuery:
+      name: subtitles
+      in: query
+      required: false
+      description: Filter catalog by subtitle language code. Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        $ref: "#/components/schemas/LanguageCode"
+    YearFrom:
+      name: year_from
+      in: query
+      required: false
+      description: Filter catalog by minimum release year (inclusive). Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: integer
+        minimum: 1900
+    YearTo:
+      name: year_to
+      in: query
+      required: false
+      description: Filter catalog by maximum release year (inclusive). Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: integer
+        minimum: 1900
+    RatingFrom:
+      name: rating_from
+      in: query
+      required: false
+      description: Filter catalog by minimum rating (inclusive). Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: number
+        minimum: 0
+        maximum: 10
+    RatingTo:
+      name: rating_to
+      in: query
+      required: false
+      description: Filter catalog by maximum rating (inclusive). Production use is allowed only when Kodi plugin behavior proves the exact request shape; otherwise filter locally over fetched data.
+      schema:
+        type: number
+        minimum: 0
+        maximum: 10
+  responses:
+    Unauthorized:
+      description: Invalid or missing credentials.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    PaymentRequired:
+      description: Subscription/free-limit/payment state prevents the requested action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnexpectedRedirect:
+      description: Unexpected redirect from the Kodi API surface. Treat as a recoverable service/network state and do not scrape the redirected web page as data.
+      headers:
+        Location:
+          description: Redirect URL.
+          schema:
+            type: string
+            format: uri-reference
+    Forbidden:
+      description: Forbidden response from the Kodi API surface.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+        text/html:
+          schema:
+            $ref: "#/components/schemas/UnexpectedHtmlResponse"
+    ServiceUnavailable:
+      description: Service unavailable response from the Kodi API surface.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+        text/html:
+          schema:
+            $ref: "#/components/schemas/UnexpectedHtmlResponse"
+  schemas:
+    MovieListResponse:
+      description: Movie list response used by Kodi source as `json["movies"]`.
+      type: object
+      additionalProperties: true
+      required: [movies]
+      properties:
+        movies:
+          type: array
+          items:
+            $ref: "#/components/schemas/MovieSummary"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+    ShowListResponse:
+      description: Show list response used by Kodi source as `json["shows"]`.
+      type: object
+      additionalProperties: true
+      required: [shows]
+      properties:
+        shows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowSummary"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+    MovieDetailResponse:
+      description: Movie detail response wrapping the full Movie schema.
+      x-vacuum-ignore: component-description
+      $ref: "#/components/schemas/Movie"
+    ShowDetailResponse:
+      description: Show detail response wrapping the full Show schema with seasons and episodes.
+      x-vacuum-ignore: component-description
+      $ref: "#/components/schemas/Show"
+    EpisodeDetailResponse:
+      description: Episode playback detail response wrapping the full Episode schema.
+      x-vacuum-ignore: component-description
+      $ref: "#/components/schemas/Episode"
+    MovieSummary:
+      description: Summary movie fields used in catalog listings, before expanding to the full Movie detail.
+      type: object
+      additionalProperties: true
+      required: [id]
+      x-kodi-observed-required:
+        [
+          id,
+          name,
+          poster_thumb,
+          imdb_id,
+          imdb_rating,
+          backdrop_url,
+          updated_at,
+          array_genres,
+          year,
+          desc,
+        ]
+      x-live-drift-note: Field presence and nullability must be tightened after sanitized live fixtures.
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        slug:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        plot:
+          type: string
+        description:
+          type: string
+        poster:
+          $ref: "#/components/schemas/ImageUrl"
+        poster_url:
+          $ref: "#/components/schemas/ImageUrl"
+        poster_thumb:
+          $ref: "#/components/schemas/ImageUrl"
+        backdrop:
+          $ref: "#/components/schemas/ImageUrl"
+        backdrop_url:
+          $ref: "#/components/schemas/ImageUrl"
+        imdb_id:
+          type: string
+        rating:
+          $ref: "#/components/schemas/Rating"
+        imdb_rating:
+          $ref: "#/components/schemas/Rating"
+        year:
+          $ref: "#/components/schemas/Year"
+        release_year:
+          $ref: "#/components/schemas/Year"
+        genres:
+          $ref: "#/components/schemas/StringOrStringArray"
+        array_genres:
+          type: array
+          items:
+            type: string
+        countries:
+          $ref: "#/components/schemas/StringOrStringArray"
+        duration:
+          $ref: "#/components/schemas/DurationValue"
+        resolution:
+          $ref: "#/components/schemas/ResolutionLabel"
+        subtitles:
+          $ref: "#/components/schemas/SubtitlesValue"
+        desc:
+          type: string
+        updated_at:
+          $ref: "#/components/schemas/DateTimeLike"
+    Movie:
+      description: Full movie detail including streams, qualities, and playback URLs.
+      allOf:
+        - $ref: "#/components/schemas/MovieSummary"
+        - type: object
+          additionalProperties: true
+          properties:
+            imdb_id:
+              type: string
+            tmdb_id:
+              oneOf:
+                - type: integer
+                - type: string
+            trailer:
+              type: string
+            trailer_url:
+              type: string
+              format: uri-reference
+            url:
+              type: string
+              format: uri-reference
+              description: Movie stream URL or playback URL. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+            download_url:
+              type: string
+              format: uri-reference
+              description: Movie download URL when available. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+            qualities:
+              type: array
+              items:
+                $ref: "#/components/schemas/VideoQuality"
+            videos:
+              type: array
+              items:
+                $ref: "#/components/schemas/VideoSource"
+    ShowSummary:
+      description: Summary show fields used in catalog listings, before expanding to the full Show detail.
+      type: object
+      additionalProperties: true
+      required: [id]
+      x-kodi-observed-required:
+        - id
+        - name
+        - poster_thumb
+        - year
+        - tmdb_id
+        - imdb_id
+        - imdb_rating
+        - backdrop_url
+        - array_genres
+        - array_countries
+        - desc
+        - ended
+        - length
+        - newest_video
+        - user_popularity
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        slug:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        plot:
+          type: string
+        description:
+          type: string
+        poster:
+          $ref: "#/components/schemas/ImageUrl"
+        poster_url:
+          $ref: "#/components/schemas/ImageUrl"
+        poster_thumb:
+          $ref: "#/components/schemas/ImageUrl"
+        backdrop:
+          $ref: "#/components/schemas/ImageUrl"
+        backdrop_url:
+          $ref: "#/components/schemas/ImageUrl"
+        fanart:
+          $ref: "#/components/schemas/ImageUrl"
+        imdb_id:
+          type: string
+        tmdb_id:
+          oneOf:
+            - type: integer
+            - type: string
+        rating:
+          $ref: "#/components/schemas/Rating"
+        imdb_rating:
+          $ref: "#/components/schemas/Rating"
+        year:
+          $ref: "#/components/schemas/Year"
+        release_year:
+          $ref: "#/components/schemas/Year"
+        genres:
+          $ref: "#/components/schemas/StringOrStringArray"
+        array_genres:
+          type: array
+          items:
+            type: string
+        countries:
+          $ref: "#/components/schemas/StringOrStringArray"
+        array_countries:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        ended:
+          type: boolean
+        duration:
+          $ref: "#/components/schemas/DurationValue"
+        length:
+          $ref: "#/components/schemas/DurationValue"
+        newest_video:
+          type: integer
+          description: Unix timestamp (seconds) of the most recently published episode, as observed in live Kodi API responses.
+        popularity:
+          oneOf:
+            - type: integer
+            - type: number
+        user_popularity:
+          oneOf:
+            - type: integer
+            - type: number
+        desc:
+          type: string
+    Show:
+      description: Full show detail with seasons and episodes.
+      allOf:
+        - $ref: "#/components/schemas/ShowSummary"
+        - type: object
+          additionalProperties: true
+          properties:
+            imdb_id:
+              type: string
+            tmdb_id:
+              oneOf:
+                - type: integer
+                - type: string
+            seasons:
+              type: integer
+              minimum: 0
+              description: Season count as integer, as observed in live Kodi API responses (e.g. 1).
+            episodes:
+              type: array
+              items:
+                $ref: "#/components/schemas/Episode"
+    Episode:
+      description: Episode playback detail with stream URLs, qualities, subtitles, and metadata.
+      type: object
+      additionalProperties: true
+      required: [id]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        video_id:
+          $ref: "#/components/schemas/Id"
+        show_id:
+          $ref: "#/components/schemas/Id"
+        season:
+          type: integer
+          minimum: 0
+        number:
+          type: integer
+          minimum: 0
+        episode:
+          type: integer
+          minimum: 0
+        title:
+          type: string
+        name:
+          type: string
+          description: Episode title in show episode lists; movie name in movie detail responses.
+        show_name:
+          type: string
+        plot:
+          type: string
+        description:
+          type: string
+        airdate:
+          $ref: "#/components/schemas/DateLike"
+        air_date:
+          $ref: "#/components/schemas/DateLike"
+        premiere_date:
+          $ref: "#/components/schemas/DateLike"
+        available:
+          type: boolean
+        url:
+          type: string
+          format: uri-reference
+          description: Episode stream URL or playback URL. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+        download_url:
+          type: string
+          format: uri-reference
+          description: Episode download URL when available. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+        resolution:
+          $ref: "#/components/schemas/ResolutionLabel"
+        qualities:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoQuality"
+        subtitles:
+          $ref: "#/components/schemas/SubtitlesValue"
+        duration:
+          $ref: "#/components/schemas/DurationValue"
+        created_at:
+          $ref: "#/components/schemas/DateTimeLike"
+        updated_at:
+          $ref: "#/components/schemas/DateTimeLike"
+    VideoSource:
+      description: A single video stream source with URL, resolution, quality, and MIME type.
+      type: object
+      additionalProperties: true
+      properties:
+        url:
+          type: string
+          format: uri-reference
+          description: Subtitle URL. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+        download_url:
+          type: string
+          format: uri-reference
+          description: Subtitle download URL. May be signed; never persist in fixtures, database, preferences, diagnostics, or logs.
+        resolution:
+          $ref: "#/components/schemas/ResolutionLabel"
+        quality:
+          $ref: "#/components/schemas/ResolutionLabel"
+        mime_type:
+          type: string
+        type:
+          type: string
+          enum: [progressive, adaptive, fragmented, unknown]
+    VideoQuality:
+      description: Video quality variant with resolution, bitrate, dimensions, and playback URL.
+      type: object
+      additionalProperties: true
+      properties:
+        label:
+          $ref: "#/components/schemas/ResolutionLabel"
+        resolution:
+          $ref: "#/components/schemas/ResolutionLabel"
+        url:
+          type: string
+          format: uri-reference
+        width:
+          type: integer
+        height:
+          type: integer
+        bitrate:
+          type: integer
+    SubtitleTrack:
+      description: A single subtitle track with language, code, URL, and format.
+      type: object
+      additionalProperties: true
+      x-kodi-observed-required: [lang, url]
+      x-live-drift-note: Subtitle field names and URL stability must be tightened after sanitized live fixtures.
+      properties:
+        lang:
+          $ref: "#/components/schemas/LanguageCode"
+        language:
+          $ref: "#/components/schemas/LanguageCode"
+        code:
+          $ref: "#/components/schemas/LanguageCode"
+        label:
+          type: string
+        url:
+          type: string
+          format: uri-reference
+        download_url:
+          type: string
+          format: uri-reference
+        format:
+          type: string
+          enum: [srt, vtt, ass, unknown]
+    SubtitlesValue:
+      description: Subtitles field that may be a track array, a URL map keyed by language, or a single URL string. Shape must be tightened after sanitized live fixtures.
+      oneOf:
+        - type: array
+          items:
+            $ref: "#/components/schemas/SubtitleTrack"
+        - type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+                format: uri-reference
+              - $ref: "#/components/schemas/SubtitleTrack"
+              - type: array
+                items:
+                  $ref: "#/components/schemas/SubtitleTrack"
+    ErrorResponse:
+      description: Standard error response with message, status code, and optional detail object.
+      type: object
+      additionalProperties: true
+      properties:
+        error:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        message:
+          type: string
+        status:
+          type: integer
+        code:
+          oneOf:
+            - type: integer
+            - type: string
+    UnexpectedHtmlResponse:
+      type: string
+      description: Unexpected HTML from an API endpoint. Must map to a typed network/service error, not DTO parsing or web scraping.
+    PaginationMeta:
+      description: Pagination metadata with current page, per-page count, total items, and total pages.
+      type: object
+      additionalProperties: true
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    Id:
+      description: Numeric resource identifier, as observed in live Kodi API responses.
+      type: integer
+    Year:
+      type: string
+      description: Four-digit year as string, as observed in live Kodi API responses (e.g. "2007").
+    Rating:
+      type: number
+      minimum: 0
+      maximum: 10
+      description: Numeric rating as observed in live Kodi API responses (e.g. 7.1).
+    DurationValue:
+      type: integer
+      description: Duration as integer (minutes or seconds), as observed in live Kodi API responses (e.g. 125).
+    DateLike:
+      type: integer
+      description: Unix timestamp (seconds), as observed in live Kodi API responses.
+    DateTimeLike:
+      type: integer
+      description: Unix timestamp (seconds), as observed in live Kodi API responses (e.g. updated_at, created_at).
+    ImageUrl:
+      type: string
+      format: uri-reference
+      description: Image URL as string, as observed in live Kodi API responses.
+    LanguageCode:
+      description: ISO language code, optionally with region suffix (e.g. "en", "pt-BR").
+      type: string
+      pattern: "^[a-z]{2,3}(-[A-Z]{2})?$"
+      examples: [en, ru, es, it, pt, fr, de, pl, tr, cs]
+    ResolutionLabel:
+      description: Video resolution label as observed in Kodi API responses (e.g. "1080p", "720p").
+      type: string
+      examples: [auto, 1080p, 720p, 480p, 360p, 240p]
+    StringOrStringArray:
+      description: Value that may be a single string or an array of strings, as observed in live Kodi API responses.
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string

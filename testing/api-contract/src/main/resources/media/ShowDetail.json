@@ -1,0 +1,197 @@
+{
+  "id": 3381,
+  "name": "The Lost Flowers of Alice Hart",
+  "imdb_rating": 7.8,
+  "year": "2023",
+  "desc": "After losing her parents to a mysterious fire, nine-year-old Alice Hart is raised by her grandmother June on a flower farm where she learns there are secrets within secrets. But years on, an unearthed betrayal sees Alice forced to face her past.",
+  "slug": "the-lost-flowers-of-alice-hart",
+  "ended": true,
+  "length": null,
+  "user_popularity": 4,
+  "array_genres": [
+    "Drama",
+    "Mystery"
+  ],
+  "array_countries": [
+    "AU"
+  ],
+  "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/3381/a3zbH3tR4Oy99LKB8mduNuhNR8T.jpg",
+  "imdb_id": "9174718",
+  "kinopoisk_id": "",
+  "tmdb_id": "125816",
+  "myshows_id": 78209,
+  "episodes": [
+    {
+      "id": 82476,
+      "name": "Part 1: Black Fire Orchid",
+      "plot": "When nine-year-old Alice Hart survives a terrible home fire, she's taken by her estranged grandmother June to Thornfield, a remote rural property with vast flower fields and many secrets.",
+      "season": 1,
+      "number": "1",
+      "resolution": "HD",
+      "watched_media_count": 2362,
+      "myshows_id": 18369827,
+      "info": {
+        "smil": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633.smil",
+        "thumbs": 738,
+        "original": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633_240p.mp4",
+        "360p": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633_360p.mp4",
+        "480p": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633_480p.mp4",
+        "720p": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633_720p.mp4",
+        "1080p": "/uploads/video/file/82476/The.Lost.Flowers.Of.Alice.Hart.S01E01.Part.1.Black.Fire.Orchid.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137633_1080p.mp4"
+      },
+      "airdate": "2023-08-04",
+      "updated_at": 1737240351
+    },
+    {
+      "id": 82474,
+      "name": "Part 2: Wattle",
+      "plot": "As Alice is introduced to life at Thornfield, it's her 'aunt' Candy Blue, and The Flowers – the women for whom Thornfield is a refuge – who make Alice feel welcomed. Although June claims that Alice's mother Agnes was never at Thornfield, at every turn, Alice feels her mother's presence.",
+      "season": 1,
+      "number": "2",
+      "resolution": "HD",
+      "watched_media_count": 1923,
+      "myshows_id": 18369828,
+      "info": {
+        "smil": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514.smil",
+        "thumbs": 724,
+        "original": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514_240p.mp4",
+        "360p": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514_360p.mp4",
+        "480p": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514_480p.mp4",
+        "720p": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514_720p.mp4",
+        "1080p": "/uploads/video/file/82474/The.Lost.Flowers.Of.Alice.Hart.S01E02.Part.2.Wattle.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137514_1080p.mp4"
+      },
+      "airdate": "2023-08-04",
+      "updated_at": 1738154797
+    },
+    {
+      "id": 82475,
+      "name": "Part 3: Lantern Bush",
+      "plot": "When Alice finally releases her voice, she demands answers about her family. Instead, June continues weaving a web of deceit to hide the painful and shame-filled past.",
+      "season": 1,
+      "number": "3",
+      "resolution": "HD",
+      "watched_media_count": 1942,
+      "myshows_id": 18369822,
+      "info": {
+        "smil": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573.smil",
+        "thumbs": 692,
+        "original": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573_240p.mp4",
+        "360p": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573_360p.mp4",
+        "480p": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573_480p.mp4",
+        "720p": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573_720p.mp4",
+        "1080p": "/uploads/video/file/82475/The.Lost.Flowers.Of.Alice.Hart.S01E03.Part.3.Lantern.Bush.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691137573_1080p.mp4"
+      },
+      "airdate": "2023-08-04",
+      "updated_at": 1738143778
+    },
+    {
+      "id": 82620,
+      "name": "Part 4: River Lily",
+      "plot": "After uncovering evidence of the shocking extent of her grandmother's lies and manipulations, Alice, now 24, flees Thornfield and begins building a new life in a desert town called Agnes Bluff.",
+      "season": 1,
+      "number": "4",
+      "resolution": "HD",
+      "watched_media_count": 1857,
+      "myshows_id": 18369823,
+      "info": {
+        "smil": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420.smil",
+        "thumbs": 749,
+        "original": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420_240p.mp4",
+        "360p": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420_360p.mp4",
+        "480p": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420_480p.mp4",
+        "720p": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420_720p.mp4",
+        "1080p": "/uploads/video/file/82620/The.Lost.Flowers.Of.Alice.Hart.S01E04.Part.4.River.Lily.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1691690420_1080p.mp4"
+      },
+      "airdate": "2023-08-10",
+      "updated_at": 1738149924
+    },
+    {
+      "id": 82827,
+      "name": "Part 5: Desert Oak",
+      "plot": "As Twig searches for Alice, Candy confronts June about the past. In Agnes Bluff, Alice believes she has found in Dylan someone who finally understands her, and who she can trust with everything.",
+      "season": 1,
+      "number": "5",
+      "resolution": "HD",
+      "watched_media_count": 1565,
+      "myshows_id": 18369824,
+      "info": {
+        "smil": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074.smil",
+        "thumbs": 607,
+        "original": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074_240p.mp4",
+        "360p": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074_360p.mp4",
+        "480p": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074_480p.mp4",
+        "720p": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074_720p.mp4",
+        "1080p": "/uploads/video/file/82827/The.Lost.Flowers.Of.Alice.Hart.S01E05.Part.5.Desert.Oak.1080p.AMZN.WEB-DL.DDP5.1.H.264-CMRG_1692342074_1080p.mp4"
+      },
+      "airdate": "2023-08-18",
+      "updated_at": 1738154889
+    },
+    {
+      "id": 82972,
+      "name": "Part 6: Wheel of Fire",
+      "plot": "Away from the oppression of Thornfield, Twig reconnects with her culture and her own grief. As June finally learns to speak the truth, Alice’s dream of Dylan as her loving counterpart begins to transform into a nightmare.",
+      "season": 1,
+      "number": "6",
+      "resolution": "HD",
+      "watched_media_count": 1793,
+      "myshows_id": 18369825,
+      "info": {
+        "smil": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075.smil",
+        "thumbs": 701,
+        "original": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075_240p.mp4",
+        "360p": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075_360p.mp4",
+        "480p": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075_480p.mp4",
+        "720p": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075_720p.mp4",
+        "1080p": "/uploads/video/file/82972/the.lost.flowers.of.alice.hart.s01e06.1080p.web.h264-nhtfs_1692891075_1080p.mp4"
+      },
+      "airdate": "2023-08-25",
+      "updated_at": 1738154976
+    },
+    {
+      "id": 83092,
+      "name": "Part 7: Sturt's Desert Pea",
+      "plot": "Alice is pushed to physical and emotional breaking point, but by moving through the turmoil, and learning to love and forgive herself and her family, she gathers the strength to powerfully use her own voice.",
+      "season": 1,
+      "number": "7",
+      "resolution": "HD",
+      "watched_media_count": 1685,
+      "myshows_id": 18369826,
+      "info": {
+        "smil": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854.smil",
+        "thumbs": 744,
+        "original": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854.mkv"
+      },
+      "versions": {
+        "240p": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854_240p.mp4",
+        "360p": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854_360p.mp4",
+        "480p": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854_480p.mp4",
+        "720p": "/uploads/video/file/83092/The.Lost.Flowers.Of.Alice.Hart.S01E07.720p.WEB.h264-ETHEL_1693500854_720p.mp4"
+      },
+      "airdate": "2023-09-01",
+      "updated_at": 1738162111
+    }
+  ],
+  "poster": "https://media.subsloth.invalid/uploads/show/poster/3381/sNeGAamuke1a2I4ndcaE0bnukh4.jpg",
+  "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/3381/thumb_sNeGAamuke1a2I4ndcaE0bnukh4.jpg",
+  "newest_video": 1693498934,
+  "updated_at": 1777660951,
+  "seasons": 1
+}
