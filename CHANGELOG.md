@@ -1,3 +1,10 @@
+# 1.0.0 (2026-05-20)
+
+
+### Features
+
+* initial SubSloth commit - Android streaming client with dual-subtitle language learning ([66affab](https://github.com/knirski/subsloth/commit/66affab1fd3c9ce059caf8bc02073afc834d65f7))
+
 # Changelog
 
 ## 0.1.0 (2026-05-20)
