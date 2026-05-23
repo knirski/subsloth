@@ -83,7 +83,7 @@ val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
 ### Thread safety
 
-Use `.update {}` (atomic read-modify-write) instead of direct `.value =` assignment when multiple threads or coroutines may read and write concurrently. The current codebase uses `.value =` directly, which is safe only because all writes happen on `Dispatchers.Main`. If dispatcher injection is added, migrate to `.update {}`.
+Use `.update {}` to ensure atomic read-modify-write operations. While `.value` assignment is itself thread-safe, updating state via `_uiState.value = _uiState.value.copy(...)` is not atomic — the read and the write are separate steps, and concurrent coroutines (even on `Dispatchers.Main`) can race. The current codebase uses `.value =` directly, which is safe only because all writes happen sequentially on `Dispatchers.Main`. If dispatcher injection or concurrent writes are added, migrate to `.update {}`.
 
 ```kotlin
 // Preferred for thread safety (future pattern):
