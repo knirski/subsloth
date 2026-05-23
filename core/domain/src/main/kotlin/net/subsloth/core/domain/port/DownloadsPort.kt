@@ -1,6 +1,7 @@
 package net.subsloth.core.domain.port
 
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.media.Media
 
 /**
@@ -16,8 +17,8 @@ interface DownloadsPort {
     suspend fun enqueue(mediaId: Media.MediaId): Result<Unit>
 
     /** Cancels an active download. */
-    suspend fun cancel(localId: String): Result<Unit>
+    suspend fun cancel(localId: LocalMediaIdentifier): Result<Unit>
 
     /** Removes a completed download and its local files. */
-    suspend fun remove(localId: String): Result<Unit>
+    suspend fun remove(localId: LocalMediaIdentifier): Result<Unit>
 }

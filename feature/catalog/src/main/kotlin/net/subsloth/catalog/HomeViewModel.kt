@@ -1,5 +1,7 @@
 package net.subsloth.catalog
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,27 +15,35 @@ import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 
+@Stable
 sealed interface HomeUiState {
     data object Loading : HomeUiState
 
+    @Immutable
     data class Content(val rows: List<HomeRow>, val selectedTab: HomeTab, val isRefreshing: Boolean = false) :
         HomeUiState
 }
 
+@Stable
 sealed interface HomeRow {
     val label: String?
     val items: List<Media>
 
+    @Immutable
     data class ContinueWatching(override val items: List<Media>, override val label: String? = "Continue Watching") :
         HomeRow
 
+    @Immutable
     data class AvailableOffline(override val items: List<Media>, override val label: String? = "Available Offline") :
         HomeRow
 
+    @Immutable
     data class Movies(override val items: List<Media>, override val label: String? = "Movies") : HomeRow
 
+    @Immutable
     data class Shows(override val items: List<Media>, override val label: String? = "Shows") : HomeRow
 
+    @Immutable
     data class Recency(override val items: List<Media>, override val label: String) : HomeRow
 }
 

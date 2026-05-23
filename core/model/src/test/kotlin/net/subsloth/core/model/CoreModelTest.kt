@@ -11,11 +11,11 @@ import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.PaymentLimitError
 import net.subsloth.core.model.error.QualityError
-import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
-import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Quality

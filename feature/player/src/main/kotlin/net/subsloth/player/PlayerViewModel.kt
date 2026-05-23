@@ -1,6 +1,8 @@
 package net.subsloth.player
 
 import android.annotation.SuppressLint
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -24,8 +26,11 @@ import net.subsloth.core.model.playback.VideoSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+@Stable
 sealed interface PlayerUiState {
     data object Loading : PlayerUiState
+
+    @Immutable
     data class Content(
         val title: String,
         val positionSeconds: Long,
@@ -149,24 +154,15 @@ class PlayerViewModel(
     }
 
     fun setPlaybackSpeed(speed: Float) {
-        playerController?.getPlayer()?.setPlaybackSpeed(speed)
-        updatePlayingState()
+        playerController?.setPlaybackSpeed(speed)
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        _uiState.value = state.copy(playbackSpeed = speed)
     }
 
     fun selectSubtitle(subtitle: Subtitle?) {
-        val exoPlayer = playerController?.getPlayer() ?: return
-        val params = exoPlayer.trackSelectionParameters
-            .buildUpon()
-            .apply {
-                if (subtitle != null) {
-                    setPreferredTextLanguage(subtitle.language.value)
-                } else {
-                    setPreferredTextLanguage(null)
-                }
-            }
-            .build()
-        exoPlayer.trackSelectionParameters = params
-        updatePlayingState()
+        playerController?.setPreferredTextLanguage(subtitle?.language?.value)
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        _uiState.value = state.copy(selectedSubtitle = subtitle)
     }
 
     @Suppress("UnusedParameter")

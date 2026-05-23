@@ -1,8 +1,8 @@
 package net.subsloth.core.model.media
 
 import net.subsloth.core.model.Availability
-import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 

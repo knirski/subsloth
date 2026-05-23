@@ -1,5 +1,7 @@
 package net.subsloth.catalog
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -13,12 +15,15 @@ import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 
+@Stable
 sealed interface SearchUiState {
     data object Idle : SearchUiState
 
+    @Immutable
     data class Results(val query: String, val items: List<Media>, val isLoading: Boolean = false) : SearchUiState
 }
 
+@Immutable
 data class SearchFilters(
     val type: MediaTypeFilter = MediaTypeFilter.ALL,
     val genre: String? = null,

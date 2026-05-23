@@ -1,13 +1,23 @@
 # SubSloth ProGuard Rules
 
-# Keep Hilt generated classes
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }
--keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
-
 # Keep Kotlin coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Keep Navigation3 serializable route keys (required for release builds)
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class net.subsloth.**$serializer { *; }
+-keepclassmembers class net.subsloth.navigation.** {
+    *** Companion;
+}
+-keepclasseswithmembers class net.subsloth.navigation.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
 
 # Keep Retrofit interfaces
 -keep,allowobfuscation interface * {

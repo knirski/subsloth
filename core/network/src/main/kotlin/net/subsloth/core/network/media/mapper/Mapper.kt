@@ -4,13 +4,13 @@ package net.subsloth.core.network.media.mapper
 
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource
 import net.subsloth.core.model.identifier.LanguageCode
-import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
-import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.MovieSummary
