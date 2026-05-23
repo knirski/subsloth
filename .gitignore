@@ -54,3 +54,6 @@ kodi_plugin/
 
 # Git worktrees
 .worktrees/
+
+# OpenCode agent metadata
+.omo/
