@@ -155,12 +155,14 @@ class PlayerViewModel(
 
     fun setPlaybackSpeed(speed: Float) {
         playerController?.setPlaybackSpeed(speed)
-        updatePlayingState()
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        _uiState.value = state.copy(playbackSpeed = speed)
     }
 
     fun selectSubtitle(subtitle: Subtitle?) {
         playerController?.setPreferredTextLanguage(subtitle?.language?.value)
-        updatePlayingState()
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        _uiState.value = state.copy(selectedSubtitle = subtitle)
     }
 
     @Suppress("UnusedParameter")

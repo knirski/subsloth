@@ -26,12 +26,13 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun setPlaybackSpeed(speed: Float) {
+        require(speed > 0f) { "Playback speed must be positive, was $speed" }
         player?.setPlaybackSpeed(speed)
     }
 
     fun setPreferredTextLanguage(language: String?) {
-        val currentParams = player?.trackSelectionParameters ?: return
-        player?.trackSelectionParameters = currentParams
+        val p = player ?: return
+        p.trackSelectionParameters = p.trackSelectionParameters
             .buildUpon()
             .setPreferredTextLanguage(language)
             .build()

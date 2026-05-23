@@ -11,11 +11,11 @@
 -keepclasseswithmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep,includedescriptorclasses class net.subsloth.**$$serializer { *; }
--keepclassmembers class net.subsloth.** {
+-keep,includedescriptorclasses class net.subsloth.**$serializer { *; }
+-keepclassmembers class net.subsloth.navigation.** {
     *** Companion;
 }
--keepclasseswithmembers class net.subsloth.** {
+-keepclasseswithmembers class net.subsloth.navigation.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
