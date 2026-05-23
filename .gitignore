@@ -57,3 +57,28 @@ kodi_plugin/
 
 # OpenCode agent metadata
 .omo/
+
+# Installed external agent skills (not authored in this repo)
+.opencode/skills/android-*/
+.opencode/skills/compose-animations/
+.opencode/skills/compose-best-practices/
+.opencode/skills/compose-focus-navigation/
+.opencode/skills/compose-modifier-and-layout-style/
+.opencode/skills/compose-multiplatform-best-practices/
+.opencode/skills/compose-perf-*/
+.opencode/skills/compose-recomposition-performance/
+.opencode/skills/compose-side-effects/
+.opencode/skills/compose-slot-api-pattern/
+.opencode/skills/compose-stability-diagnostics/
+.opencode/skills/compose-state-*/
+.opencode/skills/compose-ui-testing-patterns/
+.opencode/skills/firebase-*/
+.opencode/skills/google-*/
+.opencode/skills/kmp-*/
+.opencode/skills/kotlin-coroutines-best-practices/
+.opencode/skills/kotlin-coroutines-structured-concurrency/
+.opencode/skills/kotlin-flow-state-event-modeling/
+.opencode/skills/kotlin-multiplatform-expect-actual/
+.opencode/skills/kotlin-types-value-class/
+.opencode/skills/play-*/
+.opencode/skills/revenuecat-*/
