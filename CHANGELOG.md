@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/knirski/subsloth/compare/v1.0.0...v1.0.1) (2026-05-23)
+
+
+### Bug Fixes
+
+* address PR [#3](https://github.com/knirski/subsloth/issues/3) review comments ([3f96690](https://github.com/knirski/subsloth/commit/3f966904f71b646e2325dfc9a667a5d973d4cda2))
+* tighten code hygiene from comprehensive review ([ac7adc6](https://github.com/knirski/subsloth/commit/ac7adc6f723d7443d8bfe5225dda7b0890bee7b9))
+
 # 1.0.0 (2026-05-20)
 
 
