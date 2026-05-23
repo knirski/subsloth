@@ -1,5 +1,7 @@
 package net.subsloth.details
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,9 +17,11 @@ import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.progress.PlaybackProgress
 
+@Stable
 sealed interface DetailUiState {
     data object Loading : DetailUiState
 
+    @Immutable
     data class MovieContent(
         val details: MovieDetails,
         val isFavorite: Boolean = false,
@@ -26,6 +30,7 @@ sealed interface DetailUiState {
         val progressFraction: Double? = null,
     ) : DetailUiState
 
+    @Immutable
     data class ShowContent(
         val details: ShowDetails,
         val selectedSeason: Int,
@@ -35,6 +40,7 @@ sealed interface DetailUiState {
         val progressFraction: Double? = null,
     ) : DetailUiState
 
+    @Immutable
     data class Error(val message: String) : DetailUiState
 }
 

@@ -25,7 +25,17 @@ class MediaPlaybackController(private val application: Application) {
         return exoPlayer
     }
 
-    fun getPlayer(): ExoPlayer? = player
+    fun setPlaybackSpeed(speed: Float) {
+        player?.setPlaybackSpeed(speed)
+    }
+
+    fun setPreferredTextLanguage(language: String?) {
+        val currentParams = player?.trackSelectionParameters ?: return
+        player?.trackSelectionParameters = currentParams
+            .buildUpon()
+            .setPreferredTextLanguage(language)
+            .build()
+    }
 
     fun release() {
         player?.release()

@@ -8,8 +8,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
-import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media

@@ -1,5 +1,7 @@
 package net.subsloth.auth
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,17 +15,20 @@ import kotlinx.coroutines.launch
  * Modelled as a sealed interface so invalid flag combinations
  * (e.g. isLoading && isLoggedIn) are impossible at the type level.
  */
+@Stable
 sealed interface LoginUiState {
     /** Credentials are being validated. */
     data object Loading : LoginUiState
 
     /** Login form is displayed. */
+    @Immutable
     data class LoginForm(val hasOfflineLibrary: Boolean = false, val error: String? = null) : LoginUiState
 
     /** User is authenticated; navigation to catalog will follow. */
     data object LoggedIn : LoginUiState
 
     /** Expired or unexpected session state — repair UI is shown. */
+    @Immutable
     data class AuthRepair(val hasOfflineLibrary: Boolean = false) : LoginUiState
 }
 
