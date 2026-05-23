@@ -148,14 +148,14 @@ var password by rememberSaveable { mutableStateOf("") }
 Use `LaunchedEffect` for side effects tied to a lifecycle or state key. The coroutine is cancelled and relaunched when the key changes.
 
 ```kotlin
-LaunchedEffect(unit) { viewModel.events.collect { event -> handleEvent(event) } }
+LaunchedEffect(Unit) { viewModel.events.collect { event -> handleEvent(event) } }
 ```
 
 For cleanup (removing listeners, unregistering receivers), use `DisposableEffect` with an `onDispose` block. Prefer `rememberUpdatedState` when the effect captures a lambda that might close over stale state.
 
 ```kotlin
 val currentOnClick by rememberUpdatedState(onClick)
-LaunchedEffect(unit) {
+LaunchedEffect(Unit) {
     someCallback.register { currentOnClick() }
 }
 ```

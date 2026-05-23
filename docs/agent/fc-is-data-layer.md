@@ -29,7 +29,7 @@ Entities live in `core/database/src/main/kotlin/net/subsloth/database/entity/Lib
 DAO pattern: `interface` annotated with `@Dao`. Methods return `Flow<List<T>>` for reactive reads. Write methods are `suspend` functions. Upsert uses `@Insert(onConflict = OnConflictStrategy.REPLACE)`. Delete methods use `@Delete` or `@Query("DELETE FROM ...")`.
 
 Example from `CachedOnlineMetadataDao`:
-```
+```kotlin
 @Dao
 interface CachedOnlineMetadataDao {
     @Query("SELECT * FROM cached_online_metadata WHERE profileKey = :profileKey AND contentType = :contentType")
@@ -49,7 +49,7 @@ DAOs are organized by entity in `core/database/src/main/kotlin/net/subsloth/data
 
 The Retrofit API interface is `Api` at `core/network/src/main/kotlin/net/subsloth/core/network/media/api/Api.kt`. All API methods are `suspend` functions returning DTO types directly (no `Call<T>` or `Response<T>` wrappers).
 
-```
+```kotlin
 interface Api {
     @GET("movies")
     suspend fun listMovies(...): MovieListResponse
@@ -68,7 +68,7 @@ The Retrofit instance is created as a singleton with a configured base URL and O
 `UserPreferences` at `core/preferences/src/main/kotlin/net/subsloth/preferences/UserPreferences.kt` wraps `DataStore<Preferences>`. Reads return `Flow<T>` via `dataStore.data.map {}`. Writes use `dataStore.edit {}`.
 
 Each preference key is namespaced by `AccountProfileKey`:
-```
+```kotlin
 private fun subtitleEnabledKey(profileKey: AccountProfileKey) =
     booleanPreferencesKey("${profileKey.value}_subtitle_enabled")
 ```
@@ -81,7 +81,7 @@ A `clearProfilePreferences()` method removes all keys for a given profile during
 
 `Mapper` at `core/network/src/main/kotlin/net/subsloth/core/network/media/mapper/Mapper.kt` is a pure `object` with all mapping functions. This is the FC/IS boundary. Pure domain types live in `:core:model`. External DTO formats live in `:core:network`. The mapper translates between them.
 
-```
+```kotlin
 fun mapMovieDetails(dto: DtoMovie): Result<MovieDetails> {
     val title = dto.title ?: dto.name
         ?: return Result.failure(DomainResultException(DecodeError.MissingFields(listOf("title"))))
@@ -128,7 +128,7 @@ Cache TTL uses timestamps stored in `UserPreferences` (`catalogCacheTimestamp`, 
 
 Room entities that belong to a specific account carry a `profileKey` column. DAO queries always filter by `profileKey`:
 
-```
+```kotlin
 @Query("SELECT * FROM favorites WHERE profileKey = :profileKey")
 fun getAllForProfile(profileKey: String): Flow<List<FavoriteEntity>>
 ```

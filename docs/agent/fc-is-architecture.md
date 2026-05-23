@@ -64,7 +64,7 @@ Existing policies: `SearchPolicy`, `QualityPolicy`, `DownloadPolicy`, `SubtitleP
 
 Dependencies flow inward toward zero-dependency modules:
 
-```
+```text
 :feature:* -> :core:network -> :core:domain -> :core:model
 :feature:* -> :core:database -> :core:domain -> :core:model
 :feature:* -> :core:preferences -> :core:model
@@ -75,7 +75,7 @@ Dependencies flow inward toward zero-dependency modules:
 - `:core:domain` depends on `:core:model` and defines port interfaces and policy objects.
 - `:core:network` depends on `:core:domain` and `:core:model` and contains DTOs and mappers.
 - `:feature:*` modules depend on core modules and implement the shell.
-- No module outside `:core:model` and `:core:domain` depends on Android framework (architecture tests enforce this).
+- No module within the Functional Core (`:core:model` and `:core:domain`) depends on the Android framework; this boundary is enforced by architecture tests. Shell modules (`:core:network`, `:core:database`, `:core:media`, `:core:preferences`, `:feature:*`, `:app`) do depend on Android by design.
 
 Architecture tests in `:app` verify that core imports contain no Android shell packages, enforcing the boundary at build time.
 

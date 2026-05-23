@@ -78,7 +78,7 @@ The catalog at `gradle/libs.versions.toml` declares:
 
 To add or update a version: edit the `[versions]` key, then update the
 `[libraries]` or `[plugins]` entry that references it. Run `./gradlew
-sync` to verify the catalog resolves.
+tasks` to verify the catalog resolves.
 
 ## AGP Upgrade Procedure
 
@@ -121,7 +121,7 @@ compile toolchain is JDK 17, set via `jvmToolchain(17)` in every
 convention plugin. The toolchain is discovered through
 `JAVA17_HOME` env var, configured in `gradle.properties`:
 
-```
+```properties
 org.gradle.java.installations.fromEnv=JAVA17_HOME
 ```
 
@@ -152,7 +152,7 @@ To change the compile toolchain version:
 ### Post-migration
 - [ ] Run screenshot tests (Roborazzi) if UI modules changed.
 - [ ] Run lint: `./gradlew lint` -- verify no new warnings.
-- [ ] Run `./gradlew build` clean one final time.
+- [ ] Run `./gradlew clean build` one final time.
 - [ ] Commit with message: `chore: upgrade AGP to X.Y.Z` or similar.
 
 ## Rollback
