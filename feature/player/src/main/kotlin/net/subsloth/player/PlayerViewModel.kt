@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.PlaybackException
+import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -510,12 +511,26 @@ class PlayerViewModel(
 
     private fun categorizeError(error: Throwable): PlaybackError {
         val message = error.message ?: "Playback error"
+
+        var responseCode = -1
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is InvalidResponseCodeException) {
+                responseCode = current.responseCode
+                break
+            }
+            current = current.cause
+        }
+
         val errorCode = (error as? PlaybackException)?.errorCode
 
         return when {
-            errorCode == PlaybackException.ERROR_CODE_AUTHENTICATION_EXPIRED || isAuthError(error) ->
+            responseCode == HTTP_UNAUTHORIZED ||
+                errorCode == PlaybackException.ERROR_CODE_AUTHENTICATION_EXPIRED ||
+                isAuthError(error) ->
                 PlaybackError.AuthFailure(message)
-            errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
+            responseCode == HTTP_FORBIDDEN ||
+                errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
                 errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
                 isStreamUrlError(error) ->
                 PlaybackError.StreamUrlExpired(message)
@@ -534,5 +549,7 @@ class PlayerViewModel(
         private const val CONTENT_TYPE_EPISODE = "episode"
         private const val CONTENT_TYPE_SHOW = "show"
         private val PROGRESS_UPDATE_INTERVAL: Duration = 1.seconds
+        private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_FORBIDDEN = 403
     }
 }
