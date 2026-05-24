@@ -94,6 +94,12 @@ class PlayerViewModel(
     private val loadPreferredLanguage: suspend () -> LanguageCode = {
         LanguageCode("en")
     },
+    /** Resolves the [ShowId] for a given [EpisodeId] so next-episode flow works
+     * when the player is opened directly for an episode. Returns `null` if the
+     * show cannot be resolved. */
+    private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
+    /** Stops the [PlaybackService] when playback ends or the player is released. */
+    private val stopService: () -> Unit = {},
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
@@ -233,9 +239,13 @@ class PlayerViewModel(
     }
 
     private fun populateNextEpisode(source: VideoSource) {
-        if (currentMediaId !is Media.MediaId.Show) return
         viewModelScope.launch {
-            fetchEpisodes(currentMediaId as Media.MediaId.Show).onSuccess { episodes ->
+            val showId = when (val id = currentMediaId) {
+                is Media.MediaId.Show -> id.value
+                is Media.MediaId.Episode -> resolveShowIdForEpisode(id.value)
+                else -> null
+            } ?: return@launch
+            fetchEpisodes(Media.MediaId.Show(showId)).onSuccess { episodes ->
                 val currentEpisodeId = (source.mediaId as? Media.MediaId.Episode)?.value
                 if (currentEpisodeId != null) {
                     val sorted = episodes.sortedWith(
@@ -359,6 +369,7 @@ class PlayerViewModel(
         progressJob?.cancel()
         super.onCleared()
         playerController?.release()
+        stopService()
     }
 
     private fun startProgressTracking() {
@@ -529,10 +540,7 @@ class PlayerViewModel(
                 errorCode == PlaybackException.ERROR_CODE_AUTHENTICATION_EXPIRED ||
                 isAuthError(error) ->
                 PlaybackError.AuthFailure(message)
-            responseCode == HTTP_FORBIDDEN ||
-                errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
-                errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
-                isStreamUrlError(error) ->
+            responseCode == HTTP_FORBIDDEN || isStreamUrlError(error) ->
                 PlaybackError.StreamUrlExpired(message)
             else -> PlaybackError.Recoverable(message)
         }

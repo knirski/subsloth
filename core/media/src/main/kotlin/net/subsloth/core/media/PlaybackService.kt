@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import androidx.core.app.NotificationCompat
 
 /**
  * Foreground service for media playback.
@@ -17,6 +18,9 @@ import android.os.IBinder
  * audio/video playback in the background on Android 14+. This service does
  * NOT start from [Intent.ACTION_BOOT_COMPLETED] — it is started only when
  * the player transitions to background or TV mode.
+ *
+ * Send [ACTION_STOP] to stop the service and remove the notification when
+ * playback ends or the player is released.
  */
 class PlaybackService : Service() {
 
@@ -26,6 +30,12 @@ class PlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -55,14 +65,15 @@ class PlaybackService : Service() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(): Notification = Notification.Builder(this, CHANNEL_ID)
+    private fun buildNotification(): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle(NOTIFICATION_TITLE)
         .setSmallIcon(android.R.drawable.ic_media_play)
         .setCategory(Notification.CATEGORY_TRANSPORT)
         .setVisibility(Notification.VISIBILITY_PUBLIC)
         .build()
 
-    private companion object {
+    internal companion object {
+        internal const val ACTION_STOP = "net.subsloth.core.media.action.STOP"
         private const val CHANNEL_ID = "playback"
         private const val CHANNEL_NAME = "Media Playback"
         private const val CHANNEL_DESCRIPTION = "Shows when media is playing in the background"

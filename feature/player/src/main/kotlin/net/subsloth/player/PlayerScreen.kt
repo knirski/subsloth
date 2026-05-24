@@ -254,7 +254,7 @@ private fun PlaybackControls(
 
 @Composable
 private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
-    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         PlaybackSpeed.entries.forEach { speed ->
             Button(
                 onClick = { onSelect(speed.value) },
@@ -262,7 +262,11 @@ private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
             ) {
                 Text(
                     text = "${speed.value}x",
-                    color = if (speed.value == currentSpeed) Color.Yellow else Color.White,
+                    color = if (speed.value == currentSpeed) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
         }
@@ -271,7 +275,7 @@ private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
 
 @Composable
 private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSelect: (String) -> Unit) {
-    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         qualities.forEach { quality ->
             val label = quality.info.label ?: quality.info.resolution.label
             Button(
@@ -280,7 +284,11 @@ private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSe
             ) {
                 Text(
                     text = label,
-                    color = if (label == selectedLabel) Color.Yellow else Color.White,
+                    color = if (label == selectedLabel) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
         }
@@ -289,19 +297,17 @@ private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSe
 
 @Composable
 private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSelect: (Subtitle?) -> Unit) {
-    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         Button(
             onClick = { onSelect(null) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         ) {
             Text(
                 stringResource(R.string.player_subtitles_off),
-                color = if (selected ==
-                    null
-                ) {
-                    Color.Yellow
+                color = if (selected == null) {
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    Color.White
+                    MaterialTheme.colorScheme.onSurface
                 },
             )
         }
@@ -312,7 +318,11 @@ private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSel
             ) {
                 Text(
                     text = subtitle.languageDisplayName ?: subtitle.language.value,
-                    color = if (selected?.language == subtitle.language) Color.Yellow else Color.White,
+                    color = if (selected?.language == subtitle.language) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
         }
