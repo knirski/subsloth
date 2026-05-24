@@ -89,7 +89,7 @@ public class NoFullyQualifiedNames(config: Config) :
             val receiver =
                 try {
                     current.receiverExpression
-                } catch (_: Exception) {
+                } catch (_: IllegalStateException) {
                     null
                 } ?: break
             val selectorReference = current.selectorExpression as? KtReferenceExpression
