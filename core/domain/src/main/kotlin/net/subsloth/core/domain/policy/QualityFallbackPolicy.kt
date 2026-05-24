@@ -39,10 +39,4 @@ object QualityFallbackPolicy {
             .filter { it.info.resolution.pixelCount < currentResolution.pixelCount }
             .maxByOrNull { it.info.resolution.pixelCount }
     }
-
-    /**
-     * Returns `true` — a fallback has been consumed and no further fallbacks
-     * are allowed in this session.
-     */
-    fun markFallbackUsed(): Boolean = true
 }
