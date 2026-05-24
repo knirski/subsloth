@@ -1,5 +1,7 @@
 package net.subsloth.core.model.media
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
@@ -10,6 +12,7 @@ import net.subsloth.core.model.identifier.ShowId
  * A summary representation of a media item shown in catalog lists and search
  * results. Contains enough information for browsing without fetching details.
  */
+@Stable
 sealed interface Media {
     /** Unique identifier for this media item. */
     val id: MediaId
@@ -42,6 +45,7 @@ sealed interface Media {
      * library records can reference individual episodes as well as movies
      * and entire shows.
      */
+    @Stable
     sealed interface MediaId {
         data class Movie(
             val value: MovieId,
@@ -60,6 +64,7 @@ sealed interface Media {
 /**
  * A movie summary for catalog lists and search results.
  */
+@Immutable
 data class MovieSummary(
     override val id: Media.MediaId.Movie,
     override val title: String,
@@ -78,6 +83,7 @@ data class MovieSummary(
 /**
  * A show/series summary for catalog lists and search results.
  */
+@Immutable
 data class ShowSummary(
     override val id: Media.MediaId.Show,
     override val title: String,
@@ -96,6 +102,7 @@ data class ShowSummary(
 ) : Media
 
 /** Production status of a show/series. */
+@Immutable
 enum class ShowStatus {
     ONGOING,
     ENDED,

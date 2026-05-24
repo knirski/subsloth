@@ -1,5 +1,6 @@
 package net.subsloth.core.model.playback
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
@@ -12,6 +13,7 @@ import net.subsloth.core.model.media.Subtitle
  * starts and discarded when the session ends. The [streamUrl] and related
  * URLs are signed, time-limited resources obtained from the Media API.
  */
+@Immutable
 data class VideoSource(
     val mediaId: Media.MediaId,
     val streamUrl: String,
@@ -27,6 +29,7 @@ data class VideoSource(
  * This represents the runtime state of a currently active or paused playback
  * session. It is not persisted across app restarts.
  */
+@Immutable
 data class PlaybackSession(
     val videoSource: VideoSource,
     val positionSeconds: Long,

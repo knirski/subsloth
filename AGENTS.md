@@ -60,6 +60,27 @@ Before editing or running write actions:
 - Before creating a PR, ensure lint, detekt, and tests are all green. Do not create a PR with failing checks.
 - When resolving review comments in a PR, reply to each comment explaining the fix or reasoning, then resolve the thread.
 
+## Pre-Commit Checks
+
+**MUST run ALL of these before every commit that touches Kotlin or build files. Do not commit until they pass. This is not optional.**
+
+| # | Check | Command | Catches |
+|---|---|---|---|
+| 1 | Formatting | `./gradlew spotlessApply` then `./gradlew spotlessCheck` | unused imports, wrong indentation, trailing whitespace, import ordering |
+| 2 | Detekt | `./gradlew detekt` | code smells, complexity violations, style issues |
+| 3 | Compile (core) | `./gradlew :core:model:compileKotlin` | compilation errors in domain types, missing deps |
+| 4 | Compile (full) | `./gradlew :app:assembleDebug` | cross-module compilation errors, Android resource issues |
+| 5 | Tests | `./gradlew test` | behavioral regressions |
+
+**Shortcut for all checks in one line:**
+```bash
+./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlin :app:assembleDebug test
+```
+
+**If spotlessApply made changes, re-stage them before committing.** Check with `git diff --name-only` to verify only intended files were modified.
+
+**Why this exists:** CI runs `spotlessCheck` and `detekt` on every push. A failure here means a red CI, wasted review cycles, and an extra commit to fix formatting. Run checks locally first.
+
 ## Verification Selection
 
 | Situation | Required verification |

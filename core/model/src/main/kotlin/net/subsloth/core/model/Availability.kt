@@ -1,8 +1,11 @@
 package net.subsloth.core.model
 
+import androidx.compose.runtime.Stable
+
 /**
  * Describes whether media content is currently playable or downloadable.
  */
+@Stable
 sealed interface Availability {
     /** Available now for streaming and optional download. */
     data object Available : Availability

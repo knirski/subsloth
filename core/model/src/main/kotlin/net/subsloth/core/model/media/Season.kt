@@ -1,10 +1,12 @@
 package net.subsloth.core.model.media
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.Availability
 
 /**
  * A season within a show/series, containing its episodes.
  */
+@Immutable
 data class Season(
     val seasonNumber: Int,
     val title: String?,

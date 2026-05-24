@@ -1,5 +1,7 @@
 package net.subsloth.core.model.media
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.ExternalId
 
@@ -11,6 +13,7 @@ import net.subsloth.core.model.identifier.ExternalId
  * with [Media] summaries so that identifiers can be passed freely between
  * summary lists and detail screens.
  */
+@Stable
 sealed interface MediaDetails {
     val id: Media.MediaId
     val title: String
@@ -31,6 +34,7 @@ sealed interface MediaDetails {
  * Poster and backdrop URLs are included for transient display use during an
  * active browsing session. They are not preserved in persistent storage.
  */
+@Immutable
 data class MovieDetails(
     override val id: Media.MediaId.Movie,
     override val title: String,
@@ -54,6 +58,7 @@ data class MovieDetails(
 /**
  * Full details for a show/series, including its seasons and episodes.
  */
+@Immutable
 data class ShowDetails(
     override val id: Media.MediaId.Show,
     override val title: String,
