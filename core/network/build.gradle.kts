@@ -27,4 +27,5 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.wiremock)
     testImplementation(project(":testing:api-contract"))
+    testImplementation(libs.kotlinx.schema.generator.json)
 }
