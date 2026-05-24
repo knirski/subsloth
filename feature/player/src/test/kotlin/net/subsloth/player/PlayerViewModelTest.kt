@@ -6,9 +6,14 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
+import net.subsloth.core.model.Availability
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
@@ -425,6 +430,179 @@ class PlayerViewModelTest {
         assertThat(state.subtitleFallbackNotice).isNotNull()
     }
 
+    // ── Next-episode flow (Fix 1) ──────────────────────────────────────────
+
+    @Test
+    fun `next episode is set when playing show content`() = runTest(testDispatcher) {
+        val episode1 = createEpisode(id = 1, seasonNumber = 1, episodeNumber = 1)
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+        )
+        var fetchedShowId: ShowId? = null
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "show",
+            fetchVideoSource = { Result.success(source) },
+            fetchEpisodes = { showId ->
+                fetchedShowId = showId.value
+                Result.success(listOf(episode1, episode2))
+            },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.nextEpisode).isNotNull()
+        assertThat(state.nextEpisode!!.id).isEqualTo(EpisodeId(2))
+    }
+
+    @Test
+    fun `next episode is null when current is last episode`() = runTest(testDispatcher) {
+        val episode1 = createEpisode(id = 1, seasonNumber = 1, episodeNumber = 1)
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(2)),
+        )
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "show",
+            fetchVideoSource = { Result.success(source) },
+            fetchEpisodes = {
+                Result.success(listOf(episode1, episode2))
+            },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.nextEpisode).isNull()
+    }
+
+    @Test
+    fun `next episode is null when fetchEpisodes returns empty list`() = runTest(testDispatcher) {
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+        )
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "show",
+            fetchVideoSource = { Result.success(source) },
+            fetchEpisodes = { Result.success(emptyList()) },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.nextEpisode).isNull()
+    }
+
+    @Test
+    fun `next episode is null for movie content`() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.success(createVideoSource()) },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.nextEpisode).isNull()
+    }
+
+    // ── Quality state (Fix 2) ──────────────────────────────────────────────
+
+    @Test
+    fun `availableQualities are populated in state after playback starts`() = runTest(testDispatcher) {
+        val quality1 = createQuality()
+        val quality2 = Quality(
+            info = QualityDescriptor(
+                resolution = Resolution.HD_720,
+                label = "720p",
+                bitrate = null,
+                mimeType = null,
+            ),
+            url = null,
+            downloadUrl = null,
+        )
+        val source = createVideoSource(
+            availableQualities = listOf(quality1, quality2),
+            selectedQuality = quality1,
+        )
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.success(source) },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.availableQualities).hasSize(2)
+        assertThat(state.selectedQualityLabel).isEqualTo("1080p")
+    }
+
+    @Test
+    fun `selectQuality updates the selected quality label in state`() = runTest(testDispatcher) {
+        val quality1 = Quality(
+            info = QualityDescriptor(
+                resolution = Resolution.FULL_HD,
+                label = "1080p",
+                bitrate = null,
+                mimeType = null,
+            ),
+            url = null,
+            downloadUrl = null,
+        )
+        val quality2 = Quality(
+            info = QualityDescriptor(
+                resolution = Resolution.HD_720,
+                label = "720p",
+                bitrate = null,
+                mimeType = null,
+            ),
+            url = null,
+            downloadUrl = null,
+        )
+        val source = createVideoSource(
+            availableQualities = listOf(quality1, quality2),
+            selectedQuality = quality1,
+        )
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.success(source) },
+        )
+
+        viewModel.selectQuality("720p")
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedQualityLabel).isEqualTo("720p")
+    }
+
+    // ── Playback speed persistence (Fix 3) ─────────────────────────────────
+
+    @Test
+    fun `initial playback speed comes from loadPlaybackSpeed`() = runTest(testDispatcher) {
+        var loadCalled = false
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.success(createVideoSource()) },
+            loadPlaybackSpeed = {
+                loadCalled = true
+                1.5f
+            },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(loadCalled).isTrue()
+        assertThat(state.playbackSpeed).isWithin(0.001f).of(1.5f)
+    }
+
+    @Test
+    fun `loadPlaybackSpeed defaults to 1x when not provided`() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.success(createVideoSource()) },
+        )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.playbackSpeed).isWithin(0.001f).of(1.0f)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
@@ -433,34 +611,42 @@ class PlayerViewModelTest {
         fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
             Result.success(createVideoSource())
         },
+        fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
+            Result.success(emptyList())
+        },
         onAuthFailure: () -> Unit = {},
         saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
         refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
             Result.failure(UnsupportedOperationException("Not implemented"))
         },
         savePlaybackSpeed: suspend (Float) -> Unit = {},
+        loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
     ): PlayerViewModel = PlayerViewModel(
         contentId = contentId,
         contentType = contentType,
         playerController = null,
         fetchVideoSource = fetchVideoSource,
+        fetchEpisodes = fetchEpisodes,
         onAuthFailure = onAuthFailure,
         saveProgress = saveProgress,
         refreshStreamUrl = refreshStreamUrl,
         savePlaybackSpeed = savePlaybackSpeed,
+        loadPlaybackSpeed = loadPlaybackSpeed,
     )
 
     private fun createVideoSource(
         mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
         streamUrl: String = "https://example.com/stream.m3u8",
         availableSubtitles: List<Subtitle> = emptyList(),
+        availableQualities: List<Quality> = listOf(createQuality()),
+        selectedQuality: Quality = createQuality(),
         durationSeconds: Long = 3600L,
         playbackMode: PlaybackMode = PlaybackMode.ONLINE,
     ): VideoSource = VideoSource(
         mediaId = mediaId,
         streamUrl = streamUrl,
-        selectedQuality = createQuality(),
-        availableQualities = listOf(createQuality()),
+        selectedQuality = selectedQuality,
+        availableQualities = availableQualities,
         availableSubtitles = availableSubtitles,
         durationSeconds = durationSeconds,
         playbackMode = playbackMode,
@@ -487,4 +673,21 @@ class PlayerViewModelTest {
         downloadUrl = null,
         format = SubtitleFormat.SRT,
     )
+
+    private fun createEpisode(id: Int = 1, showId: Int = 1, seasonNumber: Int = 1, episodeNumber: Int = 1): Episode =
+        Episode(
+            id = EpisodeId(id),
+            showId = ShowId(showId),
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            title = "Episode $id",
+            plot = null,
+            durationSeconds = null,
+            availability = Availability.Available,
+            imdbId = null,
+            qualities = emptyList(),
+            subtitles = emptyList(),
+            airDateEpochSeconds = null,
+            premiereDateEpochSeconds = null,
+        )
 }

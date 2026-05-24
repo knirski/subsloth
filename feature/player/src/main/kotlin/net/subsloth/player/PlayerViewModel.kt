@@ -24,6 +24,7 @@ import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
@@ -44,6 +45,8 @@ sealed interface PlayerUiState {
         val playbackSpeed: Float,
         val selectedSubtitle: Subtitle?,
         val availableSubtitles: List<Subtitle>,
+        val availableQualities: List<Quality>,
+        val selectedQualityLabel: String?,
         val nextEpisode: Episode?,
         val showNextEpisodePrompt: Boolean,
         val error: String?,
@@ -77,6 +80,9 @@ class PlayerViewModel(
     },
     /** Persists playback speed for the active account profile. Called only for logged-in users. */
     private val savePlaybackSpeed: suspend (Float) -> Unit = {},
+    /** Loads the persisted playback speed for the active account profile. Returns the default speed
+     * for guests, offline sessions, or first-time users. */
+    private val loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
@@ -107,6 +113,7 @@ class PlayerViewModel(
                     title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                     playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
                     selectedSubtitle = null, availableSubtitles = emptyList(),
+                    availableQualities = emptyList(), selectedQualityLabel = null,
                     nextEpisode = null, showNextEpisodePrompt = false,
                     error = "Invalid content identifier", authFailed = false,
                     isOfflinePlayback = false, qualityFallbackNotice = null,
@@ -127,6 +134,7 @@ class PlayerViewModel(
                         title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                         playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
                         selectedSubtitle = null, availableSubtitles = emptyList(),
+                        availableQualities = emptyList(), selectedQualityLabel = null,
                         nextEpisode = null, showNextEpisodePrompt = false,
                         error = error.message ?: "Failed to load content",
                         authFailed = isAuth,
@@ -177,14 +185,18 @@ class PlayerViewModel(
             playerController?.setPreferredTextLanguage(initialSubtitle.language.value)
         }
 
+        val initialSpeed = loadPlaybackSpeed()
         _uiState.value = PlayerUiState.Content(
             title = source.mediaId.toString(),
             positionSeconds = 0,
             durationSeconds = source.durationSeconds,
             isPlaying = true,
-            playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
+            playbackSpeed = initialSpeed,
             selectedSubtitle = initialSubtitle,
             availableSubtitles = source.availableSubtitles,
+            availableQualities = source.availableQualities,
+            selectedQualityLabel = source.selectedQuality.info.label
+                ?: source.selectedQuality.info.resolution.label,
             nextEpisode = null,
             showNextEpisodePrompt = false,
             error = null,
@@ -196,6 +208,28 @@ class PlayerViewModel(
 
         if (playerController != null) {
             startProgressTracking()
+        }
+
+        populateNextEpisode(source)
+    }
+
+    private fun populateNextEpisode(source: VideoSource) {
+        if (currentMediaId !is Media.MediaId.Show) return
+        viewModelScope.launch {
+            fetchEpisodes(currentMediaId as Media.MediaId.Show).onSuccess { episodes ->
+                val currentEpisodeId = (source.mediaId as? Media.MediaId.Episode)?.value
+                if (currentEpisodeId != null) {
+                    val sorted = episodes.sortedWith(
+                        compareBy({ it.seasonNumber }, { it.episodeNumber }),
+                    )
+                    val currentIndex = sorted.indexOfFirst { it.id == currentEpisodeId }
+                    if (currentIndex >= 0 && currentIndex < sorted.size - 1) {
+                        val next = sorted[currentIndex + 1]
+                        val state = _uiState.value as? PlayerUiState.Content ?: return@launch
+                        _uiState.value = state.copy(nextEpisode = next)
+                    }
+                }
+            }
         }
     }
 

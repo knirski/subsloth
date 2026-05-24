@@ -13,4 +13,5 @@
     <string name="player_retry">Retry</string>
     <string name="player_back_to_details">Back to details</string>
     <string name="player_retry_with_refresh">Retry with fresh link</string>
+    <string name="player_quality">Quality</string>
 </resources>

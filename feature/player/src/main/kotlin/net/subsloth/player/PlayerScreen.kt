@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.domain.policy.PlaybackSpeed
+import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.feature.player.R
 
@@ -57,6 +58,7 @@ fun PlayerScreen(
                 onSeek = viewModel::seekTo,
                 onSetSpeed = viewModel::setPlaybackSpeed,
                 onSelectSubtitle = viewModel::selectSubtitle,
+                onSelectQuality = viewModel::selectQuality,
                 onDismissNextEpisode = viewModel::dismissNextEpisode,
                 onPlayNextEpisode = viewModel::playNextEpisode,
                 onRetry = viewModel::retryPlayback,
@@ -76,6 +78,7 @@ private fun PlayerContent(
     onSeek: (Long) -> Unit = {},
     onSetSpeed: (Float) -> Unit = {},
     onSelectSubtitle: (Subtitle?) -> Unit = {},
+    onSelectQuality: (String) -> Unit = {},
     onDismissNextEpisode: () -> Unit = {},
     onPlayNextEpisode: () -> Unit = {},
     onRetry: () -> Unit = {},
@@ -85,6 +88,7 @@ private fun PlayerContent(
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
+    var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
     Box(
@@ -176,6 +180,7 @@ private fun PlayerContent(
                 onTogglePlayPause = onTogglePlayPause,
                 onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                 onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
+                onToggleQuality = { showQualityPicker = !showQualityPicker },
             )
 
             if (showSpeedPicker) {
@@ -198,6 +203,17 @@ private fun PlayerContent(
                     },
                 )
             }
+
+            if (showQualityPicker) {
+                QualityPicker(
+                    qualities = state.availableQualities,
+                    selectedLabel = state.selectedQualityLabel,
+                    onSelect = { label ->
+                        onSelectQuality(label)
+                        showQualityPicker = false
+                    },
+                )
+            }
         }
     }
 }
@@ -208,6 +224,7 @@ private fun PlaybackControls(
     onTogglePlayPause: () -> Unit,
     onToggleSpeed: () -> Unit,
     onToggleSubtitles: () -> Unit,
+    onToggleQuality: () -> Unit = {},
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -224,6 +241,10 @@ private fun PlaybackControls(
         OutlinedButton(onClick = onToggleSubtitles) {
             Text(stringResource(R.string.player_subtitles))
         }
+        Spacer(modifier = Modifier.width(8.dp))
+        OutlinedButton(onClick = onToggleQuality) {
+            Text(stringResource(R.string.player_quality))
+        }
     }
 }
 
@@ -238,6 +259,24 @@ private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
                 Text(
                     text = "${speed.value}x",
                     color = if (speed.value == currentSpeed) Color.Yellow else Color.White,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSelect: (String) -> Unit) {
+    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+        qualities.forEach { quality ->
+            val label = quality.info.label ?: quality.info.resolution.label
+            Button(
+                onClick = { onSelect(label) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            ) {
+                Text(
+                    text = label,
+                    color = if (label == selectedLabel) Color.Yellow else Color.White,
                 )
             }
         }
