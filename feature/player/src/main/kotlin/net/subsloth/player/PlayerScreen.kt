@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -257,18 +258,26 @@ private fun PlaybackControls(
 private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         PlaybackSpeed.entries.forEach { speed ->
+            val isSelected = speed.value == currentSpeed
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
             Button(
                 onClick = { onSelect(speed.value) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
             ) {
-                Text(
-                    text = "${speed.value}x",
-                    color = if (speed.value == currentSpeed) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
+                Text(text = "${speed.value}x")
             }
         }
     }
@@ -279,18 +288,26 @@ private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSe
     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         qualities.forEach { quality ->
             val label = quality.info.label ?: quality.info.resolution.label
+            val isSelected = label == selectedLabel
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
             Button(
                 onClick = { onSelect(label) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
             ) {
-                Text(
-                    text = label,
-                    color = if (label == selectedLabel) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
+                Text(text = label)
             }
         }
     }
@@ -299,32 +316,47 @@ private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSe
 @Composable
 private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSelect: (Subtitle?) -> Unit) {
     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
+        val offContainerColor = if (selected == null) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+        val offContentColor = if (selected == null) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
         Button(
             onClick = { onSelect(null) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = offContainerColor,
+                contentColor = offContentColor,
+            ),
         ) {
-            Text(
-                stringResource(R.string.player_subtitles_off),
-                color = if (selected == null) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-            )
+            Text(stringResource(R.string.player_subtitles_off))
         }
         subtitles.forEach { subtitle ->
+            val isSelected = selected?.language == subtitle.language
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
             Button(
                 onClick = { onSelect(subtitle) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
             ) {
-                Text(
-                    text = subtitle.languageDisplayName ?: subtitle.language.value,
-                    color = if (selected?.language == subtitle.language) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
+                Text(text = subtitle.languageDisplayName ?: subtitle.language.value)
             }
         }
     }

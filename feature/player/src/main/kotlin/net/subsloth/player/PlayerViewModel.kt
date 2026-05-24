@@ -331,7 +331,7 @@ class PlayerViewModel(
      */
     @Suppress("ReturnCount")
     fun retryWithRefresh() {
-        val mediaId = currentMediaId ?: return
+        val mediaId = currentSource?.mediaId ?: currentMediaId ?: return
         val state = _uiState.value as? PlayerUiState.Content ?: return
         if (state.playbackMode == PlaybackMode.OFFLINE) return
         if (!StreamRefreshPolicy.canRefresh(streamRefreshUsed, isOfflinePlayback = false)) return

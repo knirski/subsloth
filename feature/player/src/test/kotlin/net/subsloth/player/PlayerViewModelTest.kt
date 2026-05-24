@@ -670,6 +670,7 @@ class PlayerViewModelTest {
         savePlaybackSpeed: suspend (Float) -> Unit = {},
         loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
         loadPreferredLanguage: suspend () -> LanguageCode = { LanguageCode("en") },
+        resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     ): PlayerViewModel = PlayerViewModel(
         contentId = contentId,
         contentType = contentType,
@@ -682,6 +683,7 @@ class PlayerViewModelTest {
         savePlaybackSpeed = savePlaybackSpeed,
         loadPlaybackSpeed = loadPlaybackSpeed,
         loadPreferredLanguage = loadPreferredLanguage,
+        resolveShowIdForEpisode = resolveShowIdForEpisode,
     )
 
     private fun createVideoSource(
