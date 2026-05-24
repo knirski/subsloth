@@ -55,8 +55,7 @@ sealed interface PlayerUiState {
         val showNextEpisodePrompt: Boolean,
         val error: String?,
         val authFailed: Boolean,
-        /** Whether this is an offline (local file) playback session. */
-        val isOfflinePlayback: Boolean,
+        val playbackMode: PlaybackMode,
         /** Whether a quality fallback has been applied in this session. */
         val qualityFallbackNotice: Notice?,
         /** Whether a subtitle fallback has been applied in this session. */
@@ -133,7 +132,7 @@ class PlayerViewModel(
                     availableQualities = emptyList(), selectedQualityLabel = null,
                     nextEpisode = null, showNextEpisodePrompt = false,
                     error = "Invalid content identifier", authFailed = false,
-                    isOfflinePlayback = false, qualityFallbackNotice = null,
+                    playbackMode = PlaybackMode.ONLINE, qualityFallbackNotice = null,
                     subtitleFallbackNotice = null,
                 )
                 return@launch
@@ -155,7 +154,7 @@ class PlayerViewModel(
                         nextEpisode = null, showNextEpisodePrompt = false,
                         error = error.message ?: "Failed to load content",
                         authFailed = isAuth,
-                        isOfflinePlayback = false,
+                        playbackMode = PlaybackMode.ONLINE,
                         qualityFallbackNotice = null,
                         subtitleFallbackNotice = null,
                     )
@@ -226,7 +225,7 @@ class PlayerViewModel(
             showNextEpisodePrompt = false,
             error = null,
             authFailed = false,
-            isOfflinePlayback = source.playbackMode == PlaybackMode.OFFLINE,
+            playbackMode = source.playbackMode,
             qualityFallbackNotice = (uiState.value as? PlayerUiState.Content)?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
         )
@@ -282,7 +281,7 @@ class PlayerViewModel(
         // Per spec §Playback Speed: logged-in user speed changes persist to
         // the active account profile. Offline playback does not mutate
         // account-scoped preferences.
-        if (!state.isOfflinePlayback) {
+        if (state.playbackMode == PlaybackMode.ONLINE) {
             viewModelScope.launch { savePlaybackSpeed(speed) }
         }
     }
@@ -337,7 +336,7 @@ class PlayerViewModel(
     fun retryWithRefresh() {
         val mediaId = currentMediaId ?: return
         val state = _uiState.value as? PlayerUiState.Content ?: return
-        if (state.isOfflinePlayback) return
+        if (state.playbackMode == PlaybackMode.OFFLINE) return
         if (!StreamRefreshPolicy.canRefresh(streamRefreshUsed, isOfflinePlayback = false)) return
 
         performStreamRefresh(mediaId, state)
@@ -431,7 +430,7 @@ class PlayerViewModel(
 
         // Per spec §Auth Failure During Playback: Offline playback is
         // never interrupted by auth failures elsewhere.
-        if (state.isOfflinePlayback && playbackError is PlaybackError.AuthFailure) return
+        if (state.playbackMode == PlaybackMode.OFFLINE && playbackError is PlaybackError.AuthFailure) return
 
         when (playbackError) {
             is PlaybackError.AuthFailure -> {
@@ -443,7 +442,7 @@ class PlayerViewModel(
             }
             is PlaybackError.StreamUrlExpired -> {
                 // Attempt bounded refresh
-                if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, state.isOfflinePlayback)) {
+                if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, state.playbackMode == PlaybackMode.OFFLINE)) {
                     retryWithRefresh()
                 } else {
                     _uiState.value = state.copy(

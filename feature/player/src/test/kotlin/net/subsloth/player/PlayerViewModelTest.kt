@@ -224,7 +224,7 @@ class PlayerViewModelTest {
     // ── Offline playback ─────────────────────────────────────────────────
 
     @Test
-    fun `offline playback sets isOfflinePlayback to true`() = runTest(testDispatcher) {
+    fun `offline playback sets playbackMode to OFFLINE`() = runTest(testDispatcher) {
         val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
         val viewModel =
             createViewModel(
@@ -234,11 +234,11 @@ class PlayerViewModelTest {
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.isOfflinePlayback).isTrue()
+        assertThat(state.playbackMode).isEqualTo(PlaybackMode.OFFLINE)
     }
 
     @Test
-    fun `online playback sets isOfflinePlayback to false`() = runTest(testDispatcher) {
+    fun `online playback sets playbackMode to ONLINE`() = runTest(testDispatcher) {
         val source = createVideoSource(playbackMode = PlaybackMode.ONLINE)
         val viewModel =
             createViewModel(
@@ -248,7 +248,7 @@ class PlayerViewModelTest {
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.isOfflinePlayback).isFalse()
+        assertThat(state.playbackMode).isEqualTo(PlaybackMode.ONLINE)
     }
 
     // ── Auth failure handling ─────────────────────────────────────────────

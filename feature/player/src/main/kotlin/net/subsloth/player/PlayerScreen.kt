@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.domain.policy.PlaybackSpeed
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
+import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.feature.player.R
 
 @Composable
@@ -103,7 +104,7 @@ private fun PlayerContent(
             ErrorContent(
                 error = state.error,
                 isAuthError = state.authFailed,
-                isOfflinePlayback = state.isOfflinePlayback,
+                playbackMode = state.playbackMode,
                 onRetry = onRetry,
                 onRetryWithRefresh = onRetryWithRefresh,
                 onNavigateBack = onNavigateBack,
@@ -356,7 +357,7 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
 private fun ErrorContent(
     error: String,
     isAuthError: Boolean,
-    isOfflinePlayback: Boolean,
+    playbackMode: PlaybackMode,
     onRetry: () -> Unit,
     onRetryWithRefresh: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -393,7 +394,7 @@ private fun ErrorContent(
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.player_retry))
             }
-            if (!isOfflinePlayback) {
+            if (playbackMode == PlaybackMode.ONLINE) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(onClick = onRetryWithRefresh, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.player_retry_with_refresh))
