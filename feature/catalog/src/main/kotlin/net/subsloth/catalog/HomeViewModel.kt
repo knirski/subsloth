@@ -91,35 +91,28 @@ class HomeViewModel(
             val movies = catalog.filterIsInstance<MovieSummary>()
             val shows = catalog.filterIsInstance<ShowSummary>()
 
-            val rows = mutableListOf<HomeRow>()
-
-            val continueWatchingItems = buildContinueWatchingItems(catalog)
-            if (continueWatchingItems.isNotEmpty()) {
-                rows.add(HomeRow.ContinueWatching(continueWatchingItems.toImmutableList()))
-            }
-
-            val offlineItems = buildOfflineItems(catalog)
-            if (offlineItems.isNotEmpty()) {
-                rows.add(HomeRow.AvailableOffline(offlineItems.toImmutableList()))
-            }
-
+            val continueWatchingRow = buildContinueWatchingItems(catalog)
+                .takeIf { it.isNotEmpty() }
+                ?.let { HomeRow.ContinueWatching(it.toImmutableList()) }
+            val offlineRow = buildOfflineItems(catalog)
+                .takeIf { it.isNotEmpty() }
+                ?.let { HomeRow.AvailableOffline(it.toImmutableList()) }
             val recencyRows = buildRecencyRows(movies, shows)
-            rows.addAll(recencyRows)
+            val moviesRow = movies.takeIf { it.isNotEmpty() }
+                ?.let { HomeRow.Movies(it.toImmutableList()) }
+            val showsRow = shows.takeIf { it.isNotEmpty() }
+                ?.let { HomeRow.Shows(it.toImmutableList()) }
 
-            if (movies.isNotEmpty()) {
-                rows.add(HomeRow.Movies(movies.toImmutableList()))
-            }
-
-            if (shows.isNotEmpty()) {
-                rows.add(HomeRow.Shows(shows.toImmutableList()))
-            }
+            val rows = listOfNotNull(continueWatchingRow, offlineRow)
+                .plus(recencyRows)
+                .plus(listOfNotNull(moviesRow, showsRow))
+                .toImmutableList()
 
             val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
-            _uiState.value =
-                HomeUiState.Content(
-                    rows = rows.toImmutableList(),
-                    selectedTab = restoredTab,
-                )
+            _uiState.value = HomeUiState.Content(
+                rows = rows,
+                selectedTab = restoredTab,
+            )
         }
     }
 
@@ -130,29 +123,17 @@ class HomeViewModel(
     private fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
 
     private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {
-        val rows = mutableListOf<HomeRow.Recency>()
+        val recentlyAdded = movies.filter { it.updatedAtEpochSeconds != null }
+            .takeIf { it.isNotEmpty() }
+            ?.let { HomeRow.Recency(items = it.toImmutableList(), label = "Recently Added") }
+        val showsWithRecent = shows.filter { it.newestVideoEpochSeconds != null }
+            .takeIf { it.isNotEmpty() }
+            ?.let { HomeRow.Recency(items = it.toImmutableList(), label = "Shows with recent episodes") }
+        val releaseDate = movies.filter { it.year != null && it.updatedAtEpochSeconds == null }
+            .takeIf { it.isNotEmpty() }
+            ?.let { HomeRow.Recency(items = it.toImmutableList(), label = "Recent by release date") }
 
-        val recentlyAddedMovies = movies.filter { it.updatedAtEpochSeconds != null }
-        if (recentlyAddedMovies.isNotEmpty()) {
-            rows.add(HomeRow.Recency(items = recentlyAddedMovies.toImmutableList(), label = "Recently Added"))
-        }
-
-        val showsWithRecentEpisodes = shows.filter { it.newestVideoEpochSeconds != null }
-        if (showsWithRecentEpisodes.isNotEmpty()) {
-            rows.add(
-                HomeRow.Recency(
-                    items = showsWithRecentEpisodes.toImmutableList(),
-                    label = "Shows with recent episodes",
-                ),
-            )
-        }
-
-        val releaseDateMovies = movies.filter { it.year != null && it.updatedAtEpochSeconds == null }
-        if (releaseDateMovies.isNotEmpty()) {
-            rows.add(HomeRow.Recency(items = releaseDateMovies.toImmutableList(), label = "Recent by release date"))
-        }
-
-        return rows.toImmutableList()
+        return listOfNotNull(recentlyAdded, showsWithRecent, releaseDate).toImmutableList()
     }
 
     private fun parseSavedTab(tab: String): HomeTab = when (tab.uppercase()) {
