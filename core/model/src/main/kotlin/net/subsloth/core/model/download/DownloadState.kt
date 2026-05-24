@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
+import kotlin.time.Instant
 
 /**
  * Represents the state of a downloaded media item available for offline playback.
@@ -18,7 +19,7 @@ data class DownloadState(
     val mediaId: Media.MediaId,
     val status: DownloadStatus,
     val quality: QualityDescriptor,
-    val downloadedAtEpochSeconds: Long,
+    val downloadedAtEpochSeconds: Instant,
     /** Total file size in bytes, if known. */
     val sizeBytes: Long?,
     /** Storage path relative to the app's download directory. */

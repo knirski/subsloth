@@ -24,6 +24,7 @@ import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 class CoreModelTest {
     // ── Identifiers ──────────────────────────────────────────────────────
@@ -70,12 +71,15 @@ class CoreModelTest {
                 title = "Future Episode",
                 plot = "Not yet released",
                 durationSeconds = 1800L,
-                availability = Availability.Upcoming(availableAtEpochSeconds = 1_900_000_000L),
+                availability =
+                    Availability.Upcoming(
+                        availableAtEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
+                    ),
                 imdbId = null,
                 qualities = emptyList(),
                 subtitles = emptyList(),
                 airDateEpochSeconds = null,
-                premiereDateEpochSeconds = 1_900_000_000L,
+                premiereDateEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
             )
         assertThat(episode.isUpcoming).isTrue()
     }
@@ -95,7 +99,7 @@ class CoreModelTest {
                 imdbId = null,
                 qualities = emptyList(),
                 subtitles = emptyList(),
-                airDateEpochSeconds = 1_700_000_000L,
+                airDateEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L),
                 premiereDateEpochSeconds = null,
             )
         assertThat(episode.isUpcoming).isFalse()
@@ -135,7 +139,7 @@ class CoreModelTest {
                         bitrate = 5_000_000,
                         mimeType = "video/mp4",
                     ),
-                downloadedAtEpochSeconds = 1_800_000_000L,
+                downloadedAtEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
                 sizeBytes = 1_500_000_000L,
                 relativePath = "movies/1.mp4",
             )
@@ -158,7 +162,7 @@ class CoreModelTest {
                 mediaId = Media.MediaId.Movie(MovieId(1)),
                 positionSeconds = 500,
                 durationSeconds = 1000,
-                lastUpdatedEpochSeconds = 1_800_000_000L,
+                lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
                 isWatched = false,
             )
         assertThat(progress.fraction).isWithin(0.001).of(0.5)
@@ -171,7 +175,7 @@ class CoreModelTest {
                 mediaId = Media.MediaId.Movie(MovieId(1)),
                 positionSeconds = 1000,
                 durationSeconds = 1000,
-                lastUpdatedEpochSeconds = 1_800_000_000L,
+                lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
                 isWatched = true,
             )
         assertThat(completed.isWatched).isTrue()

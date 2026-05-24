@@ -7,6 +7,7 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
+import kotlin.time.Instant
 
 /**
  * A summary representation of a media item shown in catalog lists and search
@@ -80,7 +81,7 @@ data class MovieSummary(
     val slug: String?,
     val imdbId: ExternalId?,
     val backdropUrl: String?,
-    val updatedAtEpochSeconds: Long? = null,
+    val updatedAtEpochSeconds: Instant? = null,
 ) : Media
 
 /**
@@ -101,7 +102,7 @@ data class ShowSummary(
     val backdropUrl: String?,
     val status: ShowStatus,
     val countries: List<String>,
-    val newestVideoEpochSeconds: Long? = null,
+    val newestVideoEpochSeconds: Instant? = null,
 ) : Media
 
 /** Production status of a show/series. */

@@ -8,6 +8,7 @@ import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import net.subsloth.core.network.media.api.model.Episode as DtoEpisode
 import net.subsloth.core.network.media.api.model.Movie as DtoMovie
 import net.subsloth.core.network.media.api.model.MovieSummary as DtoMovieSummary
@@ -415,18 +416,15 @@ class MapperTest {
     // ── Availability ─────────────────────────────────────────────────────
 
     @Test
-    fun `mapAvailability with positive timestamp returns Available`() {
-        assertThat(Mapper.mapAvailability(1_000_000L)).isInstanceOf(Availability.Available::class.java)
+    fun `mapAvailability with non-null instant returns Available`() {
+        assertThat(
+            Mapper.mapAvailability(Instant.fromEpochSeconds(1_000_000L)),
+        ).isInstanceOf(Availability.Available::class.java)
     }
 
     @Test
     fun `mapAvailability with null returns Expired`() {
         assertThat(Mapper.mapAvailability(null)).isInstanceOf(Availability.Expired::class.java)
-    }
-
-    @Test
-    fun `mapAvailability with zero returns Expired`() {
-        assertThat(Mapper.mapAvailability(0L)).isInstanceOf(Availability.Expired::class.java)
     }
 
     // ── Show Status ──────────────────────────────────────────────────────

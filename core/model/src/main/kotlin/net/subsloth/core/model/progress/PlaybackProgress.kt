@@ -2,6 +2,7 @@ package net.subsloth.core.model.progress
 
 import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.media.Media
+import kotlin.time.Instant
 
 /**
  * Tracks a user's playback progress for a media item.
@@ -18,7 +19,7 @@ data class PlaybackProgress(
     /** Total duration in seconds at the time this progress was recorded. */
     val durationSeconds: Long,
     /** Epoch seconds when this progress was last updated. */
-    val lastUpdatedEpochSeconds: Long,
+    val lastUpdatedEpochSeconds: Instant,
     /**
      * Whether the media is considered fully watched.
      *
