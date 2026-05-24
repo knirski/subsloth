@@ -17,7 +17,6 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.coroutines.core)
     implementation(libs.kotlinx.datetime)
-    implementation(libs.kotlinx.schema.generator.json)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)
@@ -28,4 +27,5 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.wiremock)
     testImplementation(project(":testing:api-contract"))
+    testImplementation(libs.kotlinx.schema.generator.json)
 }
