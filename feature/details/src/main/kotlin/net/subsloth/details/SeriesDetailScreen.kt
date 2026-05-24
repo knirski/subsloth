@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.Availability
@@ -70,7 +71,7 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
 }
 
 @Composable
-private fun ShowDetailContent(
+internal fun ShowDetailContent(
     state: DetailUiState.ShowContent,
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},
@@ -249,5 +250,31 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+// Configuration.UI_MODE_NIGHT_YES = 2
+@Preview(showBackground = true, uiMode = 2)
+@Composable
+private fun SeriesDetailLoadingPreview() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+private fun SeriesDetailErrorPreview() {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "Failed to load details",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }

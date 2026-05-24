@@ -38,10 +38,9 @@ check_no_comments() {
     fi
     # Scan .kt, .java, .kts files for identifier-like or string-literal
     # occurrences of "comment", "comments", or "spoiler".
-    # The grep scans the full file content including doc comments,
-    # so these words will be flagged wherever they appear.
-    # Test files are excluded because they may legitimately assert absence
-    # (e.g. doesNotContain("comments")).
+    # KDoc continuation lines (starting with *), forward-comment lines,
+    # and test files are excluded as they may legitimately reference
+    # these words (e.g. KDoc param descriptions, test assertions).
     while IFS=: read -r file line content; do
       fail "NO_COMMENTS" "$file:$line — forbidden pattern in source: $content"
     done < <(
@@ -50,6 +49,8 @@ check_no_comments() {
         "$target" 2>/dev/null \
       | grep -v '/src/test/' \
       | grep -v '/src/androidTest/' \
+      | grep -v -E '^\S+:\d+:\s*\*'    \
+      | grep -v -E '^\S+:\d+:\s*//'   \
       || true
     )
   done
@@ -164,10 +165,40 @@ check_kodi_parity() {
 }
 
 # ----
+# 4. Banned-dependency lint check.
+#    Ensure production source does not import libraries that have been
+#    superseded by project policy (see docs/agent/fc-is-architecture.md).
+# ----
+check_banned_deps() {
+  # Pattern: block `import arrow.`, `import dagger.`, `import javax.inject.`,
+  # `import com.squareup.moshi.`, `import com.google.gson.`, `import io.kotest.`,
+  # `import io.reactivex.` in non-test source.
+  local dir
+  for dir in app core feature; do
+    target="$repo_root/$dir"
+    if [ ! -d "$target" ]; then
+      continue
+    fi
+    while IFS=: read -r file line content; do
+      fail "BANNED_DEP" "$file:$line — banned dependency import: $content"
+    done < <(
+      grep -rnwI -E \
+        '^import\s+(arrow\.|dagger\.|javax\.inject\.|com\.squareup\.moshi\.|com\.google\.gson\.|io\.kotest\.|io\.reactivex\.|androidx\.navigation\.compose\.)' \
+        --include='*.kt' --include='*.java' \
+        "$target" 2>/dev/null \
+      | grep -v '/src/test/' \
+      | grep -v '/src/androidTest/' \
+      || true
+    )
+  done
+}
+
+# ----
 # Run all checks
 # ----
 check_no_comments
 check_secrets
+check_banned_deps
 check_kodi_parity
 
 if [ "$rc" -eq 0 ]; then

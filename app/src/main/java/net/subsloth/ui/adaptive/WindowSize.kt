@@ -2,6 +2,7 @@ package net.subsloth.ui.adaptive
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalWindowInfo
 
 /**
@@ -33,6 +34,7 @@ enum class DeviceFormFactor {
  * - Expanded (Tablet landscape / TV): > 840dp
  */
 @Composable
+@ReadOnlyComposable
 fun currentDeviceFormFactor(): DeviceFormFactor {
     val widthDp = LocalWindowInfo.current.containerSize.width
     return when {
@@ -46,6 +48,7 @@ fun currentDeviceFormFactor(): DeviceFormFactor {
  * Returns true when the current window is at least medium width (≥600dp).
  */
 @Composable
+@ReadOnlyComposable
 fun isTabletOrWider(): Boolean =
     LocalWindowInfo.current.containerSize.width >= COMPACT_WIDTH_THRESHOLD
 

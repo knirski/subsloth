@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -55,7 +56,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
 }
 
 @Composable
-private fun MovieDetailContent(state: DetailUiState.MovieContent, modifier: Modifier = Modifier) {
+internal fun MovieDetailContent(state: DetailUiState.MovieContent, modifier: Modifier = Modifier) {
     val details = state.details
 
     Column(
@@ -151,5 +152,31 @@ private fun MovieDetailContent(state: DetailUiState.MovieContent, modifier: Modi
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+// Configuration.UI_MODE_NIGHT_YES = 2
+@Preview(showBackground = true, uiMode = 2)
+@Composable
+private fun MovieDetailLoadingPreview() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+private fun MovieDetailErrorPreview() {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "Failed to load details",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }
