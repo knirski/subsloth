@@ -19,6 +19,24 @@ Type: normative policy.
 13. Always use **squash + merge** — the PR title becomes the commit on `main`, and `semantic-release` uses it to determine the next version. No other merge method is allowed.
 14. Every change to `main` MUST go through a pull request. Direct pushes to `main` are forbidden.
 
+## Multi-PR Merge Order
+
+When several PRs touch overlapping files, merge from smallest scope to largest:
+
+1. **Isolated changes first** — single-file cleanups, no cross-module impact.
+2. **Foundation PRs** — new types, dependency additions, convention plugin changes.
+3. **Consumer PRs** — code that uses the new types/dependencies introduced by foundation PRs.
+
+After each merge, rebase remaining PRs onto the updated main:
+
+```bash
+git checkout <branch> && git pull --rebase origin main
+```
+
+**Conflict resolution during rebase:** when two PRs add different entries to `libs.versions.toml` or similar files, resolve by **keeping both** entries — never drop one.
+
+Only merge the next PR when its CI is green after rebase. Do not merge a PR that has unresolved conflicts with main.
+
 The PR title rule is enforced in CI, so treat it as a required check.
 
 For commit convention rules (which prefixes trigger a release, breaking change syntax, merge strategy), see the **Commit Convention** section in [`AGENTS.md`](/AGENTS.md). The rules there are authoritative.
