@@ -1,8 +1,8 @@
 package net.subsloth.ui.accessibility
 
 import androidx.compose.foundation.layout.defaultMinSize
-import java.time.Duration
 import androidx.compose.foundation.layout.sizeIn
+import kotlin.time.Duration.Companion.seconds
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
@@ -126,9 +126,9 @@ object AccessibilityLabels {
         "Progress ${formatMinutes(current)} of ${formatMinutes(total)}"
 
     private fun formatMinutes(seconds: Long): String {
-        val duration = Duration.ofSeconds(seconds)
-        val hours = duration.toHours()
-        val minutes = duration.toMinutes() % 60
+        val duration = seconds.seconds
+        val hours = duration.inWholeHours
+        val minutes = duration.inWholeMinutes % 60
         return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
     }
 }
