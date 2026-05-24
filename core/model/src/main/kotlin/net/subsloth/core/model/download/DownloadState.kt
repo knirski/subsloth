@@ -1,5 +1,6 @@
 package net.subsloth.core.model.download
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
@@ -11,6 +12,7 @@ import net.subsloth.core.model.media.QualityDescriptor
  * [localId] and does not contain any raw stream URLs, which are
  * ephemeral and obtained from the server at stream time.
  */
+@Immutable
 data class DownloadState(
     val localId: LocalMediaIdentifier,
     val mediaId: Media.MediaId,
@@ -24,6 +26,7 @@ data class DownloadState(
 )
 
 /** Possible states of a download operation. */
+@Immutable
 enum class DownloadStatus {
     /** Download is queued and waiting to start. */
     QUEUED,

@@ -1,8 +1,11 @@
 package net.subsloth.core.model.identifier
 
+import androidx.compose.runtime.Immutable
+
 /**
  * A video resolution expressed as width × height in pixels.
  */
+@Immutable
 data class Resolution(
     val width: Int,
     val height: Int,

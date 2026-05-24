@@ -1,5 +1,6 @@
 package net.subsloth.core.model.progress
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.media.Media
 
 /**
@@ -9,6 +10,7 @@ import net.subsloth.core.model.media.Media
  * position. It does not contain any stream URLs — those are ephemeral values
  * obtained at playback time.
  */
+@Immutable
 data class PlaybackProgress(
     val mediaId: Media.MediaId,
     /** Playback position in seconds. */
