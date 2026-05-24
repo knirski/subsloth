@@ -82,3 +82,6 @@ kodi_plugin/
 .opencode/skills/kotlin-types-value-class/
 .opencode/skills/play-*/
 .opencode/skills/revenuecat-*/
+
+# Antigravity CLI
+.antigravitycli/
