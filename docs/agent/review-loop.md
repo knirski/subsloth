@@ -26,7 +26,15 @@ Two types of comments exist on a PR and both must be checked:
 - **Inline review threads** — comments on specific lines of code in the diff
 - **Issue-level comments** — top-level PR comments (posted by automated tools like `github-actions[bot]`, `coderabbitai[bot]`, `gemini-code-assist[bot]`)
 
-Issue-level comments are easy to miss because they do not appear in `reviewThreads`. Always fetch both types.
+**⚠️ Issue-level comments are easy to miss** because they do not appear in `reviewThreads`. The `github-actions[bot]` often posts "PR Reviewer Guide" and "PR Code Suggestions" issue comments that contain actionable feedback not surfaced in inline threads. Always fetch both types.
+
+When addressing PR comments, follow this checklist:
+
+- [ ] Fetch inline review threads via `get_review_comments`
+- [ ] Fetch issue-level comments via `get_comments` (PR number = issue number)  
+- [ ] Address every actionable comment, regardless of type
+- [ ] Reply to issue-level comments with `add_issue_comment`
+- [ ] Reply to inline comments with `add_reply_to_pull_request_comment`
 
 #### a. Watch CI
 

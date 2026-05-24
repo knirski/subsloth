@@ -349,3 +349,24 @@ fun currentDeviceFormFactor(): DeviceFormFactor {
 ```
 
 This signals to the compiler that the function is side-effect-free and can be called from init/memoization contexts.
+
+---
+
+## 19. Issue-Level Comments Are Separate from Review Threads
+
+`github-actions[bot]` posts "PR Reviewer Guide" and "PR Code Suggestions" as **issue-level comments** — they do NOT appear in `reviewThreads`. The `gemini-code-assist` tool also posts some feedback as issue comments. If you only check `get_review_comments`, you will miss them.
+
+**Always fetch both:**
+
+```
+get_review_comments  → inline threads (specific lines in the diff)
+get_comments         → issue-level (top-level PR comments from bots)
+```
+
+Complete checklist when addressing PR feedback:
+
+- [ ] Fetch inline review threads
+- [ ] Fetch issue-level comments (PR number = issue number)
+- [ ] Address every actionable comment, regardless of type
+- [ ] Reply to issue comments with `add_issue_comment`
+- [ ] Reply to inline comments with `add_reply_to_pull_request_comment`
