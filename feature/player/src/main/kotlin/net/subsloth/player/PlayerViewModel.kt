@@ -53,8 +53,7 @@ sealed interface PlayerUiState {
         val selectedQualityLabel: String?,
         val nextEpisode: Episode?,
         val showNextEpisodePrompt: Boolean,
-        val error: String?,
-        val authFailed: Boolean,
+        val playbackError: PlaybackError?,
         val playbackMode: PlaybackMode,
         /** Whether a quality fallback has been applied in this session. */
         val qualityFallbackNotice: Notice?,
@@ -131,7 +130,7 @@ class PlayerViewModel(
                     selectedSubtitle = null, availableSubtitles = emptyList(),
                     availableQualities = emptyList(), selectedQualityLabel = null,
                     nextEpisode = null, showNextEpisodePrompt = false,
-                    error = "Invalid content identifier", authFailed = false,
+                    playbackError = PlaybackError.Recoverable("Invalid content identifier"),
                     playbackMode = PlaybackMode.ONLINE, qualityFallbackNotice = null,
                     subtitleFallbackNotice = null,
                 )
@@ -152,8 +151,7 @@ class PlayerViewModel(
                         selectedSubtitle = null, availableSubtitles = emptyList(),
                         availableQualities = emptyList(), selectedQualityLabel = null,
                         nextEpisode = null, showNextEpisodePrompt = false,
-                        error = error.message ?: "Failed to load content",
-                        authFailed = isAuth,
+                        playbackError = playbackError,
                         playbackMode = PlaybackMode.ONLINE,
                         qualityFallbackNotice = null,
                         subtitleFallbackNotice = null,
@@ -223,8 +221,7 @@ class PlayerViewModel(
                 ?: source.selectedQuality.info.resolution.label,
             nextEpisode = null,
             showNextEpisodePrompt = false,
-            error = null,
-            authFailed = false,
+            playbackError = null,
             playbackMode = source.playbackMode,
             qualityFallbackNotice = (uiState.value as? PlayerUiState.Content)?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
@@ -356,8 +353,7 @@ class PlayerViewModel(
                         saveProgressAndRouteToAuthRepair()
                     }
                     _uiState.value = state.copy(
-                        error = playbackError.message,
-                        authFailed = isAuth,
+                        playbackError = playbackError,
                     )
                 },
             )
@@ -436,8 +432,7 @@ class PlayerViewModel(
             is PlaybackError.AuthFailure -> {
                 saveProgressAndRouteToAuthRepair()
                 _uiState.value = state.copy(
-                    error = playbackError.message,
-                    authFailed = true,
+                    playbackError = playbackError,
                 )
             }
             is PlaybackError.StreamUrlExpired -> {
@@ -446,8 +441,7 @@ class PlayerViewModel(
                     retryWithRefresh()
                 } else {
                     _uiState.value = state.copy(
-                        error = playbackError.message,
-                        authFailed = false,
+                        playbackError = playbackError,
                     )
                 }
             }
@@ -481,14 +475,12 @@ class PlayerViewModel(
                         }
                     } else {
                         _uiState.value = state.copy(
-                            error = playbackError.message,
-                            authFailed = false,
+                            playbackError = playbackError,
                         )
                     }
                 } else {
                     _uiState.value = state.copy(
-                        error = playbackError.message,
-                        authFailed = false,
+                        playbackError = playbackError,
                     )
                 }
             }

@@ -19,6 +19,7 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.SubtitleFormat
+import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
 import net.subsloth.testing.assertions.assertThat
@@ -62,7 +63,7 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value
         assertThat(state).isInstanceOf(PlayerUiState.Content::class.java)
         val content = state as PlayerUiState.Content
-        assertThat(content.error).isNull()
+        assertThat(content.playbackError).isNull()
     }
 
     @Test
@@ -75,8 +76,8 @@ class PlayerViewModelTest {
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.error).isNotNull()
-        assertThat(state.error).contains("Network error")
+        assertThat(state.playbackError).isNotNull()
+        assertThat(state.playbackError!!.message).contains("Network error")
     }
 
     @Test
@@ -84,7 +85,7 @@ class PlayerViewModelTest {
         val viewModel = createViewModel(contentId = "invalid", contentType = "unknown")
 
         val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.error).isNotNull()
+        assertThat(state.playbackError).isNotNull()
     }
 
     @Test
@@ -274,7 +275,7 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `auth failure sets authFailed flag`() = runTest(testDispatcher) {
+    fun `auth failure sets playbackError to AuthFailure`() = runTest(testDispatcher) {
         val viewModel =
             createViewModel(
                 contentId = "1",
@@ -283,7 +284,7 @@ class PlayerViewModelTest {
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.authFailed).isTrue()
+        assertThat(state.playbackError).isInstanceOf(PlaybackError.AuthFailure::class.java)
     }
 
     // ── Quality fallback notice ───────────────────────────────────────────

@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.DownloadStatus
+import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
@@ -69,13 +71,23 @@ class MovieDetailViewModel(
     private fun loadDetails() {
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
-            val result = getDetails(mediaId)
-            result.fold(
+            val detailsResult = getDetails(mediaId)
+            val libraryResult = listLibrary()
+            val downloadsResult = listDownloads()
+            detailsResult.fold(
                 onSuccess = { details ->
                     if (details is MovieDetails) {
+                        val library = libraryResult.getOrDefault(emptyList())
+                        val downloads = downloadsResult.getOrDefault(emptyList())
                         _uiState.value =
                             DetailUiState.MovieContent(
                                 details = details,
+                                isFavorite = library.any {
+                                    it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
+                                },
+                                isDownloaded = downloads.any {
+                                    it.mediaId == mediaId && it.status == DownloadStatus.COMPLETED
+                                },
                             )
                     } else {
                         _uiState.value = DetailUiState.Error("Unexpected media type")
@@ -115,15 +127,25 @@ class ShowDetailViewModel(
     private fun loadDetails() {
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
-            val result = getDetails(mediaId)
-            result.fold(
+            val detailsResult = getDetails(mediaId)
+            val libraryResult = listLibrary()
+            val downloadsResult = listDownloads()
+            detailsResult.fold(
                 onSuccess = { details ->
                     if (details is ShowDetails) {
+                        val library = libraryResult.getOrDefault(emptyList())
+                        val downloads = downloadsResult.getOrDefault(emptyList())
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
                             DetailUiState.ShowContent(
                                 details = details,
                                 selectedSeason = restoredSeason,
+                                isFavorite = library.any {
+                                    it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
+                                },
+                                isDownloaded = downloads.any {
+                                    it.mediaId == mediaId && it.status == DownloadStatus.COMPLETED
+                                },
                             )
                     } else {
                         _uiState.value = DetailUiState.Error("Unexpected media type")

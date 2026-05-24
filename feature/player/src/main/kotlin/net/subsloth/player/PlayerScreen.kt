@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.domain.policy.PlaybackSpeed
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
+import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.feature.player.R
 
@@ -100,10 +101,9 @@ private fun PlayerContent(
         modifier = modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (state.error != null) {
+        if (state.playbackError != null) {
             ErrorContent(
-                error = state.error,
-                isAuthError = state.authFailed,
+                playbackError = state.playbackError,
                 playbackMode = state.playbackMode,
                 onRetry = onRetry,
                 onRetryWithRefresh = onRetryWithRefresh,
@@ -355,14 +355,14 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
 
 @Composable
 private fun ErrorContent(
-    error: String,
-    isAuthError: Boolean,
+    playbackError: PlaybackError,
     playbackMode: PlaybackMode,
     onRetry: () -> Unit,
     onRetryWithRefresh: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
 ) {
+    val isAuthError = playbackError is PlaybackError.AuthFailure
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -381,7 +381,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = error,
+            text = playbackError.message,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
