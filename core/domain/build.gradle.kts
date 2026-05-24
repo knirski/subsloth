@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(libs.kotlinx.datetime)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)
