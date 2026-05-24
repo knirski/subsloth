@@ -98,7 +98,6 @@
     <ID>RedundantVisibilityModifier:Season.kt:Season$/** Whether every episode in this season is available for playback. */ public val isFullyAvailable: Boolean get() = episodes.all { it.availability is Availability.Available }</ID>
     <ID>RedundantVisibilityModifier:Subtitle.kt:Subtitle</ID>
     <ID>RedundantVisibilityModifier:Subtitle.kt:SubtitleFormat</ID>
-    <ID>RedundantVisibilityModifier:VideoSource.kt:PlaybackSession</ID>
     <ID>RedundantVisibilityModifier:VideoSource.kt:VideoSource</ID>
   </CurrentIssues>
 </SmellBaseline>

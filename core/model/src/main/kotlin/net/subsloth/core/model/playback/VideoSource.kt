@@ -24,18 +24,3 @@ data class VideoSource(
     /** Whether this source is streamed online or played from a local file. */
     val playbackMode: PlaybackMode = PlaybackMode.ONLINE,
 )
-
-/**
- * Active playback session state.
- *
- * This represents the runtime state of a currently active or paused playback
- * session. It is not persisted across app restarts.
- */
-@Immutable
-data class PlaybackSession(
-    val videoSource: VideoSource,
-    val positionSeconds: Long,
-    val isPlaying: Boolean,
-    val playbackSpeed: Float,
-    val selectedSubtitle: Subtitle?,
-)
