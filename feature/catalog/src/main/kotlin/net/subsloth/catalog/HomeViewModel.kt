@@ -20,8 +20,7 @@ sealed interface HomeUiState {
     data object Loading : HomeUiState
 
     @Immutable
-    data class Content(val rows: List<HomeRow>, val selectedTab: HomeTab, val isRefreshing: Boolean = false) :
-        HomeUiState
+    data class Content(val rows: List<HomeRow>, val selectedTab: HomeTab) : HomeUiState
 }
 
 @Stable

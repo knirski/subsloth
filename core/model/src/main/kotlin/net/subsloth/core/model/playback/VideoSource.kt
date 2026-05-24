@@ -21,6 +21,8 @@ data class VideoSource(
     val availableQualities: List<Quality>,
     val availableSubtitles: List<Subtitle>,
     val durationSeconds: Long,
+    /** Whether this source is streamed online or played from a local file. */
+    val playbackMode: PlaybackMode = PlaybackMode.ONLINE,
 )
 
 /**

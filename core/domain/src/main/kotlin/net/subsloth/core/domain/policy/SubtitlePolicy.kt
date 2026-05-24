@@ -15,13 +15,18 @@ object SubtitlePolicy {
     /**
      * Selects the default subtitle from the available tracks.
      *
-     * - Prefers English (`"en"`) if available.
-     * - Falls back to the first available track if English is absent.
+     * - Prefers [preferredLanguage] if available.
+     * - Falls back to English ("en") if preferred is unavailable.
+     * - Falls back to the first available track if both are absent.
      * - Returns `null` when [subtitles] is empty.
      */
-    fun selectDefault(subtitles: List<Subtitle>): Subtitle? {
+    fun selectDefault(
+        subtitles: List<Subtitle>,
+        preferredLanguage: LanguageCode = DEFAULT_LANGUAGE,
+    ): Subtitle? {
         if (subtitles.isEmpty()) return null
-        return subtitles.find { it.language == DEFAULT_LANGUAGE }
+        return subtitles.find { it.language == preferredLanguage }
+            ?: subtitles.find { it.language == DEFAULT_LANGUAGE }
             ?: subtitles.first()
     }
 

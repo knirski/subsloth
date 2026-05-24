@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,8 +31,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.domain.policy.PlaybackSpeed
+import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
+import net.subsloth.core.model.playback.PlaybackError
+import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.feature.player.R
+
+@Composable
+private fun resolveNotice(notice: PlayerUiState.Notice): String =
+    stringResource(id = notice.resId, *notice.formatArgs.toTypedArray())
 
 @Composable
 fun PlayerScreen(
@@ -57,9 +65,11 @@ fun PlayerScreen(
                 onSeek = viewModel::seekTo,
                 onSetSpeed = viewModel::setPlaybackSpeed,
                 onSelectSubtitle = viewModel::selectSubtitle,
+                onSelectQuality = viewModel::selectQuality,
                 onDismissNextEpisode = viewModel::dismissNextEpisode,
                 onPlayNextEpisode = viewModel::playNextEpisode,
                 onRetry = viewModel::retryPlayback,
+                onRetryWithRefresh = viewModel::retryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -75,25 +85,29 @@ private fun PlayerContent(
     onSeek: (Long) -> Unit = {},
     onSetSpeed: (Float) -> Unit = {},
     onSelectSubtitle: (Subtitle?) -> Unit = {},
+    onSelectQuality: (String) -> Unit = {},
     onDismissNextEpisode: () -> Unit = {},
     onPlayNextEpisode: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onRetryWithRefresh: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
+    var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
     Box(
         modifier = modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (state.error != null) {
+        if (state.playbackError != null) {
             ErrorContent(
-                error = state.error,
-                isAuthError = state.authFailed,
+                playbackError = state.playbackError,
+                playbackMode = state.playbackMode,
                 onRetry = onRetry,
+                onRetryWithRefresh = onRetryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -119,6 +133,24 @@ private fun PlayerContent(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(16.dp),
             )
+
+            if (state.qualityFallbackNotice != null) {
+                Text(
+                    text = resolveNotice(state.qualityFallbackNotice),
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+
+            if (state.subtitleFallbackNotice != null) {
+                Text(
+                    text = resolveNotice(state.subtitleFallbackNotice),
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -154,6 +186,7 @@ private fun PlayerContent(
                 onTogglePlayPause = onTogglePlayPause,
                 onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                 onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
+                onToggleQuality = { showQualityPicker = !showQualityPicker },
             )
 
             if (showSpeedPicker) {
@@ -176,6 +209,17 @@ private fun PlayerContent(
                     },
                 )
             }
+
+            if (showQualityPicker) {
+                QualityPicker(
+                    qualities = state.availableQualities,
+                    selectedLabel = state.selectedQualityLabel,
+                    onSelect = { label ->
+                        onSelectQuality(label)
+                        showQualityPicker = false
+                    },
+                )
+            }
         }
     }
 }
@@ -186,6 +230,7 @@ private fun PlaybackControls(
     onTogglePlayPause: () -> Unit,
     onToggleSpeed: () -> Unit,
     onToggleSubtitles: () -> Unit,
+    onToggleQuality: () -> Unit = {},
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -202,21 +247,67 @@ private fun PlaybackControls(
         OutlinedButton(onClick = onToggleSubtitles) {
             Text(stringResource(R.string.player_subtitles))
         }
+        Spacer(modifier = Modifier.width(8.dp))
+        OutlinedButton(onClick = onToggleQuality) {
+            Text(stringResource(R.string.player_quality))
+        }
     }
 }
 
 @Composable
 private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
-    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
         PlaybackSpeed.entries.forEach { speed ->
+            val isSelected = speed.value == currentSpeed
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
             Button(
                 onClick = { onSelect(speed.value) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
             ) {
-                Text(
-                    text = "${speed.value}x",
-                    color = if (speed.value == currentSpeed) Color.Yellow else Color.White,
-                )
+                Text(text = "${speed.value}x")
+            }
+        }
+    }
+}
+
+@Composable
+private fun QualityPicker(qualities: List<Quality>, selectedLabel: String?, onSelect: (String) -> Unit) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
+        qualities.forEach { quality ->
+            val label = quality.info.label ?: quality.info.resolution.label
+            val isSelected = label == selectedLabel
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Button(
+                onClick = { onSelect(label) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
+            ) {
+                Text(text = label)
             }
         }
     }
@@ -224,31 +315,48 @@ private fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {
 
 @Composable
 private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSelect: (Subtitle?) -> Unit) {
-    Column(modifier = Modifier.background(Color.DarkGray).padding(8.dp)) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)) {
+        val offContainerColor = if (selected == null) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+        val offContentColor = if (selected == null) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
         Button(
             onClick = { onSelect(null) },
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = offContainerColor,
+                contentColor = offContentColor,
+            ),
         ) {
-            Text(
-                stringResource(R.string.player_subtitles_off),
-                color = if (selected ==
-                    null
-                ) {
-                    Color.Yellow
-                } else {
-                    Color.White
-                },
-            )
+            Text(stringResource(R.string.player_subtitles_off))
         }
         subtitles.forEach { subtitle ->
+            val isSelected = selected?.language == subtitle.language
+            val containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
             Button(
                 onClick = { onSelect(subtitle) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor,
+                ),
             ) {
-                Text(
-                    text = subtitle.languageDisplayName ?: subtitle.language.value,
-                    color = if (selected?.language == subtitle.language) Color.Yellow else Color.White,
-                )
+                Text(text = subtitle.languageDisplayName ?: subtitle.language.value)
             }
         }
     }
@@ -279,12 +387,14 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
 
 @Composable
 private fun ErrorContent(
-    error: String,
-    isAuthError: Boolean,
+    playbackError: PlaybackError,
+    playbackMode: PlaybackMode,
     onRetry: () -> Unit,
+    onRetryWithRefresh: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
 ) {
+    val isAuthError = playbackError is PlaybackError.AuthFailure
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -303,7 +413,7 @@ private fun ErrorContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = error,
+            text = playbackError.message,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
@@ -315,6 +425,12 @@ private fun ErrorContent(
         } else {
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.player_retry))
+            }
+            if (playbackMode == PlaybackMode.ONLINE) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = onRetryWithRefresh, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.player_retry_with_refresh))
+                }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
