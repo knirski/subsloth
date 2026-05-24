@@ -1,6 +1,6 @@
 package net.subsloth.core.media
 
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -34,7 +34,7 @@ object MediaItemFactory {
      * app-private downloaded file.
      */
     fun createLocalMediaItem(localFileUri: String, source: VideoSource): MediaItem {
-        val uri = Uri.parse(localFileUri)
+        val uri = localFileUri.toUri()
         val scheme = uri.scheme
         require(scheme == "content" || scheme == "file") {
             "Invalid local URI scheme: $scheme. Must be content:// or file://"
@@ -54,7 +54,7 @@ object MediaItemFactory {
     fun buildSubtitleMediaItem(source: VideoSource): List<MediaItem.SubtitleConfiguration> =
         source.availableSubtitles.mapNotNull { subtitle ->
             val uri = subtitle.url ?: return@mapNotNull null
-            MediaItem.SubtitleConfiguration.Builder(Uri.parse(uri))
+            MediaItem.SubtitleConfiguration.Builder(uri.toUri())
                 .setMimeType(subtitle.format.toMedia3MimeType())
                 .setLanguage(subtitle.language.value)
                 .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)

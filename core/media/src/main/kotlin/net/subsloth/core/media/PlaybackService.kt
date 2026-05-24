@@ -69,7 +69,7 @@ class PlaybackService : Service() {
         .setContentTitle(NOTIFICATION_TITLE)
         .setSmallIcon(android.R.drawable.ic_media_play)
         .setCategory(Notification.CATEGORY_TRANSPORT)
-        .setVisibility(Notification.VISIBILITY_PUBLIC)
+        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .build()
 
     internal companion object {
