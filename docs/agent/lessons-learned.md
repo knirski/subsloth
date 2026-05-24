@@ -147,8 +147,8 @@ Don't poll with `sleep && gh run view` — use `gh run watch <run-id>` instead. 
 | Trap | Reality |
 |---|---|
 | `kotlinx.datetime.Instant` | Deprecated typealias → use `kotlin.time.Instant` from stdlib. No dependency needed. |
-| `LocalDate.atStartOfDayIn(TimeZone)` | **Removed** in 0.8.0. Use `LocalDate.toEpochDays().days.inWholeSeconds` with `Instant.fromEpochSeconds()`. |
-| `DateTimeFormatException` | **Internal** in 0.8.0. Catch `IllegalArgumentException` instead. |
+| `LocalDate.atStartOfDayIn(TimeZone)` | Did not compile in 0.8.0 (`Unresolved reference`). Use `LocalDate.toEpochDays().days.inWholeSeconds` with `Instant.fromEpochSeconds()`. |
+| `DateTimeFormatException` | Not accessible externally in 0.8.0 (compiler reports `internal in file`). Catch `IllegalArgumentException` as fallback. |
 | `kotlin.time.Duration.seconds` | Needs `import kotlin.time.Duration.Companion.seconds`. `Long.seconds` extension already imported transitively. |
 | `kotlin.time.toComponents` | Not available without `@OptIn`. Use `inWholeHours` + `inWholeMinutes % 60` for time decomposition. |
 
@@ -158,10 +158,7 @@ Don't poll with `sleep && gh run view` — use `gh run watch <run-id>` instead. 
 
 Detekt `2.0.0-alpha.3` crashes on qualified constant references in `@Preview` annotations:
 
-```
-No receiver found in qualified expression
-at KtQualifiedExpression.getReceiverExpression(...)
-```
+```text
 No receiver found in qualified expression
 at KtQualifiedExpression.getReceiverExpression(...)
 ```
@@ -358,7 +355,7 @@ This signals to the compiler that the function is side-effect-free and can be ca
 
 **Always fetch both:**
 
-```
+```text
 get_review_comments  → inline threads (specific lines in the diff)
 get_comments         → issue-level (top-level PR comments from bots)
 ```
