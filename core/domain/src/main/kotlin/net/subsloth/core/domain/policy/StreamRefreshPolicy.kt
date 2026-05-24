@@ -22,11 +22,8 @@ object StreamRefreshPolicy {
     ): Boolean = !refreshUsed && !isOfflinePlayback
 
     /**
-     * Returns the updated [refreshUsed] flag after a refresh attempt.
-     *
-     * After a successful refresh, [refreshUsed] becomes `true` and no
-     * further refreshes are allowed in the same session.
+     * Returns `true` — a refresh has been consumed and no further refreshes
+     * are allowed in this session.
      */
-    @Suppress("UnusedParameter")
-    fun markRefreshUsed(refreshUsed: Boolean): Boolean = true
+    fun markRefreshUsed(): Boolean = true
 }

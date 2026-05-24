@@ -41,11 +41,8 @@ object QualityFallbackPolicy {
     }
 
     /**
-     * Returns the updated [fallbackUsed] flag after a fallback attempt.
-     *
-     * After a successful fallback, [fallbackUsed] becomes `true` and no
-     * further fallbacks are allowed in the same session.
+     * Returns `true` — a fallback has been consumed and no further fallbacks
+     * are allowed in this session.
      */
-    @Suppress("UnusedParameter")
-    fun markFallbackUsed(fallbackUsed: Boolean): Boolean = true
+    fun markFallbackUsed(): Boolean = true
 }

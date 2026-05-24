@@ -17,6 +17,7 @@ import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.domain.policy.QualityFallbackPolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
+import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.MediaPlaybackController
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
@@ -49,8 +50,10 @@ sealed interface PlayerUiState {
         val authFailed: Boolean,
         /** Whether this is an offline (local file) playback session. */
         val isOfflinePlayback: Boolean,
-        /** Whether a quality fallback has been applied in this session. */
+/** Whether a quality fallback has been applied in this session. */
         val qualityFallbackNotice: String?,
+        /** Whether a subtitle fallback has been applied in this session. */
+        val subtitleFallbackNotice: String?,
     ) : PlayerUiState
 }
 
@@ -72,6 +75,8 @@ class PlayerViewModel(
     private val refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
         Result.failure(UnsupportedOperationException("Not implemented"))
     },
+    /** Persists playback speed for the active account profile. Called only for logged-in users. */
+    private val savePlaybackSpeed: suspend (Float) -> Unit = {},
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
@@ -80,7 +85,6 @@ class PlayerViewModel(
     private var currentMediaId: Media.MediaId? = null
     private var currentSource: VideoSource? = null
     private var progressJob: Job? = null
-    private var countdownJob: Job? = null
 
     /** Whether a stream URL refresh has been used in this session. */
     private var streamRefreshUsed = false
@@ -93,6 +97,8 @@ class PlayerViewModel(
     }
 
     private fun loadContent() {
+        streamRefreshUsed = false
+        qualityFallbackUsed = false
         viewModelScope.launch {
             currentMediaId = parseMediaId(contentId, contentType)
             val mediaId = currentMediaId
@@ -104,6 +110,7 @@ class PlayerViewModel(
                     nextEpisode = null, showNextEpisodePrompt = false,
                     error = "Invalid content identifier", authFailed = false,
                     isOfflinePlayback = false, qualityFallbackNotice = null,
+                    subtitleFallbackNotice = null,
                 )
                 return@launch
             }
@@ -125,6 +132,7 @@ class PlayerViewModel(
                         authFailed = isAuth,
                         isOfflinePlayback = false,
                         qualityFallbackNotice = null,
+                        subtitleFallbackNotice = null,
                     )
                 },
             )
@@ -133,12 +141,10 @@ class PlayerViewModel(
 
     private suspend fun startPlayback(source: VideoSource) {
         currentSource = source
-        streamRefreshUsed = false
-        qualityFallbackUsed = false
 
         playerController?.let { controller ->
             if (source.playbackMode == PlaybackMode.OFFLINE) {
-                val exoPlayer = controller.buildLocalPlayer()
+                controller.buildLocalPlayer()
                 controller.startLocalPlayback(
                     localFileUri = source.streamUrl,
                     source = source,
@@ -147,12 +153,28 @@ class PlayerViewModel(
                     handlePlayerError(error)
                 }
             } else {
-                val exoPlayer = controller.buildPlayer()
+                controller.buildPlayer()
                 controller.startPlayback(source)
                 controller.setErrorCallback { error ->
                     handlePlayerError(error)
                 }
             }
+        }
+
+        // Apply subtitle fallback chain per spec §Subtitle Behavior:
+        // Prefer English → first available → no subtitles with notice.
+        val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles)
+        val subtitleNotice = when {
+            initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
+                "No subtitles in preferred language"
+            initialSubtitle != null &&
+                initialSubtitle.language.value != "en" &&
+                source.availableSubtitles.isNotEmpty() ->
+                "Subtitles in ${initialSubtitle.languageDisplayName ?: initialSubtitle.language.value}"
+            else -> null
+        }
+        if (initialSubtitle != null) {
+            playerController?.setPreferredTextLanguage(initialSubtitle.language.value)
         }
 
         _uiState.value = PlayerUiState.Content(
@@ -161,7 +183,7 @@ class PlayerViewModel(
             durationSeconds = source.durationSeconds,
             isPlaying = true,
             playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
-            selectedSubtitle = null,
+            selectedSubtitle = initialSubtitle,
             availableSubtitles = source.availableSubtitles,
             nextEpisode = null,
             showNextEpisodePrompt = false,
@@ -169,6 +191,7 @@ class PlayerViewModel(
             authFailed = false,
             isOfflinePlayback = source.playbackMode == PlaybackMode.OFFLINE,
             qualityFallbackNotice = null,
+            subtitleFallbackNotice = subtitleNotice,
         )
 
         if (playerController != null) {
@@ -193,6 +216,12 @@ class PlayerViewModel(
         playerController?.setPlaybackSpeed(speed)
         val state = _uiState.value as? PlayerUiState.Content ?: return
         _uiState.value = state.copy(playbackSpeed = speed)
+        // Per spec §Playback Speed: logged-in user speed changes persist to
+        // the active account profile. Offline playback does not mutate
+        // account-scoped preferences.
+        if (!state.isOfflinePlayback) {
+            viewModelScope.launch { savePlaybackSpeed(speed) }
+        }
     }
 
     fun selectSubtitle(subtitle: Subtitle?) {
@@ -201,13 +230,23 @@ class PlayerViewModel(
         _uiState.value = state.copy(selectedSubtitle = subtitle)
     }
 
-    @Suppress("UnusedParameter")
+    /**
+     * Selects a quality for the current playback session.
+     *
+     * Per spec §Quality Behavior, manual in-player quality changes affect
+     * only the current session and do not update account-scoped preference.
+     */
     fun selectQuality(qualityLabel: String) {
-        updatePlayingState()
+        val source = currentSource ?: return
+        val quality = source.availableQualities.find {
+            it.info.label == qualityLabel || it.info.resolution.label == qualityLabel
+        } ?: return
+        val updatedSource = source.copy(selectedQuality = quality)
+        currentSource = updatedSource
+        viewModelScope.launch { startPlayback(updatedSource) }
     }
 
     fun dismissNextEpisode() {
-        countdownJob?.cancel()
         val state = _uiState.value as? PlayerUiState.Content ?: return
         _uiState.value = state.copy(showNextEpisodePrompt = false)
     }
@@ -244,7 +283,7 @@ class PlayerViewModel(
         viewModelScope.launch {
             refreshStreamUrl(mediaId).fold(
                 onSuccess = { refreshedSource ->
-                    streamRefreshUsed = StreamRefreshPolicy.markRefreshUsed(streamRefreshUsed)
+                    streamRefreshUsed = StreamRefreshPolicy.markRefreshUsed()
                     startPlayback(refreshedSource)
                 },
                 onFailure = { error ->
@@ -263,7 +302,6 @@ class PlayerViewModel(
 
     override fun onCleared() {
         progressJob?.cancel()
-        countdownJob?.cancel()
         super.onCleared()
         playerController?.release()
     }
@@ -299,14 +337,10 @@ class PlayerViewModel(
         }
         val nextEp = state.nextEpisode
         if (nextEp != null) {
-            countdownJob?.cancel()
-            countdownJob = viewModelScope.launch {
-                _uiState.value = state.copy(showNextEpisodePrompt = true)
-                delay(NEXT_EPISODE_COUNTDOWN)
-                if (_uiState.value is PlayerUiState.Content) {
-                    playNextEpisode()
-                }
-            }
+            // Show the prompt only — the user must explicitly tap Play.
+            // The spec requires NO autoplay; the countdown is a visual
+            // convenience for the prompt, not an auto-advance trigger.
+            _uiState.value = state.copy(showNextEpisodePrompt = true)
         }
     }
 
@@ -361,7 +395,7 @@ class PlayerViewModel(
                         fallbackUsed = qualityFallbackUsed,
                     )
                     if (fallback != null) {
-                        qualityFallbackUsed = QualityFallbackPolicy.markFallbackUsed(qualityFallbackUsed)
+                        qualityFallbackUsed = QualityFallbackPolicy.markFallbackUsed()
                         _uiState.value = state.copy(
                             qualityFallbackNotice = "Quality reduced to " +
                                 (fallback.info.label ?: fallback.info.resolution.label),
@@ -441,6 +475,5 @@ class PlayerViewModel(
         private const val CONTENT_TYPE_EPISODE = "episode"
         private const val CONTENT_TYPE_SHOW = "show"
         private val PROGRESS_UPDATE_INTERVAL: Duration = 1.seconds
-        private val NEXT_EPISODE_COUNTDOWN: Duration = 10.seconds
     }
 }

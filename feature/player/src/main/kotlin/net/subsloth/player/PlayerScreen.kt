@@ -133,6 +133,15 @@ private fun PlayerContent(
                 )
             }
 
+            if (state.subtitleFallbackNotice != null) {
+                Text(
+                    text = state.subtitleFallbackNotice,
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(

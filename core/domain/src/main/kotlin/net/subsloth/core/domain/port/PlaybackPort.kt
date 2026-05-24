@@ -1,13 +1,14 @@
 package net.subsloth.core.domain.port
 
 import net.subsloth.core.model.media.Media
-import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.VideoSource
 
 /**
  * Port for starting and controlling media playback.
  *
  * Implementations are provided by the Android/media shell.
+ * The ViewModel consumes this port via typed lambdas for testability;
+ * the concrete implementation lives in `:core:media`.
  */
 interface PlaybackPort {
     /**
@@ -31,8 +32,8 @@ interface PlaybackPort {
      * Refreshes the stream URL for the current media item.
      *
      * At most one refresh is allowed per playback session. Returns the
-     * refreshed [VideoSource] on success, or a [PlaybackError] on failure.
-     * Offline playback must never call this method.
+     * refreshed [VideoSource] on success. Offline playback must never
+     * call this method.
      */
     suspend fun refreshStreamUrl(mediaId: Media.MediaId): Result<VideoSource>
 }

@@ -27,7 +27,6 @@ class StreamRefreshPolicyTest {
 
     @Test
     fun `markRefreshUsed returns true`() {
-        assertTrue(StreamRefreshPolicy.markRefreshUsed(false))
-        assertTrue(StreamRefreshPolicy.markRefreshUsed(true))
+        assertTrue(StreamRefreshPolicy.markRefreshUsed())
     }
 }

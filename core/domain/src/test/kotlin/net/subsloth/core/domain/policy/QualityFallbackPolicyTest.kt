@@ -100,7 +100,6 @@ class QualityFallbackPolicyTest {
 
     @Test
     fun `markFallbackUsed returns true`() {
-        assert(QualityFallbackPolicy.markFallbackUsed(false))
-        assert(QualityFallbackPolicy.markFallbackUsed(true))
+        assert(QualityFallbackPolicy.markFallbackUsed())
     }
 }

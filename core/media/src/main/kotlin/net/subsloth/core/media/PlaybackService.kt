@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.IBinder
 
 /**
@@ -23,9 +24,14 @@ class PlaybackService : Service() {
         createNotificationChannel()
     }
 
+    @Suppress("NewApi") // FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK requires API 29+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = buildNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(
+            NOTIFICATION_ID,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+        )
         return START_NOT_STICKY
     }
 

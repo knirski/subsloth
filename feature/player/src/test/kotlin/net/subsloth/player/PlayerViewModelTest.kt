@@ -297,6 +297,134 @@ class PlayerViewModelTest {
         assertThat(state.qualityFallbackNotice).isNull()
     }
 
+    // ── Stream refresh ────────────────────────────────────────────────────
+
+    @Test
+    fun `retryWithRefresh on offline playback is a no-op`() = runTest(testDispatcher) {
+        var refreshCallCount = 0
+        val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+                refreshStreamUrl = {
+                    refreshCallCount++
+                    Result.failure(UnsupportedOperationException("Not implemented"))
+                },
+            )
+
+        viewModel.retryWithRefresh()
+
+        assertThat(refreshCallCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `second refresh attempt after streamRefreshUsed is blocked`() = runTest(testDispatcher) {
+        var refreshCallCount = 0
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(createVideoSource()) },
+                refreshStreamUrl = {
+                    refreshCallCount++
+                    Result.success(createVideoSource())
+                },
+            )
+
+        viewModel.retryWithRefresh()
+        viewModel.retryWithRefresh()
+
+        assertThat(refreshCallCount).isEqualTo(1)
+    }
+
+    // ── Playback speed ────────────────────────────────────────────────────
+
+    @Test
+    fun `setPlaybackSpeed calls savePlaybackSpeed for online playback`() = runTest(testDispatcher) {
+        val savedSpeeds = mutableListOf<Float>()
+        val source = createVideoSource()
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+                savePlaybackSpeed = { savedSpeeds.add(it) },
+            )
+
+        viewModel.setPlaybackSpeed(1.5f)
+
+        assertThat(savedSpeeds).containsExactly(1.5f)
+    }
+
+    @Test
+    fun `setPlaybackSpeed does not call savePlaybackSpeed for offline playback`() = runTest(testDispatcher) {
+        var savePlaybackSpeedCalled = false
+        val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+                savePlaybackSpeed = { savePlaybackSpeedCalled = true },
+            )
+
+        viewModel.setPlaybackSpeed(1.5f)
+
+        assertThat(savePlaybackSpeedCalled).isFalse()
+    }
+
+    // ── Subtitle fallback ──────────────────────────────────────────────────
+
+    @Test
+    fun `subtitle fallback selects English when available`() = runTest(testDispatcher) {
+        val enSubtitle = createSubtitle()
+        val esSubtitle = createSpanishSubtitle()
+        val source = createVideoSource(availableSubtitles = listOf(enSubtitle, esSubtitle))
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNotNull()
+        assertThat(state.selectedSubtitle!!.language).isEqualTo(LanguageCode("en"))
+    }
+
+    @Test
+    fun `subtitle fallback selects first available when English is unavailable`() = runTest(testDispatcher) {
+        val esSubtitle = createSpanishSubtitle()
+        val source = createVideoSource(availableSubtitles = listOf(esSubtitle))
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNotNull()
+        assertThat(state.selectedSubtitle!!.language).isEqualTo(LanguageCode("es"))
+    }
+
+    @Test
+    fun `subtitle fallback notice shown when falling back from preferred language`() = runTest(testDispatcher) {
+        val esSubtitle = createSpanishSubtitle()
+        val source = createVideoSource(availableSubtitles = listOf(esSubtitle))
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.subtitleFallbackNotice).isNotNull()
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
@@ -310,6 +438,7 @@ class PlayerViewModelTest {
         refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
             Result.failure(UnsupportedOperationException("Not implemented"))
         },
+        savePlaybackSpeed: suspend (Float) -> Unit = {},
     ): PlayerViewModel = PlayerViewModel(
         contentId = contentId,
         contentType = contentType,
@@ -318,6 +447,7 @@ class PlayerViewModelTest {
         onAuthFailure = onAuthFailure,
         saveProgress = saveProgress,
         refreshStreamUrl = refreshStreamUrl,
+        savePlaybackSpeed = savePlaybackSpeed,
     )
 
     private fun createVideoSource(
@@ -346,6 +476,14 @@ class PlayerViewModelTest {
         language = LanguageCode("en"),
         languageDisplayName = "English",
         url = "https://example.com/sub.srt",
+        downloadUrl = null,
+        format = SubtitleFormat.SRT,
+    )
+
+    private fun createSpanishSubtitle(): Subtitle = Subtitle(
+        language = LanguageCode("es"),
+        languageDisplayName = "Spanish",
+        url = "https://example.com/sub-es.srt",
         downloadUrl = null,
         format = SubtitleFormat.SRT,
     )
