@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
+import java.security.GeneralSecurityException
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -73,7 +74,7 @@ class CredentialStore(private val context: Context) {
             val plaintext = cipher.doFinal(ciphertext)
             val parts = String(plaintext, Charsets.UTF_8).split("\u0000", limit = 2)
             if (parts.size != 2) null else Pair(parts[0], parts[1])
-        } catch (e: java.security.GeneralSecurityException) {
+        } catch (e: GeneralSecurityException) {
             null
         } catch (e: IllegalArgumentException) {
             null

@@ -2,6 +2,9 @@ package net.subsloth.core.domain.architecture
 
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 /**
  * Architecture boundary tests ensuring [net.subsloth.core.domain] and
@@ -111,7 +114,7 @@ class DomainArchitectureTest {
             System.getProperty("user.dir")
                 ?: error("user.dir system property is required")
         val domainSourceDir =
-            java.nio.file.Paths
+            Paths
                 .get(baseDir, "src", "main", "kotlin")
 
         if (!domainSourceDir.toFile().isDirectory) {
@@ -119,11 +122,11 @@ class DomainArchitectureTest {
         }
 
         val result = mutableListOf<String>()
-        java.nio.file.Files.walk(domainSourceDir).use { walkStream ->
+        Files.walk(domainSourceDir).use { walkStream ->
             walkStream
                 .filter { it.toString().endsWith(".kt") }
-                .forEach { file: java.nio.file.Path ->
-                    java.nio.file.Files.lines(file).use { lines ->
+                .forEach { file: Path ->
+                    Files.lines(file).use { lines ->
                         lines
                             .filter { it.trimStart().startsWith("import ") }
                             .map { it.trim() }

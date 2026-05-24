@@ -11,6 +11,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Test
+import java.util.concurrent.TimeUnit
 
 /**
  * Tests for [ResponseInterceptor] — redirect, HTML, and non-JSON response
@@ -175,14 +176,14 @@ class ResponseInterceptorTest {
 
         override fun connectTimeoutMillis() = 10_000
 
-        override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+        override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
         override fun readTimeoutMillis() = 10_000
 
-        override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+        override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
         override fun writeTimeoutMillis() = 10_000
 
-        override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+        override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
     }
 }

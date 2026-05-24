@@ -14,6 +14,7 @@ import net.subsloth.core.network.media.api.model.ShowListResponse
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 import retrofit2.http.Query
+import java.net.URI
 
 /**
  * Validates that committed fixture files decode against the typed DTOs and
@@ -149,7 +150,7 @@ class FixtureTest {
             for (value in values) {
                 if (value.startsWith("http://") || value.startsWith("https://")) {
                     val host =
-                        java.net.URI(value).host
+                        URI(value).host
                             ?: error("Missing host in URL value: $value")
                     assertThat(host).endsWith(".invalid")
                     forbiddenHosts.forEach { forbiddenHost ->

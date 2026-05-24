@@ -15,6 +15,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Test
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -156,15 +157,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val chain2 =
@@ -182,15 +183,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val t1 = Thread { runCatching { coalescer.intercept(chain1) } }
@@ -255,15 +256,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val result = runCatching { interceptor.intercept(chain) }
@@ -300,15 +301,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val result = runCatching { interceptor.intercept(chain) }
@@ -347,15 +348,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val result = runCatching { interceptor.intercept(chain) }
@@ -392,15 +393,15 @@ class NetworkPolicyTest {
 
                 override fun connectTimeoutMillis() = 10_000
 
-                override fun withConnectTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withConnectTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun readTimeoutMillis() = 10_000
 
-                override fun withReadTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withReadTimeout(timeout: Int, unit: TimeUnit) = this
 
                 override fun writeTimeoutMillis() = 10_000
 
-                override fun withWriteTimeout(timeout: Int, unit: java.util.concurrent.TimeUnit) = this
+                override fun withWriteTimeout(timeout: Int, unit: TimeUnit) = this
             }
 
         val result = runCatching { interceptor.intercept(chain) }

@@ -6,6 +6,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
+import kotlin.system.exitProcess
 
 /**
  * CLI entry point for the export-fixtures Gradle task.
@@ -23,7 +24,7 @@ fun main(args: Array<String>) {
             "Usage: ExportFixtures <har-files-csv> <rules-json> " +
                 "<native-dir> <web-dir> <keepRaw>",
         )
-        kotlin.system.exitProcess(1)
+        exitProcess(1)
     }
 
     val harPaths = args[0].split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -34,12 +35,12 @@ fun main(args: Array<String>) {
 
     if (harPaths.isEmpty()) {
         System.err.println("[export-fixtures] ERROR: No HAR files specified.")
-        kotlin.system.exitProcess(1)
+        exitProcess(1)
     }
 
     if (!rulesFile.isFile) {
         System.err.println("[export-fixtures] ERROR: Rules file not found: $rulesFile")
-        kotlin.system.exitProcess(1)
+        exitProcess(1)
     }
 
     val harFiles = harPaths.map(::File).toSet()
