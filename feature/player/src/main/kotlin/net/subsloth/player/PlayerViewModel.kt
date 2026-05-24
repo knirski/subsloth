@@ -383,11 +383,12 @@ class PlayerViewModel(
                 delay(PROGRESS_UPDATE_INTERVAL)
                 val pos = playerController?.currentPosition()?.inWholeSeconds ?: 0L
                 val dur = playerController?.duration()?.inWholeSeconds ?: 0L
+                val playing = playerController?.isPlaying() ?: false
                 _uiState.update { current ->
                     (current as? PlayerUiState.Content)?.copy(
                         positionSeconds = pos,
                         durationSeconds = dur,
-                        isPlaying = playerController?.isPlaying() ?: false,
+                        isPlaying = playing,
                     ) ?: current
                 }
                 val state = _uiState.value as? PlayerUiState.Content ?: continue
@@ -419,9 +420,10 @@ class PlayerViewModel(
     }
 
     private fun updatePlayingState() {
+        val playing = playerController?.isPlaying() ?: false
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(
-                isPlaying = playerController?.isPlaying() ?: false,
+                isPlaying = playing,
             ) ?: current
         }
     }
