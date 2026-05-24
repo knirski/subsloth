@@ -139,3 +139,187 @@ fun MyComponent(
 ## 8. CI Monitoring: Use `gh run watch`
 
 Don't poll with `sleep && gh run view` — use `gh run watch <run-id>` instead. It refreshes every 3 seconds and exits when the run completes, saving time and context. Find the run ID via `gh run list` or the status check rollup URL. The `--log-failed` flag on `gh run view` is useful after a failure to see what went wrong.
+
+---
+
+## 9. Kotlin 2.3 / kotlinx-datetime 0.8.0 Gotchas
+
+| Trap | Reality |
+|---|---|
+| `kotlinx.datetime.Instant` | Deprecated typealias → use `kotlin.time.Instant` from stdlib. No dependency needed. |
+| `LocalDate.atStartOfDayIn(TimeZone)` | **Removed** in 0.8.0. Use `LocalDate.toEpochDays().days.inWholeSeconds` with `Instant.fromEpochSeconds()`. |
+| `DateTimeFormatException` | **Internal** in 0.8.0. Catch `IllegalArgumentException` instead. |
+| `kotlin.time.Duration.seconds` | Needs `import kotlin.time.Duration.Companion.seconds`. `Long.seconds` extension already imported transitively. |
+| `kotlin.time.toComponents` | Not available without `@OptIn`. Use `inWholeHours` + `inWholeMinutes % 60` for time decomposition. |
+
+---
+
+## 10. Detekt Alpha Crashes
+
+Detekt `2.0.0-alpha.3` crashes on qualified constant references in `@Preview` annotations:
+
+```
+No receiver found in qualified expression
+at KtQualifiedExpression.getReceiverExpression(...)
+```
+
+| What fails | Workaround |
+|---|---|
+| `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` with `import android.content.res.Configuration` | Detekt parse crash on qualified expression |
+| `@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)` | Triggers `NoFullyQualifiedNames` rule |
+
+**Fix:** Use literal `2` (which is wrong — `UI_MODE_NIGHT_YES` = `32`). Wait, that's also wrong. Only fix is to suppress the detekt rule or use the literal `32` with a line comment:
+
+```kotlin
+@Preview(showBackground = true, uiMode = 32 /* Configuration.UI_MODE_NIGHT_YES */)
+```
+
+Note: `Configuration.UI_MODE_NIGHT_YES` = `32` (0x20), NOT `2` (0x02 = `UI_MODE_TYPE_DESK`).
+
+---
+
+## 11. ktlint Inline Block Comments
+
+ktlint `standard:comment-wrapping` rule forbids block comments on the same line as other elements:
+
+```kotlin
+// ❌ Fails ktlint
+@Preview(showBackground = true, uiMode = 32 /* Configuration.UI_MODE_NIGHT_YES */)
+
+// ✅ Passes
+// Configuration.UI_MODE_NIGHT_YES = 32
+@Preview(showBackground = true, uiMode = 32)
+```
+
+---
+
+## 12. Compose Stability Config Format
+
+`config/compose_stability.conf` accepts **one fully-qualified class per line, no comments**:
+
+```text
+# ❌ Comments are NOT valid — parse error
+kotlin.time.Instant
+```
+
+```text
+kotlin.time.Instant
+```
+
+Wire it in convention plugins:
+
+```kotlin
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("config/compose_stability.conf"),
+    )
+}
+```
+
+---
+
+## 13. `MutableStateFlow.update` Needs Explicit Import
+
+`MutableStateFlow.update` is an inline extension in `kotlinx.coroutines.flow`. Even when `MutableStateFlow` is imported, you must also import the extension:
+
+```kotlin
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update  // ← required!
+```
+
+Without it: `Unresolved reference 'update'`.
+
+---
+
+## 14. Architecture Test Patterns
+
+### Source-scanning approach (no ArchUnit needed)
+
+```kotlin
+private val allImports: List<String> by lazy {
+    val sourceDir = Paths.get(System.getProperty("user.dir"), "src", "main", "kotlin")
+    Files.walk(sourceDir).use { walk ->
+        walk.filter { it.toString().endsWith(".kt") }.flatMap { file ->
+            Files.lines(file).use { lines ->
+                lines.filter { it.trimStart().startsWith("import ") }
+                    .map { it.trim() }
+                    .toList()
+            }
+        }.toList()
+    }
+}
+
+@Test
+fun `no Android framework imports`() {
+    val violations = allImports.filter { line ->
+        val target = line.removePrefix("import").trim()
+        forbiddenPrefixes.any { target.startsWith(it) } &&
+            allowedPrefixes.none { target == it }
+    }
+    assertThat(violations).isEmpty()
+}
+```
+
+### Banned dependency checks in CI
+
+```bash
+grep -rnwI -E '^import\s+(arrow\.|dagger\.|com\.squareup\.moshi\.|com\.google\.gson\.|io\.kotest\.|io\.reactivex\.|androidx\.navigation\.compose\.)' \
+    --include='*.kt' --include='*.java' \
+    "$target" 2>/dev/null \
+  | grep -v '/src/test/' \
+  | grep -v '/src/androidTest/'
+```
+
+Put in `check-invariants.sh` — runs in `pre-checks` CI job, fails before heavy jobs start.
+
+---
+
+## 15. Version Catalog Merges: Add Entries, Don't Replace
+
+When two PRs add different entries to `libs.versions.toml` or `build.gradle.kts`, the merge conflict is always a "keep both" resolution. Don't drop either entry.
+
+---
+
+## 16. Strict SemVer in Gradle Version Code
+
+```kotlin
+// ❌ Silent coercion — malformed tags produce 0
+val major = parts.getOrElse(0) { "0" }.toIntOrNull() ?: 0
+
+// ✅ Fail fast — malformed tags reject the build
+require(numeric.matches(Regex("""\d+\.\d+\.\d+"""))) {
+    "Version '$appVersionName' must be SemVer 'major.minor.patch' (got '$numeric')"
+}
+val major = parts[0].toInt()
+```
+
+Also strip build metadata: `appVersionName.substringBefore("-").substringBefore("+")`.
+
+---
+
+## 17. PR Merge Order: Foundation First
+
+When N PRs touch overlapping files, merge from smallest scope to largest:
+
+1. **Isolated changes first** (e.g. single-file cleanups)
+2. **Foundation PRs** (new types, dependencies, convention plugin changes)
+3. **Consumers** (PRs that use the new types/changes)
+
+Rebase consumer PRs onto updated main after each foundation merge. Git auto-merges work well when changes are in *different function bodies* — they conflict only when both PRs touch the exact same lines.
+
+---
+
+## 18. `@ReadOnlyComposable` for Pure Composition-Local Readers
+
+Functions that only read `Local*` composition locals and compute a value without emitting nodes should be `@ReadOnlyComposable`:
+
+```kotlin
+@Composable
+@ReadOnlyComposable
+fun currentDeviceFormFactor(): DeviceFormFactor {
+    val widthDp = LocalWindowInfo.current.containerSize.width
+    return when { ... }
+}
+```
+
+This signals to the compiler that the function is side-effect-free and can be called from init/memoization contexts.
