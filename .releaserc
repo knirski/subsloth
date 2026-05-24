@@ -3,6 +3,12 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    "@semantic-release/github"
+    "@semantic-release/github",
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "./gradlew :app:assembleDebug && gh release upload ${nextRelease.gitTag} app/build/outputs/apk/debug/app-debug.apk --clobber"
+      }
+    ]
   ]
 }

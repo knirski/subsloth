@@ -12,19 +12,16 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 
 ## Release Workflow
 
-1. A maintainer merges changes to `main` using conventional commits (squash + merge).
-2. The PR title becomes the commit message on `main`, and `pr-title.yml` enforces the conventional commit format.
-3. `semantic-release.yml` runs on push to `main`, analyzes commits since the last tag, determines the next version, and creates a GitHub Release with tag `vX.Y.Z`.
-4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
+ 1. A maintainer merges changes to `main` using conventional commits (squash + merge).
+ 2. The PR title becomes the commit message on `main`, and `pr-title.yml` enforces the conventional commit format.
+ 3. `semantic-release.yml` runs on push to `main`, sets up JDK 25 + JDK 17, analyzes commits since the last tag, determines the next version, builds the debug APK via `:app:assembleDebug`, and creates a GitHub Release with the APK attached and tag `vX.Y.Z`.
+ 4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
 
 No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.
 
 ## APK Artifact
 
-The debug-signed sideload APK is named:
-```
-subsloth-vX.Y.Z-debug-<shortsha>.apk
-```
+A debug-signed sideload APK (`app-debug.apk`) is built during the release pipeline and uploaded as a release asset. Download it from the Assets section of the GitHub Release page.
 
 ### Manual Install / Update
 1. Download the APK from the GitHub Release page.
