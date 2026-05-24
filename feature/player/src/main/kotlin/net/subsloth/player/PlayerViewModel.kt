@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.CompletionPolicy
@@ -253,8 +254,9 @@ class PlayerViewModel(
                     val currentIndex = sorted.indexOfFirst { it.id == currentEpisodeId }
                     if (currentIndex >= 0 && currentIndex < sorted.size - 1) {
                         val next = sorted[currentIndex + 1]
-                        val state = _uiState.value as? PlayerUiState.Content ?: return@launch
-                        _uiState.value = state.copy(nextEpisode = next)
+                        _uiState.update { current ->
+                            (current as? PlayerUiState.Content)?.copy(nextEpisode = next) ?: current
+                        }
                     }
                 }
             }
@@ -276,11 +278,13 @@ class PlayerViewModel(
 
     fun setPlaybackSpeed(speed: Float) {
         playerController?.setPlaybackSpeed(speed)
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        _uiState.value = state.copy(playbackSpeed = speed)
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(playbackSpeed = speed) ?: current
+        }
         // Per spec §Playback Speed: logged-in user speed changes persist to
         // the active account profile. Offline playback does not mutate
         // account-scoped preferences.
+        val state = _uiState.value as? PlayerUiState.Content ?: return
         if (state.playbackMode == PlaybackMode.ONLINE) {
             viewModelScope.launch { savePlaybackSpeed(speed) }
         }
@@ -288,8 +292,9 @@ class PlayerViewModel(
 
     fun selectSubtitle(subtitle: Subtitle?) {
         playerController?.setPreferredTextLanguage(subtitle?.language?.value)
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        _uiState.value = state.copy(selectedSubtitle = subtitle)
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(selectedSubtitle = subtitle) ?: current
+        }
     }
 
     /**
@@ -310,8 +315,9 @@ class PlayerViewModel(
     }
 
     fun dismissNextEpisode() {
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        _uiState.value = state.copy(showNextEpisodePrompt = false)
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = false) ?: current
+        }
     }
 
     fun playNextEpisode() {
@@ -377,12 +383,14 @@ class PlayerViewModel(
                 delay(PROGRESS_UPDATE_INTERVAL)
                 val pos = playerController?.currentPosition()?.inWholeSeconds ?: 0L
                 val dur = playerController?.duration()?.inWholeSeconds ?: 0L
+                _uiState.update { current ->
+                    (current as? PlayerUiState.Content)?.copy(
+                        positionSeconds = pos,
+                        durationSeconds = dur,
+                        isPlaying = playerController?.isPlaying() ?: false,
+                    ) ?: current
+                }
                 val state = _uiState.value as? PlayerUiState.Content ?: continue
-                _uiState.value = state.copy(
-                    positionSeconds = pos,
-                    durationSeconds = dur,
-                    isPlaying = playerController?.isPlaying() ?: false,
-                )
 
                 currentMediaId?.let { id ->
                     saveProgress(id, pos, dur)
@@ -404,13 +412,18 @@ class PlayerViewModel(
             // Show the prompt only — the user must explicitly tap Play.
             // The spec requires NO autoplay; the countdown is a visual
             // convenience for the prompt, not an auto-advance trigger.
-            _uiState.value = state.copy(showNextEpisodePrompt = true)
+            _uiState.update { current ->
+                (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = true) ?: current
+            }
         }
     }
 
     private fun updatePlayingState() {
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        _uiState.value = state.copy(isPlaying = playerController?.isPlaying() ?: false)
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(
+                isPlaying = playerController?.isPlaying() ?: false,
+            ) ?: current
+        }
     }
 
     /**
@@ -422,6 +435,7 @@ class PlayerViewModel(
      * - Quality errors: attempt bounded quality fallback if available.
      * - Other errors: show recoverable error with retry option.
      */
+    @Suppress("CyclomaticComplexMethod")
     private fun handlePlayerError(error: PlaybackException) {
         val state = _uiState.value as? PlayerUiState.Content ?: return
 
@@ -434,18 +448,18 @@ class PlayerViewModel(
         when (playbackError) {
             is PlaybackError.AuthFailure -> {
                 saveProgressAndRouteToAuthRepair()
-                _uiState.value = state.copy(
-                    playbackError = playbackError,
-                )
+                _uiState.update { current ->
+                    (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+                }
             }
             is PlaybackError.StreamUrlExpired -> {
                 // Attempt bounded refresh
                 if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, state.playbackMode == PlaybackMode.OFFLINE)) {
                     retryWithRefresh()
                 } else {
-                    _uiState.value = state.copy(
-                        playbackError = playbackError,
-                    )
+                    _uiState.update { current ->
+                        (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+                    }
                 }
             }
             is PlaybackError.Recoverable -> {
@@ -466,25 +480,24 @@ class PlayerViewModel(
 
                             // Set the fallback notice AFTER startPlayback to avoid it being cleared
                             // by startPlayback creating a new state.
-                            val currentState = _uiState.value as? PlayerUiState.Content
-                            if (currentState != null) {
-                                _uiState.value = currentState.copy(
+                            _uiState.update { current ->
+                                (current as? PlayerUiState.Content)?.copy(
                                     qualityFallbackNotice = PlayerUiState.Notice(
                                         R.string.player_quality_fallback_notice,
                                         persistentListOf(fallback.info.label ?: fallback.info.resolution.label),
                                     ),
-                                )
+                                ) ?: current
                             }
                         }
                     } else {
-                        _uiState.value = state.copy(
-                            playbackError = playbackError,
-                        )
+                        _uiState.update { current ->
+                            (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+                        }
                     }
                 } else {
-                    _uiState.value = state.copy(
-                        playbackError = playbackError,
-                    )
+                    _uiState.update { current ->
+                        (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+                    }
                 }
             }
         }

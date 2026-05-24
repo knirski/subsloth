@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.DownloadStatus
@@ -159,9 +160,8 @@ class ShowDetailViewModel(
     }
 
     fun selectSeason(seasonNumber: Int) {
-        val current = _uiState.value
-        if (current is DetailUiState.ShowContent) {
-            _uiState.value = current.copy(selectedSeason = seasonNumber)
+        _uiState.update { current ->
+            if (current is DetailUiState.ShowContent) current.copy(selectedSeason = seasonNumber) else current
         }
     }
 
