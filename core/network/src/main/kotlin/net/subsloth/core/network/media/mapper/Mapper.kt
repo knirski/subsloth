@@ -2,6 +2,7 @@
 
 package net.subsloth.core.network.media.mapper
 
+import kotlinx.datetime.LocalDate
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.identifier.EpisodeId
@@ -20,6 +21,9 @@ import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.media.SubtitleFormat
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import net.subsloth.core.model.media.Episode as DomainEpisode
 import net.subsloth.core.model.media.Quality as DomainQuality
 import net.subsloth.core.model.media.Subtitle as DomainSubtitle
@@ -44,7 +48,6 @@ import net.subsloth.core.network.media.api.model.VideoQuality as DtoVideoQuality
  *   object is clearer than scattering it across multiple files.
  */
 object Mapper {
-    private const val SECONDS_PER_MINUTE = 60L
 
     // ── Movie List → Domain Media List ───────────────────────────────────
 
@@ -66,7 +69,7 @@ object Mapper {
             id = Media.MediaId.Movie(MovieId(dto.id)),
             title = title,
             plot = dto.plot ?: dto.description,
-            availability = mapAvailability(dto.updatedAt),
+            availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating ?: dto.rating,
             year = dto.year ?: dto.releaseYear,
             genres = dto.arrayGenres ?: parseGenres(dto.genres),
@@ -74,7 +77,7 @@ object Mapper {
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
             backdropUrl = dto.backdropUrl ?: dto.backdrop,
-            updatedAtEpochSeconds = dto.updatedAt,
+            updatedAtEpochSeconds = dto.updatedAt?.let { Instant.fromEpochSeconds(it) },
         )
     }
 
@@ -90,7 +93,7 @@ object Mapper {
                 title = title,
                 plot = dto.plot,
                 description = dto.description ?: dto.desc,
-                availability = mapAvailability(dto.updatedAt),
+                availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating ?: dto.rating,
                 year = dto.year ?: dto.releaseYear,
                 genres = dto.arrayGenres ?: parseGenres(dto.genres),
@@ -131,7 +134,7 @@ object Mapper {
             id = Media.MediaId.Show(ShowId(dto.id)),
             title = title,
             plot = dto.plot ?: dto.description,
-            availability = mapAvailability(dto.newestVideo),
+            availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating,
             year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
             genres = dto.arrayGenres ?: dto.genres.orEmpty(),
@@ -141,7 +144,7 @@ object Mapper {
             backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
             status = mapShowStatus(dto.status, dto.ended),
             countries = dto.arrayCountries ?: dto.countries.orEmpty(),
-            newestVideoEpochSeconds = dto.newestVideo,
+            newestVideoEpochSeconds = dto.newestVideo?.let { Instant.fromEpochSeconds(it) },
         )
     }
 
@@ -164,7 +167,7 @@ object Mapper {
                 title = title,
                 plot = dto.plot,
                 description = dto.description,
-                availability = mapAvailability(dto.newestVideo),
+                availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating,
                 year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
                 genres = dto.arrayGenres ?: dto.genres.orEmpty(),
@@ -198,13 +201,13 @@ object Mapper {
                 episodeNumber = dto.episode ?: dto.number ?: 0,
                 title = dto.title ?: dto.name ?: "Episode ${dto.episode ?: dto.number ?: dto.id}",
                 plot = dto.plot ?: dto.description,
-                durationSeconds = dto.duration?.toLong()?.times(SECONDS_PER_MINUTE),
+                durationSeconds = dto.duration?.minutes?.inWholeSeconds,
                 availability = mapEpisodeAvailability(dto.available),
                 imdbId = null,
                 qualities = mapQualities(dto.qualities),
                 subtitles = mapSubtitleTracks(dto.subtitles),
-                airDateEpochSeconds = dto.airDate?.toEpochSeconds() ?: dto.airdate?.toEpochSeconds(),
-                premiereDateEpochSeconds = dto.premiereDate?.toEpochSeconds(),
+                airDateEpochSeconds = dto.airDate?.toInstant() ?: dto.airdate?.toInstant(),
+                premiereDateEpochSeconds = dto.premiereDate?.toInstant(),
             ),
         )
     }
@@ -215,12 +218,11 @@ object Mapper {
      * Maps availability based on the presence of an `updated_at` timestamp.
      * Items without an update timestamp are treated as expired/unavailable.
      */
-    fun mapAvailability(updatedAtEpochSeconds: Long?): Availability =
-        if (updatedAtEpochSeconds != null && updatedAtEpochSeconds > 0L) {
-            Availability.Available
-        } else {
-            Availability.Expired
-        }
+    fun mapAvailability(updatedAt: Instant?): Availability = if (updatedAt != null && updatedAt.epochSeconds > 0) {
+        Availability.Available
+    } else {
+        Availability.Expired
+    }
 
     /**
      * Maps the Media `available` boolean field to domain [Availability].
@@ -345,17 +347,15 @@ object Mapper {
     // ── Extension helpers ────────────────────────────────────────────────
 
     /**
-     * Converts a date string in "YYYY-MM-DD" format to epoch seconds using
-     * [java.time.LocalDate]. Returns `null` for unparseable strings.
+     * Converts a date string in "YYYY-MM-DD" format to an [Instant] at UTC
+     * midnight using [kotlinx.datetime.LocalDate]. Returns `null` for unparseable strings.
      */
-    private fun String?.toEpochSeconds(): Long? {
+    private fun String?.toInstant(): Instant? {
         if (this == null) return null
         return try {
-            java.time.LocalDate
-                .parse(this)
-                .atStartOfDay(java.time.ZoneOffset.UTC)
-                .toEpochSecond()
-        } catch (_: java.time.format.DateTimeParseException) {
+            val epochDays = LocalDate.parse(this).toEpochDays()
+            Instant.fromEpochSeconds(epochDays.days.inWholeSeconds)
+        } catch (_: IllegalArgumentException) {
             null
         }
     }

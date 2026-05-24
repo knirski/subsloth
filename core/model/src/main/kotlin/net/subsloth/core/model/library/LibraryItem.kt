@@ -2,6 +2,7 @@ package net.subsloth.core.model.library
 
 import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.media.Media
+import kotlin.time.Instant
 
 /**
  * An item in the user's local library collection.
@@ -16,7 +17,7 @@ import net.subsloth.core.model.media.Media
 data class LibraryItem(
     val mediaId: Media.MediaId,
     val collection: LibraryCollection,
-    val addedAtEpochSeconds: Long,
+    val addedAtEpochSeconds: Instant,
     val sortOrder: Int,
 )
 

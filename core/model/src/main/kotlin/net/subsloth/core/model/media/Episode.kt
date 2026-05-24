@@ -5,6 +5,7 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ShowId
+import kotlin.time.Instant
 
 /**
  * A single episode of a show/series.
@@ -22,8 +23,8 @@ data class Episode(
     val imdbId: ExternalId?,
     val qualities: List<Quality>,
     val subtitles: List<Subtitle>,
-    val airDateEpochSeconds: Long?,
-    val premiereDateEpochSeconds: Long?,
+    val airDateEpochSeconds: Instant?,
+    val premiereDateEpochSeconds: Instant?,
 ) {
     /**
      * Whether this episode is scheduled for future release based on its

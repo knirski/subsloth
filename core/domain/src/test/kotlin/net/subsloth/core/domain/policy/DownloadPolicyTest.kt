@@ -9,6 +9,7 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 class DownloadPolicyTest {
     // ── Storage reserve ───────────────────────────────────────────────────
@@ -170,7 +171,7 @@ class DownloadPolicyTest {
             mediaId = mediaId,
             status = status,
             quality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
-            downloadedAtEpochSeconds = 1_800_000_000L,
+            downloadedAtEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
             sizeBytes = null,
             relativePath = null,
         )

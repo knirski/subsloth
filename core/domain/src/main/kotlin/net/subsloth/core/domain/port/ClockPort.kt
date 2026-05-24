@@ -1,5 +1,7 @@
 package net.subsloth.core.domain.port
 
+import kotlin.time.Instant
+
 /**
  * Port for accessing the current time.
  *
@@ -7,6 +9,6 @@ package net.subsloth.core.domain.port
  * Android-free. Implementations are provided by the Android shell.
  */
 interface ClockPort {
-    /** Returns the current time in epoch seconds. */
-    fun currentEpochSeconds(): Long
+    /** Returns the current time as a UTC instant. */
+    fun now(): Instant
 }

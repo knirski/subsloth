@@ -5,6 +5,7 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 class ResumePolicyTest {
     // ── Threshold: ignore progress below 30 seconds ───────────────────────
@@ -168,7 +169,7 @@ class ResumePolicyTest {
             mediaId = Media.MediaId.Movie(MovieId(1)),
             positionSeconds = positionSeconds,
             durationSeconds = durationSeconds,
-            lastUpdatedEpochSeconds = 1_800_000_000L,
+            lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
             isWatched = false,
         )
 }

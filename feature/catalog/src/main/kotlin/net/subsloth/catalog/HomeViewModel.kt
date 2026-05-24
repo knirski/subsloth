@@ -16,6 +16,7 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
+import kotlin.time.Instant
 
 @Stable
 sealed interface HomeUiState {
@@ -67,7 +68,7 @@ class HomeViewModel(
     },
     private val isOnline: () -> Boolean = { true },
     private val isMetered: () -> Boolean = { false },
-    private val currentEpochSeconds: () -> Long = { 0L },
+    private val now: () -> Instant = { Instant.fromEpochSeconds(0L) },
     private val savedState: Map<String, String> = mapOf(
         "selectedTab" to "",
         "searchQuery" to "",

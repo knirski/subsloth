@@ -2,6 +2,7 @@ package net.subsloth.core.model
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import kotlin.time.Instant
 
 /**
  * Describes whether media content is currently playable or downloadable.
@@ -15,7 +16,7 @@ sealed interface Availability {
     /** Scheduled for future release; not yet playable. */
     @Immutable
     data class Upcoming(
-        val availableAtEpochSeconds: Long?,
+        val availableAtEpochSeconds: Instant?,
     ) : Availability
 
     /** No longer available on the service. */

@@ -22,6 +22,7 @@ import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SeriesDetailViewModelTest {
@@ -50,7 +51,7 @@ class SeriesDetailViewModelTest {
             imdbId = null,
             qualities = emptyList(),
             subtitles = emptyList(),
-            airDateEpochSeconds = 1_700_000_000L,
+            airDateEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L),
             premiereDateEpochSeconds = null,
         )
 
@@ -67,7 +68,7 @@ class SeriesDetailViewModelTest {
             imdbId = null,
             qualities = emptyList(),
             subtitles = emptyList(),
-            airDateEpochSeconds = 1_700_008_640L,
+            airDateEpochSeconds = Instant.fromEpochSeconds(1_700_008_640L),
             premiereDateEpochSeconds = null,
         )
 

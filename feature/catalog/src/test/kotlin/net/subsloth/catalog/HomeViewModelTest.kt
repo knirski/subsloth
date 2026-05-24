@@ -18,6 +18,7 @@ import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -128,7 +129,7 @@ class HomeViewModelTest {
                 slug = null,
                 imdbId = null,
                 backdropUrl = null,
-                updatedAtEpochSeconds = 1_000_000L,
+                updatedAtEpochSeconds = Instant.fromEpochSeconds(1_000_000L),
             ),
         )
         val viewModel = HomeViewModel(
@@ -158,7 +159,7 @@ class HomeViewModelTest {
                 backdropUrl = null,
                 status = ShowStatus.ONGOING,
                 countries = emptyList(),
-                newestVideoEpochSeconds = 1_000_000L,
+                newestVideoEpochSeconds = Instant.fromEpochSeconds(1_000_000L),
             ),
         )
         val viewModel = HomeViewModel(
