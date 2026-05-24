@@ -15,4 +15,11 @@ dependencies {
     implementation(libs.media3.ui)
     implementation(libs.media3.datasource.okhttp)
     implementation(libs.okhttp)
+    implementation(libs.kotlinx.io.core)
+    implementation(libs.kotlinx.io.bytestring)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(project(":testing:assertions"))
 }
