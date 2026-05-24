@@ -5,17 +5,19 @@ plugins {
 
 val appVersionName =
     try {
-        providers
-            .exec {
-                workingDir = rootProject.projectDir
-                commandLine("git", "describe", "--tags", "--abbrev=0", "--match=v*")
-                isIgnoreExitValue = true
-            }.standardOutput.asText
-            .get()
-            .trim()
-            .removePrefix("v")
+        val gitVersion =
+            providers
+                .exec {
+                    workingDir = rootProject.projectDir
+                    commandLine("git", "describe", "--tags", "--abbrev=0", "--match=v*")
+                    isIgnoreExitValue = true
+                }.standardOutput.asText
+                .get()
+                .trim()
+                .removePrefix("v")
+        if (gitVersion.isEmpty()) "0.0.1" else gitVersion
     } catch (_: Exception) {
-        "0.0.0"
+        "0.0.1"
     }
 val appVersionCode =
     appVersionName
@@ -25,7 +27,8 @@ val appVersionCode =
             val major = parts.getOrElse(0) { "0" }.toIntOrNull() ?: 0
             val minor = parts.getOrElse(1) { "0" }.toIntOrNull() ?: 0
             val patch = parts.getOrElse(2) { "0" }.toIntOrNull() ?: 0
-            major * 1000000 + minor * 1000 + patch
+            val code = major * 1000000 + minor * 1000 + patch
+            if (code > 0) code else 1
         }
 
 android {
