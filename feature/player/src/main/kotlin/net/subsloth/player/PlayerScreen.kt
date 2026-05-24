@@ -60,6 +60,7 @@ fun PlayerScreen(
                 onDismissNextEpisode = viewModel::dismissNextEpisode,
                 onPlayNextEpisode = viewModel::playNextEpisode,
                 onRetry = viewModel::retryPlayback,
+                onRetryWithRefresh = viewModel::retryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -78,6 +79,7 @@ private fun PlayerContent(
     onDismissNextEpisode: () -> Unit = {},
     onPlayNextEpisode: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onRetryWithRefresh: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
 ) {
@@ -93,7 +95,9 @@ private fun PlayerContent(
             ErrorContent(
                 error = state.error,
                 isAuthError = state.authFailed,
+                isOfflinePlayback = state.isOfflinePlayback,
                 onRetry = onRetry,
+                onRetryWithRefresh = onRetryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -119,6 +123,15 @@ private fun PlayerContent(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(16.dp),
             )
+
+            if (state.qualityFallbackNotice != null) {
+                Text(
+                    text = state.qualityFallbackNotice,
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -281,7 +294,9 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
 private fun ErrorContent(
     error: String,
     isAuthError: Boolean,
+    isOfflinePlayback: Boolean,
     onRetry: () -> Unit,
+    onRetryWithRefresh: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
 ) {
@@ -315,6 +330,12 @@ private fun ErrorContent(
         } else {
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.player_retry))
+            }
+            if (!isOfflinePlayback) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = onRetryWithRefresh, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.player_retry_with_refresh))
+                }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))

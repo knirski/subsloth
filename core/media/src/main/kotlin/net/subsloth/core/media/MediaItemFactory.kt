@@ -27,6 +27,22 @@ object MediaItemFactory {
         return builder.build()
     }
 
+    /**
+     * Creates a [MediaItem] for local file playback.
+     *
+     * [localFileUri] must be a valid content or file URI pointing to an
+     * app-private downloaded file.
+     */
+    fun createLocalMediaItem(localFileUri: String, source: VideoSource): MediaItem = MediaItem.Builder()
+        .setMediaId(source.mediaId.toString())
+        .setUri(Uri.parse(localFileUri))
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setMediaType(MediaMetadata.MEDIA_TYPE_MOVIE)
+                .build(),
+        )
+        .build()
+
     fun buildSubtitleMediaItem(source: VideoSource): List<MediaItem.SubtitleConfiguration> =
         source.availableSubtitles.mapNotNull { subtitle ->
             val uri = subtitle.url ?: return@mapNotNull null

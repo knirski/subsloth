@@ -2,16 +2,28 @@ package net.subsloth.core.media
 
 import android.app.Application
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import net.subsloth.core.model.playback.PlaybackMode
+import net.subsloth.core.model.playback.VideoSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @UnstableApi
+@Suppress("TooManyFunctions")
 class MediaPlaybackController(private val application: Application) {
     private var player: ExoPlayer? = null
+    private var errorListener: Player.Listener? = null
+
+    /** Callback for player errors. */
+    fun interface ErrorCallback {
+        /** Called when a playback error occurs. */
+        fun onError(error: PlaybackException)
+    }
 
     fun buildPlayer(): ExoPlayer {
         release()
@@ -23,6 +35,79 @@ class MediaPlaybackController(private val application: Application) {
             .build()
         player = exoPlayer
         return exoPlayer
+    }
+
+    /**
+     * Builds an ExoPlayer configured for local file playback.
+     *
+     * Local playback uses a direct file URI and does not attempt network
+     * refresh or quality fallback.
+     */
+    fun buildLocalPlayer(): ExoPlayer {
+        release()
+        val exoPlayer = ExoPlayer.Builder(application)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(application))
+            .build()
+        player = exoPlayer
+        return exoPlayer
+    }
+
+    /**
+     * Prepares and starts playback from a [VideoSource].
+     *
+     * For [PlaybackMode.OFFLINE], the [VideoSource.streamUrl] must be a
+     * local file URI. No network refresh or quality fallback is attempted.
+     */
+    fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
+        val p = player ?: return
+        val mediaItem = MediaItemFactory.createMediaItem(source)
+            .buildUpon()
+            .setSubtitleConfigurations(MediaItemFactory.buildSubtitleMediaItem(source))
+            .build()
+        p.setMediaItem(mediaItem)
+        p.prepare()
+        if (positionSeconds > 0L) {
+            p.seekTo(positionSeconds * MILLIS_PER_SECOND)
+        }
+        p.playWhenReady = true
+    }
+
+    /**
+     * Prepares and starts playback from a local file URI.
+     *
+     * Use this for offline/downloaded content where the [localFileUri] points
+     * to an app-private file on local storage.
+     */
+    fun startLocalPlayback(localFileUri: String, source: VideoSource, positionSeconds: Long = 0L) {
+        val p = player ?: return
+        val mediaItem = MediaItemFactory.createLocalMediaItem(localFileUri, source)
+            .buildUpon()
+            .setSubtitleConfigurations(MediaItemFactory.buildSubtitleMediaItem(source))
+            .build()
+        p.setMediaItem(mediaItem)
+        p.prepare()
+        if (positionSeconds > 0L) {
+            p.seekTo(positionSeconds * MILLIS_PER_SECOND)
+        }
+        p.playWhenReady = true
+    }
+
+    /**
+     * Registers a callback for playback errors.
+     *
+     * Only one callback is active at a time; calling this again replaces the
+     * previous callback.
+     */
+    fun setErrorCallback(callback: ErrorCallback) {
+        val p = player ?: return
+        errorListener?.let { p.removeListener(it) }
+        val listener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                callback.onError(error)
+            }
+        }
+        p.addListener(listener)
+        errorListener = listener
     }
 
     fun setPlaybackSpeed(speed: Float) {
@@ -39,6 +124,8 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun release() {
+        errorListener?.let { player?.removeListener(it) }
+        errorListener = null
         player?.release()
         player = null
     }
@@ -67,5 +154,6 @@ class MediaPlaybackController(private val application: Application) {
 
     private companion object {
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
+        private const val MILLIS_PER_SECOND: Long = 1000L
     }
 }

@@ -1,6 +1,7 @@
 package net.subsloth.core.domain.port
 
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.VideoSource
 
 /**
@@ -25,4 +26,13 @@ interface PlaybackPort {
 
     /** Seeks to the given position in the current playback. */
     suspend fun seek(positionSeconds: Long): Result<Unit>
+
+    /**
+     * Refreshes the stream URL for the current media item.
+     *
+     * At most one refresh is allowed per playback session. Returns the
+     * refreshed [VideoSource] on success, or a [PlaybackError] on failure.
+     * Offline playback must never call this method.
+     */
+    suspend fun refreshStreamUrl(mediaId: Media.MediaId): Result<VideoSource>
 }

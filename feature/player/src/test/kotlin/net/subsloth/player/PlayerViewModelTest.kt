@@ -14,6 +14,7 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.SubtitleFormat
+import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -215,6 +216,87 @@ class PlayerViewModelTest {
         assertThat(state.durationSeconds).isEqualTo(1800L)
     }
 
+    // ── Offline playback ─────────────────────────────────────────────────
+
+    @Test
+    fun `offline playback sets isOfflinePlayback to true`() = runTest(testDispatcher) {
+        val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.isOfflinePlayback).isTrue()
+    }
+
+    @Test
+    fun `online playback sets isOfflinePlayback to false`() = runTest(testDispatcher) {
+        val source = createVideoSource(playbackMode = PlaybackMode.ONLINE)
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.isOfflinePlayback).isFalse()
+    }
+
+    // ── Auth failure handling ─────────────────────────────────────────────
+
+    @Test
+    fun `auth failure during initial load routes to auth repair without progress`() = runTest(testDispatcher) {
+        var authFailureCalled = false
+        var savedProgress: Triple<Media.MediaId, Long, Long>? = null
+        createViewModel(
+            contentId = "1",
+            contentType = "movie",
+            fetchVideoSource = { Result.failure(Exception("401 Unauthorized")) },
+            saveProgress = { id, pos, dur ->
+                savedProgress = Triple(id, pos, dur)
+            },
+            onAuthFailure = { authFailureCalled = true },
+        )
+
+        // Auth failure is routed even when no progress exists yet
+        assertThat(authFailureCalled).isTrue()
+        // Progress cannot be saved before playback starts
+        assertThat(savedProgress).isNull()
+    }
+
+    @Test
+    fun `auth failure sets authFailed flag`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.failure(Exception("401 Unauthorized")) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.authFailed).isTrue()
+    }
+
+    // ── Quality fallback notice ───────────────────────────────────────────
+
+    @Test
+    fun `qualityFallbackNotice is null by default`() = runTest(testDispatcher) {
+        val source = createVideoSource()
+        val viewModel =
+            createViewModel(
+                contentId = "1",
+                contentType = "movie",
+                fetchVideoSource = { Result.success(source) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.qualityFallbackNotice).isNull()
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
@@ -224,12 +306,18 @@ class PlayerViewModelTest {
             Result.success(createVideoSource())
         },
         onAuthFailure: () -> Unit = {},
+        saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
+        refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
+            Result.failure(UnsupportedOperationException("Not implemented"))
+        },
     ): PlayerViewModel = PlayerViewModel(
         contentId = contentId,
         contentType = contentType,
         playerController = null,
         fetchVideoSource = fetchVideoSource,
         onAuthFailure = onAuthFailure,
+        saveProgress = saveProgress,
+        refreshStreamUrl = refreshStreamUrl,
     )
 
     private fun createVideoSource(
@@ -237,6 +325,7 @@ class PlayerViewModelTest {
         streamUrl: String = "https://example.com/stream.m3u8",
         availableSubtitles: List<Subtitle> = emptyList(),
         durationSeconds: Long = 3600L,
+        playbackMode: PlaybackMode = PlaybackMode.ONLINE,
     ): VideoSource = VideoSource(
         mediaId = mediaId,
         streamUrl = streamUrl,
@@ -244,6 +333,7 @@ class PlayerViewModelTest {
         availableQualities = listOf(createQuality()),
         availableSubtitles = availableSubtitles,
         durationSeconds = durationSeconds,
+        playbackMode = playbackMode,
     )
 
     private fun createQuality(): Quality = Quality(
