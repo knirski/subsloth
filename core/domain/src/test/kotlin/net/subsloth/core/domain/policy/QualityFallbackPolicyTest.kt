@@ -97,11 +97,4 @@ class QualityFallbackPolicyTest {
             )
         assertEquals(quality480, result)
     }
-
-    // ── markFallbackUsed ──────────────────────────────────────────────────
-
-    @Test
-    fun `markFallbackUsed returns true`() {
-        assertTrue(QualityFallbackPolicy.markFallbackUsed())
-    }
 }

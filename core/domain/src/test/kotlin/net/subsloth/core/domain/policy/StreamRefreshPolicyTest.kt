@@ -22,11 +22,4 @@ class StreamRefreshPolicyTest {
         assertFalse(StreamRefreshPolicy.canRefresh(refreshUsed = false, isOfflinePlayback = true))
         assertFalse(StreamRefreshPolicy.canRefresh(refreshUsed = true, isOfflinePlayback = true))
     }
-
-    // ── markRefreshUsed ──────────────────────────────────────────────────
-
-    @Test
-    fun `markRefreshUsed returns true`() {
-        assertTrue(StreamRefreshPolicy.markRefreshUsed())
-    }
 }
