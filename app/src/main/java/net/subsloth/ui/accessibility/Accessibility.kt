@@ -2,7 +2,6 @@ package net.subsloth.ui.accessibility
 
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.sizeIn
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
