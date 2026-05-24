@@ -7,10 +7,15 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.SearchPolicy
 import net.subsloth.core.model.media.Media
@@ -45,6 +50,7 @@ enum class MediaTypeFilter { ALL, MOVIES, SHOWS }
 
 enum class FilterOption { ANY, YES, NO }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModel(
     private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
     private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
@@ -59,28 +65,35 @@ class SearchViewModel(
     val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
 
     private var catalog: List<Media> = emptyList()
-    private var searchJob: Job? = null
+    private val searchChannel = Channel<String>(Channel.CONFLATED)
 
     init {
         val restoredQuery = savedState["searchQuery"].orEmpty()
         if (restoredQuery.isNotBlank()) {
-            search(restoredQuery)
+            searchChannel.trySend(restoredQuery)
+        }
+
+        viewModelScope.launch {
+            searchChannel.consumeAsFlow()
+                .flatMapLatest { query -> searchInternal(query) }
+                .collect { state -> _uiState.value = state }
         }
     }
 
     fun search(query: String) {
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            _uiState.value = SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true)
+        searchChannel.trySend(query)
+    }
 
-            if (catalog.isEmpty()) {
-                catalog = listCatalog().getOrDefault(emptyList())
-            }
+    private fun searchInternal(query: String): Flow<SearchUiState> = flow {
+        emit(SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true))
 
-            val filtered = applyFilters(catalog)
-            val matched = SearchPolicy.filter(filtered, query)
-            _uiState.value = SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false)
+        if (catalog.isEmpty()) {
+            catalog = listCatalog().getOrDefault(emptyList())
         }
+
+        val filtered = applyFilters(catalog)
+        val matched = SearchPolicy.filter(filtered, query)
+        emit(SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false))
     }
 
     fun updateFilters(newFilters: SearchFilters) {
