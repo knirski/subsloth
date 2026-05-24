@@ -2,27 +2,26 @@
 
 ## Overview
 
-Releases are managed by [release-please](https://github.com/googleapis/release-please) using `release-type: simple`. A single version for the entire repository is tracked in `version.txt` at the repository root.
+Releases are managed by [semantic-release](https://github.com/semantic-release/semantic-release). It runs on every push to `main`, analyzes conventional commits, determines the next version, creates a git tag (`vX.Y.Z`), and publishes a GitHub Release with auto-generated release notes.
 
 ## Version Management
 
-- **version.txt**: Contains the current version in SemVer format (e.g., `0.1.0`).
+- **Git tags**: The authoritative source of truth for released versions (`vX.Y.Z`).
+- **Android versionName**: Derived from the latest git tag via `git describe --tags --abbrev=0 --match=v*` at build time. Falls back to `0.0.0` if no tag is found.
 - **Android versionCode**: Derived deterministically from SemVer components: `$MAJOR * 1000000 + $MINOR * 1000 + $PATCH`.
-- **Android versionName**: Read directly from `version.txt`.
 
 ## Release Workflow
 
-1. A maintainer merges changes to `main` using conventional commits.
-2. The `release-please.yml` GitHub Actions workflow detects release-worthy commits and opens or updates a Release PR.
-3. When the Release PR is merged, release-please creates a GitHub Release with tag `vX.Y.Z` and generated changelog.
-4. The workflow builds `assembleDebug` and uploads the APK as a release artifact.
+ 1. A maintainer merges changes to `main` using conventional commits (squash + merge).
+ 2. The PR title becomes the commit message on `main`, and `pr-title.yml` enforces the conventional commit format.
+ 3. `semantic-release.yml` runs on push to `main`, sets up JDK 25 + JDK 17, analyzes commits since the last tag, determines the next version, builds the debug APK via `:app:assembleDebug`, and creates a GitHub Release with the APK attached and tag `vX.Y.Z`.
+ 4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
+
+No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.
 
 ## APK Artifact
 
-The debug-signed sideload APK is named:
-```
-subsloth-vX.Y.Z-debug-<shortsha>.apk
-```
+A debug-signed sideload APK (`app-debug.apk`) is built during the release pipeline and uploaded as a release asset. Download it from the Assets section of the GitHub Release page.
 
 ### Manual Install / Update
 1. Download the APK from the GitHub Release page.
@@ -38,12 +37,9 @@ subsloth-vX.Y.Z-debug-<shortsha>.apk
 
 v1 releases produce **debug-signed APKs for internal sideloading only**. Dedicated release signing and public distribution (e.g., Google Play Store) are deferred.
 
-## Changelog
-
-The `CHANGELOG.md` at the repository root is maintained automatically by release-please. Every merge to `main` that uses a conventional commit prefix (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`) may appear in the next release notes.
-
 ## Important Notes
 
 - **No in-app update check**: v1 does not include an automatic update mechanism. Discover new releases manually via the GitHub Releases page.
 - **No Play Store distribution**: APKs are not published to any app store in v1.
 - **Release discovery**: Manual via GitHub Releases — there is no in-app notification for new versions.
+- **Release notes**: Available in the GitHub Release description. There is no `CHANGELOG.md` file in the repository.
