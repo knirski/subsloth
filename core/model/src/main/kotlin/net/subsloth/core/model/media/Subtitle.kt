@@ -1,5 +1,6 @@
 package net.subsloth.core.model.media
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.identifier.LanguageCode
 
 /**
@@ -9,6 +10,7 @@ import net.subsloth.core.model.identifier.LanguageCode
  * [url] and [downloadUrl] are ephemeral values used during active playback
  * or download and must not be persisted in storage records.
  */
+@Immutable
 data class Subtitle(
     val language: LanguageCode,
     val languageDisplayName: String?,
@@ -20,6 +22,7 @@ data class Subtitle(
 )
 
 /** Known subtitle file formats. */
+@Immutable
 enum class SubtitleFormat {
     SRT,
     VTT,

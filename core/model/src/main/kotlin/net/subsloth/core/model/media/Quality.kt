@@ -1,5 +1,6 @@
 package net.subsloth.core.model.media
 
+import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.identifier.Resolution
 
 /**
@@ -10,6 +11,7 @@ import net.subsloth.core.model.identifier.Resolution
  * need the full model including ephemeral URLs for active playback or
  * download sessions.
  */
+@Immutable
 data class QualityDescriptor(
     val resolution: Resolution,
     val label: String?,
@@ -26,6 +28,7 @@ data class QualityDescriptor(
  *
  * @property info stable metadata shared with persistent records.
  */
+@Immutable
 data class Quality(
     val info: QualityDescriptor,
     /** Ephemeral stream URL — must not be persisted. */
