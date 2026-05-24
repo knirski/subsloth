@@ -4,7 +4,9 @@ import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class QualityFallbackPolicyTest {
@@ -31,12 +33,12 @@ class QualityFallbackPolicyTest {
 
     @Test
     fun `canFallback returns true when fallback not used`() {
-        assert(QualityFallbackPolicy.canFallback(fallbackUsed = false))
+        assertTrue(QualityFallbackPolicy.canFallback(fallbackUsed = false))
     }
 
     @Test
     fun `canFallback returns false when fallback already used`() {
-        assert(!QualityFallbackPolicy.canFallback(fallbackUsed = true))
+        assertFalse(QualityFallbackPolicy.canFallback(fallbackUsed = true))
     }
 
     // ── selectFallback ────────────────────────────────────────────────────
@@ -100,6 +102,6 @@ class QualityFallbackPolicyTest {
 
     @Test
     fun `markFallbackUsed returns true`() {
-        assert(QualityFallbackPolicy.markFallbackUsed())
+        assertTrue(QualityFallbackPolicy.markFallbackUsed())
     }
 }

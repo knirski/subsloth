@@ -35,6 +35,10 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.feature.player.R
 
 @Composable
+private fun resolveNotice(notice: PlayerUiState.Notice): String =
+    stringResource(id = notice.resId, *notice.formatArgs.toTypedArray())
+
+@Composable
 fun PlayerScreen(
     viewModel: PlayerViewModel,
     modifier: Modifier = Modifier,
@@ -130,7 +134,7 @@ private fun PlayerContent(
 
             if (state.qualityFallbackNotice != null) {
                 Text(
-                    text = state.qualityFallbackNotice,
+                    text = resolveNotice(state.qualityFallbackNotice),
                     color = Color.Yellow,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -139,7 +143,7 @@ private fun PlayerContent(
 
             if (state.subtitleFallbackNotice != null) {
                 Text(
-                    text = state.subtitleFallbackNotice,
+                    text = resolveNotice(state.subtitleFallbackNotice),
                     color = Color.Yellow,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp),

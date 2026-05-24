@@ -12,21 +12,23 @@ import androidx.compose.runtime.Immutable
  */
 @Immutable
 sealed interface PlaybackError {
+    val message: String
+
     /** A transient or quality-related error that allows retry or fallback. */
     @Immutable
     data class Recoverable(
-        val message: String,
+        override val message: String,
     ) : PlaybackError
 
     /** Authentication failure — stop online playback and route to auth repair. */
     @Immutable
     data class AuthFailure(
-        val message: String,
+        override val message: String,
     ) : PlaybackError
 
     /** Stream URL expired — may attempt a bounded refresh. */
     @Immutable
     data class StreamUrlExpired(
-        val message: String,
+        override val message: String,
     ) : PlaybackError
 }

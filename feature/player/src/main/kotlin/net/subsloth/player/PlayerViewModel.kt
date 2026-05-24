@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.PlaybackException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import net.subsloth.core.domain.policy.StreamRefreshPolicy
 import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.MediaPlaybackController
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
@@ -29,6 +31,7 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
+import net.subsloth.feature.player.R
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -53,11 +56,14 @@ sealed interface PlayerUiState {
         val authFailed: Boolean,
         /** Whether this is an offline (local file) playback session. */
         val isOfflinePlayback: Boolean,
-/** Whether a quality fallback has been applied in this session. */
-        val qualityFallbackNotice: String?,
+        /** Whether a quality fallback has been applied in this session. */
+        val qualityFallbackNotice: Notice?,
         /** Whether a subtitle fallback has been applied in this session. */
-        val subtitleFallbackNotice: String?,
+        val subtitleFallbackNotice: Notice?,
     ) : PlayerUiState
+
+    @Immutable
+    data class Notice(val resId: Int, val formatArgs: List<String> = emptyList())
 }
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -83,6 +89,10 @@ class PlayerViewModel(
     /** Loads the persisted playback speed for the active account profile. Returns the default speed
      * for guests, offline sessions, or first-time users. */
     private val loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
+    /** Loads the user's preferred subtitle language from app settings. */
+    private val loadPreferredLanguage: suspend () -> LanguageCode = {
+        LanguageCode("en")
+    },
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
@@ -147,7 +157,7 @@ class PlayerViewModel(
         }
     }
 
-    private suspend fun startPlayback(source: VideoSource) {
+    private suspend fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
         currentSource = source
 
         playerController?.let { controller ->
@@ -156,13 +166,14 @@ class PlayerViewModel(
                 controller.startLocalPlayback(
                     localFileUri = source.streamUrl,
                     source = source,
+                    positionSeconds = positionSeconds,
                 )
                 controller.setErrorCallback { error ->
                     handlePlayerError(error)
                 }
             } else {
                 controller.buildPlayer()
-                controller.startPlayback(source)
+                controller.startPlayback(source, positionSeconds = positionSeconds)
                 controller.setErrorCallback { error ->
                     handlePlayerError(error)
                 }
@@ -171,24 +182,31 @@ class PlayerViewModel(
 
         // Apply subtitle fallback chain per spec §Subtitle Behavior:
         // Prefer English → first available → no subtitles with notice.
-        val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles)
+        val preferred = loadPreferredLanguage()
+        val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
         val subtitleNotice = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
-                "No subtitles in preferred language"
+                PlayerUiState.Notice(R.string.player_subtitle_fallback_none)
             initialSubtitle != null &&
-                initialSubtitle.language.value != "en" &&
+                initialSubtitle.language != preferred &&
                 source.availableSubtitles.isNotEmpty() ->
-                "Subtitles in ${initialSubtitle.languageDisplayName ?: initialSubtitle.language.value}"
+                PlayerUiState.Notice(
+                    R.string.player_subtitle_fallback_selected,
+                    listOf(initialSubtitle.languageDisplayName ?: initialSubtitle.language.value),
+                )
             else -> null
         }
         if (initialSubtitle != null) {
             playerController?.setPreferredTextLanguage(initialSubtitle.language.value)
         }
 
-        val initialSpeed = loadPlaybackSpeed()
+        val currentSpeed = (uiState.value as? PlayerUiState.Content)?.playbackSpeed
+        val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
+        playerController?.setPlaybackSpeed(initialSpeed)
+
         _uiState.value = PlayerUiState.Content(
             title = source.mediaId.toString(),
-            positionSeconds = 0,
+            positionSeconds = positionSeconds,
             durationSeconds = source.durationSeconds,
             isPlaying = true,
             playbackSpeed = initialSpeed,
@@ -202,7 +220,7 @@ class PlayerViewModel(
             error = null,
             authFailed = false,
             isOfflinePlayback = source.playbackMode == PlaybackMode.OFFLINE,
-            qualityFallbackNotice = null,
+            qualityFallbackNotice = (uiState.value as? PlayerUiState.Content)?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
         )
 
@@ -271,13 +289,14 @@ class PlayerViewModel(
      * only the current session and do not update account-scoped preference.
      */
     fun selectQuality(qualityLabel: String) {
+        val state = _uiState.value as? PlayerUiState.Content ?: return
         val source = currentSource ?: return
         val quality = source.availableQualities.find {
             it.info.label == qualityLabel || it.info.resolution.label == qualityLabel
         } ?: return
         val updatedSource = source.copy(selectedQuality = quality)
         currentSource = updatedSource
-        viewModelScope.launch { startPlayback(updatedSource) }
+        viewModelScope.launch { startPlayback(updatedSource, positionSeconds = state.positionSeconds) }
     }
 
     fun dismissNextEpisode() {
@@ -318,15 +337,16 @@ class PlayerViewModel(
             refreshStreamUrl(mediaId).fold(
                 onSuccess = { refreshedSource ->
                     streamRefreshUsed = StreamRefreshPolicy.markRefreshUsed()
-                    startPlayback(refreshedSource)
+                    startPlayback(refreshedSource, positionSeconds = state.positionSeconds)
                 },
                 onFailure = { error ->
-                    val isAuth = isAuthError(error)
+                    val playbackError = categorizeError(error)
+                    val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
                     }
                     _uiState.value = state.copy(
-                        error = error.message ?: "Stream refresh failed",
+                        error = playbackError.message,
                         authFailed = isAuth,
                     )
                 },
@@ -395,10 +415,11 @@ class PlayerViewModel(
     private fun handlePlayerError(error: PlaybackException) {
         val state = _uiState.value as? PlayerUiState.Content ?: return
 
-        // Offline playback is not interrupted by auth failures elsewhere
-        if (state.isOfflinePlayback) return
+        val playbackError = categorizeError(error)
 
-        val playbackError = categorizePlayerError(error)
+        // Per spec §Auth Failure During Playback: Offline playback is
+        // never interrupted by auth failures elsewhere.
+        if (state.isOfflinePlayback && playbackError is PlaybackError.AuthFailure) return
 
         when (playbackError) {
             is PlaybackError.AuthFailure -> {
@@ -410,7 +431,7 @@ class PlayerViewModel(
             }
             is PlaybackError.StreamUrlExpired -> {
                 // Attempt bounded refresh
-                if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, isOfflinePlayback = false)) {
+                if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, state.isOfflinePlayback)) {
                     retryWithRefresh()
                 } else {
                     _uiState.value = state.copy(
@@ -430,14 +451,22 @@ class PlayerViewModel(
                     )
                     if (fallback != null) {
                         qualityFallbackUsed = QualityFallbackPolicy.markFallbackUsed()
-                        _uiState.value = state.copy(
-                            qualityFallbackNotice = "Quality reduced to " +
-                                (fallback.info.label ?: fallback.info.resolution.label),
-                        )
                         // Restart playback with fallback quality
                         viewModelScope.launch {
                             val fallbackSource = source.copy(selectedQuality = fallback)
-                            startPlayback(fallbackSource)
+                            startPlayback(fallbackSource, positionSeconds = state.positionSeconds)
+
+                            // Set the fallback notice AFTER startPlayback to avoid it being cleared
+                            // by startPlayback creating a new state.
+                            val currentState = _uiState.value as? PlayerUiState.Content
+                            if (currentState != null) {
+                                _uiState.value = currentState.copy(
+                                    qualityFallbackNotice = PlayerUiState.Notice(
+                                        R.string.player_quality_fallback_notice,
+                                        listOf(fallback.info.label ?: fallback.info.resolution.label),
+                                    ),
+                                )
+                            }
                         }
                     } else {
                         _uiState.value = state.copy(
@@ -465,7 +494,9 @@ class PlayerViewModel(
         val mediaId = currentMediaId
         val state = _uiState.value as? PlayerUiState.Content
         if (mediaId != null && state != null) {
-            viewModelScope.launch { saveProgress(mediaId, state.positionSeconds, state.durationSeconds) }
+            viewModelScope.launch(NonCancellable) {
+                saveProgress(mediaId, state.positionSeconds, state.durationSeconds)
+            }
         }
         onAuthFailure()
     }
@@ -477,17 +508,17 @@ class PlayerViewModel(
         else -> null
     }
 
-    private fun categorizeError(error: Throwable): PlaybackError = when {
-        isAuthError(error) -> PlaybackError.AuthFailure(error.message ?: "Authentication failed")
-        isStreamUrlError(error) -> PlaybackError.StreamUrlExpired(error.message ?: "Stream URL expired")
-        else -> PlaybackError.Recoverable(error.message ?: "Playback error")
-    }
-
-    private fun categorizePlayerError(error: PlaybackException): PlaybackError {
+    private fun categorizeError(error: Throwable): PlaybackError {
         val message = error.message ?: "Playback error"
+        val errorCode = (error as? PlaybackException)?.errorCode
+
         return when {
-            isAuthPlayerError(error) -> PlaybackError.AuthFailure(message)
-            isStreamUrlPlayerError(error) -> PlaybackError.StreamUrlExpired(message)
+            errorCode == PlaybackException.ERROR_CODE_AUTHENTICATION_EXPIRED || isAuthError(error) ->
+                PlaybackError.AuthFailure(message)
+            errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
+                errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
+                isStreamUrlError(error) ->
+                PlaybackError.StreamUrlExpired(message)
             else -> PlaybackError.Recoverable(message)
         }
     }
@@ -496,12 +527,6 @@ class PlayerViewModel(
         error.message?.contains("401") == true || error.message?.contains("auth", ignoreCase = true) == true
 
     private fun isStreamUrlError(error: Throwable): Boolean =
-        error.message?.contains("403") == true || error.message?.contains("expired", ignoreCase = true) == true
-
-    private fun isAuthPlayerError(error: PlaybackException): Boolean =
-        error.message?.contains("401") == true || error.message?.contains("auth", ignoreCase = true) == true
-
-    private fun isStreamUrlPlayerError(error: PlaybackException): Boolean =
         error.message?.contains("403") == true || error.message?.contains("expired", ignoreCase = true) == true
 
     private companion object {

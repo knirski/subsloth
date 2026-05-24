@@ -33,15 +33,23 @@ object MediaItemFactory {
      * [localFileUri] must be a valid content or file URI pointing to an
      * app-private downloaded file.
      */
-    fun createLocalMediaItem(localFileUri: String, source: VideoSource): MediaItem = MediaItem.Builder()
-        .setMediaId(source.mediaId.toString())
-        .setUri(Uri.parse(localFileUri))
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setMediaType(MediaMetadata.MEDIA_TYPE_MOVIE)
-                .build(),
-        )
-        .build()
+    fun createLocalMediaItem(localFileUri: String, source: VideoSource): MediaItem {
+        val uri = Uri.parse(localFileUri)
+        val scheme = uri.scheme
+        require(scheme == "content" || scheme == "file") {
+            "Invalid local URI scheme: $scheme. Must be content:// or file://"
+        }
+
+        return MediaItem.Builder()
+            .setMediaId(source.mediaId.toString())
+            .setUri(uri)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_MOVIE)
+                    .build(),
+            )
+            .build()
+    }
 
     fun buildSubtitleMediaItem(source: VideoSource): List<MediaItem.SubtitleConfiguration> =
         source.availableSubtitles.mapNotNull { subtitle ->
