@@ -1,5 +1,6 @@
 package net.subsloth.details
 
+import android.content.res.Configuration
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -254,8 +255,7 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
 }
 
 @Preview(showBackground = true)
-// Configuration.UI_MODE_NIGHT_YES = 2
-@Preview(showBackground = true, uiMode = 2)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SeriesDetailLoadingPreview() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

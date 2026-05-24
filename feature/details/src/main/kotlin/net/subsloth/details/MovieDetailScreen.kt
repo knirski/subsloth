@@ -1,5 +1,6 @@
 package net.subsloth.details
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -156,8 +157,7 @@ internal fun MovieDetailContent(state: DetailUiState.MovieContent, modifier: Mod
 }
 
 @Preview(showBackground = true)
-// Configuration.UI_MODE_NIGHT_YES = 2
-@Preview(showBackground = true, uiMode = 2)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun MovieDetailLoadingPreview() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
