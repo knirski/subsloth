@@ -18,6 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 class MediaPlaybackController(private val application: Application) {
     private var player: ExoPlayer? = null
     private var errorListener: Player.Listener? = null
+    private var errorCallback: ErrorCallback? = null
 
     /** Callback for player errors. */
     fun interface ErrorCallback {
@@ -34,6 +35,7 @@ class MediaPlaybackController(private val application: Application) {
             )
             .build()
         player = exoPlayer
+        attachErrorListener()
         return exoPlayer
     }
 
@@ -49,6 +51,7 @@ class MediaPlaybackController(private val application: Application) {
             .setMediaSourceFactory(DefaultMediaSourceFactory(application))
             .build()
         player = exoPlayer
+        attachErrorListener()
         return exoPlayer
     }
 
@@ -99,7 +102,13 @@ class MediaPlaybackController(private val application: Application) {
      * previous callback.
      */
     fun setErrorCallback(callback: ErrorCallback) {
+        errorCallback = callback
+        attachErrorListener()
+    }
+
+    private fun attachErrorListener() {
         val p = player ?: return
+        val callback = errorCallback ?: return
         errorListener?.let { p.removeListener(it) }
         val listener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
