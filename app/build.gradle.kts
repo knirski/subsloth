@@ -3,13 +3,20 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val versionFile = rootProject.layout.projectDirectory.file("version.txt")
 val appVersionName =
-    providers
-        .fileContents(versionFile)
-        .asText
-        .map { it.trim() }
-        .getOrElse("0.0.0")
+    try {
+        providers
+            .exec {
+                workingDir = rootProject.projectDir
+                commandLine("git", "describe", "--tags", "--abbrev=0", "--match=v*")
+                isIgnoreExitValue = true
+            }.standardOutput.asText
+            .get()
+            .trim()
+            .removePrefix("v")
+    } catch (_: Exception) {
+        "0.0.0"
+    }
 val appVersionCode =
     appVersionName
         .takeWhile { it.isDigit() || it == '.' }

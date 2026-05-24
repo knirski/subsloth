@@ -6,10 +6,9 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 
 ## Version Management
 
-- **version.txt**: Contains the current version in SemVer format (e.g., `1.0.2`). Updated by semantic-release during the release process.
 - **Git tags**: The authoritative source of truth for released versions (`vX.Y.Z`).
+- **Android versionName**: Derived from the latest git tag via `git describe --tags --abbrev=0 --match=v*` at build time. Falls back to `0.0.0` if no tag is found.
 - **Android versionCode**: Derived deterministically from SemVer components: `$MAJOR * 1000000 + $MINOR * 1000 + $PATCH`.
-- **Android versionName**: Read directly from `version.txt`.
 
 ## Release Workflow
 
@@ -18,7 +17,7 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 3. `semantic-release.yml` runs on push to `main`, analyzes commits since the last tag, determines the next version, and creates a GitHub Release with tag `vX.Y.Z`.
 4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
 
-No commits are pushed back to `main` during the release process (no changelog commits, no version bump commits). The git tag and GitHub Release are the source of truth.
+No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.
 
 ## APK Artifact
 
