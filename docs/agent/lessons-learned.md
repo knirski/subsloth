@@ -162,16 +162,28 @@ Detekt `2.0.0-alpha.3` crashes on qualified constant references in `@Preview` an
 No receiver found in qualified expression
 at KtQualifiedExpression.getReceiverExpression(...)
 ```
+No receiver found in qualified expression
+at KtQualifiedExpression.getReceiverExpression(...)
+```
 
-| What fails | Workaround |
+| Approach | Result |
 |---|---|
-| `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` with `import android.content.res.Configuration` | Detekt parse crash on qualified expression |
-| `@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)` | Triggers `NoFullyQualifiedNames` rule |
+| `import android.content.res.Configuration` + `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` | Detekt parse crash on qualified expression |
+| `@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)` (fully qualified) | `NoFullyQualifiedNames` rule |
 
-**Fix:** Use literal `2` (which is wrong — `UI_MODE_NIGHT_YES` = `32`). Wait, that's also wrong. Only fix is to suppress the detekt rule or use the literal `32` with a line comment:
+**Fix — static import of the constant:**
 
 ```kotlin
-@Preview(showBackground = true, uiMode = 32 /* Configuration.UI_MODE_NIGHT_YES */)
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+```
+
+This avoids the qualified-expression path that triggers the parser bug. If the static import also triggers the crash, fall back to a literal with an explanatory line comment:
+
+```kotlin
+// Configuration.UI_MODE_NIGHT_YES = 32 (0x20)
+@Preview(showBackground = true, uiMode = 32)
 ```
 
 Note: `Configuration.UI_MODE_NIGHT_YES` = `32` (0x20), NOT `2` (0x02 = `UI_MODE_TYPE_DESK`).
@@ -229,6 +241,19 @@ import kotlinx.coroutines.flow.update  // ← required!
 
 Without it: `Unresolved reference 'update'`.
 
+**Lambda purity:** the transformation lambda passed to `update {}` may be re-executed if `compareAndSet` fails. Capture external mutable state into local variables before the call:
+
+```kotlin
+// ❌ impure — playerController?.isPlaying() may change if lambda retries
+_uiState.update { current ->
+    current.copy(isPlaying = playerController?.isPlaying() ?: false)
+}
+
+// ✅ pure — isPlaying captured once before the atomic block
+val playing = playerController?.isPlaying() ?: false
+_uiState.update { current -> current.copy(isPlaying = playing) }
+```
+
 ---
 
 ## 14. Architecture Test Patterns
@@ -237,16 +262,17 @@ Without it: `Unresolved reference 'update'`.
 
 ```kotlin
 private val allImports: List<String> by lazy {
-    val sourceDir = Paths.get(System.getProperty("user.dir"), "src", "main", "kotlin")
-    Files.walk(sourceDir).use { walk ->
-        walk.filter { it.toString().endsWith(".kt") }.flatMap { file ->
-            Files.lines(file).use { lines ->
+    val sourceDir = java.io.File("src/main/kotlin")
+    sourceDir.walkTopDown()
+        .filter { it.extension == "kt" }
+        .flatMap { file ->
+            file.useLines { lines ->
                 lines.filter { it.trimStart().startsWith("import ") }
                     .map { it.trim() }
                     .toList()
             }
-        }.toList()
-    }
+        }
+        .toList()
 }
 
 @Test
@@ -263,7 +289,7 @@ fun `no Android framework imports`() {
 ### Banned dependency checks in CI
 
 ```bash
-grep -rnwI -E '^import\s+(arrow\.|dagger\.|com\.squareup\.moshi\.|com\.google\.gson\.|io\.kotest\.|io\.reactivex\.|androidx\.navigation\.compose\.)' \
+grep -rnwI -E '^\s*import\s+(arrow\.|dagger\.|com\.squareup\.moshi\.|com\.google\.gson\.|io\.kotest\.|io\.reactivex\.|androidx\.navigation\.compose\.)' \
     --include='*.kt' --include='*.java' \
     "$target" 2>/dev/null \
   | grep -v '/src/test/' \
