@@ -85,3 +85,6 @@ kodi_plugin/
 
 # Antigravity CLI
 .antigravitycli/
+
+# Junie AI agent metadata
+.junie/

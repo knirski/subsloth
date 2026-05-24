@@ -70,7 +70,7 @@ class MediaPlaybackController(private val application: Application) {
         p.setMediaItem(mediaItem)
         p.prepare()
         if (positionSeconds > 0L) {
-            p.seekTo(positionSeconds * MILLIS_PER_SECOND)
+            p.seekTo(positionSeconds.seconds.inWholeMilliseconds)
         }
         p.playWhenReady = true
     }
@@ -90,7 +90,7 @@ class MediaPlaybackController(private val application: Application) {
         p.setMediaItem(mediaItem)
         p.prepare()
         if (positionSeconds > 0L) {
-            p.seekTo(positionSeconds * MILLIS_PER_SECOND)
+            p.seekTo(positionSeconds.seconds.inWholeMilliseconds)
         }
         p.playWhenReady = true
     }
@@ -163,6 +163,5 @@ class MediaPlaybackController(private val application: Application) {
 
     private companion object {
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
-        private const val MILLIS_PER_SECOND: Long = 1000L
     }
 }
