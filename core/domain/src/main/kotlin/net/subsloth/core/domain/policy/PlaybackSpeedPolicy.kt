@@ -1,5 +1,7 @@
 package net.subsloth.core.domain.policy
 
+import kotlin.math.abs
+
 /**
  * Standard playback speeds available in the player.
  *
@@ -53,7 +55,7 @@ object PlaybackSpeedPolicy {
     fun clamp(speed: Float): Float {
         if (isValid(speed)) return speed
         return PlaybackSpeed.entries
-            .minByOrNull { kotlin.math.abs(it.value - speed) }
+            .minByOrNull { abs(it.value - speed) }
             ?.value ?: defaultSpeed()
     }
 }

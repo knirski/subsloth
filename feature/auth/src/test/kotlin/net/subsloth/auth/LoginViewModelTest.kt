@@ -2,6 +2,7 @@ package net.subsloth.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -106,7 +107,7 @@ class LoginViewModelTest {
             LoginViewModel(
                 hasStoredCredentials = { false },
                 validateCredentials = { _, _ ->
-                    kotlinx.coroutines.delay(100)
+                    delay(100)
                     Result.success(Unit)
                 },
             )

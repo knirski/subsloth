@@ -2,6 +2,9 @@ package net.subsloth.core.model.architecture
 
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 /**
  * Architecture boundary tests ensuring [net.subsloth.core.model] remains free
@@ -92,17 +95,17 @@ class CoreModelArchitectureTest {
             System.getProperty("user.dir")
                 ?: error("user.dir system property is required")
         val modelSourceDir =
-            java.nio.file.Paths
+            Paths
                 .get(baseDir, "src", "main", "kotlin")
         if (!modelSourceDir.toFile().isDirectory) {
             error("Model source directory not found at $modelSourceDir")
         }
         val result = mutableListOf<String>()
-        java.nio.file.Files.walk(modelSourceDir).use { walkStream ->
+        Files.walk(modelSourceDir).use { walkStream ->
             walkStream
                 .filter { it.toString().endsWith(".kt") }
-                .forEach { file: java.nio.file.Path ->
-                    java.nio.file.Files.lines(file).use { lines ->
+                .forEach { file: Path ->
+                    Files.lines(file).use { lines ->
                         lines
                             .filter { it.trimStart().startsWith("import ") }
                             .map { it.trim() }

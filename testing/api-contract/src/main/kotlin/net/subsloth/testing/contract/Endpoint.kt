@@ -1,5 +1,8 @@
 package net.subsloth.testing.contract
 
+import java.net.URI
+import java.net.URISyntaxException
+
 enum class HttpMethod {
     GET,
     POST,
@@ -255,10 +258,10 @@ enum class Endpoint(
 
         private fun extractPath(url: String): String =
             try {
-                java.net.URI(url).path?.trimEnd('/').let { path ->
+                URI(url).path?.trimEnd('/').let { path ->
                     if (path.isNullOrEmpty()) url.substringBefore("?").trimEnd('/') else path
                 }
-            } catch (_: java.net.URISyntaxException) {
+            } catch (_: URISyntaxException) {
                 url.substringBefore("?").trimEnd('/')
             }
 

@@ -1,6 +1,7 @@
 package net.subsloth.testing.contract
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -292,7 +293,7 @@ object HarProcessor {
             responseHeaders = responseHeaders.withoutHeaders(rules.responseHeaderRedactionSet),
         )
 
-    private fun parseHeaders(headers: kotlinx.serialization.json.JsonArray?): Map<String, String> {
+    private fun parseHeaders(headers: JsonArray?): Map<String, String> {
         if (headers == null) {
             return emptyMap()
         }

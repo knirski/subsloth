@@ -37,7 +37,8 @@ public class NoFullyQualifiedNames(config: Config) :
         if (expression.getStrictParentOfType<KtImportDirective>() == null &&
             expression.getStrictParentOfType<KtPackageDirective>() == null &&
             !expression.isNestedReceiver() &&
-            expression.isPackageQualified()
+            expression.isPackageQualified() &&
+            !isAllowed(expression.text)
         ) {
             report(
                 Finding(
@@ -51,7 +52,8 @@ public class NoFullyQualifiedNames(config: Config) :
 
     override fun visitUserType(type: KtUserType) {
         if (type.parent !is KtUserType &&
-            type.isPackageQualified()
+            type.isPackageQualified() &&
+            !isAllowed(type.text)
         ) {
             report(
                 Finding(
@@ -84,11 +86,17 @@ public class NoFullyQualifiedNames(config: Config) :
         val segments = mutableListOf<String>()
         var current: KtExpression = expression
         while (current is KtQualifiedExpression) {
+            val receiver =
+                try {
+                    current.receiverExpression
+                } catch (_: IllegalStateException) {
+                    null
+                } ?: break
             val selectorReference = current.selectorExpression as? KtReferenceExpression
             if (selectorReference != null) {
                 segments.add(selectorReference.text)
             }
-            current = current.receiverExpression
+            current = receiver
         }
         val rootReference = current as? KtReferenceExpression ?: return emptyList()
         segments.add(rootReference.text)
@@ -113,12 +121,16 @@ public class NoFullyQualifiedNames(config: Config) :
         if (!segments[0].isLowercaseIdentifier() || !segments[1].isLowercaseIdentifier()) {
             return false
         }
-        if (!segments.any { it.isTypeLikeIdentifier() }) {
-            return false
+        if (segments.any { it.isTypeLikeIdentifier() }) {
+            return true
         }
-        val fqn = segments.joinToString(".")
-        return allowedPrefixes.none { prefix ->
-            fqn == prefix || fqn.startsWith("$prefix.")
+        return segments[0] in ROOT_PACKAGE_PREFIXES
+    }
+
+    private fun isAllowed(text: String): Boolean {
+        val trimmed = text.trim()
+        return allowedPrefixes.any { prefix ->
+            trimmed == prefix || trimmed.startsWith("$prefix.")
         }
     }
 
@@ -131,8 +143,10 @@ public class NoFullyQualifiedNames(config: Config) :
         isNotEmpty() && first().isUpperCase()
 
     private companion object {
-        private val DEFAULT_ALLOWED: List<String> = listOf(
+        private val DEFAULT_ALLOWED: List<String> = emptyList()
+        private val ROOT_PACKAGE_PREFIXES = setOf(
             "java", "javax", "kotlin", "kotlinx",
+            "io", "org", "com", "net",
         )
     }
 }

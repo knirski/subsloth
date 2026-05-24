@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import net.subsloth.core.model.identifier.AccountProfileKey
 import java.security.SecureRandom
+import java.text.Normalizer
+import java.util.Locale
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -85,8 +87,8 @@ class AccountProfileStore(private val dataStore: DataStore<Preferences>) {
 
     private fun normalizeLogin(login: String): String {
         val trimmed = login.trim()
-        val nfc = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFC)
-        return nfc.lowercase(java.util.Locale.ROOT)
+        val nfc = Normalizer.normalize(trimmed, Normalizer.Form.NFC)
+        return nfc.lowercase(Locale.ROOT)
     }
 
     /** Exposes the salt as a Flow for observation. */
