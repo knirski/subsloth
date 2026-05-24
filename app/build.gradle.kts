@@ -49,6 +49,16 @@ android {
             )
         }
     }
+
+    androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                output.outputFileName.set(
+                    "subsloth-$appVersionName-${variant.buildType}.apk",
+                )
+            }
+        }
+    }
 }
 
 dependencies {
