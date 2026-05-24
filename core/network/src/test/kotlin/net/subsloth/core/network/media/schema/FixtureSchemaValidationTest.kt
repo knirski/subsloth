@@ -3,6 +3,7 @@ package net.subsloth.core.network.media.schema
 import kotlinx.schema.generator.json.serialization.SerializationClassJsonSchemaGenerator
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import net.subsloth.core.network.media.api.model.Episode
 import net.subsloth.core.network.media.api.model.Movie
 import net.subsloth.core.network.media.api.model.MovieListResponse
@@ -27,13 +28,14 @@ class FixtureSchemaValidationTest {
     private val schemaGenerator = SerializationClassJsonSchemaGenerator()
     private val json = Json {
         ignoreUnknownKeys = true
-        isLenient = true
     }
 
     private fun assertFixtureValid(descriptor: SerialDescriptor) {
         val schemaString = schemaGenerator.generateSchemaString(descriptor)
         assertThat(schemaString).isNotEmpty()
-        assertThat(schemaString).contains("\"type\"")
+        val schema = Json.parseToJsonElement(schemaString)
+        assertThat(schema).isInstanceOf(JsonObject::class.java)
+        assertThat((schema as JsonObject)["type"]).isNotNull()
     }
 
     // ── Movies ─────────────────────────────────────────────────────────────
