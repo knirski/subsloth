@@ -218,7 +218,7 @@ object Mapper {
      * Maps availability based on the presence of an `updated_at` timestamp.
      * Items without an update timestamp are treated as expired/unavailable.
      */
-    fun mapAvailability(updatedAt: Instant?): Availability = if (updatedAt != null) {
+    fun mapAvailability(updatedAt: Instant?): Availability = if (updatedAt != null && updatedAt.epochSeconds > 0) {
         Availability.Available
     } else {
         Availability.Expired
