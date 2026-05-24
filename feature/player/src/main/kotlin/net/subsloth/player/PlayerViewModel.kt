@@ -519,10 +519,9 @@ class PlayerViewModel(
      */
     private fun saveProgressAndRouteToAuthRepair() {
         val state = _uiState.value as? PlayerUiState.Content
-        val mediaId = state?.mediaId
-        if (mediaId != null) {
+        if (state != null) {
             viewModelScope.launch(NonCancellable) {
-                saveProgress(mediaId, state.positionSeconds, state.durationSeconds)
+                saveProgress(state.mediaId ?: return@launch, state.positionSeconds, state.durationSeconds)
             }
         }
         onAuthFailure()
