@@ -118,6 +118,8 @@ gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$
 
 Use `databaseId` from the GraphQL thread query as the numeric REST `in_reply_to` ID.
 
+If `resolve_thread` fails with "Could not resolve to a node with the global id", the thread node ID format may have changed. Fall back to a reply-only approach — post the reply and let the thread stay unresolved. Unresolved non-blocking threads do not prevent merge in practice; the key requirement is that you've addressed the feedback.
+
 Resolve the thread immediately after replying unless additional discussion is needed (ambiguous suggestion, design question, or clarification requested). Unresolved threads block merge — resolve proactively.
 
 Issue-level comments cannot be resolved like review threads. After posting a reply noting the fix, mention the comment ID in the body so the automated tool can see the response.
