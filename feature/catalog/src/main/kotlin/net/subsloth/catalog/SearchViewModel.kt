@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +66,9 @@ class SearchViewModel(
     private val _filters = MutableStateFlow(SearchFilters())
     val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
 
-    private var catalog: List<Media> = emptyList()
+    private val catalogDeferred = viewModelScope.async(start = CoroutineStart.LAZY) {
+        listCatalog().getOrDefault(emptyList())
+    }
     private val searchChannel = Channel<String>(Channel.CONFLATED)
 
     init {
@@ -99,10 +103,7 @@ class SearchViewModel(
     private fun searchInternal(query: String): Flow<SearchUiState> = flow {
         emit(SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true))
 
-        if (catalog.isEmpty()) {
-            catalog = listCatalog().getOrDefault(emptyList())
-        }
-
+        val catalog = catalogDeferred.await()
         val filtered = applyFilters(catalog)
         val matched = SearchPolicy.filter(filtered, query)
         emit(SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false))
