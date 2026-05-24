@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -48,8 +51,8 @@ sealed interface PlayerUiState {
         val isPlaying: Boolean,
         val playbackSpeed: Float,
         val selectedSubtitle: Subtitle?,
-        val availableSubtitles: List<Subtitle>,
-        val availableQualities: List<Quality>,
+        val availableSubtitles: ImmutableList<Subtitle>,
+        val availableQualities: ImmutableList<Quality>,
         val selectedQualityLabel: String?,
         val nextEpisode: Episode?,
         val showNextEpisodePrompt: Boolean,
@@ -62,7 +65,7 @@ sealed interface PlayerUiState {
     ) : PlayerUiState
 
     @Immutable
-    data class Notice(val resId: Int, val formatArgs: List<String> = emptyList())
+    data class Notice(val resId: Int, val formatArgs: ImmutableList<String> = persistentListOf())
 }
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -127,8 +130,8 @@ class PlayerViewModel(
                 _uiState.value = PlayerUiState.Content(
                     title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                     playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
-                    selectedSubtitle = null, availableSubtitles = emptyList(),
-                    availableQualities = emptyList(), selectedQualityLabel = null,
+                    selectedSubtitle = null, availableSubtitles = persistentListOf(),
+                    availableQualities = persistentListOf(), selectedQualityLabel = null,
                     nextEpisode = null, showNextEpisodePrompt = false,
                     playbackError = PlaybackError.Recoverable("Invalid content identifier"),
                     playbackMode = PlaybackMode.ONLINE, qualityFallbackNotice = null,
@@ -148,8 +151,8 @@ class PlayerViewModel(
                     _uiState.value = PlayerUiState.Content(
                         title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                         playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
-                        selectedSubtitle = null, availableSubtitles = emptyList(),
-                        availableQualities = emptyList(), selectedQualityLabel = null,
+                        selectedSubtitle = null, availableSubtitles = persistentListOf(),
+                        availableQualities = persistentListOf(), selectedQualityLabel = null,
                         nextEpisode = null, showNextEpisodePrompt = false,
                         playbackError = playbackError,
                         playbackMode = PlaybackMode.ONLINE,
@@ -196,7 +199,7 @@ class PlayerViewModel(
                 source.availableSubtitles.isNotEmpty() ->
                 PlayerUiState.Notice(
                     R.string.player_subtitle_fallback_selected,
-                    listOf(initialSubtitle.languageDisplayName ?: initialSubtitle.language.value),
+                    persistentListOf(initialSubtitle.languageDisplayName ?: initialSubtitle.language.value),
                 )
             else -> null
         }
@@ -215,8 +218,8 @@ class PlayerViewModel(
             isPlaying = true,
             playbackSpeed = initialSpeed,
             selectedSubtitle = initialSubtitle,
-            availableSubtitles = source.availableSubtitles,
-            availableQualities = source.availableQualities,
+            availableSubtitles = source.availableSubtitles.toImmutableList(),
+            availableQualities = source.availableQualities.toImmutableList(),
             selectedQualityLabel = source.selectedQuality.info.label
                 ?: source.selectedQuality.info.resolution.label,
             nextEpisode = null,
@@ -468,7 +471,7 @@ class PlayerViewModel(
                                 _uiState.value = currentState.copy(
                                     qualityFallbackNotice = PlayerUiState.Notice(
                                         R.string.player_quality_fallback_notice,
-                                        listOf(fallback.info.label ?: fallback.info.resolution.label),
+                                        persistentListOf(fallback.info.label ?: fallback.info.resolution.label),
                                     ),
                                 )
                             }

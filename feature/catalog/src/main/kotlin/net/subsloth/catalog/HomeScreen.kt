@@ -1,5 +1,6 @@
 package net.subsloth.catalog
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
@@ -57,7 +60,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun CatalogContent(
+internal fun CatalogContent(
     state: HomeUiState.Content,
     modifier: Modifier = Modifier,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
@@ -71,7 +74,7 @@ private fun CatalogContent(
     ) {
         val rows = state.rows
         rows.forEach { row ->
-            item(key = row.label) {
+            item(key = row.label, contentType = row::class) {
                 HomeRowSection(row = row, onMovieClick = onMovieClick, onShowClick = onShowClick)
             }
         }
@@ -99,7 +102,7 @@ private fun HomeRowSection(
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
             row.items.forEach { media ->
-                item(key = media.id) {
+                item(key = media.id, contentType = media::class) {
                     MediaCard(
                         media = media,
                         onClick = {
@@ -171,4 +174,36 @@ fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit =
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+private fun HomeScreenLoadingPreview() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeScreenContentPreview() {
+    CatalogContent(
+        state = HomeUiState.Content(
+            rows = persistentListOf(
+                HomeRow.Movies(
+                    items = persistentListOf(),
+                    label = "Movies",
+                ),
+            ),
+            selectedTab = HomeTab.MOVIES,
+        ),
+        onMovieClick = {},
+        onShowClick = {},
+    )
 }

@@ -3,9 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val appVersionName =
-    try {
-        val gitVersion =
+val appVersionName: String by lazy {
+    val tag: String =
+        try {
             providers
                 .exec {
                     workingDir = rootProject.projectDir
@@ -15,21 +15,30 @@ val appVersionName =
                 .get()
                 .trim()
                 .removePrefix("v")
-        if (gitVersion.isEmpty()) "0.0.1" else gitVersion
-    } catch (_: Exception) {
-        "0.0.1"
-    }
-val appVersionCode =
-    appVersionName
-        .takeWhile { it.isDigit() || it == '.' }
-        .split(".")
-        .let { parts ->
-            val major = parts.getOrElse(0) { "0" }.toIntOrNull() ?: 0
-            val minor = parts.getOrElse(1) { "0" }.toIntOrNull() ?: 0
-            val patch = parts.getOrElse(2) { "0" }.toIntOrNull() ?: 0
-            val code = major * 1000000 + minor * 1000 + patch
-            if (code > 0) code else 1
+        } catch (_: Exception) {
+            ""
         }
+    if (tag.isBlank()) "0.0.1" else tag
+}
+
+val appVersionCode: Int by lazy {
+    // Strip SemVer pre-release suffix (e.g. "1.0.0-rc.1" -> "1.0.0") to get
+    // a purely numeric version for the integer code.  The pre-release label
+    // is preserved in versionName.
+    val numeric = appVersionName.substringBefore("-").substringBefore("+")
+    require(numeric.matches(Regex("""\d+\.\d+\.\d+"""))) {
+        "Version '$appVersionName' must be SemVer 'major.minor.patch' (got '$numeric')"
+    }
+    val parts = numeric.split(".")
+    val major = parts[0].toInt()
+    val minor = parts[1].toInt()
+    val patch = parts[2].toInt()
+    // Max safe: 999.999.999
+    require(major < 1000) { "Major version $major would overflow versionCode" }
+    require(minor < 1000) { "Minor version $minor would overflow versionCode" }
+    require(patch < 1000) { "Patch version $patch would overflow versionCode" }
+    major * 1_000_000 + minor * 1_000 + patch
+}
 
 android {
     namespace = "net.subsloth"

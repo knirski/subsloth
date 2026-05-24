@@ -4,6 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +23,8 @@ sealed interface SearchUiState {
     data object Idle : SearchUiState
 
     @Immutable
-    data class Results(val query: String, val items: List<Media>, val isLoading: Boolean = false) : SearchUiState
+    data class Results(val query: String, val items: ImmutableList<Media>, val isLoading: Boolean = false) :
+        SearchUiState
 }
 
 @Immutable
@@ -67,7 +71,7 @@ class SearchViewModel(
     fun search(query: String) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            _uiState.value = SearchUiState.Results(query = query, items = emptyList(), isLoading = true)
+            _uiState.value = SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true)
 
             if (catalog.isEmpty()) {
                 catalog = listCatalog().getOrDefault(emptyList())
@@ -75,7 +79,7 @@ class SearchViewModel(
 
             val filtered = applyFilters(catalog)
             val matched = SearchPolicy.filter(filtered, query)
-            _uiState.value = SearchUiState.Results(query = query, items = matched, isLoading = false)
+            _uiState.value = SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false)
         }
     }
 
