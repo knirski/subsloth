@@ -1,7 +1,7 @@
 # playback Specification
 
 ## Purpose
-TBD - created by archiving change playback. Update Purpose after archive.
+This specification defines the canonical requirements and behavior for media playback, including resume thresholds, progress tracking, subtitle and quality selection, error recovery, and foreground service notifications.
 ## Requirements
 ### Requirement: Resume Thresholds
 Playback resume SHALL use a `30s` lower threshold and a `95%` completion threshold when duration is known.
