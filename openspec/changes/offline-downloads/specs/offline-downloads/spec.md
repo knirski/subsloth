@@ -139,7 +139,7 @@ Confirmed season queues SHALL apply per-episode quality and subtitle fallback po
 
 #### Scenario: Preferred subtitle is unavailable
 - **WHEN** an episode in a confirmed season queue lacks the preferred subtitle language
-- **THEN** the queue falls back to English, then first available subtitle, then no subtitles without failing the video download
+- **THEN** the queue falls back to English, then no subtitles without failing the video download
 
 #### Scenario: Fallback impact is known before confirmation
 - **WHEN** season preflight can determine quality or subtitle fallback outcomes
