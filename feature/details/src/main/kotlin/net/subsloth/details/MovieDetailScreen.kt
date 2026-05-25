@@ -47,7 +47,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.error.detail ?: stringResource(s.error.toDisplayStringRes()),
+                    text = stringResource(s.error.toDisplayStringRes()),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )

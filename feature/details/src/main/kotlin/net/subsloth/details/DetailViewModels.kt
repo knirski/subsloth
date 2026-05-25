@@ -20,6 +20,7 @@ import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.progress.PlaybackProgress
+import net.subsloth.core.network.error.toUiError
 
 @Stable
 sealed interface DetailUiState {
@@ -96,7 +97,7 @@ class MovieDetailViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(UiError.fromThrowable(error))
+                    _uiState.value = DetailUiState.Error(error.toUiError())
                 },
             )
         }
@@ -154,7 +155,7 @@ class ShowDetailViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(UiError.fromThrowable(error))
+                    _uiState.value = DetailUiState.Error(error.toUiError())
                 },
             )
         }

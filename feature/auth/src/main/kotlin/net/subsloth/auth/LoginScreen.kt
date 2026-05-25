@@ -218,7 +218,7 @@ internal fun LoginFormContent(
         error?.let { err ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = err.detail ?: stringResource(err.toDisplayStringRes()),
+                text = stringResource(err.toDisplayStringRes()),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )

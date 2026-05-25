@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.network.error.toUiError
 
 /**
  * UI state for the login screen.
@@ -83,7 +84,7 @@ class LoginViewModel(
                 onFailure = { error ->
                     _uiState.value = LoginUiState.LoginForm(
                         hasOfflineLibrary = hasPlayableDownloads(),
-                        error = UiError.fromThrowable(error),
+                        error = error.toUiError(),
                     )
                 },
             )
