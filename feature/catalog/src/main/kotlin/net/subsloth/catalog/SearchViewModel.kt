@@ -7,10 +7,15 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.SearchPolicy
 import net.subsloth.core.model.media.Media
@@ -45,6 +50,7 @@ enum class MediaTypeFilter { ALL, MOVIES, SHOWS }
 
 enum class FilterOption { ANY, YES, NO }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModel(
     private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
     private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
@@ -52,35 +58,54 @@ class SearchViewModel(
     },
     private val savedState: Map<String, String> = mapOf("searchQuery" to ""),
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
-    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    private val _uiState: MutableStateFlow<SearchUiState>
+    val uiState: StateFlow<SearchUiState> get() = _uiState.asStateFlow()
 
     private val _filters = MutableStateFlow(SearchFilters())
     val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
 
     private var catalog: List<Media> = emptyList()
-    private var searchJob: Job? = null
+    private val searchChannel = Channel<String>(Channel.CONFLATED)
 
     init {
         val restoredQuery = savedState["searchQuery"].orEmpty()
+        val initialState = if (restoredQuery.isNotBlank()) {
+            SearchUiState.Results(query = restoredQuery, items = persistentListOf(), isLoading = true)
+        } else {
+            SearchUiState.Idle
+        }
+        _uiState = MutableStateFlow(initialState)
+
+        viewModelScope.launch {
+            searchChannel.receiveAsFlow()
+                .flatMapLatest { query -> searchInternal(query) }
+                .collect { state -> _uiState.value = state }
+        }
+
         if (restoredQuery.isNotBlank()) {
-            search(restoredQuery)
+            searchChannel.trySend(restoredQuery)
         }
     }
 
+    override fun onCleared() {
+        searchChannel.close()
+        super.onCleared()
+    }
+
     fun search(query: String) {
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            _uiState.value = SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true)
+        searchChannel.trySend(query)
+    }
 
-            if (catalog.isEmpty()) {
-                catalog = listCatalog().getOrDefault(emptyList())
-            }
+    private fun searchInternal(query: String): Flow<SearchUiState> = flow {
+        emit(SearchUiState.Results(query = query, items = persistentListOf(), isLoading = true))
 
-            val filtered = applyFilters(catalog)
-            val matched = SearchPolicy.filter(filtered, query)
-            _uiState.value = SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false)
+        if (catalog.isEmpty()) {
+            catalog = listCatalog().getOrDefault(emptyList())
         }
+
+        val filtered = applyFilters(catalog)
+        val matched = SearchPolicy.filter(filtered, query)
+        emit(SearchUiState.Results(query = query, items = matched.toImmutableList(), isLoading = false))
     }
 
     fun updateFilters(newFilters: SearchFilters) {
