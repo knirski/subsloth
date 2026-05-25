@@ -311,10 +311,7 @@ class PlayerViewModel(
         viewModelScope.launch {
             startPlayback(updatedSource, positionSeconds = state.positionSeconds)
             _uiState.update { current ->
-                (current as? PlayerUiState.Content)?.copy(
-                    streamRefreshUsed = state.streamRefreshUsed,
-                    qualityFallbackUsed = state.qualityFallbackUsed,
-                ) ?: current
+                (current as? PlayerUiState.Content)?.copy() ?: current
             }
         }
     }
