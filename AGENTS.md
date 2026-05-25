@@ -26,7 +26,7 @@ Mission: deliver work that matches the active OpenSpec change, passes that chang
 ## Bootstrap Checklist
 
 Before editing or running write actions:
-1. Read `AGENTS.md` and `docs/agent/README.md`.
+1. Read `AGENTS.md`, `best_practices.md`, and `docs/agent/README.md`.
 2. Run `git status --short`.
 3. Confirm branch and worktree.
 4. Identify the active OpenSpec change.
@@ -52,7 +52,7 @@ Before editing or running write actions:
 
 ## Required Workflow
 
-- Before editing, check `git status --short` for latest state, confirm the branch is correct, and create a new branch and/or worktree if needed. Then read `openspec/README.md`, the active change specs, and the active change `tasks.md`.
+- Follow the **Bootstrap Checklist**, then read `openspec/README.md` and the active change `tasks.md`.
 - Use the task list and repo docs to choose verification. Prefer `openspec validate <change-id> --strict` for one active change and `openspec validate --all --strict` when shared OpenSpec content changes.
 - Do not claim completion until the relevant checks succeed. If full verification is blocked, run the narrowest meaningful checks and report exactly what was skipped and why.
 - In the final response, include changed files, exact verification runs, and any skipped checks with the reason.
@@ -120,8 +120,6 @@ Before editing or running write actions:
 
 ### Never Do This
 
-- Never push directly to `main`.
-- Never use the browser for GitHub work.
 - Never share one active worktree across multiple active PRs.
 - Never merge with anything other than squash + merge.
 - Never restack or rebase another PR owner's branch without coordinator ownership in multi-PR mode.
