@@ -58,8 +58,7 @@ class PlayerViewModelTest {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -73,8 +72,7 @@ class PlayerViewModelTest {
     fun `shows error when fetchVideoSource fails`() = runTest(testDispatcher) {
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.failure(Exception("Network error")) },
             )
 
@@ -84,20 +82,11 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `shows error for invalid content identifier`() = runTest(testDispatcher) {
-        val viewModel = createViewModel(contentId = "invalid", contentType = "unknown")
-
-        val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.playbackError).isNotNull()
-    }
-
-    @Test
     fun `dismissNextEpisode hides prompt`() = runTest(testDispatcher) {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -112,8 +101,7 @@ class PlayerViewModelTest {
         var callCount = 0
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = {
                     callCount++
                     Result.success(createVideoSource())
@@ -132,8 +120,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -146,8 +133,7 @@ class PlayerViewModelTest {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -160,8 +146,7 @@ class PlayerViewModelTest {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -169,28 +154,10 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `contentId and contentType are parsed into correct mediaId`() = runTest(testDispatcher) {
-        val results = mutableListOf<Media.MediaId>()
-        val viewModel =
-            createViewModel(
-                contentId = "42",
-                contentType = "movie",
-                fetchVideoSource = { mediaId ->
-                    results.add(mediaId)
-                    Result.success(createVideoSource())
-                },
-            )
-
-        assertThat(results).hasSize(1)
-        assertThat(results.first()).isEqualTo(Media.MediaId.Movie(MovieId(42)))
-    }
-
-    @Test
     fun `auth failure triggers onAuthFailure callback`() = runTest(testDispatcher) {
         var authFailureCalled = false
         createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = {
                 Result.failure(Exception("401 auth failed"))
             },
@@ -204,8 +171,7 @@ class PlayerViewModelTest {
     fun `non-auth error does not trigger auth failure`() = runTest(testDispatcher) {
         var authFailureCalled = false
         createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.failure(Exception("Network timeout")) },
             onAuthFailure = { authFailureCalled = true },
         )
@@ -218,8 +184,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(durationSeconds = 1800L)
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -234,8 +199,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -248,8 +212,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(playbackMode = PlaybackMode.ONLINE)
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -264,8 +227,7 @@ class PlayerViewModelTest {
         var authFailureCalled = false
         var savedProgress: Triple<Media.MediaId, Long, Long>? = null
         createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = {
                 Result.failure(Exception("401 auth failed"))
             },
@@ -285,8 +247,7 @@ class PlayerViewModelTest {
     fun `auth failure sets playbackError to AuthFailure`() = runTest(testDispatcher) {
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = {
                     Result.failure(Exception("401 Unauthorized"))
                 },
@@ -303,8 +264,7 @@ class PlayerViewModelTest {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -320,8 +280,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
                 refreshStreamUrl = {
                     refreshCallCount++
@@ -339,8 +298,7 @@ class PlayerViewModelTest {
         var refreshCallCount = 0
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(createVideoSource()) },
                 refreshStreamUrl = {
                     refreshCallCount++
@@ -362,8 +320,7 @@ class PlayerViewModelTest {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
                 savePlaybackSpeed = { savedSpeeds.add(it) },
             )
@@ -379,8 +336,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(playbackMode = PlaybackMode.OFFLINE)
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
                 savePlaybackSpeed = { savePlaybackSpeedCalled = true },
             )
@@ -399,8 +355,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -415,8 +370,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(availableSubtitles = persistentListOf(esSubtitle))
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -431,8 +385,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(availableSubtitles = persistentListOf(esSubtitle))
         val viewModel =
             createViewModel(
-                contentId = "1",
-                contentType = "movie",
+
                 fetchVideoSource = { Result.success(source) },
             )
 
@@ -451,8 +404,7 @@ class PlayerViewModelTest {
         )
         var fetchedShowId: ShowId? = null
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "show",
+            mediaId = Media.MediaId.Show(ShowId(1)),
             fetchVideoSource = { Result.success(source) },
             fetchEpisodes = { showId ->
                 fetchedShowId = showId.value
@@ -473,8 +425,7 @@ class PlayerViewModelTest {
             mediaId = Media.MediaId.Episode(EpisodeId(2)),
         )
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "show",
+            mediaId = Media.MediaId.Show(ShowId(1)),
             fetchVideoSource = { Result.success(source) },
             fetchEpisodes = {
                 Result.success(listOf(episode1, episode2))
@@ -491,8 +442,7 @@ class PlayerViewModelTest {
             mediaId = Media.MediaId.Episode(EpisodeId(1)),
         )
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "show",
+            mediaId = Media.MediaId.Show(ShowId(1)),
             fetchVideoSource = { Result.success(source) },
             fetchEpisodes = { Result.success(emptyList()) },
         )
@@ -504,8 +454,7 @@ class PlayerViewModelTest {
     @Test
     fun `next episode is null for movie content`() = runTest(testDispatcher) {
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.success(createVideoSource()) },
         )
 
@@ -533,8 +482,7 @@ class PlayerViewModelTest {
             selectedQuality = quality1,
         )
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.success(source) },
         )
 
@@ -570,8 +518,7 @@ class PlayerViewModelTest {
             selectedQuality = quality1,
         )
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.success(source) },
         )
 
@@ -587,8 +534,7 @@ class PlayerViewModelTest {
     fun `initial playback speed comes from loadPlaybackSpeed`() = runTest(testDispatcher) {
         var loadCalled = false
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.success(createVideoSource()) },
             loadPlaybackSpeed = {
                 loadCalled = true
@@ -604,8 +550,7 @@ class PlayerViewModelTest {
     @Test
     fun `loadPlaybackSpeed defaults to 1x when not provided`() = runTest(testDispatcher) {
         val viewModel = createViewModel(
-            contentId = "1",
-            contentType = "movie",
+
             fetchVideoSource = { Result.success(createVideoSource()) },
         )
 
@@ -663,8 +608,7 @@ class PlayerViewModelTest {
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
-        contentId: String = "1",
-        contentType: String = "movie",
+        mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
         fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
             Result.success(createVideoSource())
         },
@@ -681,8 +625,7 @@ class PlayerViewModelTest {
         loadPreferredLanguage: suspend () -> LanguageCode = { LanguageCode("en") },
         resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     ): PlayerViewModel = PlayerViewModel(
-        contentId = contentId,
-        contentType = contentType,
+        mediaId = mediaId,
         playerController = null,
         fetchVideoSource = fetchVideoSource,
         fetchEpisodes = fetchEpisodes,
