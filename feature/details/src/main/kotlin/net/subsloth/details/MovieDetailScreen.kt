@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.model.error.UiError
 
 @Composable
 fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
@@ -44,7 +45,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.message,
+                    text = s.error.toDisplayString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -179,4 +180,12 @@ private fun MovieDetailErrorPreview() {
             color = MaterialTheme.colorScheme.error,
         )
     }
+}
+
+internal fun UiError.toDisplayString(): String = when (this) {
+    is UiError.AuthRequired -> detail ?: "Authentication required"
+    is UiError.NotFound -> detail ?: "Not found"
+    is UiError.ServiceError -> detail ?: "Service error"
+    is UiError.Offline -> detail ?: "You are offline"
+    is UiError.Unknown -> detail ?: "An unexpected error occurred"
 }

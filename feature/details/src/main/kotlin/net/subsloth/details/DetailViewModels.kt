@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.DownloadStatus
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -44,7 +45,7 @@ sealed interface DetailUiState {
     ) : DetailUiState
 
     @Immutable
-    data class Error(val message: String) : DetailUiState
+    data class Error(val error: UiError) : DetailUiState
 }
 
 class MovieDetailViewModel(
@@ -91,14 +92,24 @@ class MovieDetailViewModel(
                                 },
                             )
                     } else {
-                        _uiState.value = DetailUiState.Error("Unexpected media type")
+                        _uiState.value = DetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
                 },
-                onFailure = {
-                    _uiState.value = DetailUiState.Error(it.message ?: "Failed to load details")
+                onFailure = { error ->
+                    _uiState.value = DetailUiState.Error(mapToUiError(error))
                 },
             )
         }
+    }
+}
+
+fun mapToUiError(error: Throwable): UiError {
+    val message = error.message
+    return when {
+        message?.contains("401", ignoreCase = true) == true ||
+            message?.contains("auth", ignoreCase = true) == true ->
+            UiError.AuthRequired(message)
+        else -> UiError.Unknown(message)
     }
 }
 
@@ -149,11 +160,11 @@ class ShowDetailViewModel(
                                 },
                             )
                     } else {
-                        _uiState.value = DetailUiState.Error("Unexpected media type")
+                        _uiState.value = DetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
                 },
-                onFailure = {
-                    _uiState.value = DetailUiState.Error(it.message ?: "Failed to load details")
+                onFailure = { error ->
+                    _uiState.value = DetailUiState.Error(mapToUiError(error))
                 },
             )
         }

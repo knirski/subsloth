@@ -412,8 +412,13 @@ private fun ErrorContent(
             color = MaterialTheme.colorScheme.error,
         )
         Spacer(modifier = Modifier.height(16.dp))
+        val errorMessage = when (playbackError) {
+            is PlaybackError.AuthFailure -> stringResource(R.string.player_session_expired)
+            is PlaybackError.StreamUrlExpired -> stringResource(R.string.player_stream_expired)
+            is PlaybackError.Recoverable -> stringResource(R.string.player_playback_error)
+        }
         Text(
-            text = playbackError.message,
+            text = errorMessage,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )

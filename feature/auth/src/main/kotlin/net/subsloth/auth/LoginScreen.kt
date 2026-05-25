@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import net.subsloth.core.model.error.UiError
 import net.subsloth.feature.auth.R
 
 /**
@@ -155,7 +156,7 @@ internal fun LoginFormContent(
     login: String,
     password: String,
     isLoading: Boolean,
-    error: String?,
+    error: UiError?,
     hasOfflineLibrary: Boolean,
     modifier: Modifier = Modifier,
     onLoginChange: (String) -> Unit = {},
@@ -217,7 +218,7 @@ internal fun LoginFormContent(
         error?.let { err ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = err,
+                text = err.toDisplayString(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -255,4 +256,12 @@ private fun AuthRepairPreview() {
             style = MaterialTheme.typography.bodyMedium,
         )
     }
+}
+
+private fun UiError.toDisplayString(): String = when (this) {
+    is UiError.AuthRequired -> detail ?: "Authentication required"
+    is UiError.NotFound -> detail ?: "Not found"
+    is UiError.ServiceError -> detail ?: "Service error"
+    is UiError.Offline -> detail ?: "You are offline"
+    is UiError.Unknown -> detail ?: "An unexpected error occurred"
 }

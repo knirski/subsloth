@@ -59,7 +59,7 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.message,
+                    text = s.error.toDisplayString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )
