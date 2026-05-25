@@ -96,20 +96,10 @@ class MovieDetailViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(mapToUiError(error))
+                    _uiState.value = DetailUiState.Error(UiError.fromThrowable(error))
                 },
             )
         }
-    }
-}
-
-fun mapToUiError(error: Throwable): UiError {
-    val message = error.message
-    return when {
-        message?.contains("401", ignoreCase = true) == true ||
-            message?.contains("auth", ignoreCase = true) == true ->
-            UiError.AuthRequired(message)
-        else -> UiError.Unknown(message)
     }
 }
 
@@ -164,7 +154,7 @@ class ShowDetailViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(mapToUiError(error))
+                    _uiState.value = DetailUiState.Error(UiError.fromThrowable(error))
                 },
             )
         }

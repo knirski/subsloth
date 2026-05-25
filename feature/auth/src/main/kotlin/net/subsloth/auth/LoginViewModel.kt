@@ -83,7 +83,7 @@ class LoginViewModel(
                 onFailure = { error ->
                     _uiState.value = LoginUiState.LoginForm(
                         hasOfflineLibrary = hasPlayableDownloads(),
-                        error = mapToUiError(error),
+                        error = UiError.fromThrowable(error),
                     )
                 },
             )
@@ -109,17 +109,5 @@ class LoginViewModel(
         _uiState.value = LoginUiState.LoginForm(
             hasOfflineLibrary = authRepair?.hasOfflineLibrary ?: hasPlayableDownloads(),
         )
-    }
-
-    companion object {
-        fun mapToUiError(error: Throwable): UiError {
-            val message = error.message
-            return when {
-                message?.contains("401", ignoreCase = true) == true ||
-                    message?.contains("auth", ignoreCase = true) == true ->
-                    UiError.AuthRequired(message)
-                else -> UiError.Unknown(message)
-            }
-        }
     }
 }

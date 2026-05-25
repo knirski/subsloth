@@ -18,10 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.error.UiError
+import net.subsloth.feature.details.R
 
 @Composable
 fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
@@ -45,7 +47,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.error.toDisplayString(),
+                    text = s.error.detail ?: stringResource(s.error.toDisplayStringRes()),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -182,10 +184,10 @@ private fun MovieDetailErrorPreview() {
     }
 }
 
-internal fun UiError.toDisplayString(): String = when (this) {
-    is UiError.AuthRequired -> detail ?: "Authentication required"
-    is UiError.NotFound -> detail ?: "Not found"
-    is UiError.ServiceError -> detail ?: "Service error"
-    is UiError.Offline -> detail ?: "You are offline"
-    is UiError.Unknown -> detail ?: "An unexpected error occurred"
+internal fun UiError.toDisplayStringRes(): Int = when (this) {
+    is UiError.AuthRequired -> R.string.error_auth_required
+    is UiError.NotFound -> R.string.error_not_found
+    is UiError.ServiceError -> R.string.error_service
+    is UiError.Offline -> R.string.error_offline
+    is UiError.Unknown -> R.string.error_unknown
 }

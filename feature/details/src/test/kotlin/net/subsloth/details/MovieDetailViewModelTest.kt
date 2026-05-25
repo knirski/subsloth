@@ -97,7 +97,7 @@ class MovieDetailViewModelTest {
         )
         viewModel.uiState.test {
             val error = awaitItem() as DetailUiState.Error
-            assertThat(error.error.toDisplayString()).isEqualTo("Network error")
+            assertThat(error.error.detail).isEqualTo("Network error")
         }
     }
 

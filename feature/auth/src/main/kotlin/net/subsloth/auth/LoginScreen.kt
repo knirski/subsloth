@@ -218,7 +218,7 @@ internal fun LoginFormContent(
         error?.let { err ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = err.toDisplayString(),
+                text = err.detail ?: stringResource(err.toDisplayStringRes()),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -258,10 +258,10 @@ private fun AuthRepairPreview() {
     }
 }
 
-private fun UiError.toDisplayString(): String = when (this) {
-    is UiError.AuthRequired -> detail ?: "Authentication required"
-    is UiError.NotFound -> detail ?: "Not found"
-    is UiError.ServiceError -> detail ?: "Service error"
-    is UiError.Offline -> detail ?: "You are offline"
-    is UiError.Unknown -> detail ?: "An unexpected error occurred"
+private fun UiError.toDisplayStringRes(): Int = when (this) {
+    is UiError.AuthRequired -> R.string.error_auth_required
+    is UiError.NotFound -> R.string.error_not_found
+    is UiError.ServiceError -> R.string.error_service
+    is UiError.Offline -> R.string.error_offline
+    is UiError.Unknown -> R.string.error_unknown
 }
