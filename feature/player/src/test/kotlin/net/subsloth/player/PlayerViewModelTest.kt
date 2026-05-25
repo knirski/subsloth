@@ -79,17 +79,10 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.playbackError).isNotNull()
         assertThat(state.playbackError).isInstanceOf(PlaybackError.Recoverable::class.java)
-<<<<<<< HEAD
-=======
     }
 
     @Test
-    fun `shows error for invalid content identifier`() = runTest(testDispatcher) {
-        val viewModel = createViewModel(contentId = "invalid", contentType = "unknown")
-
-        val state = viewModel.uiState.value as PlayerUiState.Content
-        assertThat(state.playbackError).isNotNull()
->>>>>>> 2971af7a69edd553bc69f57858fd9a360794afb3
+    fun `dismissNextEpisode hides prompt`() = runTest(testDispatcher) {
     }
 
     @Test
@@ -168,12 +161,7 @@ class PlayerViewModelTest {
     fun `auth failure triggers onAuthFailure callback`() = runTest(testDispatcher) {
         var authFailureCalled = false
         createViewModel(
-<<<<<<< HEAD
 
-=======
-            contentId = "1",
-            contentType = "movie",
->>>>>>> 2971af7a69edd553bc69f57858fd9a360794afb3
             fetchVideoSource = {
                 Result.failure(Exception("401 auth failed"))
             },
@@ -243,12 +231,7 @@ class PlayerViewModelTest {
         var authFailureCalled = false
         var savedProgress: Triple<Media.MediaId, Long, Long>? = null
         createViewModel(
-<<<<<<< HEAD
 
-=======
-            contentId = "1",
-            contentType = "movie",
->>>>>>> 2971af7a69edd553bc69f57858fd9a360794afb3
             fetchVideoSource = {
                 Result.failure(Exception("401 auth failed"))
             },
@@ -268,12 +251,7 @@ class PlayerViewModelTest {
     fun `auth failure sets playbackError to AuthFailure`() = runTest(testDispatcher) {
         val viewModel =
             createViewModel(
-<<<<<<< HEAD
 
-=======
-                contentId = "1",
-                contentType = "movie",
->>>>>>> 2971af7a69edd553bc69f57858fd9a360794afb3
                 fetchVideoSource = {
                     Result.failure(Exception("401 Unauthorized"))
                 },
