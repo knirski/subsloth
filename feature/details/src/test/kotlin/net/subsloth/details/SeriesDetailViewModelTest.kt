@@ -1,6 +1,7 @@
 package net.subsloth.details
 
 import app.cash.turbine.test
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -49,8 +50,8 @@ class SeriesDetailViewModelTest {
             durationSeconds = 2700L,
             availability = Availability.Available,
             imdbId = null,
-            qualities = emptyList(),
-            subtitles = emptyList(),
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(),
             airDateEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L),
             premiereDateEpochSeconds = null,
         )
@@ -66,8 +67,8 @@ class SeriesDetailViewModelTest {
             durationSeconds = 2700L,
             availability = Availability.Available,
             imdbId = null,
-            qualities = emptyList(),
-            subtitles = emptyList(),
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(),
             airDateEpochSeconds = Instant.fromEpochSeconds(1_700_008_640L),
             premiereDateEpochSeconds = null,
         )
@@ -77,7 +78,7 @@ class SeriesDetailViewModelTest {
             seasonNumber = 1,
             title = "Season 1",
             plot = null,
-            episodes = listOf(sampleEpisode1, sampleEpisode2),
+            episodes = persistentListOf(sampleEpisode1, sampleEpisode2),
         )
 
     private val sampleShowDetails =
@@ -89,10 +90,10 @@ class SeriesDetailViewModelTest {
             availability = Availability.Available,
             rating = 8.0,
             year = 2023,
-            genres = listOf("Drama"),
+            genres = persistentListOf("Drama"),
             durationMinutes = 45,
-            qualities = emptyList(),
-            subtitles = listOf(
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(
                 Subtitle(
                     language = LanguageCode("en"),
                     languageDisplayName = "English",
@@ -104,12 +105,12 @@ class SeriesDetailViewModelTest {
             slug = "test-show",
             imdbId = null,
             tmdbId = null,
-            countries = listOf("US"),
+            countries = persistentListOf("US"),
             posterUrl = "https://example.com/poster.jpg",
             backdropUrl = "https://example.com/backdrop.jpg",
             status = ShowStatus.ONGOING,
             popularity = 100,
-            seasons = listOf(sampleSeason1),
+            seasons = persistentListOf(sampleSeason1),
         )
 
     @Test
@@ -169,9 +170,9 @@ class SeriesDetailViewModelTest {
                 seasonNumber = 2,
                 title = "Season 2",
                 plot = null,
-                episodes = emptyList(),
+                episodes = persistentListOf(),
             )
-        val showWithTwoSeasons = sampleShowDetails.copy(seasons = listOf(sampleSeason1, season2))
+        val showWithTwoSeasons = sampleShowDetails.copy(seasons = persistentListOf(sampleSeason1, season2))
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
             getDetails = { Result.success(showWithTwoSeasons) },

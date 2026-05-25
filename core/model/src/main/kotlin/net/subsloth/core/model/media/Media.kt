@@ -2,6 +2,7 @@ package net.subsloth.core.model.media
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
@@ -34,7 +35,7 @@ sealed interface Media {
     val year: Int?
 
     /** List of genre descriptors. */
-    val genres: List<String>
+    val genres: ImmutableList<String>
 
     /** Duration in minutes. */
     val durationMinutes: Int?
@@ -76,7 +77,7 @@ data class MovieSummary(
     override val availability: Availability,
     override val rating: Double?,
     override val year: Int?,
-    override val genres: List<String>,
+    override val genres: ImmutableList<String>,
     override val durationMinutes: Int?,
     val slug: String?,
     val imdbId: ExternalId?,
@@ -95,13 +96,13 @@ data class ShowSummary(
     override val availability: Availability,
     override val rating: Double?,
     override val year: Int?,
-    override val genres: List<String>,
+    override val genres: ImmutableList<String>,
     override val durationMinutes: Int?,
     val slug: String?,
     val imdbId: ExternalId?,
     val backdropUrl: String?,
     val status: ShowStatus,
-    val countries: List<String>,
+    val countries: ImmutableList<String>,
     val newestVideoEpochSeconds: Instant? = null,
 ) : Media
 

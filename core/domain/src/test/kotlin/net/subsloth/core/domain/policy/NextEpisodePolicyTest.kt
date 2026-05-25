@@ -1,5 +1,6 @@
 package net.subsloth.core.domain.policy
 
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ShowId
@@ -84,7 +85,7 @@ class NextEpisodePolicyTest {
     @Test
     fun `upcoming episode is not a valid next episode`() {
         val current = episode(1, 1, 5, Availability.Available)
-        val nextUnreleased = episode(1, 1, 6, Availability.Upcoming(null))
+        val nextUnreleased = episode(1, 1, 6, Availability.Upcoming.UnknownDate)
         val episodes =
             listOf(
                 episode(1, 1, 1, Availability.Available),
@@ -105,7 +106,7 @@ class NextEpisodePolicyTest {
             listOf(
                 episode(1, 1, 1, Availability.Available),
                 current,
-                episode(1, 1, 6, Availability.Upcoming(null)),
+                episode(1, 1, 6, Availability.Upcoming.UnknownDate),
                 episode(1, 1, 7, Availability.Available),
             )
 
@@ -195,8 +196,8 @@ class NextEpisodePolicyTest {
             durationSeconds = 1800L,
             availability = availability,
             imdbId = null,
-            qualities = emptyList(),
-            subtitles = emptyList(),
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(),
             airDateEpochSeconds = null,
             premiereDateEpochSeconds = null,
         )

@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.coroutines.core)
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.collections.immutable)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)

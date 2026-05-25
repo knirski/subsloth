@@ -1,15 +1,13 @@
 package net.subsloth.core.model.media
 
 import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ShowId
 import kotlin.time.Instant
 
-/**
- * A single episode of a show/series.
- */
 @Immutable
 data class Episode(
     val id: EpisodeId,
@@ -21,16 +19,11 @@ data class Episode(
     val durationSeconds: Long?,
     val availability: Availability,
     val imdbId: ExternalId?,
-    val qualities: List<Quality>,
-    val subtitles: List<Subtitle>,
+    val qualities: ImmutableList<Quality>,
+    val subtitles: ImmutableList<Subtitle>,
     val airDateEpochSeconds: Instant?,
     val premiereDateEpochSeconds: Instant?,
 ) {
-    /**
-     * Whether this episode is scheduled for future release based on its
-     * premiere date metadata. Upcoming episodes must not be playable or
-     * downloadable.
-     */
     val isUpcoming: Boolean
         get() = availability is Availability.Upcoming
 }
