@@ -20,10 +20,4 @@ object StreamRefreshPolicy {
         refreshUsed: Boolean,
         isOfflinePlayback: Boolean,
     ): Boolean = !refreshUsed && !isOfflinePlayback
-
-    /**
-     * Returns `true` — a refresh has been consumed and no further refreshes
-     * are allowed in this session.
-     */
-    fun markRefreshUsed(): Boolean = true
 }
