@@ -59,10 +59,11 @@ sealed interface PlayerUiState {
         val showNextEpisodePrompt: Boolean,
         val playbackError: PlaybackError?,
         val playbackMode: PlaybackMode,
-        /** Whether a quality fallback has been applied in this session. */
         val qualityFallbackNotice: Notice?,
-        /** Whether a subtitle fallback has been applied in this session. */
         val subtitleFallbackNotice: Notice?,
+        val streamRefreshUsed: Boolean = false,
+        val qualityFallbackUsed: Boolean = false,
+        val mediaId: Media.MediaId? = null,
     ) : PlayerUiState
 
     @Immutable
@@ -107,27 +108,17 @@ class PlayerViewModel(
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
-    private var currentMediaId: Media.MediaId? = null
     private var currentSource: VideoSource? = null
     private var progressJob: Job? = null
-
-    /** Whether a stream URL refresh has been used in this session. */
-    private var streamRefreshUsed = false
-
-    /** Whether a quality fallback has been used in this session. */
-    private var qualityFallbackUsed = false
 
     init {
         loadContent()
     }
 
     private fun loadContent() {
-        streamRefreshUsed = false
-        qualityFallbackUsed = false
         viewModelScope.launch {
-            currentMediaId = parseMediaId(contentId, contentType)
-            val mediaId = currentMediaId
-            if (mediaId == null) {
+            val parsedMediaId = parseMediaId(contentId, contentType)
+            if (parsedMediaId == null) {
                 _uiState.value = PlayerUiState.Content(
                     title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                     playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
@@ -141,8 +132,8 @@ class PlayerViewModel(
                 return@launch
             }
 
-            fetchVideoSource(mediaId).fold(
-                onSuccess = { source -> startPlayback(source) },
+            fetchVideoSource(parsedMediaId).fold(
+                onSuccess = { source -> startPlayback(source, mediaId = parsedMediaId) },
                 onFailure = { error ->
                     val playbackError = categorizeError(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
@@ -159,13 +150,18 @@ class PlayerViewModel(
                         playbackMode = PlaybackMode.ONLINE,
                         qualityFallbackNotice = null,
                         subtitleFallbackNotice = null,
+                        mediaId = parsedMediaId,
                     )
                 },
             )
         }
     }
 
-    private suspend fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
+    private suspend fun startPlayback(
+        source: VideoSource,
+        positionSeconds: Long = 0L,
+        mediaId: Media.MediaId? = null,
+    ) {
         currentSource = source
 
         playerController?.let { controller ->
@@ -188,8 +184,6 @@ class PlayerViewModel(
             }
         }
 
-        // Apply subtitle fallback chain per spec §Subtitle Behavior:
-        // Prefer English → first available → no subtitles with notice.
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
         val subtitleNotice = when {
@@ -212,6 +206,8 @@ class PlayerViewModel(
         val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
         playerController?.setPlaybackSpeed(initialSpeed)
 
+        val resolvedMediaId = mediaId ?: source.mediaId
+
         _uiState.value = PlayerUiState.Content(
             title = source.mediaId.toString(),
             positionSeconds = positionSeconds,
@@ -229,6 +225,7 @@ class PlayerViewModel(
             playbackMode = source.playbackMode,
             qualityFallbackNotice = (uiState.value as? PlayerUiState.Content)?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
+            mediaId = resolvedMediaId,
         )
 
         if (playerController != null) {
@@ -239,6 +236,7 @@ class PlayerViewModel(
     }
 
     private fun populateNextEpisode(source: VideoSource) {
+        val currentMediaId = (_uiState.value as? PlayerUiState.Content)?.mediaId ?: return
         viewModelScope.launch {
             val showId = when (val id = currentMediaId) {
                 is Media.MediaId.Show -> id.value
@@ -310,8 +308,12 @@ class PlayerViewModel(
             it.info.label == qualityLabel || it.info.resolution.label == qualityLabel
         } ?: return
         val updatedSource = source.copy(selectedQuality = quality)
-        currentSource = updatedSource
-        viewModelScope.launch { startPlayback(updatedSource, positionSeconds = state.positionSeconds) }
+        viewModelScope.launch {
+            startPlayback(updatedSource, positionSeconds = state.positionSeconds)
+            _uiState.update { current ->
+                (current as? PlayerUiState.Content)?.copy() ?: current
+            }
+        }
     }
 
     fun dismissNextEpisode() {
@@ -340,10 +342,10 @@ class PlayerViewModel(
      */
     @Suppress("ReturnCount")
     fun retryWithRefresh() {
-        val mediaId = currentSource?.mediaId ?: currentMediaId ?: return
         val state = _uiState.value as? PlayerUiState.Content ?: return
+        val mediaId = currentSource?.mediaId ?: state.mediaId ?: return
         if (state.playbackMode == PlaybackMode.OFFLINE) return
-        if (!StreamRefreshPolicy.canRefresh(streamRefreshUsed, isOfflinePlayback = false)) return
+        if (!StreamRefreshPolicy.canRefresh(state.streamRefreshUsed, isOfflinePlayback = false)) return
 
         performStreamRefresh(mediaId, state)
     }
@@ -352,8 +354,10 @@ class PlayerViewModel(
         viewModelScope.launch {
             refreshStreamUrl(mediaId).fold(
                 onSuccess = { refreshedSource ->
-                    streamRefreshUsed = StreamRefreshPolicy.markRefreshUsed()
                     startPlayback(refreshedSource, positionSeconds = state.positionSeconds)
+                    _uiState.update { current ->
+                        (current as? PlayerUiState.Content)?.copy(streamRefreshUsed = true) ?: current
+                    }
                 },
                 onFailure = { error ->
                     val playbackError = categorizeError(error)
@@ -393,7 +397,7 @@ class PlayerViewModel(
                 }
                 val state = _uiState.value as? PlayerUiState.Content ?: continue
 
-                currentMediaId?.let { id ->
+                state.mediaId?.let { id ->
                     saveProgress(id, pos, dur)
                 }
 
@@ -405,7 +409,7 @@ class PlayerViewModel(
     }
 
     private fun onEpisodeCompleted(state: PlayerUiState.Content) {
-        currentMediaId?.let { id ->
+        state.mediaId?.let { id ->
             viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds) }
         }
         val nextEp = state.nextEpisode
@@ -455,8 +459,11 @@ class PlayerViewModel(
                 }
             }
             is PlaybackError.StreamUrlExpired -> {
-                // Attempt bounded refresh
-                if (StreamRefreshPolicy.canRefresh(streamRefreshUsed, state.playbackMode == PlaybackMode.OFFLINE)) {
+                if (StreamRefreshPolicy.canRefresh(
+                        state.streamRefreshUsed,
+                        state.playbackMode == PlaybackMode.OFFLINE,
+                    )
+                ) {
                     retryWithRefresh()
                 } else {
                     _uiState.update { current ->
@@ -465,25 +472,21 @@ class PlayerViewModel(
                 }
             }
             is PlaybackError.Recoverable -> {
-                // Attempt quality fallback if available
                 val source = currentSource
-                if (source != null && QualityFallbackPolicy.canFallback(qualityFallbackUsed)) {
+                if (source != null && QualityFallbackPolicy.canFallback(state.qualityFallbackUsed)) {
                     val fallback = QualityFallbackPolicy.selectFallback(
                         availableQualities = source.availableQualities,
                         currentResolution = source.selectedQuality.info.resolution,
-                        fallbackUsed = qualityFallbackUsed,
+                        fallbackUsed = state.qualityFallbackUsed,
                     )
                     if (fallback != null) {
-                        qualityFallbackUsed = QualityFallbackPolicy.markFallbackUsed()
-                        // Restart playback with fallback quality
                         viewModelScope.launch {
                             val fallbackSource = source.copy(selectedQuality = fallback)
                             startPlayback(fallbackSource, positionSeconds = state.positionSeconds)
 
-                            // Set the fallback notice AFTER startPlayback to avoid it being cleared
-                            // by startPlayback creating a new state.
                             _uiState.update { current ->
                                 (current as? PlayerUiState.Content)?.copy(
+                                    qualityFallbackUsed = true,
                                     qualityFallbackNotice = PlayerUiState.Notice(
                                         R.string.player_quality_fallback_notice,
                                         persistentListOf(fallback.info.label ?: fallback.info.resolution.label),
@@ -512,11 +515,10 @@ class PlayerViewModel(
      * never interrupted by auth failures.
      */
     private fun saveProgressAndRouteToAuthRepair() {
-        val mediaId = currentMediaId
         val state = _uiState.value as? PlayerUiState.Content
-        if (mediaId != null && state != null) {
+        if (state != null) {
             viewModelScope.launch(NonCancellable) {
-                saveProgress(mediaId, state.positionSeconds, state.durationSeconds)
+                saveProgress(state.mediaId ?: return@launch, state.positionSeconds, state.durationSeconds)
             }
         }
         onAuthFailure()
