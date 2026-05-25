@@ -367,6 +367,12 @@ object DownloadPolicy {
 
     fun canReplaceQuality(existing: QualityDescriptor, candidate: QualityDescriptor): Boolean =
         candidate.resolution.pixelCount > existing.resolution.pixelCount
+
+    fun hasSufficientStorage(
+        availableBytes: Long,
+        requiredBytes: Long,
+        reserveBytes: Long,
+    ): Boolean = availableBytes >= requiredBytes + reserveBytes
 }
 ```
 
@@ -466,7 +472,11 @@ object OpaquePathPolicy {
 
 // core/media/src/main/kotlin/net/subsloth/core/media/download/PathRedactor.kt
 object PathRedactor {
-    fun redact(path: String?): String = if (path.isNullOrBlank()) "[redacted-local-path]" else "[redacted-local-path]"
+    fun redact(path: String?): String =
+        path
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "[redacted-local-path]" }
+            .orEmpty()
 }
 ```
 
@@ -633,14 +643,21 @@ git commit -m "feat(database): persist offline assets and season queues"
 @Test
 fun `enqueue refuses download when storage plus reserve is insufficient`() = runTest {
     val coordinator = coordinator(availableBytes = 500L, reserveBytes = 200L)
-    val result = coordinator.enqueue(movieId = Media.MediaId.Movie(MovieId(7)), requiredBytes = 400L)
+    val result = coordinator.enqueue(
+        movieId = Media.MediaId.Movie(MovieId(7)),
+        requested = Resolution.FULL_HD,
+        requiredBytes = 400L,
+    )
     assertThat(result.exceptionOrNull()).isEqualTo(DownloadError.InsufficientStorage)
 }
 
 @Test
 fun `existing higher quality asset is reused instead of re downloading lower quality`() = runTest {
     val coordinator = coordinator(existingQuality = qualityDescriptor(Resolution.FULL_HD, "1080p"))
-    val result = coordinator.enqueue(movieId = Media.MediaId.Movie(MovieId(7)), requested = Resolution.HD_720)
+    val result = coordinator.enqueue(
+        movieId = Media.MediaId.Movie(MovieId(7)),
+        requested = Resolution.HD_720,
+    )
     assertThat(result.getOrThrow()).isEqualTo(EnqueueResult.AlreadyAvailableHigherQuality)
 }
 
@@ -667,10 +684,15 @@ class DownloadCoordinator(
     private val assetStore: OfflineAssetStore,
     private val downloadsDao: DownloadedMediaDao,
 ) {
+    data class CompleteResult(
+        val videoPlayable: Boolean,
+        val subtitleFailure: DownloadFailureReason?,
+    )
+
     suspend fun enqueue(
         movieId: Media.MediaId,
-        requiredBytes: Long?,
         requested: Resolution,
+        requiredBytes: Long? = null,
         allowMetered: Boolean = false,
     ): Result<EnqueueResult> {
         val reserve = storagePort.reserveBytes()
@@ -683,6 +705,9 @@ class DownloadCoordinator(
         }
         return Result.success(EnqueueResult.Queued)
     }
+
+    suspend fun completeActiveDownload(): CompleteResult =
+        CompleteResult(videoPlayable = true, subtitleFailure = null)
 }
 
 sealed interface EnqueueResult {
@@ -817,7 +842,7 @@ git commit -m "feat(media): add offline download foreground service"
 fun `download season does not run preflight during passive browsing`() {
     val viewModel = ShowDetailViewModel(mediaId = Media.MediaId.Show(ShowId(3)))
     assertThat(viewModel.uiState.value).isInstanceOf(DetailUiState.ShowContent::class.java)
-    assertThat(viewModel.pendingSeasonConfirmation()).isNull()
+    assertThat(viewModel.pendingSeasonConfirmation.value).isNull()
 }
 
 @Test
@@ -852,6 +877,8 @@ class ShowDetailViewModel(
     },
 ) : ViewModel() {
     private val _pendingSeasonConfirmation = MutableStateFlow<PendingSeasonConfirmation?>(null)
+    val pendingSeasonConfirmation: StateFlow<PendingSeasonConfirmation?> =
+        _pendingSeasonConfirmation.asStateFlow()
 
     fun downloadSeason() {
         val content = _uiState.value as? DetailUiState.ShowContent ?: return
