@@ -183,12 +183,13 @@ If a verified local video file does not exist or is corrupt, playback does not p
 
 Season queues are sequential. If one episode fails after bounded retries, completed episodes remain playable and the failed episode remains failed until explicit retry. Queue cancellation stops remaining queued or active work and cleans partial files where safe, while preserving completed assets and retained metadata.
 
-### UX Priorities
+## UX Priorities
 
 - Separate video availability from subtitle availability in the UI.
 - Prefer recovery wording over storage or filesystem jargon.
-- Emphasize partial success in season queues, for example `6 of 8 episodes available offline`.
+- Emphasize partial success in season queues, for example '6 of 8 episodes available offline'.
 - Make metered and low-storage pauses obviously intentional rather than bug-like.
+- Map all user-facing error states and actions to shared resource IDs in a common module instead of using hardcoded string fallbacks or duplicating mapping functions in individual UI screens.
 
 ## Verification Shape
 
