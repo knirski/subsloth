@@ -76,15 +76,20 @@ class SearchViewModel(
         }
         _uiState = MutableStateFlow(initialState)
 
-        if (restoredQuery.isNotBlank()) {
-            searchChannel.trySend(restoredQuery)
-        }
-
         viewModelScope.launch {
             searchChannel.receiveAsFlow()
                 .flatMapLatest { query -> searchInternal(query) }
                 .collect { state -> _uiState.value = state }
         }
+
+        if (restoredQuery.isNotBlank()) {
+            searchChannel.trySend(restoredQuery)
+        }
+    }
+
+    override fun onCleared() {
+        searchChannel.close()
+        super.onCleared()
     }
 
     fun search(query: String) {
