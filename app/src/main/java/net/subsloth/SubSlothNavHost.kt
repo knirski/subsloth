@@ -137,7 +137,7 @@ fun SubSlothNavHost(
  * }
  * ```
  */
-private fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
+internal fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
     "movie" -> contentId.toLongOrNull()?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
     "episode" -> contentId.toLongOrNull()?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
     "show" -> contentId.toLongOrNull()?.let { Media.MediaId.Show(ShowId(it.toInt())) }
