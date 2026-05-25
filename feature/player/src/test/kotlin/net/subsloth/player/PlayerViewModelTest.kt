@@ -83,10 +83,6 @@ class PlayerViewModelTest {
 
     @Test
     fun `dismissNextEpisode hides prompt`() = runTest(testDispatcher) {
-    }
-
-    @Test
-    fun `dismissNextEpisode hides prompt`() = runTest(testDispatcher) {
         val source = createVideoSource()
         val viewModel =
             createViewModel(
