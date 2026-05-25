@@ -118,6 +118,20 @@ Before editing or running write actions:
 - Use separate git worktrees when working on multiple PRs or branches at the same time.
 - Keep local caches and machine-specific state out of git.
 
+## Pre-Merge Checklist
+
+**MUST verify ALL of these before merging any PR. Do not merge until every item passes. This is not optional.**
+
+| # | Check | How to verify |
+|---|---|---|
+| 1 | CI checks green | `gh pr view <number> --json statusCheckRollup` — all `conclusion` must be `SUCCESS` (SKIPPED for instrumented-test is OK). |
+| 2 | PR Agent / bot comments | Check `gh pr view <number> --json comments` and `gh api .../pulls/<number>/reviews` — read every review thread. If there are unresolved comments with actionable feedback, reply and address them before merging. |
+| 3 | Review threads resolved | Run `get_review_comments` on the PR. Every thread with a comment requesting a change must have a reply explaining the fix and be marked resolved. |
+| 4 | No stale CI | If the last commit is older than the latest CI run, check that the CI run corresponds to the latest commit SHA (`gh run list --branch <branch> --limit 1`). |
+| 5 | Conventional commit title | The PR title must match `type(scope): description` format (e.g. `fix: ...`, `feat(core): ...`). The `conventional-title` CI check enforces this. |
+
+**Why this exists:** In the past, PRs were merged with unresolved bot comments, raw error messages in the UI, and skipped pre-merge review cycles. The checklist prevents these by forcing explicit verification before every merge.
+
 ### Never Do This
 
 - Never share one active worktree across multiple active PRs.
