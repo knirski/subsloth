@@ -1104,12 +1104,14 @@ class ShowDetailViewModel(
         val content = _uiState.value as? DetailUiState.ShowContent ?: return
         viewModelScope.launch {
             requestSeasonConfirmation(mediaId.value, content.selectedSeason).onSuccess { summary ->
-                _uiState.value = content.copy(
-                    seasonDownload = SeasonDownloadUiState.AwaitingConfirmation(
-                        seasonNumber = content.selectedSeason,
-                        summary = summary,
-                    ),
-                )
+                _uiState.update { current ->
+                    (current as? DetailUiState.ShowContent)?.copy(
+                        seasonDownload = SeasonDownloadUiState.AwaitingConfirmation(
+                            seasonNumber = content.selectedSeason,
+                            summary = summary,
+                        ),
+                    ) ?: current
+                }
             }
         }
     }
@@ -1126,14 +1128,14 @@ class LoginViewModel(
     fun logout() {
         pauseIncompleteQueues()
         onLogout()
-        _uiState.value = LoginUiState.LoginForm(hasOfflineLibrary = hasPlayableDownloads())
+        _uiState.update { LoginUiState.LoginForm(hasOfflineLibrary = hasPlayableDownloads()) }
     }
 
     fun login(login: String, password: String) {
         viewModelScope.launch {
             validateCredentials(login.trim(), password).onSuccess {
                 resumeConfirmedQueuesIfPossible()
-                _uiState.value = LoginUiState.LoggedIn
+                _uiState.update { LoginUiState.LoggedIn }
                 onLoginSuccess()
             }
         }
@@ -1219,9 +1221,10 @@ sealed interface OfflineLibraryUiState {
 
 @Composable
 fun OfflineLibraryScreen(
-    viewModel: OfflineLibraryViewModel,
+    state: OfflineLibraryUiState,
     modifier: Modifier = Modifier,
     onOpenDownloads: () -> Unit,
+    onOpenItem: (LocalMediaIdentifier) -> Unit,
 ) { /* render available offline items first */ }
 ```
 
@@ -1260,8 +1263,8 @@ private fun categorizeError(error: Throwable): PlaybackError = when (error) {
 }
 
 // app/src/main/java/net/subsloth/SubSlothNavHost.kt
-entry<DownloadsKey> { DownloadsScreen(...) }
-entry<OfflineLibraryKey> { OfflineLibraryScreen(...) }
+entry<DownloadsKey> { DownloadsRoute(...) }
+entry<OfflineLibraryKey> { OfflineLibraryRoute(...) }
 ```
 
 - [ ] **Step 6: Run full feature verification**
