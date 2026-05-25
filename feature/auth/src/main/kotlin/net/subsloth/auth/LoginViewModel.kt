@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import net.subsloth.core.model.error.UiError
 
 /**
  * UI state for the login screen.
@@ -22,7 +23,7 @@ sealed interface LoginUiState {
 
     /** Login form is displayed. */
     @Immutable
-    data class LoginForm(val hasOfflineLibrary: Boolean = false, val error: String? = null) : LoginUiState
+    data class LoginForm(val hasOfflineLibrary: Boolean = false, val error: UiError? = null) : LoginUiState
 
     /** User is authenticated; navigation to catalog will follow. */
     data object LoggedIn : LoginUiState
@@ -82,7 +83,7 @@ class LoginViewModel(
                 onFailure = { error ->
                     _uiState.value = LoginUiState.LoginForm(
                         hasOfflineLibrary = hasPlayableDownloads(),
-                        error = error.message ?: "Authentication failed",
+                        error = mapToUiError(error),
                     )
                 },
             )
@@ -108,5 +109,17 @@ class LoginViewModel(
         _uiState.value = LoginUiState.LoginForm(
             hasOfflineLibrary = authRepair?.hasOfflineLibrary ?: hasPlayableDownloads(),
         )
+    }
+
+    companion object {
+        fun mapToUiError(error: Throwable): UiError {
+            val message = error.message
+            return when {
+                message?.contains("401", ignoreCase = true) == true ||
+                    message?.contains("auth", ignoreCase = true) == true ->
+                    UiError.AuthRequired(message)
+                else -> UiError.Unknown(message)
+            }
+        }
     }
 }

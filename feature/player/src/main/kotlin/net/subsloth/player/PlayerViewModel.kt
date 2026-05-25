@@ -125,7 +125,7 @@ class PlayerViewModel(
                     selectedSubtitle = null, availableSubtitles = persistentListOf(),
                     availableQualities = persistentListOf(), selectedQualityLabel = null,
                     nextEpisode = null, showNextEpisodePrompt = false,
-                    playbackError = PlaybackError.Recoverable("Invalid content identifier"),
+                    playbackError = PlaybackError.Recoverable(),
                     playbackMode = PlaybackMode.ONLINE, qualityFallbackNotice = null,
                     subtitleFallbackNotice = null,
                 )
@@ -532,8 +532,6 @@ class PlayerViewModel(
     }
 
     private fun categorizeError(error: Throwable): PlaybackError {
-        val message = error.message ?: "Playback error"
-
         var responseCode = -1
         var current: Throwable? = error
         while (current != null) {
@@ -545,23 +543,25 @@ class PlayerViewModel(
         }
 
         val errorCode = (error as? PlaybackException)?.errorCode
+        val message = error.message.orEmpty()
 
         return when {
             responseCode == HTTP_UNAUTHORIZED ||
                 errorCode == PlaybackException.ERROR_CODE_AUTHENTICATION_EXPIRED ||
-                isAuthError(error) ->
-                PlaybackError.AuthFailure(message)
-            responseCode == HTTP_FORBIDDEN || isStreamUrlError(error) ->
-                PlaybackError.StreamUrlExpired(message)
-            else -> PlaybackError.Recoverable(message)
+                isLikelyAuthError(message) ->
+                PlaybackError.AuthFailure
+            responseCode == HTTP_FORBIDDEN ||
+                isLikelyStreamExpired(message) ->
+                PlaybackError.StreamUrlExpired
+            else -> PlaybackError.Recoverable()
         }
     }
 
-    private fun isAuthError(error: Throwable): Boolean =
-        error.message?.contains("401") == true || error.message?.contains("auth", ignoreCase = true) == true
+    private fun isLikelyAuthError(message: String): Boolean =
+        message.contains("401") || message.contains("auth", ignoreCase = true)
 
-    private fun isStreamUrlError(error: Throwable): Boolean =
-        error.message?.contains("403") == true || error.message?.contains("expired", ignoreCase = true) == true
+    private fun isLikelyStreamExpired(message: String): Boolean =
+        message.contains("403") || message.contains("expired", ignoreCase = true)
 
     private companion object {
         private const val CONTENT_TYPE_MOVIE = "movie"

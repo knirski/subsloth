@@ -4,6 +4,10 @@ plugins {
 
 android {
     namespace = "net.subsloth.feature.player"
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {

@@ -133,7 +133,7 @@ class SeriesDetailViewModelTest {
         )
         viewModel.uiState.test {
             val error = awaitItem() as DetailUiState.Error
-            assertThat(error.message).isEqualTo("Network error")
+            assertThat(error.error.toDisplayString()).isEqualTo("Network error")
         }
     }
 

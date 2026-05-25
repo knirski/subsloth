@@ -29,6 +29,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -79,7 +80,7 @@ class PlayerViewModelTest {
 
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.playbackError).isNotNull()
-        assertThat(state.playbackError!!.message).contains("Network error")
+        assertThat(state.playbackError).isInstanceOf(PlaybackError.Recoverable::class.java)
     }
 
     @Test
@@ -190,7 +191,9 @@ class PlayerViewModelTest {
         createViewModel(
             contentId = "1",
             contentType = "movie",
-            fetchVideoSource = { Result.failure(Exception("401 auth failed")) },
+            fetchVideoSource = {
+                Result.failure(Exception("401 auth failed"))
+            },
             onAuthFailure = { authFailureCalled = true },
         )
 
@@ -263,7 +266,9 @@ class PlayerViewModelTest {
         createViewModel(
             contentId = "1",
             contentType = "movie",
-            fetchVideoSource = { Result.failure(Exception("401 Unauthorized")) },
+            fetchVideoSource = {
+                Result.failure(Exception("401 auth failed"))
+            },
             saveProgress = { id, pos, dur ->
                 savedProgress = Triple(id, pos, dur)
             },
@@ -282,7 +287,9 @@ class PlayerViewModelTest {
             createViewModel(
                 contentId = "1",
                 contentType = "movie",
-                fetchVideoSource = { Result.failure(Exception("401 Unauthorized")) },
+                fetchVideoSource = {
+                    Result.failure(Exception("401 Unauthorized"))
+                },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content

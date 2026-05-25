@@ -8,6 +8,7 @@
     <string name="player_next_episode">Next episode</string>
     <string name="player_cancel">Cancel</string>
     <string name="player_session_expired">Session Expired</string>
+    <string name="player_stream_expired">Stream URL expired</string>
     <string name="player_playback_error">Playback Error</string>
     <string name="player_sign_in_again">Sign in again</string>
     <string name="player_retry">Retry</string>
