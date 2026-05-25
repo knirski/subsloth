@@ -22,6 +22,10 @@ import net.subsloth.navigation.OfflineLibraryKey
 import net.subsloth.navigation.PlayerKey
 import net.subsloth.navigation.SettingsKey
 import net.subsloth.navigation.ShowDetailKey
+import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.Media
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
 
@@ -76,8 +80,8 @@ fun SubSlothNavHost(
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
                             PlayerViewModel(
-                                contentId = key.contentId,
-                                contentType = key.contentType,
+                                mediaId = parseMediaId(key.contentId, key.contentType)
+                                    ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
                             ) as T
                     },
                 )
@@ -133,6 +137,13 @@ fun SubSlothNavHost(
  * }
  * ```
  */
+internal fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
+    "movie" -> contentId.toLongOrNull()?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
+    "episode" -> contentId.toLongOrNull()?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
+    "show" -> contentId.toLongOrNull()?.let { Media.MediaId.Show(ShowId(it.toInt())) }
+    else -> null
+}
+
 @Composable
 fun NavDestinationBackHandler(
     enabled: Boolean = true,
