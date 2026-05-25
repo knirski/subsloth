@@ -4,7 +4,7 @@
 
 **Goal:** Implement the `offline-downloads` OpenSpec change on top of current `main`, covering offline home mode, app-private downloads, subtitle sidecars, item downloads, confirmed season queues, queue persistence, and operational notifications.
 
-**Architecture:** Keep decision logic in `:core:model` and `:core:domain`, then add the imperative download shell in `:core:media` plus persisted offline state in `:core:database`. Wire the result into `feature:details`, `feature:player`, `feature:auth`, `feature:catalog`, `feature:library`, and `app` without introducing a second requirements system or broad refactors outside the active change.
+**Architecture:** Keep decision logic in `:core:model` and `:core:domain`, then add the imperative download shell in `:core:media` plus persisted offline state in `:core:database`. Model lifecycle and user-visible outcomes as sealed ADTs instead of enums plus nullable baggage, and keep shell ports typed with explicit request and outcome models. Wire the result into `feature:details`, `feature:player`, `feature:auth`, `feature:catalog`, `feature:library`, and `app` without introducing a second requirements system or broad refactors outside the active change.
 
 **Tech Stack:** Kotlin, Jetpack Compose, Room, Media3, Android foreground services, immutable collections, typed `Result` errors, Navigation3
 
@@ -106,10 +106,24 @@
 
 ```kotlin
 @Test
-fun `download status exposes offline lifecycle states`() {
-    val all = DownloadStatus.entries.toSet()
-    assertThat(all).contains(DownloadStatus.PARTIAL)
-    assertThat(all).contains(DownloadStatus.UNAVAILABLE)
+fun `download state exposes offline lifecycle variants without nullable baggage`() {
+    val completed: DownloadState = DownloadState.Completed(
+        localId = LocalMediaIdentifier("movie-7"),
+        mediaId = Media.MediaId.Movie(MovieId(7)),
+        quality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
+        downloadedAtEpochSeconds = Instant.fromEpochSeconds(10),
+        sizeBytes = 1024L,
+        videoPath = OfflineRelativePath("downloads/video/7/main.mp4"),
+        subtitleLanguages = persistentSetOf(),
+    )
+    val unavailable: DownloadState = DownloadState.Unavailable(
+        localId = LocalMediaIdentifier("movie-7"),
+        mediaId = Media.MediaId.Movie(MovieId(7)),
+        quality = qualityDescriptor(Resolution.HD_720, "720p"),
+        reason = DownloadFailureReason.MissingLocalFile,
+    )
+    assertThat(completed).isInstanceOf(DownloadState.Completed::class.java)
+    assertThat(unavailable).isInstanceOf(DownloadState.Unavailable::class.java)
 }
 
 @Test
@@ -117,7 +131,7 @@ fun `offline asset keeps subtitle sidecars separate from video asset`() {
     val asset = OfflineAsset(
         mediaId = Media.MediaId.Movie(MovieId(7)),
         localId = LocalMediaIdentifier("movie-7"),
-        videoRelativePath = "downloads/video/7/main.mp4",
+        videoRelativePath = OfflineRelativePath("downloads/video/7/main.mp4"),
         subtitleLanguages = persistentSetOf(LanguageCode("en"), LanguageCode("pl")),
         effectiveQuality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
         displayTitle = "Movie",
@@ -136,9 +150,8 @@ fun `season queue summary tracks fallback and blocked counts`() {
         fallbackSubtitleToEnglishCount = 3,
         noSubtitleCount = 1,
         unavailableCount = 1,
-        hasUnknownSizes = true,
-        knownSizeBytes = null,
-        allowMetered = false,
+        sizeEstimate = SizeEstimate.Unknown,
+        transferPreference = TransferPreference.WifiOnly,
     )
     assertThat(summary.fallbackSubtitleToEnglishCount).isEqualTo(3)
     assertThat(summary.noSubtitleCount).isEqualTo(1)
@@ -148,7 +161,7 @@ fun `season queue summary tracks fallback and blocked counts`() {
 - [ ] **Step 2: Run the model tests to verify they fail**
 
 Run: `./gradlew :core:model:test --tests "net.subsloth.core.model.CoreModelTest"`
-Expected: FAIL because the new download model types and enum entries do not exist yet.
+Expected: FAIL because the new sealed download lifecycle and queue model types do not exist yet.
 
 - [ ] **Step 3: Implement the model types**
 
@@ -165,11 +178,33 @@ sealed interface DownloadFailureReason {
 }
 
 // core/model/src/main/kotlin/net/subsloth/core/model/download/OfflineAsset.kt
+@JvmInline
+value class QueueId(val value: String)
+
+@JvmInline
+value class OfflineRelativePath(val value: String)
+
+sealed interface TransferPreference {
+    data object WifiOnly : TransferPreference
+    data object MeteredAllowed : TransferPreference
+}
+
+sealed interface SizeEstimate {
+    data class Known(val bytes: Long) : SizeEstimate
+    data object Unknown : SizeEstimate
+}
+
+sealed interface SubtitleSelection {
+    data class Preferred(val subtitle: Subtitle) : SubtitleSelection
+    data class EnglishFallback(val subtitle: Subtitle) : SubtitleSelection
+    data object None : SubtitleSelection
+}
+
 @Immutable
 data class OfflineAsset(
     val mediaId: Media.MediaId,
     val localId: LocalMediaIdentifier,
-    val videoRelativePath: String,
+    val videoRelativePath: OfflineRelativePath,
     val subtitleLanguages: ImmutableSet<LanguageCode>,
     val effectiveQuality: QualityDescriptor,
     val displayTitle: String,
@@ -179,22 +214,39 @@ data class OfflineAsset(
 // core/model/src/main/kotlin/net/subsloth/core/model/download/SeasonDownloadQueue.kt
 @Immutable
 data class SeasonDownloadQueue(
-    val queueId: String,
+    val queueId: QueueId,
     val showId: ShowId,
     val seasonNumber: Int,
     val items: ImmutableList<SeasonDownloadQueueItem>,
-    val status: DownloadStatus,
-    val allowMetered: Boolean,
+    val execution: SeasonQueueExecution,
+    val transferPreference: TransferPreference,
 )
+
+sealed interface SeasonQueueExecution {
+    data object PendingConfirmation : SeasonQueueExecution
+    data object Queued : SeasonQueueExecution
+    data class Running(val activeItem: Media.MediaId.Episode) : SeasonQueueExecution
+    data class Paused(val reason: DownloadFailureReason) : SeasonQueueExecution
+    data object Completed : SeasonQueueExecution
+    data class Failed(val reason: DownloadFailureReason) : SeasonQueueExecution
+}
 
 @Immutable
 data class SeasonDownloadQueueItem(
     val mediaId: Media.MediaId.Episode,
     val selectedQuality: Resolution,
     val preferredSubtitleLanguage: LanguageCode,
-    val status: DownloadStatus,
-    val failureReason: DownloadFailureReason? = null,
+    val subtitleSelection: SubtitleSelection,
+    val execution: SeasonQueueItemExecution,
 )
+
+sealed interface SeasonQueueItemExecution {
+    data object Pending : SeasonQueueItemExecution
+    data class Downloading(val progressPercent: Int) : SeasonQueueItemExecution
+    data object Completed : SeasonQueueItemExecution
+    data class Failed(val reason: DownloadFailureReason) : SeasonQueueItemExecution
+    data object Cancelled : SeasonQueueItemExecution
+}
 
 @Immutable
 data class SeasonDownloadConfirmation(
@@ -204,9 +256,8 @@ data class SeasonDownloadConfirmation(
     val fallbackSubtitleToEnglishCount: Int,
     val noSubtitleCount: Int,
     val unavailableCount: Int,
-    val hasUnknownSizes: Boolean,
-    val knownSizeBytes: Long?,
-    val allowMetered: Boolean,
+    val sizeEstimate: SizeEstimate,
+    val transferPreference: TransferPreference,
 )
 ```
 
@@ -214,28 +265,89 @@ data class SeasonDownloadConfirmation(
 
 ```kotlin
 // core/model/src/main/kotlin/net/subsloth/core/model/download/DownloadState.kt
-data class DownloadState(
-    val localId: LocalMediaIdentifier,
-    val mediaId: Media.MediaId,
-    val status: DownloadStatus,
-    val quality: QualityDescriptor,
-    val downloadedAtEpochSeconds: Instant,
-    val sizeBytes: Long?,
-    val relativePath: String?,
-    val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
-    val queueId: String? = null,
-    val failureReason: DownloadFailureReason? = null,
-)
+sealed interface DownloadState {
+    val localId: LocalMediaIdentifier
+    val mediaId: Media.MediaId
+    val quality: QualityDescriptor
+    val subtitleLanguages: ImmutableSet<LanguageCode>
 
-enum class DownloadStatus {
-    QUEUED,
-    DOWNLOADING,
-    PARTIAL,
-    COMPLETED,
-    FAILED,
-    PAUSED,
-    UNAVAILABLE,
-    REMOVED,
+    @Immutable
+    data class Queued(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Active(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val progressPercent: Int,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Partial(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val stagedPath: OfflineRelativePath,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Completed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        val downloadedAtEpochSeconds: Instant,
+        val sizeBytes: Long?,
+        val videoPath: OfflineRelativePath,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+    ) : DownloadState
+
+    @Immutable
+    data class Failed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Paused(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Unavailable(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Removed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+    ) : DownloadState
 }
 
 // core/model/src/main/kotlin/net/subsloth/core/model/error/DomainError.kt
@@ -302,12 +414,29 @@ fun `initial subtitle fallback uses preferred non english then english then none
         subtitle(LanguageCode("en"), "English"),
         subtitle(LanguageCode("pl"), "Polski"),
     )
-    assertThat(
-        SeasonQueuePolicy.selectInitialSubtitle(
-            available = subtitles,
-            preferred = LanguageCode("pl"),
-        )?.language,
-    ).isEqualTo(LanguageCode("pl"))
+    val selection = SeasonQueuePolicy.selectInitialSubtitle(
+        available = subtitles,
+        preferred = LanguageCode("pl"),
+    )
+    assertThat(selection).isEqualTo(
+        SubtitleSelection.Preferred(
+            subtitle(LanguageCode("pl"), "Polski"),
+        ),
+    )
+}
+
+@Test
+fun `subtitle fallback emits explicit english fallback decision`() {
+    val subtitles = listOf(subtitle(LanguageCode("en"), "English"))
+    val selection = SeasonQueuePolicy.selectInitialSubtitle(
+        available = subtitles,
+        preferred = LanguageCode("es"),
+    )
+    assertThat(selection).isEqualTo(
+        SubtitleSelection.EnglishFallback(
+            subtitle(LanguageCode("en"), "English"),
+        ),
+    )
 }
 
 @Test
@@ -342,19 +471,27 @@ object SeasonQueuePolicy {
     fun selectInitialSubtitle(
         available: List<Subtitle>,
         preferred: LanguageCode,
-    ): Subtitle? = when {
-        preferred != LanguageCode("en") -> available.firstOrNull { it.language == preferred }
-            ?: available.firstOrNull { it.language == LanguageCode("en") }
-        else -> available.firstOrNull { it.language == LanguageCode("en") }
+    ): SubtitleSelection {
+        val english = LanguageCode("en")
+        val preferredTrack = available.firstOrNull { it.language == preferred }
+        val englishTrack = available.firstOrNull { it.language == english }
+        return when {
+            preferred != english && preferredTrack != null -> SubtitleSelection.Preferred(preferredTrack)
+            englishTrack != null -> SubtitleSelection.EnglishFallback(englishTrack)
+            else -> SubtitleSelection.None
+        }
     }
 
     fun canResumeQueue(
         isOnline: Boolean,
         hasStorage: Boolean,
-        allowMetered: Boolean,
+        transferPreference: TransferPreference,
         isMetered: Boolean,
         authValid: Boolean,
-    ): Boolean = isOnline && hasStorage && authValid && (!isMetered || allowMetered)
+    ): Boolean = isOnline && hasStorage && authValid && when (transferPreference) {
+        TransferPreference.WifiOnly -> !isMetered
+        TransferPreference.MeteredAllowed -> true
+    }
 }
 
 // core/domain/src/main/kotlin/net/subsloth/core/domain/policy/DownloadPolicy.kt
@@ -362,8 +499,13 @@ object DownloadPolicy {
     fun requiredReserveBytes(totalBytes: Long): Long =
         minOf(2L * 1024 * 1024 * 1024, totalBytes / 10)
 
-    fun canTransferOnNetwork(isMetered: Boolean, allowMetered: Boolean): Boolean =
-        !isMetered || allowMetered
+    fun canTransferOnNetwork(
+        isMetered: Boolean,
+        transferPreference: TransferPreference,
+    ): Boolean = when (transferPreference) {
+        TransferPreference.WifiOnly -> !isMetered
+        TransferPreference.MeteredAllowed -> true
+    }
 
     fun canReplaceQuality(existing: QualityDescriptor, candidate: QualityDescriptor): Boolean =
         candidate.resolution.pixelCount > existing.resolution.pixelCount
@@ -381,14 +523,32 @@ object DownloadPolicy {
 ```kotlin
 // core/domain/src/main/kotlin/net/subsloth/core/domain/port/DownloadsPort.kt
 interface DownloadsPort {
-    suspend fun listDownloads(): Result<List<DownloadState>>
-    suspend fun listOfflineAssets(): Result<List<OfflineAsset>>
-    suspend fun enqueue(mediaId: Media.MediaId): Result<Unit>
-    suspend fun enqueueSubtitle(localId: LocalMediaIdentifier, language: LanguageCode): Result<Unit>
-    suspend fun pause(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun resume(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun cancel(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun remove(localId: LocalMediaIdentifier): Result<Unit>
+    suspend fun listDownloads(): Result<ImmutableList<DownloadState>>
+    suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>>
+    suspend fun enqueue(
+        mediaId: Media.MediaId,
+        requested: Resolution,
+        requiredBytes: Long? = null,
+        transferPreference: TransferPreference = TransferPreference.WifiOnly,
+    ): Result<EnqueueOutcome>
+    suspend fun enqueueSubtitle(
+        localId: LocalMediaIdentifier,
+        language: LanguageCode,
+    ): Result<SubtitleEnqueueOutcome>
+    suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun resume(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun cancel(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun remove(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+}
+
+sealed interface DownloadCommandOutcome {
+    data object Applied : DownloadCommandOutcome
+    data object NoOp : DownloadCommandOutcome
+}
+
+sealed interface SubtitleEnqueueOutcome {
+    data object Queued : SubtitleEnqueueOutcome
+    data object AlreadyAvailable : SubtitleEnqueueOutcome
 }
 
 // core/domain/src/main/kotlin/net/subsloth/core/domain/port/StoragePort.kt
@@ -463,11 +623,17 @@ Expected: FAIL because the storage/redaction classes do not exist yet.
 ```kotlin
 // core/media/src/main/kotlin/net/subsloth/core/media/download/OpaquePathPolicy.kt
 object OpaquePathPolicy {
-    fun videoPath(contentId: String, extension: String, randomId: UUID): String =
-        "downloads/video/$contentId/$randomId.$extension"
+    fun videoPath(contentId: String, extension: String, randomId: UUID): OfflineRelativePath =
+        OfflineRelativePath("downloads/video/$contentId/$randomId.$extension")
 
-    fun subtitlePath(contentId: String, language: LanguageCode, extension: String, randomId: UUID): String =
-        "downloads/subtitles/$contentId/${language.value}/$randomId.$extension"
+    fun subtitlePath(
+        contentId: String,
+        language: LanguageCode,
+        extension: String,
+        randomId: UUID,
+    ): OfflineRelativePath = OfflineRelativePath(
+        "downloads/subtitles/$contentId/${language.value}/$randomId.$extension",
+    )
 }
 
 // core/media/src/main/kotlin/net/subsloth/core/media/download/PathRedactor.kt
@@ -485,10 +651,10 @@ object PathRedactor {
 ```kotlin
 // core/media/src/main/kotlin/net/subsloth/core/media/download/OfflineAssetStore.kt
 class OfflineAssetStore(private val filesDir: File) {
-    fun stageVideo(relativePath: String): File = File(filesDir, "$relativePath.part")
-    fun finalVideo(relativePath: String): File = File(filesDir, relativePath)
+    fun stageVideo(relativePath: OfflineRelativePath): File = File(filesDir, "${relativePath.value}.part")
+    fun finalVideo(relativePath: OfflineRelativePath): File = File(filesDir, relativePath.value)
     fun verifyPlayable(file: File): Boolean = file.exists() && file.length() > 0L
-    fun deletePartial(relativePath: String) { File(filesDir, "$relativePath.part").delete() }
+    fun deletePartial(relativePath: OfflineRelativePath) { File(filesDir, "${relativePath.value}.part").delete() }
 }
 
 // app/src/main/res/xml/backup_rules.xml and data_extraction_rules.xml
@@ -569,8 +735,8 @@ data class SeasonDownloadQueueEntity(
     @PrimaryKey val queueId: String,
     val showId: String,
     val seasonNumber: Int,
-    val status: String,
-    val allowMetered: Boolean,
+    val executionTag: String,
+    val transferPreferenceTag: String,
 )
 
 @Entity(
@@ -583,8 +749,8 @@ data class SeasonDownloadQueueItemEntity(
     val contentId: String,
     val selectedQuality: String,
     val preferredSubtitleLanguage: String,
-    val status: String,
-    val failureReason: String?,
+    val subtitleSelectionTag: String,
+    val executionTag: String,
 )
 
 // core/database/src/main/kotlin/net/subsloth/database/dao/LibraryDao.kt
@@ -595,6 +761,31 @@ interface SeasonDownloadQueueDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SeasonDownloadQueueEntity)
+}
+
+// Persist strings only at the Room boundary; mappers convert them to sealed ADTs.
+private fun SeasonDownloadQueueEntity.toModel(
+    items: ImmutableList<SeasonDownloadQueueItem>,
+): SeasonDownloadQueue = SeasonDownloadQueue(
+    queueId = QueueId(queueId),
+    showId = ShowId(showId.toLong()),
+    seasonNumber = seasonNumber,
+    items = items,
+    execution = executionTag.toSeasonQueueExecution(),
+    transferPreference = transferPreferenceTag.toTransferPreference(),
+)
+
+private fun String.toSeasonQueueExecution(): SeasonQueueExecution = when (this) {
+    "pending_confirmation" -> SeasonQueueExecution.PendingConfirmation
+    "queued" -> SeasonQueueExecution.Queued
+    "completed" -> SeasonQueueExecution.Completed
+    else -> error("Unknown season queue execution tag: $this")
+}
+
+private fun String.toTransferPreference(): TransferPreference = when (this) {
+    "wifi_only" -> TransferPreference.WifiOnly
+    "metered_allowed" -> TransferPreference.MeteredAllowed
+    else -> error("Unknown transfer preference tag: $this")
 }
 ```
 
@@ -658,15 +849,18 @@ fun `existing higher quality asset is reused instead of re downloading lower qua
         movieId = Media.MediaId.Movie(MovieId(7)),
         requested = Resolution.HD_720,
     )
-    assertThat(result.getOrThrow()).isEqualTo(EnqueueResult.AlreadyAvailableHigherQuality)
+    assertThat(result.getOrThrow()).isEqualTo(EnqueueOutcome.AlreadyAvailableHigherQuality)
 }
 
 @Test
 fun `subtitle sidecar failure does not fail video completion`() = runTest {
     val coordinator = coordinator(sidecarFailure = true)
     val result = coordinator.completeActiveDownload()
-    assertThat(result.videoPlayable).isTrue()
-    assertThat(result.subtitleFailure).isEqualTo(DownloadFailureReason.SubtitleUnavailable)
+    assertThat(result).isEqualTo(
+        CompletionOutcome.VideoReady(
+            subtitleOutcome = SubtitleSidecarOutcome.Unavailable,
+        ),
+    )
 }
 ```
 
@@ -684,35 +878,42 @@ class DownloadCoordinator(
     private val assetStore: OfflineAssetStore,
     private val downloadsDao: DownloadedMediaDao,
 ) {
-    data class CompleteResult(
-        val videoPlayable: Boolean,
-        val subtitleFailure: DownloadFailureReason?,
-    )
-
     suspend fun enqueue(
         movieId: Media.MediaId,
         requested: Resolution,
         requiredBytes: Long? = null,
-        allowMetered: Boolean = false,
-    ): Result<EnqueueResult> {
+        transferPreference: TransferPreference = TransferPreference.WifiOnly,
+    ): Result<EnqueueOutcome> {
         val reserve = storagePort.reserveBytes()
         val available = storagePort.availableBytes()
         if (requiredBytes != null && !DownloadPolicy.hasSufficientStorage(available, requiredBytes, reserve)) {
             return Result.failure(DownloadError.InsufficientStorage)
         }
-        if (!DownloadPolicy.canTransferOnNetwork(connectivityPort.isMetered(), allowMetered)) {
+        if (!DownloadPolicy.canTransferOnNetwork(connectivityPort.isMetered(), transferPreference)) {
             return Result.failure(DownloadError.NeedsWifi)
         }
-        return Result.success(EnqueueResult.Queued)
+        return Result.success(EnqueueOutcome.Queued)
     }
 
-    suspend fun completeActiveDownload(): CompleteResult =
-        CompleteResult(videoPlayable = true, subtitleFailure = null)
+    suspend fun completeActiveDownload(): CompletionOutcome =
+        CompletionOutcome.VideoReady(subtitleOutcome = SubtitleSidecarOutcome.NoneRequested)
 }
 
-sealed interface EnqueueResult {
-    data object Queued : EnqueueResult
-    data object AlreadyAvailableHigherQuality : EnqueueResult
+sealed interface EnqueueOutcome {
+    data object Queued : EnqueueOutcome
+    data object AlreadyAvailableHigherQuality : EnqueueOutcome
+}
+
+sealed interface CompletionOutcome {
+    data class VideoReady(val subtitleOutcome: SubtitleSidecarOutcome) : CompletionOutcome
+    data class VideoFailed(val reason: DownloadFailureReason) : CompletionOutcome
+}
+
+sealed interface SubtitleSidecarOutcome {
+    data object Downloaded : SubtitleSidecarOutcome
+    data object Reused : SubtitleSidecarOutcome
+    data object Unavailable : SubtitleSidecarOutcome
+    data object NoneRequested : SubtitleSidecarOutcome
 }
 ```
 
@@ -720,14 +921,22 @@ sealed interface EnqueueResult {
 
 ```kotlin
 interface DownloadsPort {
-    suspend fun listDownloads(): Result<List<DownloadState>>
-    suspend fun listOfflineAssets(): Result<List<OfflineAsset>>
-    suspend fun enqueue(mediaId: Media.MediaId): Result<Unit>
-    suspend fun enqueueSubtitle(localId: LocalMediaIdentifier, language: LanguageCode): Result<Unit>
-    suspend fun pause(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun resume(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun cancel(localId: LocalMediaIdentifier): Result<Unit>
-    suspend fun remove(localId: LocalMediaIdentifier): Result<Unit>
+    suspend fun listDownloads(): Result<ImmutableList<DownloadState>>
+    suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>>
+    suspend fun enqueue(
+        mediaId: Media.MediaId,
+        requested: Resolution,
+        requiredBytes: Long? = null,
+        transferPreference: TransferPreference = TransferPreference.WifiOnly,
+    ): Result<EnqueueOutcome>
+    suspend fun enqueueSubtitle(
+        localId: LocalMediaIdentifier,
+        language: LanguageCode,
+    ): Result<SubtitleEnqueueOutcome>
+    suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun resume(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun cancel(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
+    suspend fun remove(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>
 }
 ```
 
@@ -762,7 +971,7 @@ fun `download notification shows title progress and safe actions only`() {
     val notification = factory.build(
         title = "Episode 1",
         progressPercent = 50,
-        state = DownloadStatus.DOWNLOADING,
+        transferState = NotificationTransferState.Active,
     )
     assertThat(notification.actions.map { it.title }).contains("Pause")
     assertThat(notification.actions.map { it.title }).contains("Cancel")
@@ -788,11 +997,17 @@ class DownloadForegroundService : Service() {
             DownloadNotificationFactory(this).build(
                 title = getString(R.string.download_notification_generic_title),
                 progressPercent = 0,
-                state = DownloadStatus.QUEUED,
+                transferState = NotificationTransferState.Active,
             ),
         )
         return START_NOT_STICKY
     }
+}
+
+sealed interface NotificationTransferState {
+    data object Active : NotificationTransferState
+    data object WaitingForWifi : NotificationTransferState
+    data object Failed : NotificationTransferState
 }
 ```
 
@@ -841,8 +1056,8 @@ git commit -m "feat(media): add offline download foreground service"
 @Test
 fun `download season does not run preflight during passive browsing`() {
     val viewModel = ShowDetailViewModel(mediaId = Media.MediaId.Show(ShowId(3)))
-    assertThat(viewModel.uiState.value).isInstanceOf(DetailUiState.ShowContent::class.java)
-    assertThat(viewModel.pendingSeasonConfirmation.value).isNull()
+    val state = viewModel.uiState.value as DetailUiState.ShowContent
+    assertThat(state.seasonDownload).isEqualTo(SeasonDownloadUiState.Idle)
 }
 
 @Test
@@ -865,26 +1080,36 @@ Expected: FAIL because season confirmation and queue pause hooks do not exist ye
 - [ ] **Step 3: Add explicit season confirmation state to the details view model**
 
 ```kotlin
+sealed interface SeasonDownloadUiState {
+    data object Idle : SeasonDownloadUiState
+    @Immutable
+    data class AwaitingConfirmation(
+        val seasonNumber: Int,
+        val summary: SeasonDownloadConfirmation,
+    ) : SeasonDownloadUiState
+}
+
 @Immutable
-data class PendingSeasonConfirmation(
-    val seasonNumber: Int,
-    val summary: SeasonDownloadConfirmation,
-)
+data class ShowContent(
+    val selectedSeason: Int,
+    val seasonDownload: SeasonDownloadUiState = SeasonDownloadUiState.Idle,
+) : DetailUiState
 
 class ShowDetailViewModel(
     private val requestSeasonConfirmation: suspend (ShowId, Int) -> Result<SeasonDownloadConfirmation> = { _, _ ->
         Result.failure(UnsupportedOperationException("Not implemented"))
     },
 ) : ViewModel() {
-    private val _pendingSeasonConfirmation = MutableStateFlow<PendingSeasonConfirmation?>(null)
-    val pendingSeasonConfirmation: StateFlow<PendingSeasonConfirmation?> =
-        _pendingSeasonConfirmation.asStateFlow()
-
     fun downloadSeason() {
         val content = _uiState.value as? DetailUiState.ShowContent ?: return
         viewModelScope.launch {
             requestSeasonConfirmation(mediaId.value, content.selectedSeason).onSuccess { summary ->
-                _pendingSeasonConfirmation.value = PendingSeasonConfirmation(content.selectedSeason, summary)
+                _uiState.value = content.copy(
+                    seasonDownload = SeasonDownloadUiState.AwaitingConfirmation(
+                        seasonNumber = content.selectedSeason,
+                        summary = summary,
+                    ),
+                )
             }
         }
     }
@@ -1022,7 +1247,7 @@ fun DownloadFailureReason.toDisplayStringRes(): Int = when (this) {
 private fun buildOfflineItems(catalog: List<Media>): List<Media> =
     if (!isOnline()) {
         listDownloads().getOrDefault(emptyList())
-            .filter { it.status == DownloadStatus.COMPLETED }
+            .filterIsInstance<DownloadState.Completed>()
             .mapNotNull { download -> catalog.find { it.id == download.mediaId } }
     } else {
         emptyList()
@@ -1090,6 +1315,6 @@ git commit -m "feat(library): add offline library and downloads ui"
 
 ### Type Consistency
 
-- `DownloadFailureReason`, `OfflineAsset`, `SeasonDownloadQueue`, and `SeasonDownloadConfirmation` are defined in Task 1 and reused consistently later.
+- `DownloadFailureReason`, `OfflineAsset`, `SeasonDownloadQueue`, `SeasonDownloadConfirmation`, and the new sealed execution/value types are defined in Task 1 and reused consistently later.
 - `DownloadsPort` is expanded once in Task 2 and then consumed by later phases rather than being redefined repeatedly.
-- `DownloadStatus.PARTIAL` and `DownloadStatus.UNAVAILABLE` are introduced once and used consistently in shell, queue, and UI tasks.
+- Download lifecycle is modelled as sealed `DownloadState` variants rather than `enum + nullable` companions, and later tasks pattern-match on those variants consistently.
