@@ -22,8 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.subsloth.core.model.error.UiError
-import net.subsloth.feature.details.R
+import net.subsloth.core.ui.toDisplayStringRes
 
 @Composable
 fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
@@ -182,12 +181,4 @@ private fun MovieDetailErrorPreview() {
             color = MaterialTheme.colorScheme.error,
         )
     }
-}
-
-internal fun UiError.toDisplayStringRes(): Int = when (this) {
-    is UiError.AuthRequired -> R.string.error_auth_required
-    is UiError.NotFound -> R.string.error_not_found
-    is UiError.ServiceError -> R.string.error_service
-    is UiError.Offline -> R.string.error_offline
-    is UiError.Unknown -> R.string.error_unknown
 }
