@@ -38,10 +38,24 @@ import net.subsloth.core.network.media.api.model.ShowSummary as DtoShowSummary
 import net.subsloth.core.network.media.api.model.SubtitleTrack as DtoSubtitleTrack
 import net.subsloth.core.network.media.api.model.VideoQuality as DtoVideoQuality
 
+/**
+ * Mapper from Media API DTOs to stable domain models.
+ *
+ * All mapping functions are pure: they accept DTOs and return either
+ * domain models or typed errors via [Result]. Ephemeral URLs (stream,
+ * download, subtitle) are carried through to domain types that explicitly
+ * allow them ([DomainQuality], [DomainSubtitle]), and excluded from
+ * persistent domain records ([QualityDescriptor]).
+ */
 object Mapper {
 
     // ── Movie List → Domain Media List ───────────────────────────────────
 
+    /**
+     * Maps a list of movie summaries from the catalog endpoint to domain
+     * [Media] items. Items that fail to map are counted in [MappingResult.skipped]
+     * so callers can surface partial-failure information.
+     */
     fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> {
         val results = mutableListOf<Media>()
         var skipped = 0
@@ -97,6 +111,7 @@ object Mapper {
                 countries = dto.countries
                     ?.split(",")
                     ?.map(String::trim)
+                    ?.filter(String::isNotEmpty)
                     .orEmpty()
                     .toImmutableList(),
                 posterUrl = dto.posterUrl ?: dto.poster,
@@ -107,6 +122,11 @@ object Mapper {
 
     // ── Show List → Domain Media List ────────────────────────────────────
 
+    /**
+     * Maps a list of show summaries from the catalog endpoint to domain
+     * [Media] items. Items that fail to map are counted in [MappingResult.skipped]
+     * so callers can surface partial-failure information.
+     */
     fun mapShows(dtos: List<DtoShowSummary>): MappingResult<Media> {
         val results = mutableListOf<Media>()
         var skipped = 0
@@ -146,9 +166,10 @@ object Mapper {
             dto.title ?: dto.name
                 ?: return Result.failure(DomainResultException(DecodeError.MissingFields(listOf("title"))))
 
-        val episodes = dto.episodes
-            ?.mapNotNull { mapEpisode(it).getOrNull() }
-            .orEmpty()
+        val episodes =
+            dto.episodes
+                ?.mapNotNull { mapEpisode(it).getOrNull() }
+                .orEmpty()
         val seasons = groupEpisodesBySeason(episodes)
 
         return Result.success(
@@ -204,12 +225,19 @@ object Mapper {
 
     // ── Availability ─────────────────────────────────────────────────────
 
+    /**
+     * Maps availability based on the presence of an `updated_at` timestamp.
+     * Items without an update timestamp are treated as expired/unavailable.
+     */
     fun mapAvailability(updatedAt: Instant?): Availability = if (updatedAt != null && updatedAt.epochSeconds > 0) {
         Availability.Available
     } else {
         Availability.Expired
     }
 
+    /**
+     * Maps the Media `available` boolean field to domain [Availability].
+     */
     fun mapEpisodeAvailability(available: Boolean?): Availability = when (available) {
         true -> Availability.Available
         false -> Availability.Upcoming.UnknownDate
@@ -264,12 +292,18 @@ object Mapper {
 
     // ── Private Helpers ──────────────────────────────────────────────────
 
+    /**
+     * Parses a comma-separated genres string into a list.
+     */
     private fun parseGenres(genres: String?): List<String> = genres
         ?.split(",")
         ?.map(String::trim)
         ?.filter(String::isNotEmpty)
         .orEmpty()
 
+    /**
+     * Parses a resolution string (e.g. "1920x1080") or uses width/height.
+     */
     private fun parseResolution(resolution: String?, width: Int?, height: Int?): Resolution? =
         parseFromDimensions(width, height)
             ?: parseFromString(resolution)
@@ -287,6 +321,9 @@ object Mapper {
         return if (w > 0 && h > 0) Resolution(w, h) else null
     }
 
+    /**
+     * Parses the [DtoSubtitleTrack.format] string into [SubtitleFormat].
+     */
     private fun parseSubtitleFormat(format: String?): SubtitleFormat = when {
         format.equals("srt", ignoreCase = true) -> SubtitleFormat.SRT
         format.equals("vtt", ignoreCase = true) -> SubtitleFormat.VTT
@@ -295,6 +332,9 @@ object Mapper {
         else -> SubtitleFormat.UNKNOWN
     }
 
+    /**
+     * Groups flat episode list into [Season] structures.
+     */
     private fun groupEpisodesBySeason(episodes: List<DomainEpisode>): ImmutableList<Season> = episodes
         .groupBy { it.seasonNumber }
         .entries
@@ -309,12 +349,21 @@ object Mapper {
         }
         .toImmutableList()
 
+    /**
+     * Collects all unique subtitle tracks from a show's episodes.
+     */
     private fun extractShowSubtitles(episodes: List<DomainEpisode>): ImmutableList<DomainSubtitle> = episodes
         .flatMap { it.subtitles }
         .distinctBy { it.language }
         .sortedBy { it.language.value }
         .toImmutableList()
 
+    // ── Extension helpers ────────────────────────────────────────────────
+
+    /**
+     * Converts a date string in "YYYY-MM-DD" format to an [Instant] at UTC
+     * midnight using [kotlinx.datetime.LocalDate]. Returns `null` for unparseable strings.
+     */
     private fun String?.toInstant(): Instant? {
         if (this == null) return null
         return try {
