@@ -252,6 +252,8 @@ fun buildRows(): ImmutableList<HomeRow> {
 
     val moviesRow = movies.takeIf { it.isNotEmpty() }
         ?.let { HomeRow.Movies(it.toImmutableList()) }
+    val showsRow = shows.takeIf { it.isNotEmpty() }
+        ?.let { HomeRow.Shows(it.toImmutableList()) }
 
     return listOfNotNull(moviesRow, showsRow).toImmutableList()
 }
@@ -303,7 +305,7 @@ Remove unused declarations promptly. A type that is declared but never reference
 
 ---
 
-## 11. Modern Kotlin FP Techniques
+## 10. Modern Kotlin FP Techniques
 
 ### 11.1 Higher-order functions
 
