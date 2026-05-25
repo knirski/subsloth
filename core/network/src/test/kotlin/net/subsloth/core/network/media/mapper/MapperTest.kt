@@ -395,7 +395,7 @@ class MapperTest {
         val result = Mapper.mapMovies(dtos)
 
         assertThat(result.items).hasSize(2)
-        assertThat(result.skipped).isEqualTo(1)
+        assertThat(result.errors).hasSize(1)
         assertThat(result.total).isEqualTo(3)
     }
 
@@ -410,7 +410,7 @@ class MapperTest {
         val result = Mapper.mapShows(dtos)
 
         assertThat(result.items).hasSize(2)
-        assertThat(result.skipped).isEqualTo(0)
+        assertThat(result.errors).isEmpty()
     }
 
     // ── Availability ─────────────────────────────────────────────────────
