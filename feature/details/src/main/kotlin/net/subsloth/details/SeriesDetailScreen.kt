@@ -33,6 +33,7 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
+import net.subsloth.core.ui.toDisplayStringRes
 
 @Composable
 fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modifier) {

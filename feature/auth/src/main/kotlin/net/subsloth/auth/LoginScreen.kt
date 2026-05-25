@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.ui.toDisplayStringRes
 import net.subsloth.feature.auth.R
 
 /**
@@ -256,12 +257,4 @@ private fun AuthRepairPreview() {
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-}
-
-private fun UiError.toDisplayStringRes(): Int = when (this) {
-    is UiError.AuthRequired -> R.string.error_auth_required
-    is UiError.NotFound -> R.string.error_not_found
-    is UiError.ServiceError -> R.string.error_service
-    is UiError.Offline -> R.string.error_offline
-    is UiError.Unknown -> R.string.error_unknown
 }
