@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.SearchPolicy
 import net.subsloth.core.model.media.Media
@@ -58,8 +58,8 @@ class SearchViewModel(
     },
     private val savedState: Map<String, String> = mapOf("searchQuery" to ""),
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
-    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    private val _uiState: MutableStateFlow<SearchUiState>
+    val uiState: StateFlow<SearchUiState> get() = _uiState.asStateFlow()
 
     private val _filters = MutableStateFlow(SearchFilters())
     val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
@@ -69,12 +69,19 @@ class SearchViewModel(
 
     init {
         val restoredQuery = savedState["searchQuery"].orEmpty()
+        val initialState = if (restoredQuery.isNotBlank()) {
+            SearchUiState.Results(query = restoredQuery, items = persistentListOf(), isLoading = true)
+        } else {
+            SearchUiState.Idle
+        }
+        _uiState = MutableStateFlow(initialState)
+
         if (restoredQuery.isNotBlank()) {
             searchChannel.trySend(restoredQuery)
         }
 
         viewModelScope.launch {
-            searchChannel.consumeAsFlow()
+            searchChannel.receiveAsFlow()
                 .flatMapLatest { query -> searchInternal(query) }
                 .collect { state -> _uiState.value = state }
         }
