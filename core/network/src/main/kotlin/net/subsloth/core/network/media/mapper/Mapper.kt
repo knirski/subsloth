@@ -44,12 +44,16 @@ object Mapper {
 
     fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> {
         val results = mutableListOf<Media>()
-        var skipped = 0
+        val errors = mutableListOf<DecodeError>()
         for (dto in dtos) {
             val mapped = mapMovieSummary(dto)
-            if (mapped != null) results.add(mapped) else skipped++
+            if (mapped != null) {
+                results.add(mapped)
+            } else {
+                errors.add(DecodeError.MissingFields(listOf("title")))
+            }
         }
-        return MappingResult(results.toImmutableList(), skipped)
+        return MappingResult(results.toImmutableList(), errors.toImmutableList())
     }
 
     // ── Movie Summary → Domain MovieSummary ──────────────────────────────
@@ -109,12 +113,16 @@ object Mapper {
 
     fun mapShows(dtos: List<DtoShowSummary>): MappingResult<Media> {
         val results = mutableListOf<Media>()
-        var skipped = 0
+        val errors = mutableListOf<DecodeError>()
         for (dto in dtos) {
             val mapped = mapShowSummary(dto)
-            if (mapped != null) results.add(mapped) else skipped++
+            if (mapped != null) {
+                results.add(mapped)
+            } else {
+                errors.add(DecodeError.MissingFields(listOf("title")))
+            }
         }
-        return MappingResult(results.toImmutableList(), skipped)
+        return MappingResult(results.toImmutableList(), errors.toImmutableList())
     }
 
     // ── Show Summary → Domain ShowSummary ────────────────────────────────
