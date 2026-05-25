@@ -157,7 +157,148 @@ Dependencies flow **inward** toward zero-dependency modules.
 
 ---
 
-## 8. Testing
+## 8. ViewModel State Management
+
+Minimise mutable state in the imperative shell. Encode session-scoped state as fields of the immutable UI state data class, not as standalone `var` properties on the ViewModel.
+
+### 8.1 Session flags belong in the state class, not in `var` fields
+
+Boolean flags that track a session's lifecycle (e.g. whether a stream refresh or quality fallback has been used) must be fields of the sealed UI state data class, not standalone `var` properties.
+
+✅ Correct:
+```kotlin
+sealed interface PlayerUiState {
+    data object Loading : PlayerUiState
+
+    @Immutable
+    data class Content(
+        val streamRefreshUsed: Boolean = false,
+        val qualityFallbackUsed: Boolean = false,
+        // ...
+    ) : PlayerUiState
+}
+```
+
+❌ Wrong — state drift risk:
+```kotlin
+class PlayerViewModel : ViewModel() {
+    private var streamRefreshUsed = false
+    private var qualityFallbackUsed = false
+}
+```
+
+**Rationale:** Standalone `var` fields in ViewModels create two sources of truth — the `StateFlow` and the mutable field. They can drift apart when one is updated without the other. Embedding them in the state data class ensures every transition is atomic and observable.
+
+### 8.2 One-shot caches use `StateFlow`, not `var`
+
+A value fetched once and cached for the lifetime of the screen must be exposed as a `StateFlow` to ensure lifecycle-aware observation.
+
+✅ Correct:
+```kotlin
+private val _catalog = MutableStateFlow<List<Media>?>(null)
+val catalog: StateFlow<List<Media>?> = _catalog.asStateFlow()
+
+init {
+    viewModelScope.launch {
+        _catalog.value = listCatalog().getOrDefault(emptyList())
+    }
+}
+```
+
+❌ Wrong:
+```kotlin
+private var catalog: List<Media> = emptyList()
+// ...assignments scattered across methods
+```
+
+### 8.3 Request cancellation uses `flatMapLatest`, not `var Job`
+
+When a new input should cancel an in-flight operation, use `Channel` + `flatMapLatest`.
+
+✅ Correct:
+```kotlin
+private val searchChannel = Channel<String>(Channel.CONFLATED)
+
+init {
+    viewModelScope.launch {
+        searchChannel.consumeAsFlow()
+            .flatMapLatest { query -> searchInternal(query) }
+            .collect { state -> _uiState.value = state }
+    }
+}
+
+fun search(query: String) {
+    searchChannel.trySend(query)
+}
+```
+
+❌ Wrong:
+```kotlin
+private var searchJob: Job? = null
+
+fun search(query: String) {
+    searchJob?.cancel()
+    searchJob = viewModelScope.launch { ... }
+}
+```
+
+### 8.4 Local collection construction uses immutable pipelines
+
+When building a list of items inside a pure function, use `takeIf` + `?.let` + `listOfNotNull` or `buildList` rather than `mutableListOf` + `add`.
+
+✅ Correct:
+```kotlin
+fun buildRows(): ImmutableList<HomeRow> {
+    val movies = items.filterIsInstance<MovieSummary>()
+    val shows = items.filterIsInstance<ShowSummary>()
+
+    val moviesRow = movies.takeIf { it.isNotEmpty() }
+        ?.let { HomeRow.Movies(it.toImmutableList()) }
+    val showsRow = shows.takeIf { it.isNotEmpty() }
+        ?.let { HomeRow.Shows(it.toImmutableList()) }
+
+    return listOfNotNull(moviesRow, showsRow).toImmutableList()
+}
+```
+
+❌ Wrong:
+```kotlin
+val rows = mutableListOf<HomeRow>()
+if (movies.isNotEmpty()) rows.add(HomeRow.Movies(movies.toImmutableList()))
+if (shows.isNotEmpty()) rows.add(HomeRow.Shows(shows.toImmutableList()))
+return rows.toImmutableList()
+```
+
+### 8.5 Cardinality matching (sealed types over booleans)
+
+Prefer sealed types over boolean combinations. Each boolean doubles the state space; most combinations are invalid. Sealed types make invalid states unrepresentable.
+
+✅ Correct:
+```kotlin
+sealed interface LoadState {
+    data object Loading : LoadState
+    data class Success(val data: String) : LoadState
+    data class Error(val message: String) : LoadState
+}
+```
+
+❌ Wrong — 16 combinations, only 3 valid:
+```kotlin
+data class LoadState(
+    val isLoading: Boolean,
+    val isError: Boolean,
+    val data: String?,
+    val errorMessage: String?,
+)
+```
+
+### 8.6 Dead code
+
+Remove unused declarations promptly. A type that is declared but never referenced adds maintenance cost, may confuse readers, and requires baseline suppressions.
+
+---
+
+## 9. Testing
 
 - **Parameterised tests** for sealed type variants (`WebDiscoveryFixtureTest`, `MockMappingVerificationTest`).
 - **Classpath scanning** for fixture discovery — adding a `.json` file auto-creates a test case.
@@ -166,9 +307,9 @@ Dependencies flow **inward** toward zero-dependency modules.
 
 ---
 
-## 9. Modern Kotlin FP Techniques
+## 10. Modern Kotlin FP Techniques
 
-### 9.1 Higher-order functions
+### 11.1 Higher-order functions
 
 Functions that accept or return lambdas. This is the core of Kotlin FP composition.
 
@@ -190,7 +331,7 @@ entries.map(::sanitize)
 entries.map { sanitize(it) }
 ```
 
-### 9.2 Scope functions
+### 11.2 Scope functions
 
 | Function | Receiver | Return value | Use case |
 |---|---|---|---|
@@ -199,7 +340,7 @@ entries.map { sanitize(it) }
 | `also` | `it` | receiver itself | Side-effect in chain: `.also { log(it) }` |
 | `apply` | `this` | receiver itself | Object configuration: `File(dir).apply { mkdirs() }` |
 
-### 9.3 Extension functions
+### 11.3 Extension functions
 
 Add behavior to existing types without inheritance or wrappers. Place in the same package or a dedicated `extensions` package.
 
@@ -216,7 +357,7 @@ Private extensions are fine for domain-specific parsing inside a single file:
 private fun JsonElement.parseUrlPattern(): UrlRewriteRule { ... }
 ```
 
-### 9.4 `by lazy` for deferred computation
+### 11.4 `by lazy` for deferred computation
 
 Compute once on first access and cache the result. Use for memoization and initialisation that depends on properties not available at construction time.
 
@@ -226,7 +367,7 @@ val compiledUrlRules: List<UrlRewriteRule.Compiled> by lazy {
 }
 ```
 
-### 9.5 Collection pipelines
+### 11.5 Collection pipelines
 
 Prefer declarative functions over imperative loops with mutable accumulators:
 
@@ -251,14 +392,14 @@ fun categorizeEntries(entries: List<HarEntry>): Map<Endpoint, List<HarEntry>> {
 }
 ```
 
-### 9.6 `data class copy()` for immutable updates
+### 11.6 `data class copy()` for immutable updates
 
 ```kotlin
 fun updatePriority(mapping: WireMockMapping, newPriority: Int) =
     mapping.copy(priority = newPriority)
 ```
 
-### 9.7 Local functions
+### 11.7 Local functions
 
 Define helpers inside the function that uses them to prevent namespace pollution:
 
@@ -270,7 +411,7 @@ fun loadSanitizationRules(json: String): Result<SanitizationRules> {
 }
 ```
 
-### 9.8 `?.` safe access + `?:` Elvis
+### 11.8 `?.` safe access + `?:` Elvis
 
 Null-safe chains are the idiomatic alternative to nested `if (x != null)`:
 
@@ -280,7 +421,7 @@ val entries = root["log"]?.jsonObject
     ?: emptyList()
 ```
 
-### 9.9 `require()` and `check()` for preconditions
+### 11.9 `require()` and `check()` for preconditions
 
 ```kotlin
 fun process(entries: List<HarEntry>): List<HarEntry> {
