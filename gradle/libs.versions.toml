@@ -37,7 +37,7 @@ composeRuntimeAnnotation = "1.9.3"
 kotlinxCollectionsImmutable = "0.4.0"
 kotlinxDatetime = "0.8.0"
 kotlinxSchema = "0.5.0"
-androidxAnnotation = "1.9.1"
+androidxAnnotation = "1.10.0"
 
 
 [libraries]
