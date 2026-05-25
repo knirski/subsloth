@@ -189,18 +189,20 @@ class PlayerViewModel : ViewModel() {
 
 **Rationale:** Standalone `var` fields in ViewModels create two sources of truth — the `StateFlow` and the mutable field. They can drift apart when one is updated without the other. Embedding them in the state data class ensures every transition is atomic and observable.
 
-### 8.2 One-shot caches use `Deferred`, not `var`
+### 8.2 One-shot caches use `StateFlow`, not `var`
 
-A value fetched once and cached for the lifetime of the screen must use `async(start = LAZY)` + `await()`.
+A value fetched once and cached for the lifetime of the screen must be exposed as a `StateFlow` to ensure lifecycle-aware observation.
 
 ✅ Correct:
 ```kotlin
-private val catalogDeferred = viewModelScope.async(start = CoroutineStart.LAZY) {
-    listCatalog().getOrDefault(emptyList())
-}
+private val _catalog = MutableStateFlow<List<Media>?>(null)
+val catalog: StateFlow<List<Media>?> = _catalog.asStateFlow()
 
-// Usage:
-val catalog = catalogDeferred.await()
+init {
+    viewModelScope.launch {
+        _catalog.value = listCatalog().getOrDefault(emptyList())
+    }
+}
 ```
 
 ❌ Wrong:
