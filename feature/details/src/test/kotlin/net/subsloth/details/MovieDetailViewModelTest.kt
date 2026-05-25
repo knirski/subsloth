@@ -1,6 +1,7 @@
 package net.subsloth.details
 
 import app.cash.turbine.test
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -45,9 +46,9 @@ class MovieDetailViewModelTest {
             availability = Availability.Available,
             rating = 8.5,
             year = 2024,
-            genres = listOf("Action", "Drama"),
+            genres = persistentListOf("Action", "Drama"),
             durationMinutes = 120,
-            qualities = listOf(
+            qualities = persistentListOf(
                 Quality(
                     info = QualityDescriptor(
                         resolution = Resolution(1920, 1080),
@@ -59,7 +60,7 @@ class MovieDetailViewModelTest {
                     downloadUrl = null,
                 ),
             ),
-            subtitles = listOf(
+            subtitles = persistentListOf(
                 Subtitle(
                     language = LanguageCode("en"),
                     languageDisplayName = "English",
@@ -71,7 +72,7 @@ class MovieDetailViewModelTest {
             slug = "test-movie",
             imdbId = null,
             tmdbId = null,
-            countries = listOf("US"),
+            countries = persistentListOf("US"),
             posterUrl = "https://example.com/poster.jpg",
             backdropUrl = null,
         )

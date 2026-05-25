@@ -2,6 +2,9 @@
 
 package net.subsloth.core.network.media.mapper
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDate
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
@@ -43,9 +46,6 @@ import net.subsloth.core.network.media.api.model.VideoQuality as DtoVideoQuality
  * download, subtitle) are carried through to domain types that explicitly
  * allow them ([DomainQuality], [DomainSubtitle]), and excluded from
  * persistent domain records ([QualityDescriptor]).
- *
- * @suppress TooManyFunctions — grouping related mapping logic in one
- *   object is clearer than scattering it across multiple files.
  */
 object Mapper {
 
@@ -57,8 +57,13 @@ object Mapper {
      * so callers can surface partial-failure information.
      */
     fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> {
-        val results = dtos.mapNotNull(::mapMovieSummary)
-        return MappingResult(results, dtos.size - results.size)
+        val results = mutableListOf<Media>()
+        var skipped = 0
+        for (dto in dtos) {
+            val mapped = mapMovieSummary(dto)
+            if (mapped != null) results.add(mapped) else skipped++
+        }
+        return MappingResult(results.toImmutableList(), skipped)
     }
 
     // ── Movie Summary → Domain MovieSummary ──────────────────────────────
@@ -72,7 +77,7 @@ object Mapper {
             availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating ?: dto.rating,
             year = dto.year ?: dto.releaseYear,
-            genres = dto.arrayGenres ?: parseGenres(dto.genres),
+            genres = (dto.arrayGenres ?: parseGenres(dto.genres)).toImmutableList(),
             durationMinutes = dto.duration,
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
@@ -96,18 +101,19 @@ object Mapper {
                 availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating ?: dto.rating,
                 year = dto.year ?: dto.releaseYear,
-                genres = dto.arrayGenres ?: parseGenres(dto.genres),
+                genres = (dto.arrayGenres ?: parseGenres(dto.genres)).toImmutableList(),
                 durationMinutes = dto.duration,
                 qualities = mapQualities(dto.qualities),
                 subtitles = mapSubtitleTracks(dto.subtitles),
                 slug = dto.slug,
                 imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                 tmdbId = dto.tmdbId?.let { ExternalId(it.toString(), ExternalIdSource.TMDB) },
-                countries =
-                dto.countries
+                countries = dto.countries
                     ?.split(",")
                     ?.map(String::trim)
-                    .orEmpty(),
+                    ?.filter(String::isNotEmpty)
+                    .orEmpty()
+                    .toImmutableList(),
                 posterUrl = dto.posterUrl ?: dto.poster,
                 backdropUrl = dto.backdropUrl ?: dto.backdrop,
             ),
@@ -122,8 +128,13 @@ object Mapper {
      * so callers can surface partial-failure information.
      */
     fun mapShows(dtos: List<DtoShowSummary>): MappingResult<Media> {
-        val results = dtos.mapNotNull(::mapShowSummary)
-        return MappingResult(results, dtos.size - results.size)
+        val results = mutableListOf<Media>()
+        var skipped = 0
+        for (dto in dtos) {
+            val mapped = mapShowSummary(dto)
+            if (mapped != null) results.add(mapped) else skipped++
+        }
+        return MappingResult(results.toImmutableList(), skipped)
     }
 
     // ── Show Summary → Domain ShowSummary ────────────────────────────────
@@ -137,13 +148,13 @@ object Mapper {
             availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating,
             year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
-            genres = dto.arrayGenres ?: dto.genres.orEmpty(),
+            genres = (dto.arrayGenres ?: dto.genres.orEmpty()).toImmutableList(),
             durationMinutes = dto.duration ?: dto.length,
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
             backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
             status = mapShowStatus(dto.status, dto.ended),
-            countries = dto.arrayCountries ?: dto.countries.orEmpty(),
+            countries = (dto.arrayCountries ?: dto.countries.orEmpty()).toImmutableList(),
             newestVideoEpochSeconds = dto.newestVideo?.let { Instant.fromEpochSeconds(it) },
         )
     }
@@ -170,14 +181,14 @@ object Mapper {
                 availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating,
                 year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
-                genres = dto.arrayGenres ?: dto.genres.orEmpty(),
+                genres = (dto.arrayGenres ?: dto.genres.orEmpty()).toImmutableList(),
                 durationMinutes = dto.duration ?: dto.length,
-                qualities = emptyList(),
+                qualities = persistentListOf(),
                 subtitles = extractShowSubtitles(episodes),
                 slug = dto.slug,
                 imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                 tmdbId = dto.tmdbId?.let { ExternalId(it.toString(), ExternalIdSource.TMDB) },
-                countries = dto.arrayCountries ?: dto.countries.orEmpty(),
+                countries = (dto.arrayCountries ?: dto.countries.orEmpty()).toImmutableList(),
                 posterUrl = dto.posterUrl ?: dto.poster,
                 backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
                 status = mapShowStatus(dto.status, dto.ended),
@@ -229,13 +240,14 @@ object Mapper {
      */
     fun mapEpisodeAvailability(available: Boolean?): Availability = when (available) {
         true -> Availability.Available
-        false -> Availability.Upcoming(availableAtEpochSeconds = null)
+        false -> Availability.Upcoming.UnknownDate
         null -> Availability.Expired
     }
 
     // ── Quality Mappers ──────────────────────────────────────────────────
 
-    fun mapQualities(dtos: List<DtoVideoQuality>?): List<DomainQuality> = dtos?.mapNotNull(::mapQuality).orEmpty()
+    fun mapQualities(dtos: List<DtoVideoQuality>?): ImmutableList<DomainQuality> =
+        dtos?.mapNotNull(::mapQuality).orEmpty().toImmutableList()
 
     fun mapQuality(dto: DtoVideoQuality): DomainQuality? {
         val resolution = parseResolution(dto.resolution, dto.width, dto.height) ?: return null
@@ -254,8 +266,8 @@ object Mapper {
 
     // ── Subtitle Mappers ─────────────────────────────────────────────────
 
-    fun mapSubtitleTracks(dtos: List<DtoSubtitleTrack>?): List<DomainSubtitle> =
-        dtos?.mapNotNull(::mapSubtitleTrack).orEmpty()
+    fun mapSubtitleTracks(dtos: List<DtoSubtitleTrack>?): ImmutableList<DomainSubtitle> =
+        dtos?.mapNotNull(::mapSubtitleTrack).orEmpty().toImmutableList()
 
     fun mapSubtitleTrack(dto: DtoSubtitleTrack): DomainSubtitle? {
         val languageCode = dto.code ?: dto.lang ?: dto.language ?: return null
@@ -323,7 +335,7 @@ object Mapper {
     /**
      * Groups flat episode list into [Season] structures.
      */
-    private fun groupEpisodesBySeason(episodes: List<DomainEpisode>): List<Season> = episodes
+    private fun groupEpisodesBySeason(episodes: List<DomainEpisode>): ImmutableList<Season> = episodes
         .groupBy { it.seasonNumber }
         .entries
         .sortedBy { it.key }
@@ -332,17 +344,19 @@ object Mapper {
                 seasonNumber = seasonNumber,
                 title = "Season $seasonNumber",
                 plot = null,
-                episodes = seasonEpisodes.sortedBy { it.episodeNumber },
+                episodes = seasonEpisodes.sortedBy { it.episodeNumber }.toImmutableList(),
             )
         }
+        .toImmutableList()
 
     /**
      * Collects all unique subtitle tracks from a show's episodes.
      */
-    private fun extractShowSubtitles(episodes: List<DomainEpisode>): List<DomainSubtitle> = episodes
+    private fun extractShowSubtitles(episodes: List<DomainEpisode>): ImmutableList<DomainSubtitle> = episodes
         .flatMap { it.subtitles }
         .distinctBy { it.language }
         .sortedBy { it.language.value }
+        .toImmutableList()
 
     // ── Extension helpers ────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 package net.subsloth.core.model
 
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.DownloadStatus
 import net.subsloth.core.model.error.AuthError
@@ -72,12 +73,12 @@ class CoreModelTest {
                 plot = "Not yet released",
                 durationSeconds = 1800L,
                 availability =
-                    Availability.Upcoming(
+                    Availability.Upcoming.At(
                         availableAtEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
                     ),
                 imdbId = null,
-                qualities = emptyList(),
-                subtitles = emptyList(),
+                qualities = persistentListOf(),
+                subtitles = persistentListOf(),
                 airDateEpochSeconds = null,
                 premiereDateEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
             )
@@ -97,8 +98,8 @@ class CoreModelTest {
                 durationSeconds = 1800L,
                 availability = Availability.Available,
                 imdbId = null,
-                qualities = emptyList(),
-                subtitles = emptyList(),
+                qualities = persistentListOf(),
+                subtitles = persistentListOf(),
                 airDateEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L),
                 premiereDateEpochSeconds = null,
             )

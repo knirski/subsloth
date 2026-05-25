@@ -2,6 +2,9 @@ package net.subsloth.core.model
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import net.subsloth.core.model.identifier.RegionCode
 import kotlin.time.Instant
 
 /**
@@ -13,19 +16,35 @@ sealed interface Availability {
     @Immutable
     data object Available : Availability
 
-    /** Scheduled for future release; not yet playable. */
-    @Immutable
-    data class Upcoming(
-        val availableAtEpochSeconds: Instant?,
-    ) : Availability
-
     /** No longer available on the service. */
     @Immutable
     data object Expired : Availability
 
+    /** Scheduled for future release; not yet playable. */
+    @Stable
+    sealed interface Upcoming : Availability {
+        /** Release date is unknown. */
+        @Immutable
+        data object UnknownDate : Upcoming
+
+        /** Scheduled for release at the given instant. */
+        @Immutable
+        data class At(
+            val availableAtEpochSeconds: Instant,
+        ) : Upcoming
+    }
+
     /** Available only in specific geographic regions. */
-    @Immutable
-    data class GeoRestricted(
-        val allowedRegions: List<String>?,
-    ) : Availability
+    @Stable
+    sealed interface GeoRestricted : Availability {
+        /** Restriction applies but region list is unknown. */
+        @Immutable
+        data object UnknownRegions : GeoRestricted
+
+        /** Restricted to the specified set of regions. */
+        @Immutable
+        data class Known(
+            val allowedRegions: ImmutableSet<RegionCode> = persistentSetOf(),
+        ) : GeoRestricted
+    }
 }

@@ -1,5 +1,6 @@
 package net.subsloth.core.domain.policy
 
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -22,7 +23,7 @@ class SearchPolicyTest {
             availability = Availability.Available,
             rating = 9.0,
             year = 2008,
-            genres = listOf("Action", "Crime", "Drama"),
+            genres = persistentListOf("Action", "Crime", "Drama"),
             durationMinutes = 152,
             slug = "the-dark-knight",
             imdbId = null,
@@ -40,13 +41,13 @@ class SearchPolicyTest {
             availability = Availability.Available,
             rating = 9.5,
             year = 2008,
-            genres = listOf("Crime", "Drama", "Thriller"),
+            genres = persistentListOf("Crime", "Drama", "Thriller"),
             durationMinutes = 49,
             slug = "breaking-bad",
             imdbId = null,
             backdropUrl = null,
             status = ShowStatus.ENDED,
-            countries = listOf("US"),
+            countries = persistentListOf("US"),
         )
 
     @Test

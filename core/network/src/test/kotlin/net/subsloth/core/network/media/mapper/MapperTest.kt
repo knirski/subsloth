@@ -291,7 +291,7 @@ class MapperTest {
         val result = Mapper.mapEpisode(dto)
 
         assertThat(result.isSuccess).isTrue()
-        assertThat(result.getOrThrow().availability).isInstanceOf(Availability.Upcoming::class.java)
+        assertThat(result.getOrThrow().availability).isInstanceOf(Availability.Upcoming.UnknownDate::class.java)
     }
 
     @Test

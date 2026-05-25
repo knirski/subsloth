@@ -1,5 +1,7 @@
 package net.subsloth.player
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -126,7 +128,7 @@ class PlayerViewModelTest {
     @Test
     fun `selectSubtitle does not crash`() = runTest(testDispatcher) {
         val subtitle = createSubtitle()
-        val source = createVideoSource(availableSubtitles = listOf(subtitle))
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
         val viewModel =
             createViewModel(
                 contentId = "1",
@@ -387,7 +389,7 @@ class PlayerViewModelTest {
     fun `subtitle fallback selects English when available`() = runTest(testDispatcher) {
         val enSubtitle = createSubtitle()
         val esSubtitle = createSpanishSubtitle()
-        val source = createVideoSource(availableSubtitles = listOf(enSubtitle, esSubtitle))
+        val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
         val viewModel =
             createViewModel(
                 contentId = "1",
@@ -403,7 +405,7 @@ class PlayerViewModelTest {
     @Test
     fun `subtitle fallback selects first available when English is unavailable`() = runTest(testDispatcher) {
         val esSubtitle = createSpanishSubtitle()
-        val source = createVideoSource(availableSubtitles = listOf(esSubtitle))
+        val source = createVideoSource(availableSubtitles = persistentListOf(esSubtitle))
         val viewModel =
             createViewModel(
                 contentId = "1",
@@ -419,7 +421,7 @@ class PlayerViewModelTest {
     @Test
     fun `subtitle fallback notice shown when falling back from preferred language`() = runTest(testDispatcher) {
         val esSubtitle = createSpanishSubtitle()
-        val source = createVideoSource(availableSubtitles = listOf(esSubtitle))
+        val source = createVideoSource(availableSubtitles = persistentListOf(esSubtitle))
         val viewModel =
             createViewModel(
                 contentId = "1",
@@ -520,7 +522,7 @@ class PlayerViewModelTest {
             downloadUrl = null,
         )
         val source = createVideoSource(
-            availableQualities = listOf(quality1, quality2),
+            availableQualities = persistentListOf(quality1, quality2),
             selectedQuality = quality1,
         )
         val viewModel = createViewModel(
@@ -557,7 +559,7 @@ class PlayerViewModelTest {
             downloadUrl = null,
         )
         val source = createVideoSource(
-            availableQualities = listOf(quality1, quality2),
+            availableQualities = persistentListOf(quality1, quality2),
             selectedQuality = quality1,
         )
         val viewModel = createViewModel(
@@ -607,7 +609,7 @@ class PlayerViewModelTest {
     @Test
     fun `selectQuality preserves current position and speed`() = runTest(testDispatcher) {
         val source = createVideoSource(
-            availableQualities = listOf(
+            availableQualities = persistentListOf(
                 createQuality(label = "1080p"),
                 createQuality(label = "720p"),
             ),
@@ -640,7 +642,7 @@ class PlayerViewModelTest {
     fun `subtitle selection honors preferred language`() = runTest(testDispatcher) {
         val enSubtitle = createSubtitle()
         val esSubtitle = createSpanishSubtitle()
-        val source = createVideoSource(availableSubtitles = listOf(enSubtitle, esSubtitle))
+        val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
 
         val viewModel = createViewModel(
             fetchVideoSource = { Result.success(source) },
@@ -689,8 +691,8 @@ class PlayerViewModelTest {
     private fun createVideoSource(
         mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
         streamUrl: String = "https://example.com/stream.m3u8",
-        availableSubtitles: List<Subtitle> = emptyList(),
-        availableQualities: List<Quality> = listOf(createQuality()),
+        availableSubtitles: ImmutableList<Subtitle> = persistentListOf(),
+        availableQualities: ImmutableList<Quality> = persistentListOf(createQuality()),
         selectedQuality: Quality = createQuality(),
         durationSeconds: Long = 3600L,
         playbackMode: PlaybackMode = PlaybackMode.ONLINE,
@@ -737,8 +739,8 @@ class PlayerViewModelTest {
             durationSeconds = null,
             availability = Availability.Available,
             imdbId = null,
-            qualities = emptyList(),
-            subtitles = emptyList(),
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(),
             airDateEpochSeconds = null,
             premiereDateEpochSeconds = null,
         )

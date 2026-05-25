@@ -1,6 +1,7 @@
 package net.subsloth.catalog
 
 import app.cash.turbine.test
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -44,7 +45,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = 8.0,
                 year = 2024,
-                genres = listOf("Action"),
+                genres = persistentListOf("Action"),
                 durationMinutes = 120,
                 slug = "test-movie",
                 imdbId = null,
@@ -70,7 +71,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
@@ -96,13 +97,13 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
                 backdropUrl = null,
                 status = ShowStatus.ONGOING,
-                countries = emptyList(),
+                countries = persistentListOf(),
             ),
         )
         val viewModel = HomeViewModel(
@@ -124,7 +125,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
@@ -152,13 +153,13 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
                 backdropUrl = null,
                 status = ShowStatus.ONGOING,
-                countries = emptyList(),
+                countries = persistentListOf(),
                 newestVideoEpochSeconds = Instant.fromEpochSeconds(1_000_000L),
             ),
         )
@@ -182,7 +183,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
@@ -234,7 +235,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
@@ -261,7 +262,7 @@ class HomeViewModelTest {
                 availability = Availability.Available,
                 rating = null,
                 year = null,
-                genres = emptyList(),
+                genres = persistentListOf(),
                 durationMinutes = null,
                 slug = null,
                 imdbId = null,
