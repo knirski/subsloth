@@ -27,7 +27,11 @@ sealed interface TransferPreference {
 sealed interface SizeEstimate {
     data class Known(
         val bytes: Long,
-    ) : SizeEstimate
+    ) : SizeEstimate {
+        init {
+            require(bytes >= 0) { "bytes must be non-negative" }
+        }
+    }
 
     data object Unknown : SizeEstimate
 }

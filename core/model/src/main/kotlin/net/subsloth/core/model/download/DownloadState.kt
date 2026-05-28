@@ -9,6 +9,8 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
 import kotlin.time.Instant
 
+private const val MAX_PROGRESS_PERCENT = 100
+
 sealed interface DownloadState {
     val localId: LocalMediaIdentifier
     val mediaId: Media.MediaId
@@ -34,7 +36,9 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState {
         init {
-            require(progressPercent in 0..100) { "Progress percent must be between 0 and 100" }
+            require(
+                progressPercent in 0..MAX_PROGRESS_PERCENT,
+            ) { "Progress percent must be between 0 and $MAX_PROGRESS_PERCENT" }
         }
     }
 
@@ -57,7 +61,11 @@ sealed interface DownloadState {
         val sizeBytes: Long?,
         val videoPath: OfflineRelativePath,
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
-    ) : DownloadState
+    ) : DownloadState {
+        init {
+            require(sizeBytes == null || sizeBytes >= 0) { "sizeBytes must be non-negative when provided" }
+        }
+    }
 
     @Immutable
     data class Failed(

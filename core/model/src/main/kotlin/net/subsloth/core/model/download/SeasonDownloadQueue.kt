@@ -7,6 +7,8 @@ import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
 
+private const val MAX_PROGRESS_PERCENT = 100
+
 @Immutable
 data class SeasonDownloadQueue(
     val queueId: QueueId,
@@ -15,7 +17,11 @@ data class SeasonDownloadQueue(
     val items: ImmutableList<SeasonDownloadQueueItem>,
     val execution: SeasonQueueExecution,
     val transferPreference: TransferPreference,
-)
+) {
+    init {
+        require(seasonNumber >= 0) { "seasonNumber must be non-negative" }
+    }
+}
 
 sealed interface SeasonQueueExecution {
     data object PendingConfirmation : SeasonQueueExecution
@@ -53,7 +59,9 @@ sealed interface SeasonQueueItemExecution {
         val progressPercent: Int,
     ) : SeasonQueueItemExecution {
         init {
-            require(progressPercent in 0..100) { "Progress percent must be between 0 and 100" }
+            require(
+                progressPercent in 0..MAX_PROGRESS_PERCENT,
+            ) { "Progress percent must be between 0 and $MAX_PROGRESS_PERCENT" }
         }
     }
 
@@ -84,5 +92,12 @@ data class SeasonDownloadConfirmation(
         require(fallbackSubtitleToEnglishCount >= 0) { "fallbackSubtitleToEnglishCount must be non-negative" }
         require(noSubtitleCount >= 0) { "noSubtitleCount must be non-negative" }
         require(unavailableCount >= 0) { "unavailableCount must be non-negative" }
+        require(alreadyAvailableCount <= episodeCount) { "alreadyAvailableCount must be <= episodeCount" }
+        require(fallbackQualityCount <= episodeCount) { "fallbackQualityCount must be <= episodeCount" }
+        require(
+            fallbackSubtitleToEnglishCount <= episodeCount,
+        ) { "fallbackSubtitleToEnglishCount must be <= episodeCount" }
+        require(noSubtitleCount <= episodeCount) { "noSubtitleCount must be <= episodeCount" }
+        require(unavailableCount <= episodeCount) { "unavailableCount must be <= episodeCount" }
     }
 }

@@ -32,6 +32,7 @@ import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.time.Instant
 
 class CoreModelTest {
@@ -184,6 +185,27 @@ class CoreModelTest {
             )
         assertThat(completed).isInstanceOf(DownloadState.Completed::class.java)
         assertThat(unavailable).isInstanceOf(DownloadState.Unavailable::class.java)
+        val completedTyped = completed as DownloadState.Completed
+        assertThat(completedTyped.videoPath).isEqualTo(OfflineRelativePath("downloads/video/7/main.mp4"))
+        assertThat(completedTyped.sizeBytes).isEqualTo(1024L)
+        val unavailableTyped = unavailable as DownloadState.Unavailable
+        assertThat(unavailableTyped.reason).isEqualTo(DownloadFailureReason.MissingLocalFile)
+    }
+
+    @Test
+    fun `season queue summary rejects negative counts`() {
+        assertThrows<IllegalArgumentException> {
+            SeasonDownloadConfirmation(
+                episodeCount = -1,
+                alreadyAvailableCount = 0,
+                fallbackQualityCount = 0,
+                fallbackSubtitleToEnglishCount = 0,
+                noSubtitleCount = 0,
+                unavailableCount = 0,
+                sizeEstimate = SizeEstimate.Unknown,
+                transferPreference = TransferPreference.WifiOnly,
+            )
+        }
     }
 
     @Test
