@@ -137,9 +137,13 @@ Confirmed season queues SHALL apply per-episode quality and subtitle fallback po
 - **WHEN** exact quality ordering cannot be determined for an episode or existing asset
 - **THEN** the queue does not auto-replace or guess quality ordering and shows an ambiguous/unavailable reason for that episode or upgrade
 
-#### Scenario: Preferred subtitle is unavailable
-- **WHEN** an episode in a confirmed season queue lacks the preferred subtitle language
+#### Scenario: Preferred non-English subtitle is unavailable
+- **WHEN** an episode in a confirmed season queue requests a non-English preferred subtitle language and that language is unavailable
 - **THEN** the queue falls back to English, then no subtitles without failing the video download
+
+#### Scenario: English subtitle is unavailable
+- **WHEN** an episode in a confirmed season queue lacks English subtitles and English is the preferred language
+- **THEN** the queue uses no subtitles without failing the video download
 
 #### Scenario: Fallback impact is known before confirmation
 - **WHEN** season preflight can determine quality or subtitle fallback outcomes

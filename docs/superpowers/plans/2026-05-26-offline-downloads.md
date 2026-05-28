@@ -761,6 +761,15 @@ interface SeasonDownloadQueueDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SeasonDownloadQueueEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertItems(items: List<SeasonDownloadQueueItemEntity>)
+
+    @Query("SELECT * FROM season_download_queue_item WHERE queueId = :queueId ORDER BY id")
+    suspend fun getItems(queueId: String): List<SeasonDownloadQueueItemEntity>
+
+    @Query("DELETE FROM season_download_queue_item WHERE queueId = :queueId")
+    suspend fun deleteItems(queueId: String)
 }
 
 // Persist strings only at the Room boundary; mappers convert them to sealed ADTs.
@@ -778,7 +787,10 @@ private fun SeasonDownloadQueueEntity.toModel(
 private fun String.toSeasonQueueExecution(): SeasonQueueExecution = when (this) {
     "pending_confirmation" -> SeasonQueueExecution.PendingConfirmation
     "queued" -> SeasonQueueExecution.Queued
+    "running" -> SeasonQueueExecution.Running(activeItem = TODO("map active episode id"))
+    "paused" -> SeasonQueueExecution.Paused(reason = TODO("map failure reason"))
     "completed" -> SeasonQueueExecution.Completed
+    "failed" -> SeasonQueueExecution.Failed(reason = TODO("map failure reason"))
     else -> error("Unknown season queue execution tag: $this")
 }
 
