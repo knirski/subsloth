@@ -65,6 +65,15 @@ sealed interface DownloadError : DomainError {
 
     /** The download queue is full or at capacity. */
     data object QueueFull : DownloadError
+
+    /** Download requires a Wi-Fi connection per transfer preference. */
+    data object NeedsWifi : DownloadError
+
+    /** The local file is missing or corrupted. */
+    data object MissingLocalFile : DownloadError
+
+    /** The requested quality is ambiguous or unavailable. */
+    data object AmbiguousQuality : DownloadError
 }
 
 // ── Quality / Decode ────────────────────────────────────────────────────────
