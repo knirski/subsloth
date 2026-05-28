@@ -9,24 +9,38 @@ import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
 
 @JvmInline
-value class QueueId(val value: String)
+value class QueueId(
+    val value: String,
+)
 
 @JvmInline
-value class OfflineRelativePath(val value: String)
+value class OfflineRelativePath(
+    val value: String,
+)
 
 sealed interface TransferPreference {
     data object WifiOnly : TransferPreference
+
     data object MeteredAllowed : TransferPreference
 }
 
 sealed interface SizeEstimate {
-    data class Known(val bytes: Long) : SizeEstimate
+    data class Known(
+        val bytes: Long,
+    ) : SizeEstimate
+
     data object Unknown : SizeEstimate
 }
 
 sealed interface SubtitleSelection {
-    data class Preferred(val subtitle: Subtitle) : SubtitleSelection
-    data class EnglishFallback(val subtitle: Subtitle) : SubtitleSelection
+    data class Preferred(
+        val subtitle: Subtitle,
+    ) : SubtitleSelection
+
+    data class EnglishFallback(
+        val subtitle: Subtitle,
+    ) : SubtitleSelection
+
     data object None : SubtitleSelection
 }
 

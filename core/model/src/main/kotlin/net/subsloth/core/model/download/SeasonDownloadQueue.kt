@@ -19,11 +19,22 @@ data class SeasonDownloadQueue(
 
 sealed interface SeasonQueueExecution {
     data object PendingConfirmation : SeasonQueueExecution
+
     data object Queued : SeasonQueueExecution
-    data class Running(val activeItem: Media.MediaId.Episode) : SeasonQueueExecution
-    data class Paused(val reason: DownloadFailureReason) : SeasonQueueExecution
+
+    data class Running(
+        val activeItem: Media.MediaId.Episode,
+    ) : SeasonQueueExecution
+
+    data class Paused(
+        val reason: DownloadFailureReason,
+    ) : SeasonQueueExecution
+
     data object Completed : SeasonQueueExecution
-    data class Failed(val reason: DownloadFailureReason) : SeasonQueueExecution
+
+    data class Failed(
+        val reason: DownloadFailureReason,
+    ) : SeasonQueueExecution
 }
 
 @Immutable
@@ -37,9 +48,17 @@ data class SeasonDownloadQueueItem(
 
 sealed interface SeasonQueueItemExecution {
     data object Pending : SeasonQueueItemExecution
-    data class Downloading(val progressPercent: Int) : SeasonQueueItemExecution
+
+    data class Downloading(
+        val progressPercent: Int,
+    ) : SeasonQueueItemExecution
+
     data object Completed : SeasonQueueItemExecution
-    data class Failed(val reason: DownloadFailureReason) : SeasonQueueItemExecution
+
+    data class Failed(
+        val reason: DownloadFailureReason,
+    ) : SeasonQueueItemExecution
+
     data object Cancelled : SeasonQueueItemExecution
 }
 

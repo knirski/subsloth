@@ -165,52 +165,56 @@ class CoreModelTest {
 
     @Test
     fun `download state exposes offline lifecycle variants without nullable baggage`() {
-        val completed: DownloadState = DownloadState.Completed(
-            localId = LocalMediaIdentifier("movie-7"),
-            mediaId = Media.MediaId.Movie(MovieId(7)),
-            quality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
-            downloadedAtEpochSeconds = Instant.fromEpochSeconds(10),
-            sizeBytes = 1024L,
-            videoPath = OfflineRelativePath("downloads/video/7/main.mp4"),
-            subtitleLanguages = persistentSetOf<LanguageCode>(),
-        )
-        val unavailable: DownloadState = DownloadState.Unavailable(
-            localId = LocalMediaIdentifier("movie-7"),
-            mediaId = Media.MediaId.Movie(MovieId(7)),
-            quality = qualityDescriptor(Resolution.HD_720, "720p"),
-            reason = DownloadFailureReason.MissingLocalFile,
-        )
+        val completed: DownloadState =
+            DownloadState.Completed(
+                localId = LocalMediaIdentifier("movie-7"),
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                quality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
+                downloadedAtEpochSeconds = Instant.fromEpochSeconds(10),
+                sizeBytes = 1024L,
+                videoPath = OfflineRelativePath("downloads/video/7/main.mp4"),
+                subtitleLanguages = persistentSetOf<LanguageCode>(),
+            )
+        val unavailable: DownloadState =
+            DownloadState.Unavailable(
+                localId = LocalMediaIdentifier("movie-7"),
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                quality = qualityDescriptor(Resolution.HD_720, "720p"),
+                reason = DownloadFailureReason.MissingLocalFile,
+            )
         assertThat(completed).isInstanceOf(DownloadState.Completed::class.java)
         assertThat(unavailable).isInstanceOf(DownloadState.Unavailable::class.java)
     }
 
     @Test
     fun `offline asset keeps subtitle sidecars separate from video asset`() {
-        val asset = OfflineAsset(
-            mediaId = Media.MediaId.Movie(MovieId(7)),
-            localId = LocalMediaIdentifier("movie-7"),
-            videoRelativePath = OfflineRelativePath("downloads/video/7/main.mp4"),
-            subtitleLanguages = persistentSetOf(LanguageCode("en"), LanguageCode("pl")),
-            effectiveQuality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
-            displayTitle = "Movie",
-            isPlayable = true,
-        )
+        val asset =
+            OfflineAsset(
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                localId = LocalMediaIdentifier("movie-7"),
+                videoRelativePath = OfflineRelativePath("downloads/video/7/main.mp4"),
+                subtitleLanguages = persistentSetOf(LanguageCode("en"), LanguageCode("pl")),
+                effectiveQuality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
+                displayTitle = "Movie",
+                isPlayable = true,
+            )
         assertThat(asset.subtitleLanguages).contains(LanguageCode("en"))
         assertThat(asset.subtitleLanguages).contains(LanguageCode("pl"))
     }
 
     @Test
     fun `season queue summary tracks fallback and blocked counts`() {
-        val summary = SeasonDownloadConfirmation(
-            episodeCount = 8,
-            alreadyAvailableCount = 2,
-            fallbackQualityCount = 1,
-            fallbackSubtitleToEnglishCount = 3,
-            noSubtitleCount = 1,
-            unavailableCount = 1,
-            sizeEstimate = SizeEstimate.Unknown,
-            transferPreference = TransferPreference.WifiOnly,
-        )
+        val summary =
+            SeasonDownloadConfirmation(
+                episodeCount = 8,
+                alreadyAvailableCount = 2,
+                fallbackQualityCount = 1,
+                fallbackSubtitleToEnglishCount = 3,
+                noSubtitleCount = 1,
+                unavailableCount = 1,
+                sizeEstimate = SizeEstimate.Unknown,
+                transferPreference = TransferPreference.WifiOnly,
+            )
         assertThat(summary.fallbackSubtitleToEnglishCount).isEqualTo(3)
         assertThat(summary.noSubtitleCount).isEqualTo(1)
     }
@@ -256,6 +260,8 @@ class CoreModelTest {
         errors.forEach { assertThat(it).isInstanceOf(DomainError::class.java) }
     }
 
-    private fun qualityDescriptor(resolution: Resolution, label: String): QualityDescriptor =
-        QualityDescriptor(resolution = resolution, label = label, bitrate = null, mimeType = null)
+    private fun qualityDescriptor(
+        resolution: Resolution,
+        label: String,
+    ): QualityDescriptor = QualityDescriptor(resolution = resolution, label = label, bitrate = null, mimeType = null)
 }
