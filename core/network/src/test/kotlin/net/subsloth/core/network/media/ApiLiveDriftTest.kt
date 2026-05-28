@@ -1,6 +1,7 @@
 package net.subsloth.core.network.media
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -28,10 +29,16 @@ class ApiLiveDriftTest {
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun assertHttpError(expectedCode: Int, block: suspend () -> Unit) {
-        val error =
-            runCatching { block() }.exceptionOrNull()
-                ?: throw AssertionError("Expected HTTP $expectedCode but request succeeded")
+        val error = try {
+            block()
+            null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e
+        } ?: throw AssertionError("Expected HTTP $expectedCode but request succeeded")
         when (error) {
             is HttpException -> assertThat(error.code()).isEqualTo(expectedCode)
             else -> throw AssertionError(
@@ -42,7 +49,7 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `list movies returns non-empty typed movie list`() = runBlocking {
+    fun `list movies returns non-empty typed movie list`() = runTest {
         val response = api.listMovies()
         assertThat(response.movies).isNotEmpty()
         val first = response.movies.first()
@@ -52,7 +59,7 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `list shows returns non-empty typed show list`() = runBlocking {
+    fun `list shows returns non-empty typed show list`() = runTest {
         val response = api.listShows()
         assertThat(response.shows).isNotEmpty()
         val first = response.shows.first()
@@ -62,7 +69,7 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `movie detail with valid id returns typed movie`() = runBlocking {
+    fun `movie detail with valid id returns typed movie`() = runTest {
         val firstId =
             api
                 .listMovies()
@@ -78,12 +85,12 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `movie detail with nonexistent id returns 404`() = runBlocking {
+    fun `movie detail with nonexistent id returns 404`() = runTest {
         assertHttpError(404) { api.getMovie(0) }
     }
 
     @Test
-    fun `show detail with valid id returns typed show with episodes`() = runBlocking {
+    fun `show detail with valid id returns typed show with episodes`() = runTest {
         val firstId =
             api
                 .listShows()
@@ -102,7 +109,7 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `episode detail with discovered id returns typed episode`() = runBlocking {
+    fun `episode detail with discovered id returns typed episode`() = runTest {
         val firstShowId =
             api
                 .listShows()
@@ -130,7 +137,7 @@ class ApiLiveDriftTest {
     }
 
     @Test
-    fun `invalid credentials return 401 unauthorized`() = runBlocking {
+    fun `invalid credentials return 401 unauthorized`() = runTest {
         val badApi =
             ClientFactory.create(
                 login = "invalid",

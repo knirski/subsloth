@@ -5,7 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import net.subsloth.core.network.media.api.model.Episode
 import net.subsloth.core.network.media.api.model.Movie
@@ -49,7 +50,7 @@ class WireMockIntegrationTest {
     )
 
     @Test
-    fun `listMovies returns the committed fixture payload through Retrofit`(): Unit = runBlocking {
+    fun `listMovies returns the committed fixture payload through Retrofit`(): Unit = runTest {
         val expected = loadFixture<MovieListResponse>("Movies.json")
         val response = api().listMovies()
 
@@ -60,7 +61,7 @@ class WireMockIntegrationTest {
     }
 
     @Test
-    fun `listShows returns the committed fixture payload through Retrofit`(): Unit = runBlocking {
+    fun `listShows returns the committed fixture payload through Retrofit`(): Unit = runTest {
         val expected = loadFixture<ShowListResponse>("Shows.json")
         val response = api().listShows()
 
@@ -71,7 +72,7 @@ class WireMockIntegrationTest {
     }
 
     @Test
-    fun `getMovie returns the committed movie detail fixture`(): Unit = runBlocking {
+    fun `getMovie returns the committed movie detail fixture`(): Unit = runTest {
         val expected = loadFixture<Movie>("MovieDetail.json")
         val movie = api().getMovie(expected.id)
 
@@ -83,7 +84,7 @@ class WireMockIntegrationTest {
     }
 
     @Test
-    fun `getShow returns the committed show detail fixture`(): Unit = runBlocking {
+    fun `getShow returns the committed show detail fixture`(): Unit = runTest {
         val expected = loadFixture<Show>("ShowDetail.json")
         val show = api().getShow(expected.id)
 
@@ -94,7 +95,7 @@ class WireMockIntegrationTest {
     }
 
     @Test
-    fun `getEpisode returns the committed episode detail fixture`(): Unit = runBlocking {
+    fun `getEpisode returns the committed episode detail fixture`(): Unit = runTest {
         val expected = loadFixture<Episode>("EpisodeDetail.json")
         val episode = api().getEpisode(expected.id)
 
@@ -106,7 +107,7 @@ class WireMockIntegrationTest {
     }
 
     @Test
-    fun `listMovies with pagination params still returns fixture data`(): Unit = runBlocking {
+    fun `listMovies with pagination params still returns fixture data`(): Unit = runTest {
         val expected = loadFixture<MovieListResponse>("Movies.json")
         val withParams = api().listMovies(page = 2, perPage = 50)
         val withoutParams = api().listMovies()
@@ -115,8 +116,9 @@ class WireMockIntegrationTest {
         assertThat(withParams.movies.map { it.id }).isEqualTo(withoutParams.movies.map { it.id })
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Test
-    fun `request to path with no matching stub returns 404`(): Unit = runBlocking {
+    fun `request to path with no matching stub returns 404`(): Unit = runTest {
         val emptyServer = WireMockServer(WireMockConfiguration().port(0))
         emptyServer.start()
         try {
@@ -127,7 +129,14 @@ class WireMockIntegrationTest {
                     baseUrl = emptyServer.baseUrl().trimEnd('/') + "/",
                 )
 
-            val error = runCatching { badApi.listMovies() }.exceptionOrNull()
+            val error = try {
+                badApi.listMovies()
+                null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e
+            }
             assertThat(error).isInstanceOf(HttpException::class.java)
             assertThat((error as HttpException).code()).isEqualTo(404)
         } finally {
@@ -135,8 +144,9 @@ class WireMockIntegrationTest {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Test
-    fun `request to stopped server throws IOException`(): Unit = runBlocking {
+    fun `request to stopped server throws IOException`(): Unit = runTest {
         val ephemeralServer = WireMockServer(WireMockConfiguration().port(0))
         ephemeralServer.start()
         val port = ephemeralServer.port()
@@ -149,12 +159,20 @@ class WireMockIntegrationTest {
                 baseUrl = "http://localhost:$port/",
             )
 
-        val error = runCatching { disconnectedApi.listMovies() }.exceptionOrNull()
+        val error = try {
+            disconnectedApi.listMovies()
+            null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e
+        }
         assertThat(error).isInstanceOf(IOException::class.java)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Test
-    fun `malformed JSON in response body throws an exception`(): Unit = runBlocking {
+    fun `malformed JSON in response body throws an exception`(): Unit = runTest {
         val badServer = WireMockServer(WireMockConfiguration().port(0))
         badServer.start()
         try {
@@ -175,7 +193,14 @@ class WireMockIntegrationTest {
                     baseUrl = badServer.baseUrl().trimEnd('/') + "/",
                 )
 
-            val error = runCatching { badApi.listMovies() }.exceptionOrNull()
+            val error = try {
+                badApi.listMovies()
+                null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e
+            }
             assertThat(error).isNotNull()
         } finally {
             badServer.stop()
