@@ -321,8 +321,9 @@ class PlayerViewModel(
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
                     }
-                    val state = _uiState.value as? PlayerUiState.Content ?: return@launch
-                    _uiState.value = state.copy(playbackError = playbackError)
+                    _uiState.update { current ->
+                        (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+                    }
                 },
             )
         }
