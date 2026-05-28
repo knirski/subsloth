@@ -21,7 +21,7 @@ The Compose compiler infers stability from type structure. When inference fails 
 - `data class` with `List` parameter: The Kotlin 2.3+ Compose compiler can infer `List` as stable when content comes from an immutable source (e.g., `StateFlow<List<T>>` backed by `listOf()`), but this is fragile. For compile-time guarantees, use `ImmutableList` from kotlinx.collections.immutable instead of annotating with `@Stable`.
 - `interface` parameter: never inferred stable. Wrap in `@Stable` marker or use a concrete stable type.
 
-**Project state:** `@Immutable` is used on `DeviceFormFactor` and `ContrastState` enums. `@Stable` is not used anywhere. Screen-level sealed interfaces (`SearchUiState`, `HomeUiState`, `DetailUiState`) and their data class branches lack stability annotations. Add `@Stable` on the sealed interface and `@Immutable` on data class branches when their constructor params are stable.
+**Project state (current):** `@Immutable` is used on `DeviceFormFactor` and `ContrastState` enums, all domain model data classes (`MovieDetails`, `ShowDetails`, `MovieSummary`, `ShowSummary`, `Season`, `Episode`, `Subtitle`, `Quality`, `QualityDescriptor`, `SearchFilters`, `PlaybackError` branches), and UiState data class branches. `@Stable` is used on all sealed interface UiState types (`LoginUiState`, `HomeUiState`, `HomeRow`, `SearchUiState`, `DetailUiState`, `PlayerUiState`) and domain sealed interfaces (`Media`, `Media.MediaId`, `MediaDetails`, `Availability`).
 
 ```kotlin
 @Stable
@@ -49,7 +49,7 @@ data class Results(val items: ImmutableList<Media>)
 data class Results(val items: List<Media>)
 ```
 
-**Project state:** All current UI models use `List<Media>`, no `ImmutableList` usage. Migrate UI state data classes as `kotlinx.collections.immutable` is added to consuming feature modules.
+**Project state (current):** All UI models use `ImmutableList` from `kotlinx.collections.immutable`. The `persistentlist` version catalog alias is used in feature modules. Generic UI components (`TvRow`) still use `List<T>` for API flexibility; callers pass `ImmutableList` instances.
 
 ---
 
@@ -74,7 +74,7 @@ val isPastThreshold by remember {
 
 **When not to use:** If the computation is trivial and reads from a seldom-changing source, a plain `val` or `remember` is sufficient.
 
-**Project state:** `derivedStateOf` is not used in the codebase. Scroll-based visibility (e.g., "show scroll-to-top" on HomeScreen) is a candidate.
+**Project state:** `derivedStateOf` is not used in the codebase. Scroll-based visibility (e.g., "show scroll-to-top" on HomeScreen) remains a candidate for future optimization.
 
 ---
 
@@ -90,7 +90,7 @@ val state by viewModel.uiState.collectAsStateWithLifecycle()
 val state by viewModel.uiState.collectAsState()
 ```
 
-**Project state:** `collectAsStateWithLifecycle()` is used in `PlayerScreen`, `HomeScreen`, `SearchScreen`, `MovieDetailScreen`, `SeriesDetailScreen`. `LoginScreen` uses `collectAsState()` instead. This is a known gap. Migrate when the lifecycle dependency is accessible from that module.
+**Project state (current):** `collectAsStateWithLifecycle()` is used in all screens including `LoginScreen`.
 
 ---
 
@@ -108,7 +108,7 @@ LazyColumn {
 items(items.indices) { index -> ItemRow(items[index]) }
 ```
 
-**Project state:** `HomeScreen` uses `item(key = row.label)` for row headers and `item(key = media.id)` for media items. `SearchScreen` uses `items(s.items, key = { it.id })`. Both follow the stable-key convention.
+**Project state (current):** `HomeScreen` uses `item(key = row.label)` for row headers and `item(key = media.id)` for media items. `SearchScreen` uses `items(s.items, key = { it.id })`. TV component `TvRow` accepts an optional `itemKey` parameter for stable keys.
 
 ---
 
@@ -139,7 +139,7 @@ var login by rememberSaveable { mutableStateOf("") }
 var password by rememberSaveable { mutableStateOf("") }
 ```
 
-**Project state:** `LoginScreen` uses `remember { mutableStateOf("") }` for login/password fields. These should be `rememberSaveable` to survive config changes. `PlayerScreen` correctly uses `remember` for transient UI state (picker toggles, drag position only).
+**Project state (current): `LoginScreen` uses `rememberSaveable` for login/password fields. `SearchScreen` uses `rememberSaveable` for the search query. `PlayerScreen` correctly uses `remember` for transient UI state (picker toggles, drag position only).
 
 ---
 

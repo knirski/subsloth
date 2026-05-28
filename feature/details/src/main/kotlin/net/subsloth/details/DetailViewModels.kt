@@ -23,30 +23,38 @@ import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.error.toUiError
 
 @Stable
-sealed interface DetailUiState {
-    data object Loading : DetailUiState
+sealed interface MovieDetailUiState {
+    data object Loading : MovieDetailUiState
 
     @Immutable
-    data class MovieContent(
+    data class Content(
         val details: MovieDetails,
         val isFavorite: Boolean = false,
         val isWatchLater: Boolean = false,
         val isDownloaded: Boolean = false,
         val progressFraction: Double? = null,
-    ) : DetailUiState
+    ) : MovieDetailUiState
 
     @Immutable
-    data class ShowContent(
+    data class Error(val error: UiError) : MovieDetailUiState
+}
+
+@Stable
+sealed interface ShowDetailUiState {
+    data object Loading : ShowDetailUiState
+
+    @Immutable
+    data class Content(
         val details: ShowDetails,
         val selectedSeason: Int,
         val isFavorite: Boolean = false,
         val isWatchLater: Boolean = false,
         val isDownloaded: Boolean = false,
         val progressFraction: Double? = null,
-    ) : DetailUiState
+    ) : ShowDetailUiState
 
     @Immutable
-    data class Error(val error: UiError) : DetailUiState
+    data class Error(val error: UiError) : ShowDetailUiState
 }
 
 class MovieDetailViewModel(
@@ -64,8 +72,8 @@ class MovieDetailViewModel(
         Result.success(emptyList())
     },
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
-    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
+    val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
 
     init {
         loadDetails()
@@ -73,7 +81,7 @@ class MovieDetailViewModel(
 
     private fun loadDetails() {
         viewModelScope.launch {
-            _uiState.value = DetailUiState.Loading
+            _uiState.value = MovieDetailUiState.Loading
             val detailsResult = getDetails(mediaId)
             val libraryResult = listLibrary()
             val downloadsResult = listDownloads()
@@ -83,7 +91,7 @@ class MovieDetailViewModel(
                         val library = libraryResult.getOrDefault(emptyList())
                         val downloads = downloadsResult.getOrDefault(emptyList())
                         _uiState.value =
-                            DetailUiState.MovieContent(
+                            MovieDetailUiState.Content(
                                 details = details,
                                 isFavorite = library.any {
                                     it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
@@ -93,11 +101,11 @@ class MovieDetailViewModel(
                                 },
                             )
                     } else {
-                        _uiState.value = DetailUiState.Error(UiError.NotFound("Unexpected media type"))
+                        _uiState.value = MovieDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(error.toUiError())
+                    _uiState.value = MovieDetailUiState.Error(error.toUiError())
                 },
             )
         }
@@ -120,8 +128,8 @@ class ShowDetailViewModel(
     },
     private val savedState: Map<String, String> = mapOf("selectedSeason" to ""),
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
-    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<ShowDetailUiState>(ShowDetailUiState.Loading)
+    val uiState: StateFlow<ShowDetailUiState> = _uiState.asStateFlow()
 
     init {
         loadDetails()
@@ -129,7 +137,7 @@ class ShowDetailViewModel(
 
     private fun loadDetails() {
         viewModelScope.launch {
-            _uiState.value = DetailUiState.Loading
+            _uiState.value = ShowDetailUiState.Loading
             val detailsResult = getDetails(mediaId)
             val libraryResult = listLibrary()
             val downloadsResult = listDownloads()
@@ -140,7 +148,7 @@ class ShowDetailViewModel(
                         val downloads = downloadsResult.getOrDefault(emptyList())
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
-                            DetailUiState.ShowContent(
+                            ShowDetailUiState.Content(
                                 details = details,
                                 selectedSeason = restoredSeason,
                                 isFavorite = library.any {
@@ -151,11 +159,11 @@ class ShowDetailViewModel(
                                 },
                             )
                     } else {
-                        _uiState.value = DetailUiState.Error(UiError.NotFound("Unexpected media type"))
+                        _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = DetailUiState.Error(error.toUiError())
+                    _uiState.value = ShowDetailUiState.Error(error.toUiError())
                 },
             )
         }
@@ -163,7 +171,7 @@ class ShowDetailViewModel(
 
     fun selectSeason(seasonNumber: Int) {
         _uiState.update { current ->
-            if (current is DetailUiState.ShowContent) current.copy(selectedSeason = seasonNumber) else current
+            if (current is ShowDetailUiState.Content) current.copy(selectedSeason = seasonNumber) else current
         }
     }
 

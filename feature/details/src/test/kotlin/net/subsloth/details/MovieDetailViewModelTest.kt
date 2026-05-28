@@ -84,7 +84,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.title).isEqualTo("Test Movie")
         }
     }
@@ -96,7 +96,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.failure(Exception("Network error")) },
         )
         viewModel.uiState.test {
-            val error = awaitItem() as DetailUiState.Error
+            val error = awaitItem() as MovieDetailUiState.Error
             assertThat(error.error.detail).isEqualTo("Network error")
         }
     }
@@ -108,7 +108,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.title).isEqualTo("Test Movie")
             assertThat(content.details.plot).isEqualTo("A test movie plot")
         }
@@ -121,7 +121,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.rating).isEqualTo(8.5)
             assertThat(content.details.year).isEqualTo(2024)
             assertThat(content.details.genres).containsExactly("Action", "Drama").inOrder()
@@ -136,7 +136,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.subtitles).isNotEmpty()
             assertThat(content.details.subtitles.first().languageDisplayName).isEqualTo("English")
         }
@@ -149,7 +149,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.qualities).isNotEmpty()
             assertThat(content.details.qualities.first().info.label).isEqualTo("1080p")
         }
@@ -162,7 +162,7 @@ class MovieDetailViewModelTest {
             getDetails = { Result.success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.MovieContent
+            val content = awaitItem() as MovieDetailUiState.Content
             assertThat(content.details.description?.contains("comment", ignoreCase = true) != true).isTrue()
         }
     }

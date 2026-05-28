@@ -54,6 +54,7 @@ fun LoginScreen(
     var password by rememberSaveable { mutableStateOf("") }
 
     val currentOnNavigateToCatalog by rememberUpdatedState(onNavigateToCatalog)
+
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.LoggedIn) {
             currentOnNavigateToCatalog()

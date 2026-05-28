@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +44,12 @@ fun SearchScreen(
     var query by rememberSaveable {
         mutableStateOf((viewModel.uiState.value as? SearchUiState.Results)?.query ?: "")
     }
+    val onQueryChange = remember(viewModel) {
+        { value: String ->
+            query = value
+            viewModel.search(value)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -51,10 +58,7 @@ fun SearchScreen(
     ) {
         OutlinedTextField(
             value = query,
-            onValueChange = {
-                query = it
-                viewModel.search(it)
-            },
+            onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Search movies and shows") },
             singleLine = true,
@@ -179,4 +183,18 @@ private fun SearchIdlePreview() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Suppress("ViewModelConstructorInComposable")
+@Composable
+private fun SearchResultsPreview() {
+    SearchScreen(
+        viewModel = SearchViewModel(
+            listCatalog = { Result.success(emptyList()) },
+        ),
+        onMovieClick = {},
+        onShowClick = {},
+    )
 }
