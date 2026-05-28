@@ -294,7 +294,7 @@ private fun SeriesDetailContentPreview() {
         plot = null,
         episodes = persistentListOf(
             Episode(
-                id = net.subsloth.core.model.identifier.EpisodeId(1),
+                id = EpisodeId(1),
                 showId = ShowId(1),
                 seasonNumber = 1,
                 episodeNumber = 1,

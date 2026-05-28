@@ -187,6 +187,7 @@ private fun SearchIdlePreview() {
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Suppress("ViewModelConstructorInComposable")
 @Composable
 private fun SearchResultsPreview() {
     SearchScreen(

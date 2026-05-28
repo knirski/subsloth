@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package net.subsloth.player
 
 import androidx.compose.foundation.background

@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -55,7 +54,6 @@ fun LoginScreen(
     var password by rememberSaveable { mutableStateOf("") }
 
     val currentOnNavigateToCatalog by rememberUpdatedState(onNavigateToCatalog)
-    val onSignIn = remember(viewModel) { { viewModel.login(login, password) } }
 
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.LoggedIn) {
@@ -85,7 +83,7 @@ fun LoginScreen(
                 modifier = modifier,
                 onLoginChange = { login = it },
                 onPasswordChange = { password = it },
-                onSignIn = onSignIn,
+                onSignIn = { viewModel.login(login, password) },
                 onNavigateToOfflineLibrary = onNavigateToOfflineLibrary,
             )
         }
