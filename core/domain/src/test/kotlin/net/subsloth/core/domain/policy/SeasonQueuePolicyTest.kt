@@ -29,6 +29,22 @@ class SeasonQueuePolicyTest {
     }
 
     @Test
+    fun `preferred english returns preferred not english fallback`() {
+        val subtitles = listOf(subtitle(LanguageCode("en"), "English"))
+        val selection =
+            SeasonQueuePolicy.selectInitialSubtitle(
+                available = subtitles,
+                preferred = LanguageCode("en"),
+            )
+        assertThat(selection)
+            .isEqualTo(
+                SubtitleSelection.Preferred(
+                    subtitle(LanguageCode("en"), "English"),
+                ),
+            )
+    }
+
+    @Test
     fun `subtitle fallback emits explicit english fallback decision`() {
         val subtitles = listOf(subtitle(LanguageCode("en"), "English"))
         val selection =

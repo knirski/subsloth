@@ -8,7 +8,7 @@ private const val RESERVE_CAP_BYTES = 2L * 1024 * 1024 * 1024
 object DownloadPolicy {
     /** Reserve 10 % of total space, capped at 2 GiB. */
     @Suppress("MagicNumber")
-    fun requiredReserveBytes(totalBytes: Long): Long = minOf(RESERVE_CAP_BYTES, totalBytes / 10)
+    fun requiredReserveBytes(totalBytes: Long): Long = minOf(RESERVE_CAP_BYTES, totalBytes.coerceAtLeast(0) / 10)
 
     fun canTransferOnNetwork(
         isMetered: Boolean,

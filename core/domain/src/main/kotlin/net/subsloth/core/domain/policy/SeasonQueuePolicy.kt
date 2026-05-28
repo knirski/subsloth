@@ -14,7 +14,7 @@ object SeasonQueuePolicy {
         val preferredTrack = available.firstOrNull { it.language == preferred }
         val englishTrack = available.firstOrNull { it.language == english }
         return when {
-            preferred != english && preferredTrack != null -> SubtitleSelection.Preferred(preferredTrack)
+            preferredTrack != null -> SubtitleSelection.Preferred(preferredTrack)
             englishTrack != null -> SubtitleSelection.EnglishFallback(englishTrack)
             else -> SubtitleSelection.None
         }
@@ -27,11 +27,9 @@ object SeasonQueuePolicy {
         isMetered: Boolean,
         authValid: Boolean,
     ): Boolean =
-        isOnline &&
-            hasStorage &&
-            authValid &&
-            when (transferPreference) {
-                TransferPreference.WifiOnly -> !isMetered
-                TransferPreference.MeteredAllowed -> true
-            }
+        isOnline && hasStorage && authValid &&
+            DownloadPolicy.canTransferOnNetwork(
+                isMetered = isMetered,
+                transferPreference = transferPreference,
+            )
 }
