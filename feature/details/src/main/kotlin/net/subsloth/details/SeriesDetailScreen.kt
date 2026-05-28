@@ -29,9 +29,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
+import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Season
+import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.ui.toDisplayStringRes
 
@@ -40,7 +45,7 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when (val s = state) {
-        is DetailUiState.Loading -> {
+        is ShowDetailUiState.Loading -> {
             Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -48,14 +53,14 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
                 CircularProgressIndicator()
             }
         }
-        is DetailUiState.ShowContent -> {
+        is ShowDetailUiState.Content -> {
             ShowDetailContent(
                 state = s,
                 onSeasonSelect = { viewModel.selectSeason(it) },
                 modifier = modifier,
             )
         }
-        is DetailUiState.Error -> {
+        is ShowDetailUiState.Error -> {
             Box(
                 modifier = modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center,
@@ -67,15 +72,12 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
                 )
             }
         }
-        else -> {
-            Text("Unexpected state")
-        }
     }
 }
 
 @Composable
 internal fun ShowDetailContent(
-    state: DetailUiState.ShowContent,
+    state: ShowDetailUiState.Content,
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},
 ) {
@@ -279,4 +281,59 @@ private fun SeriesDetailErrorPreview() {
             color = MaterialTheme.colorScheme.error,
         )
     }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+private fun SeriesDetailContentPreview() {
+    val sampleSeason = Season(
+        seasonNumber = 1,
+        title = "Season 1",
+        plot = null,
+        episodes = persistentListOf(
+            Episode(
+                id = net.subsloth.core.model.identifier.EpisodeId(1),
+                showId = ShowId(1),
+                seasonNumber = 1,
+                episodeNumber = 1,
+                title = "Pilot",
+                plot = "The series begins.",
+                durationSeconds = 2700,
+                availability = Availability.Available,
+                imdbId = null,
+                qualities = persistentListOf(),
+                subtitles = persistentListOf(),
+                airDateEpochSeconds = null,
+                premiereDateEpochSeconds = null,
+            ),
+        ),
+    )
+    val sampleDetails = ShowDetails(
+        id = Media.MediaId.Show(ShowId(1)),
+        title = "Breaking Bad",
+        plot = "A high school chemistry teacher turned methamphetamine producer.",
+        description = null,
+        availability = Availability.Available,
+        rating = 9.5,
+        year = 2008,
+        genres = persistentListOf("Drama", "Crime", "Thriller"),
+        durationMinutes = 45,
+        qualities = persistentListOf(),
+        subtitles = persistentListOf(),
+        slug = null,
+        imdbId = null,
+        tmdbId = null,
+        countries = persistentListOf("USA"),
+        posterUrl = null,
+        backdropUrl = null,
+        status = ShowStatus.ENDED,
+        popularity = null,
+        seasons = persistentListOf(sampleSeason),
+    )
+    ShowDetailContent(
+        state = ShowDetailUiState.Content(details = sampleDetails, selectedSeason = 1),
+        onSeasonSelect = {},
+    )
 }

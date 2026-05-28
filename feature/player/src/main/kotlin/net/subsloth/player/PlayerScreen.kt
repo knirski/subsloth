@@ -28,8 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.domain.policy.PlaybackSpeed
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
@@ -78,7 +80,7 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun PlayerContent(
+internal fun PlayerContent(
     state: PlayerUiState.Content,
     modifier: Modifier = Modifier,
     onTogglePlayPause: () -> Unit = {},
@@ -443,6 +445,64 @@ private fun ErrorContent(
             Text(stringResource(R.string.player_back_to_details))
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PlayerLoadingPreview() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PlayerContentPreview() {
+    PlayerContent(
+        state = PlayerUiState.Content(
+            title = "Test Movie",
+            positionSeconds = 3661,
+            durationSeconds = 7200,
+            isPlaying = true,
+            playbackSpeed = 1.0f,
+            selectedSubtitle = null,
+            availableSubtitles = persistentListOf(),
+            availableQualities = persistentListOf(),
+            selectedQualityLabel = null,
+            nextEpisode = null,
+            showNextEpisodePrompt = false,
+            playbackError = null,
+            playbackMode = PlaybackMode.ONLINE,
+            qualityFallbackNotice = null,
+            subtitleFallbackNotice = null,
+            mediaId = null,
+        ),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PlayerErrorPreview() {
+    PlayerContent(
+        state = PlayerUiState.Content(
+            title = "Test Movie",
+            positionSeconds = 0,
+            durationSeconds = 0,
+            isPlaying = false,
+            playbackSpeed = 1.0f,
+            selectedSubtitle = null,
+            availableSubtitles = persistentListOf(),
+            availableQualities = persistentListOf(),
+            selectedQualityLabel = null,
+            nextEpisode = null,
+            showNextEpisodePrompt = false,
+            playbackError = PlaybackError.Recoverable(),
+            playbackMode = PlaybackMode.ONLINE,
+            qualityFallbackNotice = null,
+            subtitleFallbackNotice = null,
+            mediaId = null,
+        ),
+    )
 }
 
 private fun formatTime(seconds: Long): String {

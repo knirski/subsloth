@@ -103,6 +103,8 @@ when (val s = state) {
 
 UiState variants in the project follow a `Loading` / `Content` / `Error` pattern. Some screens add domain-specific content branches like `MovieContent` vs `ShowContent` in `DetailUiState`. Each branch is a `data class` with the data the render tree needs. No rendering logic lives in the ViewModel.
 
+All `when` blocks on sealed UiState types are exhaustive; the `else` branch is not used. When adding a new UiState variant, the compiler forces every `when` site to handle it.
+
 ---
 
 ## Material3 Conventions
@@ -135,7 +137,7 @@ fun currentDeviceFormFactor(): DeviceFormFactor {
 }
 ```
 
-Phone uses `PhoneScaffold` with a single-pane layout and bottom navigation. Tablet uses `SubSlothListDetailLayout` with side-by-side list and detail panes. TV uses leanback navigation patterns. Use `isTabletOrWider()` for single-condition branching in layout code.
+Phone uses `PhoneScaffold` with a single-pane layout and bottom navigation. Tablet uses `SubSlothListDetailLayout` with side-by-side list and detail panes. TV uses leanback navigation patterns with `TvRow`, `TvLargeCard`, and `TvActionRail`. Use `isTabletOrWider()` for single-condition branching in layout code.
 
 ---
 
@@ -161,7 +163,9 @@ fun HomeScreenContentPreview() = HomeScreen(
 )
 ```
 
-Include light/dark mode previews and font scale previews for accessibility. Use `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` for dark mode. Use `@Preview(fontScale = 1.5f)` for large text. The project does not currently have `@Preview` annotations; add them when creating or editing screen composables.
+Include light/dark mode previews and font scale previews for accessibility. Use `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` for dark mode. Use `@Preview(fontScale = 1.5f)` for large text.
+
+**Project state (current):** `@Preview` annotations exist for most screen composables. `HomeScreen` and `LoginScreen` have full coverage. `PlayerScreen` has previews for Loading, Content, and Error states. `SearchScreen`, `MovieDetailScreen`, and `SeriesDetailScreen` have previews for their main content states. Add previews for any newly created composable branches.
 
 ---
 

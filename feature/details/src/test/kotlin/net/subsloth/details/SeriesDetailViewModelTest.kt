@@ -120,7 +120,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.details.title).isEqualTo("Test Show")
         }
     }
@@ -132,7 +132,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.failure(Exception("Network error")) },
         )
         viewModel.uiState.test {
-            val error = awaitItem() as DetailUiState.Error
+            val error = awaitItem() as ShowDetailUiState.Error
             assertThat(error.error.detail).isEqualTo("Network error")
         }
     }
@@ -144,7 +144,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.details.seasons).isNotEmpty()
             assertThat(content.details.seasons.first().seasonNumber).isEqualTo(1)
             assertThat(content.details.seasons.first().episodes).hasSize(2)
@@ -158,7 +158,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.selectedSeason).isEqualTo(1)
         }
     }
@@ -179,7 +179,7 @@ class SeriesDetailViewModelTest {
         )
         viewModel.selectSeason(2)
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.selectedSeason).isEqualTo(2)
         }
     }
@@ -192,7 +192,7 @@ class SeriesDetailViewModelTest {
             savedState = mapOf("selectedSeason" to "1"),
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.selectedSeason).isEqualTo(1)
         }
     }
@@ -204,7 +204,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             val episodes = content.details.seasons.first().episodes
             assertThat(episodes.first().episodeNumber).isEqualTo(1)
             assertThat(episodes.last().episodeNumber).isEqualTo(2)
@@ -218,7 +218,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             assertThat(content.details.description?.contains("comment", ignoreCase = true) != true).isTrue()
         }
     }
@@ -230,7 +230,7 @@ class SeriesDetailViewModelTest {
             getDetails = { Result.success(sampleShowDetails) },
         )
         viewModel.uiState.test {
-            val content = awaitItem() as DetailUiState.ShowContent
+            val content = awaitItem() as ShowDetailUiState.Content
             val episodes = content.details.seasons.first().episodes
             assertThat(episodes.first().title).isEqualTo("Episode 1")
             assertThat(episodes.first().episodeNumber).isEqualTo(1)

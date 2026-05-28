@@ -67,6 +67,7 @@ fun <T> TvRow(
     title: String,
     items: List<T>,
     modifier: Modifier = Modifier,
+    itemKey: ((index: Int, T) -> Any)? = null,
     itemContent: @Composable (T) -> Unit,
 ) {
     TvRowContent(
@@ -81,7 +82,7 @@ fun <T> TvRow(
                     end = tvOverscanHorizontal,
                 ),
         ) {
-            itemsIndexed(items) { index, item ->
+            itemsIndexed(items, key = itemKey) { index, item ->
                 itemContent(item)
             }
         }

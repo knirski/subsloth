@@ -22,14 +22,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.persistentListOf
+import net.subsloth.core.model.Availability
+import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MovieDetails
+import net.subsloth.core.model.media.Quality
+import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.ui.toDisplayStringRes
 
 @Composable
 fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state: MovieDetailUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     when (val s = state) {
-        is DetailUiState.Loading -> {
+        is MovieDetailUiState.Loading -> {
             Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -37,10 +45,10 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 CircularProgressIndicator()
             }
         }
-        is DetailUiState.MovieContent -> {
+        is MovieDetailUiState.Content -> {
             MovieDetailContent(state = s, modifier = modifier)
         }
-        is DetailUiState.Error -> {
+        is MovieDetailUiState.Error -> {
             Box(
                 modifier = modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center,
@@ -52,14 +60,11 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 )
             }
         }
-        else -> {
-            Text("Unexpected state")
-        }
     }
 }
 
 @Composable
-internal fun MovieDetailContent(state: DetailUiState.MovieContent, modifier: Modifier = Modifier) {
+internal fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = Modifier) {
     val details = state.details
 
     Column(
@@ -181,4 +186,46 @@ private fun MovieDetailErrorPreview() {
             color = MaterialTheme.colorScheme.error,
         )
     }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, fontScale = 1.5f)
+@Composable
+private fun MovieDetailContentPreview() {
+    val sampleDetails = MovieDetails(
+        id = Media.MediaId.Movie(MovieId(1)),
+        title = "Inception",
+        plot = "A thief who steals corporate secrets through dream-sharing technology " +
+            "is given the task of planting an idea into a target's subconscious.",
+        description = null,
+        availability = Availability.Available,
+        rating = 8.8,
+        year = 2010,
+        genres = persistentListOf("Action", "Sci-Fi", "Thriller"),
+        durationMinutes = 148,
+        qualities = persistentListOf(
+            Quality(
+                info = QualityDescriptor(
+                    resolution = Resolution.FULL_HD,
+                    label = "1080p",
+                    bitrate = null,
+                    mimeType = null,
+                ),
+                url = null,
+                downloadUrl = null,
+            ),
+        ),
+        subtitles = persistentListOf(),
+        slug = null,
+        imdbId = null,
+        tmdbId = null,
+        countries = persistentListOf("USA", "UK"),
+        posterUrl = null,
+        backdropUrl = null,
+    )
+    MovieDetailContent(
+        state = MovieDetailUiState.Content(details = sampleDetails),
+        modifier = Modifier,
+    )
 }
