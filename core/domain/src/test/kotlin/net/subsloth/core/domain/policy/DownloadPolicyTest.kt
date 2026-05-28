@@ -6,8 +6,7 @@ import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 
-@Suppress("TopLevelPropertyNaming", "MayBeConstant")
-private val GB = 1024L * 1024L * 1024L
+private const val GB = 1024 * 1024 * 1024
 
 class DownloadPolicyTest {
     // ── Storage reserve ───────────────────────────────────────────────────
