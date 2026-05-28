@@ -2,12 +2,13 @@ package net.subsloth.core.domain.policy
 
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.media.QualityDescriptor
+
 private const val RESERVE_CAP_BYTES = 2L * 1024 * 1024 * 1024
-private const val RESERVE_FRACTION_DENOMINATOR = 10
 
 object DownloadPolicy {
-    fun requiredReserveBytes(totalBytes: Long): Long =
-        minOf(RESERVE_CAP_BYTES, totalBytes / RESERVE_FRACTION_DENOMINATOR)
+    /** Reserve 10 % of total space, capped at 2 GiB. */
+    @Suppress("MagicNumber")
+    fun requiredReserveBytes(totalBytes: Long): Long = minOf(RESERVE_CAP_BYTES, totalBytes / 10)
 
     fun canTransferOnNetwork(
         isMetered: Boolean,
