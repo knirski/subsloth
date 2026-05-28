@@ -32,7 +32,11 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val progressPercent: Int,
         val queueId: QueueId? = null,
-    ) : DownloadState
+    ) : DownloadState {
+        init {
+            require(progressPercent in 0..100) { "Progress percent must be between 0 and 100" }
+        }
+    }
 
     @Immutable
     data class Partial(

@@ -51,7 +51,11 @@ sealed interface SeasonQueueItemExecution {
 
     data class Downloading(
         val progressPercent: Int,
-    ) : SeasonQueueItemExecution
+    ) : SeasonQueueItemExecution {
+        init {
+            require(progressPercent in 0..100) { "Progress percent must be between 0 and 100" }
+        }
+    }
 
     data object Completed : SeasonQueueItemExecution
 
@@ -72,4 +76,13 @@ data class SeasonDownloadConfirmation(
     val unavailableCount: Int,
     val sizeEstimate: SizeEstimate,
     val transferPreference: TransferPreference,
-)
+) {
+    init {
+        require(episodeCount >= 0) { "episodeCount must be non-negative" }
+        require(alreadyAvailableCount >= 0) { "alreadyAvailableCount must be non-negative" }
+        require(fallbackQualityCount >= 0) { "fallbackQualityCount must be non-negative" }
+        require(fallbackSubtitleToEnglishCount >= 0) { "fallbackSubtitleToEnglishCount must be non-negative" }
+        require(noSubtitleCount >= 0) { "noSubtitleCount must be non-negative" }
+        require(unavailableCount >= 0) { "unavailableCount must be non-negative" }
+    }
+}
