@@ -6,6 +6,7 @@ import dev.detekt.api.Entity
 import dev.detekt.api.Finding
 import dev.detekt.api.Rule
 import dev.detekt.api.config
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
@@ -34,14 +35,14 @@ public class NoFullyQualifiedNames(config: Config) :
     private val allowedPrefixes: List<String> by config(defaultValue = DEFAULT_ALLOWED)
 
     override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression) {
+        val fqnExpression = findFqnExpression(expression)
+        val target = fqnExpression ?: expression
         if (expression.getStrictParentOfType<KtImportDirective>() == null &&
             expression.getStrictParentOfType<KtPackageDirective>() == null &&
             !expression.isNestedReceiver() &&
             expression.isPackageQualified() &&
-            !isAllowed(expression.text)
+            !isAllowed(target.text)
         ) {
-            val fqnExpression = findFqnExpression(expression)
-            val target = fqnExpression ?: expression
             report(
                 Finding(
                     entity = entityAt(target),
@@ -69,6 +70,7 @@ public class NoFullyQualifiedNames(config: Config) :
 
     // ── Helpers ─────────────────────────────────────────────────────────
 
+    /** Creates a detekt [Entity] from a PSI element for error reporting. */
     private fun entityAt(element: KtElement): Entity = Entity.from(element)
 
     /**
@@ -86,27 +88,42 @@ public class NoFullyQualifiedNames(config: Config) :
         var current: KtExpression = expression
         while (current is KtDotQualifiedExpression) {
             val selector = current.selectorExpression
-            if (selector is KtReferenceExpression && selector.text.isTypeLikeIdentifier()) {
-                return current
+            when {
+                selector is KtReferenceExpression && selector.text.isTypeLikeIdentifier() -> return current
+                selector is KtCallExpression -> {
+                    val callee = selector.calleeExpression
+                    if (callee is KtReferenceExpression && callee.text.isTypeLikeIdentifier()) {
+                        return current
+                    }
+                }
             }
             current = current.receiverExpression
         }
         return null
     }
 
+    /** Returns `true` when this expression is the receiver of a parent [KtDotQualifiedExpression]. */
     private fun KtDotQualifiedExpression.isNestedReceiver(): Boolean {
         val parent = parent as? KtDotQualifiedExpression ?: return false
         return parent.receiverExpression == this
     }
 
+    /** Returns `true` when the receiver chain of this expression looks like a package-qualified name. */
     private fun KtDotQualifiedExpression.isPackageQualified(): Boolean =
         hasPackageLikePrefix(receiverSegments(this))
 
+    /** Returns `true` when the qualifier chain of this type looks like a package-qualified name. */
     private fun KtUserType.isPackageQualified(): Boolean {
         if (qualifier == null) return false
         return hasPackageLikePrefix(typeSegments(this))
     }
 
+    /**
+     * Extracts package-segments from the receiver chain of a dot-qualified expression.
+     *
+     * For `java.nio.file.Paths.get(path)`, returns `["java", "nio", "file", "Paths"]`.
+     * Method-call and property-access selectors are excluded from the result.
+     */
     private fun receiverSegments(expression: KtDotQualifiedExpression): List<String> {
         val segments = mutableListOf<String>()
         var current: KtExpression = expression
@@ -128,6 +145,11 @@ public class NoFullyQualifiedNames(config: Config) :
         return segments.asReversed()
     }
 
+    /**
+     * Extracts qualifier segments from a [KtUserType].
+     *
+     * For `java.util.List`, returns `["java", "util", "List"]`.
+     */
     private fun typeSegments(type: KtUserType): List<String> {
         val segments = mutableListOf<String>()
         var current: KtUserType? = type
@@ -141,6 +163,11 @@ public class NoFullyQualifiedNames(config: Config) :
         return segments.asReversed()
     }
 
+    /**
+     * Returns `true` when the segment list has a package-like prefix (e.g. `com.example`)
+     * followed by a type-like segment (e.g. `Foo`), or starts with a known root package
+     * such as `java`, `kotlin`, or `com`.
+     */
     private fun hasPackageLikePrefix(segments: List<String>): Boolean {
         if (segments.size < 2) return false
         if (!segments[0].isLowercaseIdentifier() || !segments[1].isLowercaseIdentifier()) {
@@ -152,6 +179,7 @@ public class NoFullyQualifiedNames(config: Config) :
         return segments[0] in ROOT_PACKAGE_PREFIXES
     }
 
+    /** Returns `true` when [text] is an exact match or starts with one of the [allowedPrefixes] config values. */
     private fun isAllowed(text: String): Boolean {
         val trimmed = text.trim()
         return allowedPrefixes.any { prefix ->
@@ -159,11 +187,13 @@ public class NoFullyQualifiedNames(config: Config) :
         }
     }
 
+    /** Returns `true` when the string is a lower-case identifier (starts with lower-case letter). */
     private fun String.isLowercaseIdentifier(): Boolean {
         if (isEmpty() || !first().isLowerCase()) return false
         return all { it == '_' || it.isLowerCase() || it.isDigit() }
     }
 
+    /** Returns `true` when the string looks like a type name (starts with upper-case letter). */
     private fun String.isTypeLikeIdentifier(): Boolean =
         isNotEmpty() && first().isUpperCase()
 
