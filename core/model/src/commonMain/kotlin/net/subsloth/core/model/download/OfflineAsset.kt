@@ -44,24 +44,25 @@ data class OfflineRelativePath(
 internal fun normalizePure(path: String): String {
     val isAbsolute = path.startsWith('/')
     val segments = path.split('/')
-    val result = buildList {
-        for (segment in segments) {
-            when (segment) {
-                ".", "" -> {
-                }
-
-                ".." -> {
-                    if (isNotEmpty() && last() != "..") {
-                        removeLast()
-                    } else if (!isAbsolute) {
-                        add("..")
+    val result =
+        buildList {
+            for (segment in segments) {
+                when (segment) {
+                    ".", "" -> {
                     }
-                }
 
-                else -> add(segment)
+                    ".." -> {
+                        if (isNotEmpty() && last() != "..") {
+                            removeLast()
+                        } else if (!isAbsolute) {
+                            add("..")
+                        }
+                    }
+
+                    else -> add(segment)
+                }
             }
         }
-    }
     val normalized = result.joinToString("/")
     return if (isAbsolute) "/$normalized" else normalized
 }

@@ -10,11 +10,10 @@ import java.nio.file.Paths
  * Architecture boundary tests ensuring [net.subsloth.core.model] remains free
  * of Android framework, network, persistence, media, and UI dependencies.
  *
- * The `:core:model` module intentionally depends on
- * `androidx.compose.runtime:runtime-annotation` as a `compileOnly` dependency
- * for `@Immutable` / `@Stable` annotations — these are pure Kotlin annotation
- * types with no Android framework dependency.  All other Android, Compose,
- * network, and persistence imports are forbidden.
+ * The `:core:model` module intentionally exposes `org.jetbrains.compose.runtime:runtime`
+ * via `api` for `@Immutable` / `@Stable` annotations — these are Compose
+ * Multiplatform annotation types with no Android framework dependency. All
+ * other Android, Compose, network, and persistence imports are forbidden.
  */
 class CoreModelArchitectureTest {
     private val allowedComposePrefixes =
