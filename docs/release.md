@@ -19,7 +19,7 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 
 No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.
 
-APK Artifact
+## APK Artifact
 
 A debug-signed sideload APK (`subsloth-{version}-debug.apk`) named with the release version is built during the release pipeline and uploaded as a release asset. Download it from the Assets section of the GitHub Release page.
 
