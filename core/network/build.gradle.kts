@@ -1,32 +1,39 @@
 plugins {
-    id("subsloth.android.library")
+    id("subsloth.kmp.library")
     alias(libs.plugins.kotlin.serialization)
 }
 
-android {
-    namespace = "net.subsloth.core.network"
-}
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.collections.immutable)
 
-dependencies {
-    implementation(project(":core:model"))
+            // Ktor
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.encoding)
 
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-    implementation(libs.coroutines.core)
-    implementation(libs.kotlinx.datetime)
-    implementation(libs.kotlinx.collections.immutable)
+            // Platform engines — CIO supports all targets (JVM, Native, JS)
+            implementation(libs.ktor.client.cio)
+        }
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-    testImplementation(project(":testing:assertions"))
-    testImplementation(libs.mockwebserver3)
-    testImplementation(libs.turbine)
-    testImplementation(libs.coroutines.test)
-    testImplementation(libs.wiremock)
-    testImplementation(project(":testing:api-contract"))
-    testImplementation(libs.kotlinx.schema.generator.json)
+        commonTest.dependencies {
+            // kotlin("test") is already provided by subsloth.kmp.library convention
+        }
+
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+            implementation(project(":testing:api-contract"))
+            implementation(libs.ktor.client.mock)
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
+            implementation(libs.kotlinx.schema.generator.json)
+        }
+    }
 }
