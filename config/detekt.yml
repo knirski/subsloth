@@ -81,6 +81,9 @@ complexity:
     active: true
     excludes:
       - "**/test/**"
+      - "**/jvmTest/**"
+      - "**/commonTest/**"
+      - "**/*Test/**"
     allowedFunctionsPerFile: 11
     allowedFunctionsPerClass: 11
     allowedFunctionsPerInterface: 11
@@ -166,6 +169,9 @@ naming:
     active: true
     excludes:
       - "**/test/**"
+      - "**/jvmTest/**"
+      - "**/commonTest/**"
+      - "**/*Test/**"
       - "**/*Test.kt"
       - "**/*Spec.kt"
     functionPattern: "[a-z][a-zA-Z0-9]*"
@@ -249,6 +255,9 @@ style:
     active: true
     excludes:
       - "**/test/**"
+      - "**/jvmTest/**"
+      - "**/commonTest/**"
+      - "**/*Test/**"
       - "**/build.gradle.kts"
     ignoreNumbers:
       - "-1"
@@ -309,6 +318,9 @@ style:
     active: true
     excludes:
       - "**/test/**"
+      - "**/jvmTest/**"
+      - "**/commonTest/**"
+      - "**/*Test/**"
   DataClassShouldBeImmutable:
     active: true
   ExpressionBodySyntax:

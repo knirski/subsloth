@@ -68,13 +68,13 @@ Before editing or running write actions:
 |---|---|---|---|
 | 1 | Formatting | `./gradlew spotlessApply` then `./gradlew spotlessCheck` | unused imports, wrong indentation, trailing whitespace, import ordering |
 | 2 | Detekt | `./gradlew detekt` | code smells, complexity violations, style issues |
-| 3 | Compile (core) | `./gradlew :core:model:compileKotlin` | compilation errors in domain types, missing deps |
+| 3 | Compile (core KMP) | `./gradlew :core:model:compileKotlinJvm :core:domain:compileKotlinJvm` | compilation errors in domain types, missing deps |
 | 4 | Compile (full) | `./gradlew :app:assembleDebug` | cross-module compilation errors, Android resource issues |
 | 5 | Tests | `./gradlew test` | behavioral regressions |
 
 **Shortcut for all checks in one line:**
 ```bash
-./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlin :app:assembleDebug test
+./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :app:assembleDebug test
 ```
 
 **If spotlessApply made changes, re-stage them before committing.** Check with `git diff --name-only` to verify only intended files were modified.
