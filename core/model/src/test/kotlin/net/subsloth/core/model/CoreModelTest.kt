@@ -1,8 +1,14 @@
 package net.subsloth.core.model
 
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
+import net.subsloth.core.model.download.DownloadFailureReason
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.download.DownloadStatus
+import net.subsloth.core.model.download.OfflineAsset
+import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.download.SeasonDownloadConfirmation
+import net.subsloth.core.model.download.SizeEstimate
+import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.AuthError
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.DomainError
@@ -13,6 +19,7 @@ import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.PaymentLimitError
 import net.subsloth.core.model.error.QualityError
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
@@ -25,6 +32,7 @@ import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.time.Instant
 
 class CoreModelTest {
@@ -126,34 +134,6 @@ class CoreModelTest {
         assertThat(q.info.bitrate).isEqualTo(5_000_000)
     }
 
-    @Test
-    fun `download state stores quality descriptor without ephemeral URLs`() {
-        val item =
-            DownloadState(
-                localId = LocalMediaIdentifier("file_1"),
-                mediaId = Media.MediaId.Movie(MovieId(1)),
-                status = DownloadStatus.COMPLETED,
-                quality =
-                    QualityDescriptor(
-                        resolution = Resolution.FULL_HD,
-                        label = "1080p",
-                        bitrate = 5_000_000,
-                        mimeType = "video/mp4",
-                    ),
-                downloadedAtEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
-                sizeBytes = 1_500_000_000L,
-                relativePath = "movies/1.mp4",
-            )
-        // Quality info is preserved in the persistent record.
-        assertThat(item.quality.resolution).isEqualTo(Resolution.FULL_HD)
-        assertThat(item.quality.label).isEqualTo("1080p")
-        assertThat(item.quality.bitrate).isEqualTo(5_000_000)
-        // QualityDescriptor exposes only stable metadata — no stream or
-        // download URL properties exist on it. Ephemeral session data is
-        // confined to Quality, which is never stored in DownloadState.
-        // This is verified at compile time by the type system.
-    }
-
     // ── Progress ───────────────────────────────────────────────────────────
 
     @Test
@@ -185,16 +165,80 @@ class CoreModelTest {
     // ── Download ───────────────────────────────────────────────────────────
 
     @Test
-    fun `download state covers all statuses`() {
-        val all = DownloadStatus.entries.toSet()
-        assertThat(all).containsExactly(
-            DownloadStatus.QUEUED,
-            DownloadStatus.DOWNLOADING,
-            DownloadStatus.COMPLETED,
-            DownloadStatus.FAILED,
-            DownloadStatus.PAUSED,
-            DownloadStatus.REMOVED,
-        )
+    fun `download state exposes offline lifecycle variants without nullable baggage`() {
+        val completed: DownloadState =
+            DownloadState.Completed(
+                localId = LocalMediaIdentifier("movie-7"),
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                quality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
+                downloadedAtEpochSeconds = Instant.fromEpochSeconds(10),
+                sizeBytes = 1024L,
+                videoPath = OfflineRelativePath("downloads/video/7/main.mp4"),
+                subtitleLanguages = persistentSetOf<LanguageCode>(),
+            )
+        val unavailable: DownloadState =
+            DownloadState.Unavailable(
+                localId = LocalMediaIdentifier("movie-7"),
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                quality = qualityDescriptor(Resolution.HD_720, "720p"),
+                reason = DownloadFailureReason.MissingLocalFile,
+            )
+        assertThat(completed).isInstanceOf(DownloadState.Completed::class.java)
+        assertThat(unavailable).isInstanceOf(DownloadState.Unavailable::class.java)
+        val completedTyped = completed as DownloadState.Completed
+        assertThat(completedTyped.videoPath).isEqualTo(OfflineRelativePath("downloads/video/7/main.mp4"))
+        assertThat(completedTyped.sizeBytes).isEqualTo(1024L)
+        val unavailableTyped = unavailable as DownloadState.Unavailable
+        assertThat(unavailableTyped.reason).isEqualTo(DownloadFailureReason.MissingLocalFile)
+    }
+
+    @Test
+    fun `season queue summary rejects negative counts`() {
+        assertThrows<IllegalArgumentException> {
+            SeasonDownloadConfirmation(
+                episodeCount = -1,
+                alreadyAvailableCount = 0,
+                fallbackQualityCount = 0,
+                fallbackSubtitleToEnglishCount = 0,
+                noSubtitleCount = 0,
+                unavailableCount = 0,
+                sizeEstimate = SizeEstimate.Unknown,
+                transferPreference = TransferPreference.WifiOnly,
+            )
+        }
+    }
+
+    @Test
+    fun `offline asset keeps subtitle sidecars separate from video asset`() {
+        val asset =
+            OfflineAsset(
+                mediaId = Media.MediaId.Movie(MovieId(7)),
+                localId = LocalMediaIdentifier("movie-7"),
+                videoRelativePath = OfflineRelativePath("downloads/video/7/main.mp4"),
+                subtitleLanguages = persistentSetOf(LanguageCode("en"), LanguageCode("pl")),
+                effectiveQuality = qualityDescriptor(Resolution.FULL_HD, "1080p"),
+                displayTitle = "Movie",
+                isPlayable = true,
+            )
+        assertThat(asset.subtitleLanguages).contains(LanguageCode("en"))
+        assertThat(asset.subtitleLanguages).contains(LanguageCode("pl"))
+    }
+
+    @Test
+    fun `season queue summary tracks fallback and blocked counts`() {
+        val summary =
+            SeasonDownloadConfirmation(
+                episodeCount = 8,
+                alreadyAvailableCount = 2,
+                fallbackQualityCount = 1,
+                fallbackSubtitleToEnglishCount = 3,
+                noSubtitleCount = 1,
+                unavailableCount = 1,
+                sizeEstimate = SizeEstimate.Unknown,
+                transferPreference = TransferPreference.WifiOnly,
+            )
+        assertThat(summary.fallbackSubtitleToEnglishCount).isEqualTo(3)
+        assertThat(summary.noSubtitleCount).isEqualTo(1)
     }
 
     // ── Domain Error Hierarchy ────────────────────────────────────────────
@@ -216,6 +260,9 @@ class CoreModelTest {
                 DownloadError.InsufficientStorage,
                 DownloadError.MissingSubtitle,
                 DownloadError.QueueFull,
+                DownloadError.NeedsWifi,
+                DownloadError.MissingLocalFile,
+                DownloadError.AmbiguousQuality,
                 QualityError.Unsupported,
                 QualityError.NoFallback,
                 QualityError.BelowMinimum,
@@ -231,7 +278,12 @@ class CoreModelTest {
                 LibraryError.AlreadyExists,
                 LibraryError.NotFound,
             )
-        assertThat(errors).hasSize(27)
+        assertThat(errors).hasSize(30)
         errors.forEach { assertThat(it).isInstanceOf(DomainError::class.java) }
     }
+
+    private fun qualityDescriptor(
+        resolution: Resolution,
+        label: String,
+    ): QualityDescriptor = QualityDescriptor(resolution = resolution, label = label, bitrate = null, mimeType = null)
 }

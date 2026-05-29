@@ -1,49 +1,123 @@
 package net.subsloth.core.model.download
 
 import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
 import kotlin.time.Instant
 
+private const val MAX_PROGRESS_PERCENT = 100
+
 /**
- * Represents the state of a downloaded media item available for offline playback.
+ * Represents the state of a download in the offline lifecycle.
  *
- * This is a persistent record. It identifies the local storage location via
- * [localId] and does not contain any raw stream URLs, which are
- * ephemeral and obtained from the server at stream time.
+ * Each variant carries only the fields relevant to that state, eliminating
+ * the nullable baggage of the previous single-data-class design.
+ *
+ * ## Variants
+ * - [Queued] — awaiting execution
+ * - [Active] — download in progress with progress tracking
+ * - [Partial] — partially downloaded with a staged file
+ * - [Completed] — fully downloaded and available offline
+ * - [Failed] — terminated with a [Failed.reason]
+ * - [Paused] — suspended with a [Paused.reason]
+ * - [Unavailable] — local file no longer accessible
+ * - [Removed] — explicitly deleted from local storage
  */
-@Immutable
-data class DownloadState(
-    val localId: LocalMediaIdentifier,
-    val mediaId: Media.MediaId,
-    val status: DownloadStatus,
-    val quality: QualityDescriptor,
-    val downloadedAtEpochSeconds: Instant,
-    /** Total file size in bytes, if known. */
-    val sizeBytes: Long?,
-    /** Storage path relative to the app's download directory. */
-    val relativePath: String?,
-)
+sealed interface DownloadState {
+    val localId: LocalMediaIdentifier
+    val mediaId: Media.MediaId
+    val quality: QualityDescriptor
+    val subtitleLanguages: ImmutableSet<LanguageCode>
 
-/** Possible states of a download operation. */
-@Immutable
-enum class DownloadStatus {
-    /** Download is queued and waiting to start. */
-    QUEUED,
+    @Immutable
+    data class Queued(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val queueId: QueueId? = null,
+    ) : DownloadState
 
-    /** Download is actively in progress. */
-    DOWNLOADING,
+    @Immutable
+    data class Active(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val progressPercent: Int,
+        val queueId: QueueId? = null,
+    ) : DownloadState {
+        init {
+            require(
+                progressPercent in 0..MAX_PROGRESS_PERCENT,
+            ) { "Progress percent must be between 0 and $MAX_PROGRESS_PERCENT" }
+        }
+    }
 
-    /** Download completed successfully and is available offline. */
-    COMPLETED,
+    @Immutable
+    data class Partial(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val stagedPath: OfflineRelativePath,
+        val queueId: QueueId? = null,
+    ) : DownloadState
 
-    /** Download failed and may be retried. */
-    FAILED,
+    @Immutable
+    data class Completed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        val downloadedAtEpochSeconds: Instant,
+        val sizeBytes: Long?,
+        val videoPath: OfflineRelativePath,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+    ) : DownloadState {
+        init {
+            require(sizeBytes == null || sizeBytes >= 0) { "sizeBytes must be non-negative when provided" }
+        }
+    }
 
-    /** Download was paused by the user or system. */
-    PAUSED,
+    @Immutable
+    data class Failed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
 
-    /** Download has been removed from local storage. */
-    REMOVED,
+    @Immutable
+    data class Paused(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Unavailable(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        val reason: DownloadFailureReason,
+        val queueId: QueueId? = null,
+    ) : DownloadState
+
+    @Immutable
+    data class Removed(
+        override val localId: LocalMediaIdentifier,
+        override val mediaId: Media.MediaId,
+        override val quality: QualityDescriptor,
+        override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+    ) : DownloadState
 }

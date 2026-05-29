@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.download.DownloadStatus
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
@@ -97,7 +96,7 @@ class MovieDetailViewModel(
                                     it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
                                 },
                                 isDownloaded = downloads.any {
-                                    it.mediaId == mediaId && it.status == DownloadStatus.COMPLETED
+                                    it.mediaId == mediaId && it is DownloadState.Completed
                                 },
                             )
                     } else {
@@ -155,7 +154,7 @@ class ShowDetailViewModel(
                                     it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
                                 },
                                 isDownloaded = downloads.any {
-                                    it.mediaId == mediaId && it.status == DownloadStatus.COMPLETED
+                                    it.mediaId == mediaId && it is DownloadState.Completed
                                 },
                             )
                     } else {
