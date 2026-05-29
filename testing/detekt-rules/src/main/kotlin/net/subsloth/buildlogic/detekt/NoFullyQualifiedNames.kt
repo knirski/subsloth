@@ -134,9 +134,15 @@ public class NoFullyQualifiedNames(config: Config) :
                 } catch (_: IllegalStateException) {
                     null
                 } ?: break
-            val selectorReference = current.selectorExpression as? KtReferenceExpression
-            if (selectorReference != null) {
-                segments.add(selectorReference.text)
+            val selector = current.selectorExpression
+            when (selector) {
+                is KtReferenceExpression -> segments.add(selector.text)
+                is KtCallExpression -> {
+                    val callee = selector.calleeExpression
+                    if (callee is KtReferenceExpression) {
+                        segments.add(callee.text)
+                    }
+                }
             }
             current = receiver
         }
