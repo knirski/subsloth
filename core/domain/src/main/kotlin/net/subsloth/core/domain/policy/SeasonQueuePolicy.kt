@@ -27,7 +27,9 @@ object SeasonQueuePolicy {
         isMetered: Boolean,
         authValid: Boolean,
     ): Boolean =
-        isOnline && hasStorage && authValid &&
+        isOnline &&
+            hasStorage &&
+            authValid &&
             DownloadPolicy.canTransferOnNetwork(
                 isMetered = isMetered,
                 transferPreference = transferPreference,
