@@ -40,10 +40,12 @@ public class NoFullyQualifiedNames(config: Config) :
             expression.isPackageQualified() &&
             !isAllowed(expression.text)
         ) {
+            val fqnExpression = findFqnExpression(expression)
+            val target = fqnExpression ?: expression
             report(
                 Finding(
-                    entity = entityAt(expression),
-                    message = "Use imports instead of '${expression.text}'.",
+                    entity = entityAt(target),
+                    message = "Use imports instead of '${target.text}'.",
                 ),
             )
         }
@@ -68,6 +70,29 @@ public class NoFullyQualifiedNames(config: Config) :
     // ── Helpers ─────────────────────────────────────────────────────────
 
     private fun entityAt(element: KtElement): Entity = Entity.from(element)
+
+    /**
+     * Walks the receiver chain to find the sub-expression that represents
+     * just the fully-qualified type name, excluding any method calls.
+     *
+     * For example, given `java.nio.file.Paths.get(path).normalize().toString()`,
+     * returns the sub-expression for `java.nio.file.Paths`.
+     * The type-name sub-expression is identified by having a selector whose
+     * text starts with an uppercase letter (type-like identifier).
+     *
+     * Returns `null` when no type-like selector is found in the chain.
+     */
+    private fun findFqnExpression(expression: KtDotQualifiedExpression): KtDotQualifiedExpression? {
+        var current: KtExpression = expression
+        while (current is KtDotQualifiedExpression) {
+            val selector = current.selectorExpression
+            if (selector is KtReferenceExpression && selector.text.isTypeLikeIdentifier()) {
+                return current
+            }
+            current = current.receiverExpression
+        }
+        return null
+    }
 
     private fun KtDotQualifiedExpression.isNestedReceiver(): Boolean {
         val parent = parent as? KtDotQualifiedExpression ?: return false
