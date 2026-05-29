@@ -1,14 +1,16 @@
 plugins {
-    id("subsloth.jvm.library")
+    id("subsloth.kmp.library")
 }
 
-dependencies {
-    implementation(project(":core:model"))
-    implementation(libs.kotlinx.collections.immutable)
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+        }
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-    testImplementation(project(":testing:assertions"))
-    testImplementation(libs.coroutines.test)
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+            implementation(libs.coroutines.test)
+        }
+    }
 }

@@ -1,13 +1,17 @@
 plugins {
-    id("subsloth.jvm.library")
+    id("subsloth.kmp.library")
 }
 
-dependencies {
-    compileOnly(libs.androidx.compose.runtime.annotation)
-    implementation(libs.kotlinx.collections.immutable)
-
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-    testImplementation(project(":testing:assertions"))
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            // Compose runtime provides @Stable / @Immutable for all targets.
+            // compileOnly keeps it off the runtime classpath of consumers.
+            // api required for KMP native targets — compileOnly not supported there.
+            api(libs.compose.runtime)
+        }
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+        }
+    }
 }
