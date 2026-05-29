@@ -5,6 +5,7 @@ import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.media.Subtitle
 
+/** Pure policies for season-level batch download queues: subtitle selection and queue resume gating. */
 object SeasonQueuePolicy {
     fun selectInitialSubtitle(
         available: List<Subtitle>,

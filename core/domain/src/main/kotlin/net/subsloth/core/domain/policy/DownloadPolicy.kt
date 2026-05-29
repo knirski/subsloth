@@ -5,6 +5,7 @@ import net.subsloth.core.model.media.QualityDescriptor
 
 private const val RESERVE_CAP_BYTES = 2L * 1024 * 1024 * 1024
 
+/** Pure policies for download decisions: storage reserve, network transfer, and quality replacement. */
 object DownloadPolicy {
     /** Reserve 10 % of total space, capped at 2 GiB. */
     @Suppress("MagicNumber")

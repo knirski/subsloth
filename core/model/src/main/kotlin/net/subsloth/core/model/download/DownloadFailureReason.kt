@@ -1,5 +1,6 @@
 package net.subsloth.core.model.download
 
+/** Reasons why a download may fail, used by [DownloadState.Failed], [DownloadState.Paused], and [DownloadState.Unavailable]. */
 sealed interface DownloadFailureReason {
     data object NeedsWifi : DownloadFailureReason
 
