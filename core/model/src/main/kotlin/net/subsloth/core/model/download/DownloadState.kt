@@ -11,6 +11,22 @@ import kotlin.time.Instant
 
 private const val MAX_PROGRESS_PERCENT = 100
 
+/**
+ * Represents the state of a download in the offline lifecycle.
+ *
+ * Each variant carries only the fields relevant to that state, eliminating
+ * the nullable baggage of the previous single-data-class design.
+ *
+ * ## Variants
+ * - [Queued] — awaiting execution
+ * - [Active] — download in progress with progress tracking
+ * - [Partial] — partially downloaded with a staged file
+ * - [Completed] — fully downloaded and available offline
+ * - [Failed] — terminated with a [Failed.reason]
+ * - [Paused] — suspended with a [Paused.reason]
+ * - [Unavailable] — local file no longer accessible
+ * - [Removed] — explicitly deleted from local storage
+ */
 sealed interface DownloadState {
     val localId: LocalMediaIdentifier
     val mediaId: Media.MediaId

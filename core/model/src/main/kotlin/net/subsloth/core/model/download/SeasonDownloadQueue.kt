@@ -9,6 +9,12 @@ import net.subsloth.core.model.media.Media
 
 private const val MAX_PROGRESS_PERCENT = 100
 
+/**
+ * A queue of episodes in a TV season to be downloaded, with execution state.
+ *
+ * Tracks which episodes are pending, downloading, completed, or failed,
+ * as well as the overall [execution] state of the season batch operation.
+ */
 @Immutable
 data class SeasonDownloadQueue(
     val queueId: QueueId,
@@ -23,6 +29,7 @@ data class SeasonDownloadQueue(
     }
 }
 
+/** Lifecycle state of a season-level batch download operation. */
 sealed interface SeasonQueueExecution {
     data object PendingConfirmation : SeasonQueueExecution
 
@@ -43,6 +50,7 @@ sealed interface SeasonQueueExecution {
     ) : SeasonQueueExecution
 }
 
+/** A single episode within a [SeasonDownloadQueue], with its own execution state. */
 @Immutable
 data class SeasonDownloadQueueItem(
     val mediaId: Media.MediaId.Episode,
@@ -52,6 +60,7 @@ data class SeasonDownloadQueueItem(
     val execution: SeasonQueueItemExecution,
 )
 
+/** Execution state of a single episode within a season download queue. */
 sealed interface SeasonQueueItemExecution {
     data object Pending : SeasonQueueItemExecution
 
@@ -74,6 +83,13 @@ sealed interface SeasonQueueItemExecution {
     data object Cancelled : SeasonQueueItemExecution
 }
 
+/**
+ * Summary of what will happen when a user confirms a season download.
+ *
+ * Counts how many episodes are already available, will require quality
+ * fallback, will fall back to English subtitles, have no subtitles, or
+ * are unavailable entirely.
+ */
 @Immutable
 data class SeasonDownloadConfirmation(
     val episodeCount: Int,
