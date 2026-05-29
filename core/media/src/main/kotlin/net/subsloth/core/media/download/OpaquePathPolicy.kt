@@ -19,8 +19,10 @@ object OpaquePathPolicy {
      * @param extension The file extension (e.g. "mp4", "mkv").
      * @param randomId A random UUID to prevent path enumeration.
      */
-    fun videoPath(contentId: String, extension: String, randomId: UUID): OfflineRelativePath =
-        OfflineRelativePath("downloads/video/$contentId/$randomId.$extension")
+    fun videoPath(contentId: String, extension: String, randomId: UUID): OfflineRelativePath {
+        val cleanExtension = extension.removePrefix(".")
+        return OfflineRelativePath.safe("downloads/video/$contentId/$randomId.$cleanExtension")
+    }
 
     /**
      * Generates an opaque relative path for a subtitle download.
@@ -35,6 +37,8 @@ object OpaquePathPolicy {
         language: LanguageCode,
         extension: String,
         randomId: UUID,
-    ): OfflineRelativePath =
-        OfflineRelativePath("downloads/subtitles/$contentId/${language.value}/$randomId.$extension")
+    ): OfflineRelativePath {
+        val cleanExtension = extension.removePrefix(".")
+        return OfflineRelativePath.safe("downloads/subtitles/$contentId/${language.value}/$randomId.$cleanExtension")
+    }
 }

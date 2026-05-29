@@ -13,8 +13,8 @@ object PathRedactor {
      * @param path The absolute file path to redact, or null.
      * @return "[redacted-local-path]" if the path is non-blank, empty string otherwise.
      */
-    fun redact(path: String?): String = path
-        ?.takeIf { it.isNotBlank() }
-        ?.let { "[redacted-local-path]" }
-        .orEmpty()
+    fun redact(path: String?): String {
+        if (path.isNullOrBlank()) return ""
+        return if (path.startsWith("/")) "[redacted-local-path]" else path
+    }
 }

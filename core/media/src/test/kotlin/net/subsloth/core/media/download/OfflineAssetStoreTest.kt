@@ -3,25 +3,41 @@ package net.subsloth.core.media.download
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.io.File
 import kotlin.io.path.createTempDirectory
 
 class OfflineAssetStoreTest {
     @Test
-    fun `subtitle deletion does not delete video asset`() {
+    fun `verifyPlayable detects existing and missing files`() {
         val tempDir = createTempDirectory("offline-test").toFile()
         try {
-            val videoFile = File(tempDir, "downloads/video/7/main.mp4")
-            val subtitleFile = File(tempDir, "downloads/subtitles/7/pl.srt")
-
+            val store = OfflineAssetStore(tempDir)
+            val videoFile = store.finalVideo(OfflineRelativePath("downloads/video/7/main.mp4"))
             videoFile.parentFile!!.mkdirs()
-            subtitleFile.parentFile!!.mkdirs()
-            videoFile.createNewFile()
-            subtitleFile.createNewFile()
+            videoFile.writeBytes(byteArrayOf(0x01))
 
-            subtitleFile.delete()
+            assertThat(store.verifyPlayable(videoFile)).isTrue()
 
-            assertThat(videoFile.exists()).isTrue()
+            videoFile.delete()
+            assertThat(store.verifyPlayable(videoFile)).isFalse()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `deletePartial removes only staged files`() {
+        val tempDir = createTempDirectory("offline-test").toFile()
+        try {
+            val store = OfflineAssetStore(tempDir)
+            val relativePath = OfflineRelativePath("downloads/video/7/main.mp4")
+            val staged = store.stageVideo(relativePath)
+            staged.parentFile!!.mkdirs()
+            staged.createNewFile()
+
+            assertThat(staged.exists()).isTrue()
+
+            store.deletePartial(relativePath)
+            assertThat(staged.exists()).isFalse()
         } finally {
             tempDir.deleteRecursively()
         }

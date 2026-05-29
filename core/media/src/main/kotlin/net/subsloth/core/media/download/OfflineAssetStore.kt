@@ -33,6 +33,9 @@ class OfflineAssetStore(private val filesDir: File) {
      * Deletes a partially downloaded file (with `.part` suffix) if it exists.
      */
     fun deletePartial(relativePath: OfflineRelativePath) {
-        File(filesDir, "${relativePath.value}.part").delete()
+        val file = stageVideo(relativePath)
+        if (file.exists() && file.name.endsWith(".part")) {
+            file.delete()
+        }
     }
 }
