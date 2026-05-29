@@ -1,5 +1,8 @@
 package net.subsloth.core.model.identifier
 
-data class RegionCode(
+import kotlin.jvm.JvmInline
+
+@JvmInline
+value class RegionCode(
     val value: String,
 )

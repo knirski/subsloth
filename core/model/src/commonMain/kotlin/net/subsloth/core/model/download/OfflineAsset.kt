@@ -42,18 +42,28 @@ data class OfflineRelativePath(
 /** Pure-Kotlin path normalization (replaces java.nio.file.Paths for KMP compatibility). */
 @PublishedApi
 internal fun normalizePure(path: String): String {
+    val isAbsolute = path.startsWith('/')
     val segments = path.split('/')
-    val result = mutableListOf<String>()
-    for (segment in segments) {
-        when (segment) {
-            ".", "" -> { // skip
-            }
+    val result = buildList {
+        for (segment in segments) {
+            when (segment) {
+                ".", "" -> {
+                }
 
-            ".." -> if (result.isNotEmpty()) result.removeLast()
-            else -> result.add(segment)
+                ".." -> {
+                    if (isNotEmpty() && last() != "..") {
+                        removeLast()
+                    } else if (!isAbsolute) {
+                        add("..")
+                    }
+                }
+
+                else -> add(segment)
+            }
         }
     }
-    return result.joinToString("/")
+    val normalized = result.joinToString("/")
+    return if (isAbsolute) "/$normalized" else normalized
 }
 
 /** Whether a download transfer may use a metered network connection. */

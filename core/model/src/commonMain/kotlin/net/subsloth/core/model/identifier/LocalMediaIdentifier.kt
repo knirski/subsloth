@@ -1,8 +1,11 @@
 package net.subsloth.core.model.identifier
 
+import kotlin.jvm.JvmInline
+
 /**
  * Identifier for a locally stored (offline-downloaded) media item.
  */
-data class LocalMediaIdentifier(
+@JvmInline
+value class LocalMediaIdentifier(
     val value: String,
 )
