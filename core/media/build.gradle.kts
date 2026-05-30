@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
-    implementation(libs.media3.datasource.okhttp)
+    implementation(project(":core:datasource-ktor"))
     implementation(libs.kotlinx.collections.immutable)
 
     testImplementation(platform(libs.junit.bom))

@@ -5,8 +5,10 @@ import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import net.subsloth.core.datasource.ktor.KtorDataSource
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
 import kotlin.time.Duration
@@ -28,9 +30,13 @@ class MediaPlaybackController(private val application: Application) {
 
     fun buildPlayer(): ExoPlayer {
         release()
+        val dataSourceFactory = DefaultDataSource.Factory(
+            application,
+            httpDataSourceFactory,
+        )
         val exoPlayer = ExoPlayer.Builder(application)
             .setMediaSourceFactory(
-                DefaultMediaSourceFactory(application)
+                DefaultMediaSourceFactory(dataSourceFactory)
                     .setLiveTargetOffsetMs(DEFAULT_LIVE_OFFSET.inWholeMilliseconds),
             )
             .build()
@@ -163,5 +169,9 @@ class MediaPlaybackController(private val application: Application) {
 
     private companion object {
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
+
+        private val httpDataSourceFactory: KtorDataSource.Factory by lazy {
+            KtorDataSource.Factory()
+        }
     }
 }
