@@ -286,11 +286,24 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
           gradle-home-cache-cleanup: true
 
+      - name: Check for androidTest directories
+        id: check
+        run: |
+          dirs=$(find . -type d -name androidTest -path '*/src/androidTest' 2>/dev/null)
+          if [ -n "$dirs" ]; then
+            echo "has_android_test=true" >> "$GITHUB_OUTPUT"
+            echo "Found androidTest directories: $dirs"
+          else
+            echo "has_android_test=false" >> "$GITHUB_OUTPUT"
+            echo "No androidTest directories found, skipping instrumented tests."
+          fi
+
       # KVM is available on standard GitHub Actions ubuntu runners but
       # /dev/kvm permissions must be set before the emulator starts.
       # The chmod makes /dev/kvm immediately accessible; the udev rule
       # ensures persistence if the node is recreated.
       - name: Enable KVM
+        if: steps.check.outputs.has_android_test == 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger || true
@@ -298,6 +311,7 @@ jobs:
           ls -l /dev/kvm
 
       - name: Run instrumented tests
+        if: steps.check.outputs.has_android_test == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
