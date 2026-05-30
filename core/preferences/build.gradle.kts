@@ -1,36 +1,34 @@
 plugins {
-    id("subsloth.android.library")
-    alias(libs.plugins.android.junit)
+    id("subsloth.kmp.library")
 }
 
-android {
-    namespace = "net.subsloth.core.preferences"
-
-    defaultConfig {
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-}
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.datastore.preferences.core)
+            implementation(libs.okio)
+        }
 
-dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
+        jvmMain.dependencies {
+            implementation(libs.datastore.preferences)
+            implementation(libs.datastore.core.okio)
+        }
 
-    implementation(libs.datastore.preferences)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.kotlinx.serialization.json)
+        iosMain.dependencies {
+            implementation(libs.datastore.core.okio)
+        }
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-    testImplementation(project(":testing:assertions"))
-    testImplementation(libs.turbine)
-    testImplementation(libs.coroutines.test)
-
-    androidTestImplementation(platform(libs.junit.bom))
-    androidTestImplementation(libs.junit.jupiter.api)
-    androidTestRuntimeOnly(libs.junit.jupiter.engine)
-    androidTestImplementation(project(":testing:assertions"))
-    androidTestImplementation(libs.coroutines.test)
-    androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.androidx.test.runner)
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
+        }
+    }
 }
