@@ -171,7 +171,7 @@ class MediaPlaybackController(private val application: Application) {
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
 
         private val httpDataSourceFactory: KtorDataSource.Factory by lazy {
-            KtorDataSource.Factory()
+            KtorDataSource.Factory.create()
         }
     }
 }

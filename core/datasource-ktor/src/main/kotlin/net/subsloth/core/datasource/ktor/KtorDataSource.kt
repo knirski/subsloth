@@ -383,7 +383,7 @@ private constructor(
      *   [androidx.media3.datasource.DataSource.addTransferListener].
      */
     class Factory(
-        private val httpClient: HttpClient = HttpClient(CIO),
+        private val httpClient: HttpClient,
         private val userAgent: String? = null,
         private val contentTypePredicate: ((String) -> Boolean)? = null,
         private val transferListener: TransferListener? = null,
@@ -408,6 +408,16 @@ private constructor(
                 )
             transferListener?.let { dataSource.addTransferListener(it) }
             return dataSource
+        }
+
+        companion object {
+            /**
+             * Creates a [Factory] with a CIO-backed [HttpClient].
+             *
+             * Reuse the returned [Factory] for the application lifetime to avoid
+             * leaking the underlying client's thread/connection pools.
+             */
+            fun create(): Factory = Factory(HttpClient(CIO))
         }
     }
 
