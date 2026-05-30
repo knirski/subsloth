@@ -12,7 +12,10 @@ metro = "1.1.1"
 tvFoundation = "1.0.0"
 tvMaterial = "1.1.0"
 room = "2.8.4"
+room3 = "3.0.0-alpha01"
 datastore = "1.2.1"
+okio = "3.10.0"
+sqliteKmp = "2.7.0"
 detekt = "2.0.0-alpha.3"
 media3 = "1.10.1"
 coil = "3.4.0"
@@ -77,8 +80,22 @@ room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
+# Room 3.0 KMP (alpha)
+room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
+room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
+
+# SQLite KMP drivers
+sqlite-kmp-android-driver = { module = "androidx.sqlite:sqlite-kmp-android-driver", version.ref = "sqliteKmp" }
+sqlite-kmp-native-driver = { module = "androidx.sqlite:sqlite-kmp-native-driver", version.ref = "sqliteKmp" }
+sqlite-kmp-bundled-driver = { module = "androidx.sqlite:sqlite-kmp-bundled", version.ref = "sqliteKmp" }
+
 # DataStore
+datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+datastore-core-okio = { module = "androidx.datastore:datastore-core-okio", version.ref = "datastore" }
+
+# Okio (multiplatform file I/O)
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 # Media3
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
@@ -160,3 +177,4 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+room3 = { id = "androidx.room3", version.ref = "room3" }
