@@ -21,7 +21,6 @@ dependencies {
 
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
-    implementation(libs.media3.datasource.okhttp)
 
     implementation(libs.coil.compose)
 
