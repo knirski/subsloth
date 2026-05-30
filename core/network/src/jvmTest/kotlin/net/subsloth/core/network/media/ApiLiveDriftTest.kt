@@ -1,11 +1,13 @@
 package net.subsloth.core.network.media
 
+import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.testing.assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -14,16 +16,25 @@ class ApiLiveDriftTest {
     private val login: String = System.getenv("SUBSLOTH_LOGIN") ?: ""
     private val password: String = System.getenv("SUBSLOTH_PASSWORD") ?: ""
 
+    private val clients = mutableListOf<HttpClient>()
+
     private val client by lazy {
-        ClientFactory.create(
-            login = login,
-            password = password,
-            enableHttpLogging = false,
-        )
+        ClientFactory
+            .create(
+                login = login,
+                password = password,
+                enableHttpLogging = false,
+            ).also { clients.add(it) }
     }
     private val api by lazy { Api(client) }
 
     @BeforeEach
+    @AfterEach
+    fun tearDown() {
+        clients.forEach { it.close() }
+        clients.clear()
+    }
+
     fun checkCredentials() {
         assumeTrue(
             login.isNotEmpty() && password.isNotEmpty(),
@@ -152,11 +163,12 @@ class ApiLiveDriftTest {
     fun `invalid credentials return 401 unauthorized`() =
         runTest {
             val badClient =
-                ClientFactory.create(
-                    login = "invalid",
-                    password = "credentials",
-                    enableHttpLogging = false,
-                )
+                ClientFactory
+                    .create(
+                        login = "invalid",
+                        password = "credentials",
+                        enableHttpLogging = false,
+                    ).also { clients.add(it) }
             val badApi = Api(badClient)
             assertHttpError(401) { badApi.listMovies() }
         }

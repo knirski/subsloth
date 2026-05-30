@@ -10,7 +10,7 @@ import net.subsloth.core.model.error.NetworkError
  * responses before DTO parsing.
  *
  * When an unexpected response type is detected, the plugin throws
- * [ResponseException] which can be caught by the caller and mapped
+ * [ResponseValidationException] which can be caught by the caller and mapped
  * to a typed [NetworkError.UnexpectedResponse].
  *
  * Usage: install(ResponseValidationPlugin)
@@ -34,7 +34,7 @@ val ResponseValidationPlugin =
                     "[$url] Unexpected redirect ${response.status.value}" +
                         (location?.let { " -> $it" } ?: ""),
                 )
-                throw ResponseException(
+                throw ResponseValidationException(
                     error = NetworkError.UnexpectedResponse,
                     message =
                         "Unexpected redirect ${response.status.value}" +
@@ -46,7 +46,7 @@ val ResponseValidationPlugin =
             val contentType = response.contentType()
             if (contentType?.toString()?.startsWith("text/html", ignoreCase = true) == true) {
                 InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received HTML")
-                throw ResponseException(
+                throw ResponseValidationException(
                     error = NetworkError.UnexpectedResponse,
                     message = "Expected JSON response but received HTML",
                 )
@@ -60,7 +60,7 @@ val ResponseValidationPlugin =
                     ct != "*/*"
                 ) {
                     InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received: $ct")
-                    throw ResponseException(
+                    throw ResponseValidationException(
                         error = NetworkError.UnexpectedResponse,
                         message = "Expected JSON response but received: $ct",
                     )
@@ -76,7 +76,7 @@ val ResponseValidationPlugin =
  * Callers should catch this exception and map it back to the typed
  * [NetworkError] carried in the [error] property.
  */
-class ResponseException(
+class ResponseValidationException(
     val error: NetworkError,
     message: String,
 ) : Exception(message)

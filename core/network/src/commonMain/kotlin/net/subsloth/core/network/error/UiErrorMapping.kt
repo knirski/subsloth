@@ -3,6 +3,7 @@ package net.subsloth.core.network.error
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.network.media.client.ResponseValidationException
 
 fun Throwable.toUiError(): UiError {
     val message = this.message.orEmpty()
@@ -16,6 +17,7 @@ fun Throwable.toUiError(): UiError {
                 else -> UiError.Unknown(message)
             }
 
+        this is ResponseValidationException -> UiError.ServiceError(message)
         isIoError(this) -> UiError.Offline(message)
         else -> UiError.Unknown(message)
     }

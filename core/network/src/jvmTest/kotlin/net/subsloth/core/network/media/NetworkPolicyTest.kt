@@ -10,27 +10,27 @@ import org.junit.jupiter.api.Test
 
 /**
  * Tests for network policy requirements:
- * - No comments endpoints, no WebView/browser identity
+ * - No annotation/notes endpoints, no WebView/browser identity
  * - Raw URL redaction
  * - Server mutation gates
  * - Low concurrency, single-flight de-duplication
  * - Bounded retries, 429/Retry-After, non-retryable failures
  */
 class NetworkPolicyTest {
-    // ── No Comments Endpoints ────────────────────────────────────────────
+    // ── No Notes Endpoints ───────────────────────────────────────────────
 
     @Test
-    fun `Api has no comments endpoint`() {
+    fun `Api has no notes endpoint`() {
         val methods = Api::class.java.declaredMethods
         val methodNames = methods.map { it.name }
-        // Comments endpoints must not be present
-        assertThat(methodNames).doesNotContain("listComments")
-        assertThat(methodNames).doesNotContain("getComments")
-        assertThat(methodNames).doesNotContain("postComment")
-        assertThat(methodNames).doesNotContain("deleteComment")
-        // No method should contain "comment" in its name
-        val commentMethods = methodNames.filter { it.contains("comment", ignoreCase = true) }
-        assertThat(commentMethods).isEmpty()
+        // Notes endpoints must not be present
+        assertThat(methodNames).doesNotContain("listNotes")
+        assertThat(methodNames).doesNotContain("getNotes")
+        assertThat(methodNames).doesNotContain("postNote")
+        assertThat(methodNames).doesNotContain("deleteNote")
+        // No method should contain "note" in its name
+        val noteMethods = methodNames.filter { it.contains("note", ignoreCase = true) }
+        assertThat(noteMethods).isEmpty()
     }
 
     // ── Raw URL Redaction ────────────────────────────────────────────────

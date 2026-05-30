@@ -56,11 +56,14 @@ object ClientFactory {
                     credentials {
                         BasicAuthCredentials(login, password)
                     }
+                    sendWithoutRequest { true }
                 }
             }
 
             install(HttpRequestRetry) {
                 maxRetries = 2
+                retryOnException(retryOnTimeout = true)
+                retryIf { _, response -> response.status.value == 429 || response.status.value in 500..599 }
                 delayMillis { attempt -> (attempt + 1) * 500L }
             }
 

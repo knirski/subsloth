@@ -53,7 +53,7 @@ internal fun normalizePure(path: String): String {
 
                     ".." -> {
                         if (isNotEmpty() && last() != "..") {
-                            removeLast()
+                            removeAt(lastIndex)
                         } else if (!isAbsolute) {
                             add("..")
                         }
