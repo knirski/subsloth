@@ -41,19 +41,7 @@ import net.subsloth.core.network.media.api.model.VideoQuality as DtoVideoQuality
 object Mapper {
     // ── Movie List → Domain Media List ───────────────────────────────────
 
-    fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> {
-        val results = mutableListOf<Media>()
-        val errors = mutableListOf<DecodeError>()
-        for (dto in dtos) {
-            val mapped = mapMovieSummary(dto)
-            if (mapped != null) {
-                results.add(mapped)
-            } else {
-                errors.add(DecodeError.MissingFields(listOf("title")))
-            }
-        }
-        return MappingResult(results.toImmutableList(), errors.toImmutableList())
-    }
+    fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> = mapList(dtos, ::mapMovieSummary)
 
     // ── Movie Summary → Domain MovieSummary ──────────────────────────────
 
@@ -66,7 +54,7 @@ object Mapper {
             availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating ?: dto.rating,
             year = dto.year ?: dto.releaseYear,
-            genres = (dto.arrayGenres ?: parseGenres(dto.genres)).toImmutableList(),
+            genres = dto.arrayGenres?.toImmutableList() ?: parseGenres(dto.genres),
             durationMinutes = dto.duration,
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
@@ -90,7 +78,7 @@ object Mapper {
                 availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating ?: dto.rating,
                 year = dto.year ?: dto.releaseYear,
-                genres = (dto.arrayGenres ?: parseGenres(dto.genres)).toImmutableList(),
+                genres = dto.arrayGenres?.toImmutableList() ?: parseGenres(dto.genres),
                 durationMinutes = dto.duration,
                 qualities = mapQualities(dto.qualities),
                 subtitles = mapSubtitleTracks(dto.subtitles),
@@ -98,11 +86,7 @@ object Mapper {
                 imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                 tmdbId = dto.tmdbId?.let { ExternalId(it.toString(), ExternalIdSource.TMDB) },
                 countries =
-                    dto.countries
-                        ?.split(",")
-                        ?.map(String::trim)
-                        .orEmpty()
-                        .toImmutableList(),
+                    parseCommaSeparated(dto.countries),
                 posterUrl = dto.posterUrl ?: dto.poster,
                 backdropUrl = dto.backdropUrl ?: dto.backdrop,
             ),
@@ -111,19 +95,7 @@ object Mapper {
 
     // ── Show List → Domain Media List ────────────────────────────────────
 
-    fun mapShows(dtos: List<DtoShowSummary>): MappingResult<Media> {
-        val results = mutableListOf<Media>()
-        val errors = mutableListOf<DecodeError>()
-        for (dto in dtos) {
-            val mapped = mapShowSummary(dto)
-            if (mapped != null) {
-                results.add(mapped)
-            } else {
-                errors.add(DecodeError.MissingFields(listOf("title")))
-            }
-        }
-        return MappingResult(results.toImmutableList(), errors.toImmutableList())
-    }
+    fun mapShows(dtos: List<DtoShowSummary>): MappingResult<Media> = mapList(dtos, ::mapShowSummary)
 
     // ── Show Summary → Domain ShowSummary ────────────────────────────────
 
@@ -279,12 +251,33 @@ object Mapper {
 
     // ── Private Helpers ──────────────────────────────────────────────────
 
-    private fun parseGenres(genres: String?): List<String> =
-        genres
+    private fun <T, R : Any> mapList(
+        dtos: List<T>,
+        mapper: (T) -> R?,
+        onError: DecodeError = DecodeError.MissingFields(listOf("title")),
+    ): MappingResult<R> {
+        val results = mutableListOf<R>()
+        val errors = mutableListOf<DecodeError>()
+        for (dto in dtos) {
+            val mapped = mapper(dto)
+            if (mapped != null) {
+                results.add(mapped)
+            } else {
+                errors.add(onError)
+            }
+        }
+        return MappingResult(results.toImmutableList(), errors.toImmutableList())
+    }
+
+    private fun parseGenres(genres: String?): ImmutableList<String> = parseCommaSeparated(genres)
+
+    private fun parseCommaSeparated(value: String?): ImmutableList<String> =
+        value
             ?.split(",")
             ?.map(String::trim)
             ?.filter(String::isNotEmpty)
             .orEmpty()
+            .toImmutableList()
 
     private fun parseResolution(
         resolution: String?,
