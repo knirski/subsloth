@@ -243,7 +243,7 @@ rm -rf core/model/src/main
 ```
 
 After this, verify the directory structure looks like:
-```
+```text
 core/model/src/
   commonMain/kotlin/net/subsloth/core/model/
     Availability.kt
