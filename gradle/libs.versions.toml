@@ -87,7 +87,7 @@ room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room
 # SQLite KMP drivers
 sqlite-kmp-android-driver = { module = "androidx.sqlite:sqlite-kmp-android-driver", version.ref = "sqliteKmp" }
 sqlite-kmp-native-driver = { module = "androidx.sqlite:sqlite-kmp-native-driver", version.ref = "sqliteKmp" }
-sqlite-kmp-bundled-driver = { module = "androidx.sqlite:sqlite-kmp-bundled", version.ref = "sqliteKmp" }
+sqlite-kmp-bundled = { module = "androidx.sqlite:sqlite-kmp-bundled", version.ref = "sqliteKmp" }
 
 # DataStore
 datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
