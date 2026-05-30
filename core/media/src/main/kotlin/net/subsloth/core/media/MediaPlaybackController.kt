@@ -28,6 +28,10 @@ class MediaPlaybackController(private val application: Application) {
         fun onError(error: PlaybackException)
     }
 
+    private val httpDataSourceFactory: KtorDataSource.Factory by lazy {
+        KtorDataSource.Factory.create()
+    }
+
     fun buildPlayer(): ExoPlayer {
         release()
         val dataSourceFactory = DefaultDataSource.Factory(
@@ -167,11 +171,7 @@ class MediaPlaybackController(private val application: Application) {
         player?.seekTo(position.inWholeMilliseconds)
     }
 
-    private companion object {
+    companion object {
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
-
-        private val httpDataSourceFactory: KtorDataSource.Factory by lazy {
-            KtorDataSource.Factory.create()
-        }
     }
 }

@@ -64,7 +64,7 @@ import kotlin.math.min
 @UnstableApi
 @Suppress("TooManyFunctions")
 class KtorDataSource
-private constructor(
+constructor(
     private val httpClient: HttpClient,
     private val userAgent: String?,
     private val defaultRequestProperties: HttpDataSource.RequestProperties?,
