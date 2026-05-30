@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
     branches:
-      - '**'
+      - "**"
   push:
     branches:
       - main
@@ -69,9 +69,8 @@ jobs:
               # Instrumented test source files — any module that has them.
               - '**/src/androidTest/**'
               # Production source / build config in modules that have
-              # instrumented tests.  Currently only :core:preferences;
-              # add entries here when other modules gain androidTest.
-              - 'core/preferences/**'
+              # instrumented tests.
+              # (Currently no module has androidTest source sets.)
 
   # ------------------------------------------------------------------
   # Fast pre-checks — no compilation needed.
@@ -248,12 +247,12 @@ jobs:
       - name: Run detekt
         run: ./gradlew detekt
 
-  # ------------------------------------------------------------------
   # Instrumented (Android Keystore) tests — run on a KVM-accelerated
   # x86_64 emulator via reactivecircus/android-emulator-runner.
   # Only triggered when modules with androidTest source sets are
   # affected (output from the `changes` job).
-  # ------------------------------------------------------------------
+  # Currently no modules have androidTest — this job is retained
+  # as a template for when instrumented tests are added.
   instrumented-test:
     needs: [changes, pre-checks]
     if: needs.changes.outputs.androidTest == 'true'
