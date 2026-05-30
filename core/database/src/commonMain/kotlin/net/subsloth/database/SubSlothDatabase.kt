@@ -1,7 +1,8 @@
 package net.subsloth.database
 
-import androidx.room.Database
-import androidx.room.RoomDatabase
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
 import net.subsloth.database.dao.AccountPlaybackProgressDao
 import net.subsloth.database.dao.CachedOnlineMetadataDao
 import net.subsloth.database.dao.DownloadedMediaDao
@@ -25,6 +26,7 @@ import net.subsloth.database.entity.SubscriptionEntity
 import net.subsloth.database.entity.WatchLaterEntity
 import net.subsloth.database.entity.WatchedStateEntity
 
+@ConstructedBy(SubSlothDatabaseCtor::class)
 @Database(
     entities = [
         CachedOnlineMetadataEntity::class,

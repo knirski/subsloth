@@ -12,10 +12,10 @@ metro = "1.1.1"
 tvFoundation = "1.0.0"
 tvMaterial = "1.1.0"
 room = "2.8.4"
-room3 = "3.0.0-alpha01"
+room3 = "3.0.0-alpha05"
 datastore = "1.2.1"
-okio = "3.10.0"
-sqliteKmp = "2.7.0"
+okio = "3.17.0"
+sqliteKmp = "2.7.0-alpha05"
 detekt = "2.0.0-alpha.3"
 media3 = "1.10.1"
 coil = "3.4.0"
@@ -85,9 +85,8 @@ room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3"
 room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
 
 # SQLite KMP drivers
-sqlite-kmp-android-driver = { module = "androidx.sqlite:sqlite-kmp-android-driver", version.ref = "sqliteKmp" }
-sqlite-kmp-native-driver = { module = "androidx.sqlite:sqlite-kmp-native-driver", version.ref = "sqliteKmp" }
-sqlite-kmp-bundled = { module = "androidx.sqlite:sqlite-kmp-bundled", version.ref = "sqliteKmp" }
+sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqliteKmp" }
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteKmp" }
 
 # DataStore
 datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }

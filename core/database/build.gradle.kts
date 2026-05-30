@@ -1,22 +1,40 @@
 plugins {
-    id("subsloth.android.library")
+    id("subsloth.kmp.library")
+    alias(libs.plugins.room3)
     alias(libs.plugins.ksp)
 }
 
-android {
-    namespace = "net.subsloth.core.database"
+room3 {
+    schemaDirectory("$projectDir/schemas")
+}
 
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.room3.runtime)
+        }
+
+        jvmMain.dependencies {
+            implementation(libs.sqlite.bundled)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.sqlite.framework)
+        }
     }
 }
 
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
+    add("kspJvm", libs.room3.compiler)
+}
 
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-    implementation(libs.datastore.preferences)
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
