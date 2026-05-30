@@ -54,7 +54,7 @@ object Mapper {
             availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating ?: dto.rating,
             year = dto.year ?: dto.releaseYear,
-            genres = dto.arrayGenres?.toImmutableList() ?: parseGenres(dto.genres),
+            genres = fallbackList(dto.arrayGenres, dto.genres),
             durationMinutes = dto.duration,
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
@@ -78,7 +78,7 @@ object Mapper {
                 availability = mapAvailability(dto.updatedAt?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating ?: dto.rating,
                 year = dto.year ?: dto.releaseYear,
-                genres = dto.arrayGenres?.toImmutableList() ?: parseGenres(dto.genres),
+                genres = fallbackList(dto.arrayGenres, dto.genres),
                 durationMinutes = dto.duration,
                 qualities = mapQualities(dto.qualities),
                 subtitles = mapSubtitleTracks(dto.subtitles),
@@ -108,13 +108,13 @@ object Mapper {
             availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
             rating = dto.imdbRating,
             year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
-            genres = (dto.arrayGenres ?: dto.genres.orEmpty()).toImmutableList(),
+            genres = fallbackList(dto.arrayGenres, dto.genres),
             durationMinutes = dto.duration ?: dto.length,
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
             backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
             status = mapShowStatus(dto.status, dto.ended),
-            countries = (dto.arrayCountries ?: dto.countries.orEmpty()).toImmutableList(),
+            countries = fallbackList(dto.arrayCountries, dto.countries),
             newestVideoEpochSeconds = dto.newestVideo?.let { Instant.fromEpochSeconds(it) },
         )
     }
@@ -141,14 +141,14 @@ object Mapper {
                 availability = mapAvailability(dto.newestVideo?.let { Instant.fromEpochSeconds(it) }),
                 rating = dto.imdbRating,
                 year = (dto.year ?: dto.releaseYear)?.toIntOrNull(),
-                genres = (dto.arrayGenres ?: dto.genres.orEmpty()).toImmutableList(),
+                genres = fallbackList(dto.arrayGenres, dto.genres),
                 durationMinutes = dto.duration ?: dto.length,
                 qualities = persistentListOf(),
                 subtitles = extractShowSubtitles(episodes),
                 slug = dto.slug,
                 imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                 tmdbId = dto.tmdbId?.let { ExternalId(it.toString(), ExternalIdSource.TMDB) },
-                countries = (dto.arrayCountries ?: dto.countries.orEmpty()).toImmutableList(),
+                countries = fallbackList(dto.arrayCountries, dto.countries),
                 posterUrl = dto.posterUrl ?: dto.poster,
                 backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
                 status = mapShowStatus(dto.status, dto.ended),
@@ -269,8 +269,6 @@ object Mapper {
         return MappingResult(results.toImmutableList(), errors.toImmutableList())
     }
 
-    private fun parseGenres(genres: String?): ImmutableList<String> = parseCommaSeparated(genres)
-
     private fun parseCommaSeparated(value: String?): ImmutableList<String> =
         value
             ?.split(",")
@@ -278,6 +276,16 @@ object Mapper {
             ?.filter(String::isNotEmpty)
             .orEmpty()
             .toImmutableList()
+
+    private fun fallbackList(
+        arrayField: List<String>?,
+        field: String?,
+    ): ImmutableList<String> = arrayField?.toImmutableList() ?: parseCommaSeparated(field)
+
+    private fun fallbackList(
+        arrayField: List<String>?,
+        field: List<String>?,
+    ): ImmutableList<String> = (arrayField ?: field.orEmpty()).toImmutableList()
 
     private fun parseResolution(
         resolution: String?,
