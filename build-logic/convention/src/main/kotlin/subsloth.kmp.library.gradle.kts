@@ -4,6 +4,7 @@ import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.diffplug.spotless")
     id("dev.detekt")
     id("org.jetbrains.kotlin.plugin.power-assert")
@@ -21,7 +22,6 @@ kotlin {
     jvm()
     iosArm64()
     iosSimulatorArm64()
-    linuxX64()
     macosArm64()
 
     sourceSets {
@@ -65,6 +65,11 @@ spotless {
     kotlin {
         target("src/*/kotlin/**/*.kt")
         ktlint(ktlintVersion)
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                ),
+            )
         toggleOffOn()
     }
     kotlinGradle {

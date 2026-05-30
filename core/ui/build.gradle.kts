@@ -1,12 +1,22 @@
 plugins {
-    id("subsloth.android.library")
+    id("subsloth.kmp.library")
+    alias(libs.plugins.compose.gradle)
 }
 
-android {
-    namespace = "net.subsloth.core.ui"
-}
-
-dependencies {
-    api(project(":core:model"))
-    api(libs.androidx.annotation)
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":core:model"))
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(compose.components.uiToolingPreview)
+            implementation(libs.lifecycle.runtime.compose)
+            implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.navigation3.runtime)
+            implementation(libs.navigation3.ui.kmp)
+            implementation(libs.lifecycle.viewmodel.navigation3)
+        }
+    }
 }

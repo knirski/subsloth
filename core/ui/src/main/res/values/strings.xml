@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="error_auth_required">Authentication required</string>
-    <string name="error_not_found">Not found</string>
-    <string name="error_service">Service error</string>
-    <string name="error_offline">You are offline</string>
-    <string name="error_unknown">An unexpected error occurred</string>
-</resources>
