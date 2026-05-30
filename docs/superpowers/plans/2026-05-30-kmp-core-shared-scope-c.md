@@ -59,13 +59,12 @@
 
 | File | Action |
 |---|---|
-| `src/main/kotlin/.../SubSlothDatabase.kt` | **Rewrite** — Room 2.x `@Database` → Room 3.0 `@Database` + `@ConstructedBy` |
-| `src/main/kotlin/.../entity/LibraryEntities.kt` | **Rewrite** — change `androidx.room.*` imports to `androidx.room3.*` |
-| `src/main/kotlin/.../dao/LibraryDao.kt` | **Rewrite** — change `androidx.room.*` imports to `androidx.room3.*` |
-| **New**: `src/commonMain/kotlin/.../SubSlothDatabaseBuilder.kt` | `expect object SubSlothDatabaseCtor : RoomDatabaseConstructor<SubSlothDatabase>` + `expect fun createDatabase(name: String): SubSlothDatabase` |
-| **New**: `src/jvmMain/kotlin/.../SubSlothDatabaseBuilder.android.kt` | `actual object` + `actual fun` using `AndroidSqliteDriver` |
-| **New**: `src/jvmMain/kotlin/.../SubSlothDatabaseBuilder.desktop.kt` | `actual object` + `actual fun` using `BundledSQLiteDriver()` |
-| **New**: `src/iosMain/kotlin/.../SubSlothDatabaseBuilder.ios.kt` | `actual object` + `actual fun` using `NativeSQLiteDriver()` |
+| `src/commonMain/kotlin/.../SubSlothDatabase.kt` | **Rewrite** — Room 2.x `@Database` → Room 3.0 `@Database` + `@ConstructedBy` |
+| `src/commonMain/kotlin/.../entity/LibraryEntities.kt` | **Rewrite** — change `androidx.room.*` imports to `androidx.room3.*` |
+| `src/commonMain/kotlin/.../dao/LibraryDao.kt` | **Rewrite** — change `androidx.room.*` imports to `androidx.room3.*` |
+| **New**: `src/commonMain/kotlin/.../SubSlothDatabaseBuilder.kt` | `expect fun createSubSlothDatabase(name: String): SubSlothDatabase` |
+| **New**: `src/jvmMain/kotlin/.../SubSlothDatabaseBuilder.jvm.kt` | `actual fun` using `BundledSQLiteDriver()` for all JVM targets (Android + Desktop) |
+| **New**: `src/iosMain/kotlin/.../SubSlothDatabaseBuilder.ios.kt` | `actual fun` using `NativeSQLiteDriver()` |
 
 ### Source files — `:core:preferences`
 
@@ -96,10 +95,10 @@ In `gradle/libs.versions.toml`, add/modify these entries:
 # Keep existing room reference for downstream modules still on Room 2.x
 # (none — all Room usage is in :core:database)
 room = "2.8.4"          # ← keep this version entry, but it won't be used by :core:database anymore
-room3 = "3.0.0-alpha01"  # ← NEW: Room 3.0 KMP alpha
-datastore = "1.2.1"      # ← update: already exists, keep (already KMP since 1.1.0)
-okio = "3.10.0"          # ← NEW: multiplatform file I/O for DataStore
-sqliteKmp = "2.7.0"      # ← NEW: SQLite KMP drivers (provides BundledSQLiteDriver, NativeSQLiteDriver)
+room3 = "3.0.0-alpha05"  # ← Room 3.0 KMP alpha
+datastore = "1.3.0-alpha09"      # ← DataStore KMP alpha (Okio 3.17.0 synergy)
+okio = "3.17.0"          # ← multiplatform file I/O for DataStore
+sqliteKmp = "2.7.0-alpha05"      # ← SQLite KMP drivers (provides BundledSQLiteDriver, NativeSQLiteDriver via sqlite-framework)
 ```
 
 Add to `[libraries]`:
@@ -110,9 +109,9 @@ room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3"
 room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
 
 # SQLite KMP drivers (used by Room 3.0 for non-Android platforms)
-sqlite-kmp-android-driver = { module = "androidx.sqlite:sqlite-kmp-android-driver", version.ref = "sqliteKmp" }
-sqlite-kmp-native-driver = { module = "androidx.sqlite:sqlite-kmp-native-driver", version.ref = "sqliteKmp" }
-sqlite-kmp-bundled-driver = { module = "androidx.sqlite:sqlite-kmp-bundled", version.ref = "sqliteKmp" }
+# SQLite KMP drivers (actual Maven coordinates — the plan's `sqlite-kmp-*` names don't exist)
+sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqliteKmp" }
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteKmp" }
 
 # DataStore KMP
 datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
@@ -349,37 +348,25 @@ expect object SubSlothDatabaseCtor : RoomDatabaseConstructor<SubSlothDatabase>
 expect fun createSubSlothDatabase(name: String): SubSlothDatabase
 ```
 
-The Android actual needs Context, but `SqlDriver` creation must happen where Context is available. The pattern: export `androidContext` as a top-level mutable property that gets initialized at app startup, then the `actual fun` uses it:
+The Android actual uses the same jvmMain builder (no separate androidTarget — BundledSQLiteDriver works on both Android and desktop JVM):
 
 ```kotlin
-// File: core/database/src/jvmMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.android.kt
+// File: core/database/src/jvmMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.jvm.kt
 package net.subsloth.database
 
-import android.content.Context
 import androidx.room3.Room
-import androidx.room3.RoomDatabaseConstructor
-import androidx.sqlite.driver.AndroidSqliteDriver
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
-/**
- * App-level Android context, initialized once at application startup.
- * Set from [android.app.Application.onCreate] before any database access.
- */
-lateinit var androidApplicationContext: Context
-
-actual object SubSlothDatabaseCtor : RoomDatabaseConstructor<SubSlothDatabase> {
-    override fun initialize(): SubSlothDatabase = SubSlothDatabase()
-}
-
-actual fun createSubSlothDatabase(name: String): SubSlothDatabase {
-    val driver = AndroidSqliteDriver(SubSlothDatabase.Schema, androidApplicationContext, name)
-    return Room.databaseBuilder<SubSlothDatabase>(
+actual fun createSubSlothDatabase(name: String): SubSlothDatabase =
+    Room.databaseBuilder<SubSlothDatabase>(
         name = name,
         factory = SubSlothDatabaseCtor::initialize,
     )
-        .setDriver(driver)
+        .setDriver(BundledSQLiteDriver())
         .build()
-}
 ```
+
+(Note: Room's KSP generates the `actual object SubSlothDatabaseCtor` automatically — no manual actual needed for the constructor.)
 
 ```kotlin
 // File: core/database/src/jvmMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.desktop.kt
@@ -1438,7 +1425,7 @@ git push origin HEAD
 
 ### Risks
 
-- **Room 3.0 alpha stability**: This is an alpha release. The API may change between alphas. Pin to `3.0.0-alpha01` and test thoroughly. Alpha releases are not recommended for production builds; this scope is experimental.
+- **Room 3.0 alpha stability**: This is an alpha release. The API may change between alphas. Pin to `3.0.0-alpha05` and test thoroughly. Alpha releases are not recommended for production builds; this scope is experimental.
 - **Desktop DataStore path resolution**: The `resolveAppDataDir()` helper in `DataStoreFactory.desktop.kt` is a best-effort guess. May need platform-specific configuration per deployment.
 - **iOS CredentialStore**: The iOS implementation using `platform.Security` requires Kotlin/Native interop with Security framework. This is the most complex expect/actual in this plan.
 - **`@ConstructedBy` with KSP**: Room 3.0 KSP code generation with `@ConstructedBy` is new. If generation fails, may need to fall back to `@ConstructedBy` with a different factory pattern.
