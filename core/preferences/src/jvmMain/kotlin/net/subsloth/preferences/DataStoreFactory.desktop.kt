@@ -5,6 +5,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
+import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 
@@ -14,6 +15,7 @@ actual fun createDataStorePreferences(
     scope: CoroutineScope,
 ): DataStore<Preferences> {
     val dataDir: Path = resolveAppDataDir().toPath()
+    FileSystem.SYSTEM.createDirectories(dataDir)
     return PreferenceDataStoreFactory.createWithPath(
         corruptionHandler = corruptionHandler,
         scope = scope,
@@ -29,7 +31,7 @@ private fun resolveAppDataDir(): String {
             "$userHome/.local/share/subsloth"
 
         osName.contains("windows") ->
-            "${System.getenv("APPDATA")}\\subsloth"
+            "${System.getenv("APPDATA") ?: "${System.getProperty("user.home")}\\AppData\\Roaming"}\\subsloth"
 
         else ->
             "$userHome/.subsloth"

@@ -22,7 +22,13 @@ actual class CredentialStore {
     private fun getOrCreateKey(): SecretKey {
         val ks = KeyStore.getInstance("PKCS12")
         try {
-            ks.load(keystoreFile.takeIf { it.exists() }?.inputStream(), storePass.toCharArray())
+            if (keystoreFile.exists()) {
+                keystoreFile.inputStream().use { stream ->
+                    ks.load(stream, storePass.toCharArray())
+                }
+            } else {
+                ks.load(null, storePass.toCharArray())
+            }
         } catch (_: IOException) {
             // Keystore corrupted — regenerate
             keystoreFile.delete()
@@ -38,7 +44,9 @@ actual class CredentialStore {
         keyGen.init(256)
         val key = keyGen.generateKey()
         ks.setEntry(keyAlias, KeyStore.SecretKeyEntry(key), KeyStore.PasswordProtection(storePass.toCharArray()))
-        ks.store(keystoreFile.outputStream(), storePass.toCharArray())
+        keystoreFile.outputStream().use { stream ->
+            ks.store(stream, storePass.toCharArray())
+        }
         return key
     }
 
@@ -49,7 +57,7 @@ actual class CredentialStore {
         val key = getOrCreateKey()
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key)
-        val ct = cipher.doFinal("$login\u0000$password".toByteArray())
+        val ct = cipher.doFinal("$login\u0000$password".toByteArray(Charsets.UTF_8))
         dataFile.writeBytes(cipher.iv + ct)
     }
 

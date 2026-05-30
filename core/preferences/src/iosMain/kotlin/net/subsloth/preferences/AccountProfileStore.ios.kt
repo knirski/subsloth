@@ -2,7 +2,7 @@ package net.subsloth.preferences
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.allocArrayOf
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.usePinned
 import platform.Foundation.NSString
@@ -18,8 +18,12 @@ import platform.darwin.CC_SHA256_DIGEST_LENGTH
 @OptIn(ExperimentalForeignApi::class)
 actual fun generateSalt(): String {
     val bytes = ByteArray(32)
-    bytes.usePinned { pinned ->
-        SecRandomCopyBytes(kSecRandomDefault, 32, pinned.addressOf(0))
+    val result =
+        bytes.usePinned { pinned ->
+            SecRandomCopyBytes(kSecRandomDefault, 32u, pinned.addressOf(0))
+        }
+    check(result == platform.Security.errSecSuccess) {
+        "SecRandomCopyBytes failed with error: $result"
     }
     return bytes.joinToString("") { "%02x".format(it) }
 }
@@ -31,15 +35,19 @@ actual fun hmacSha256(
 ): ByteArray {
     val digest = ByteArray(CC_SHA256_DIGEST_LENGTH)
     memScoped {
-        val ctx = allocArrayOf<Byte>(CC_SHA256_DIGEST_LENGTH) // scratch space
-        CCHmacInit(ctx, platform.darwin.kCCHmacAlgSHA256, key.toCValues(), key.size.toULong())
-        CCHmacUpdate(ctx, data.toCValues(), data.size.toULong())
-        CCHmacFinal(ctx, digest.toCValues())
+        val ctx = alloc<platform.darwin.CCHmacContext>()
+        key.usePinned { keyPinned ->
+            CCHmacInit(ctx.ptr, platform.darwin.kCCHmacAlgSHA256, keyPinned.addressOf(0), key.size.toULong())
+        }
+        data.usePinned { dataPinned ->
+            CCHmacUpdate(ctx.ptr, dataPinned.addressOf(0), data.size.toULong())
+        }
+        digest.usePinned { digestPinned ->
+            CCHmacFinal(ctx.ptr, digestPinned.addressOf(0))
+        }
     }
     return digest
 }
-
-private fun ByteArray.toCValues() = this.usePinned { it.addressOf(0) }
 
 actual fun normalizeLogin(login: String): String {
     val trimmed = login.trim()
@@ -47,5 +55,5 @@ actual fun normalizeLogin(login: String): String {
         NSString
             .create(string = trimmed)
             .precomposedStringWithCanonicalMapping
-    return nfc.lowercase()
+    return nfc.toString().lowercase()
 }
