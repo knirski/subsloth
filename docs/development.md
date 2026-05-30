@@ -79,7 +79,6 @@ Live drift tests validate that the committed OpenAPI contract and typed DTOs sti
 
 #### Invariant Checks
 The repository includes automated invariant checks that run in CI:
-- **No comments check**: Ensures `comment`, `comments`, and `spoiler` are absent from production source code (`app/`, `core/`, `feature/`).
 - **Sensitive artifact scan**: Scans for committed credentials, auth headers, signed URLs, HAR files, browser traces, and screenshots.
 
 Run manually:
