@@ -15,12 +15,14 @@
 ## Migration Strategy
 
 The current OkHttp interceptor stack (bottom-up):
-```
+
+```text
 Request → kodiIdentity → basicAuth → ResponseInterceptor → RequestCoalescer → RetryInterceptor → Retrofit
 ```
 
 Becomes in Ktor (bottom-up):
-```
+
+```text
 Request → [default headers] → [basic auth] → [response validation] → [coalescing] → [retry] → HttpClient
 ```
 
@@ -272,7 +274,7 @@ private fun isIOException(error: Throwable): Boolean = when (error) {
 
 **Files:**
 - Modify: `core/network/src/commonMain/kotlin/.../client/ClientFactory.kt`
-- Delete: `core/network/src/commonMain/kotlin/.../client/HttpUrlExt.kt` (no longer needed if the factory handles redaction)
+- Keep: `core/network/src/commonMain/kotlin/.../client/HttpUrlExt.kt` (rewritten in Task 2, used by ResponseValidationPlugin)
 - Keep: `core/network/src/commonMain/kotlin/.../api/Api.kt` (will rewrite in Task 4)
 
 **Why:** The factory builds the HTTP client with all plugin wiring (identity headers, auth, response validation, coalescing, retry).
@@ -473,12 +475,9 @@ class Api(private val client: HttpClient) {
 ```kotlin
 package net.subsloth.core.network.media.client
 
-import io.ktor.client.plugins.HttpResponseStatusException
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import io.ktor.http.isRedirect
-import io.ktor.http.isSuccess
 import net.subsloth.core.model.error.NetworkError
 
 /**
@@ -486,60 +485,62 @@ import net.subsloth.core.model.error.NetworkError
  * responses before DTO parsing.
  *
  * When an unexpected response type is detected, the plugin throws
- * [ResponseException] which can be caught by the caller and mapped
- * to a typed [NetworkError.UnexpectedResponse].
+ * [ResponseValidationException] which can be caught by the caller
+ * and mapped to a typed [NetworkError.UnexpectedResponse].
  *
  * Usage: install(ResponseValidationPlugin)
  */
-val ResponseValidationPlugin = createClientPlugin("ResponseValidationPlugin") {
-    onCall { request ->
-        // No pre-send validation needed
-    }
-
-    onCallResponse { response ->
-        val url = response.request.url.toRedactedString()
-
-        // 1. Check for unexpected redirects (3xx)
-        if (response.status.isRedirect()) {
-            val location = response.headers[HttpHeaders.Location]
-            InterceptorLogger.w(
-                "ResponseValidationPlugin",
-                "[$url] Unexpected redirect ${response.status.value}" +
-                    (location?.let { " -> $it" } ?: ""),
-            )
-            throw ResponseException(
-                error = NetworkError.UnexpectedResponse,
-                message = "Unexpected redirect ${response.status.value}" +
-                    (location?.let { " -> $it" } ?: ""),
-            )
+val ResponseValidationPlugin =
+    createClientPlugin("ResponseValidationPlugin") {
+        onRequest { _, _ ->
+            // No pre-send validation needed
         }
 
-        // 2. Check Content-Type for HTML
-        val contentType = response.contentType()
-        if (contentType?.toString()?.startsWith("text/html", ignoreCase = true) == true) {
-            InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received HTML")
-            throw ResponseException(
-                error = NetworkError.UnexpectedResponse,
-                message = "Expected JSON response but received HTML",
-            )
-        }
+        onResponse { response ->
+            val url = response.call.request.url.toRedactedString()
 
-        // 3. For successful responses, check Content-Type indicates JSON
-        if (response.status.isSuccess() && contentType != null) {
-            val ct = contentType.toString()
-            if (!ct.contains("json", ignoreCase = true) &&
-                !ct.contains("javascript", ignoreCase = true) &&
-                ct != "*/*"
-            ) {
-                InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received: $ct")
+            // 1. Check for unexpected redirects (3xx)
+            if (response.status.value in 300..399) {
+                val location = response.headers[HttpHeaders.Location]
+                InterceptorLogger.w(
+                    "ResponseValidationPlugin",
+                    "[$url] Unexpected redirect ${response.status.value}" +
+                        (location?.let { " -> $it" } ?: ""),
+                )
                 throw ResponseException(
                     error = NetworkError.UnexpectedResponse,
-                    message = "Expected JSON response but received: $ct",
+                    message =
+                        "Unexpected redirect ${response.status.value}" +
+                            (location?.let { " -> $it" } ?: ""),
                 )
+            }
+
+            // 2. Check Content-Type for HTML
+            val contentType = response.contentType()
+            if (contentType?.toString()?.startsWith("text/html", ignoreCase = true) == true) {
+                InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received HTML")
+                throw ResponseException(
+                    error = NetworkError.UnexpectedResponse,
+                    message = "Expected JSON response but received HTML",
+                )
+            }
+
+            // 3. For successful responses, check Content-Type indicates JSON
+            if (response.status.value in 200..299 && contentType != null) {
+                val ct = contentType.toString()
+                if (!ct.contains("json", ignoreCase = true) &&
+                    !ct.contains("javascript", ignoreCase = true) &&
+                    ct != "*/*"
+                ) {
+                    InterceptorLogger.w("ResponseValidationPlugin", "[$url] Expected JSON but received: $ct")
+                    throw ResponseException(
+                        error = NetworkError.UnexpectedResponse,
+                        message = "Expected JSON response but received: $ct",
+                    )
+                }
             }
         }
     }
-}
 ```
 
 ---
@@ -721,7 +722,9 @@ From `core/media/build.gradle.kts`:
 
 ## Self-Review
 
+
 ### Spec coverage
+
 | Requirement | Task |
 |---|---|
 | Ktor version catalog entries | Task 1 |
