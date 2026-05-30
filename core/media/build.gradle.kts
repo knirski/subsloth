@@ -14,7 +14,6 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.datasource.okhttp)
-    implementation(libs.okhttp)
     implementation(libs.kotlinx.collections.immutable)
 
     testImplementation(platform(libs.junit.bom))

@@ -52,6 +52,7 @@ android {
         checkReleaseBuilds = false
         checkAllWarnings = true
         disable += "GradleDependency"
+        disable += "InvalidPackage" // Ktor's ktor-utils references java.lang.management not available on Android
     }
 }
 

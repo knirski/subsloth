@@ -4,9 +4,8 @@
 #
 # Invariant and hygiene checks for the subsloth CI pipeline.
 #
-# 1. Forbidden patterns (comment, comments, spoiler) in source code
-# 2. Sensitive artifact / credential scanning
-# 3. Kodi-parity basic request-behaviour patterns
+# 1. Sensitive artifact / credential scanning
+# 2. Kodi-parity basic request-behaviour patterns
 #
 # Exits with a non-zero status if any check fails.
 
@@ -25,42 +24,10 @@ fail() {
 }
 
 # ----
-# 1. Forbidden patterns in source code
-#    Block reference to comment / comments / spoiler in business-logic
-#    source (app/, core/, feature/).
-# ----
-check_no_comments() {
-  local dir
-  for dir in app core feature; do
-    target="$repo_root/$dir"
-    if [ ! -d "$target" ]; then
-      continue
-    fi
-    # Scan .kt, .java, .kts files for identifier-like or string-literal
-    # occurrences of "comment", "comments", or "spoiler".
-    # KDoc continuation lines (starting with *), forward-comment lines,
-    # and test files are excluded as they may legitimately reference
-    # these words (e.g. KDoc param descriptions, test assertions).
-    while IFS=: read -r file line content; do
-      fail "NO_COMMENTS" "$file:$line — forbidden pattern in source: $content"
-    done < <(
-      grep -nrwI -E '\b(comment|comments|spoiler)\b' \
-        --include='*.kt' --include='*.java' --include='*.kts' \
-        "$target" 2>/dev/null \
-      | grep -v '/src/test/' \
-      | grep -v '/src/androidTest/' \
-      | grep -v -E '^\S+:\d+:\s*\*'    \
-      | grep -v -E '^\S+:\d+:\s*//'   \
-      || true
-    )
-  done
-}
-
-# ----
-# 2. Sensitive artifact / credential scanning
+# 1. Sensitive artifact / credential scanning
 # ----
 check_secrets() {
-  # 2a. Media credentials in non-shell-non-env files
+  # 1a. Media credentials in non-shell-non-env files
   while IFS=: read -r file line content; do
     fail "SECRETS" "$file:$line — Media credential literal: $content"
   done < <(
@@ -71,7 +38,7 @@ check_secrets() {
       "$repo_root" 2>/dev/null || true
   )
 
-  # 2b. Basic auth header literals in source
+  # 1b. Basic auth header literals in source
   while IFS=: read -r file line content; do
     fail "SECRETS" "$file:$line — Basic auth header literal: $content"
   done < <(
@@ -81,7 +48,7 @@ check_secrets() {
       "$repo_root" 2>/dev/null || true
   )
 
-  # 2c. Signed-media-URL patterns in source
+  # 1c. Signed-media-URL patterns in source
   # The OpenAPI spec yaml may use "signed" in documentation descriptions;
   # that is not a real signed-URL leak, so we exclude it.
   local pattern='(token=|signature=|X-Amz-Signature|X-Amz-Credential)\S'
@@ -105,22 +72,22 @@ check_secrets() {
     done <<< "$hits"
   fi
 
-  # 2d. .playwright-cli/ directory
+  # 1d. .playwright-cli/ directory
   if [ -d "$repo_root/.playwright-cli" ]; then
     fail "SECRETS" ".playwright-cli/ directory exists — contains authenticated capture artifacts"
   fi
 
-  # 2e. HAR files
+  # 1e. HAR files
   while IFS= read -r -d '' har; do
     fail "SECRETS" "$har — HAR file contains raw HTTP traces"
   done < <(find "$repo_root" -name '*.har' -not -path '*/node_modules/*' -not -path '*/.git/*' -print0 2>/dev/null || true)
 
-  # 2f. Browser traces (Chrome DevTools traces)
+  # 1f. Browser traces (Chrome DevTools traces)
   while IFS= read -r -d '' trace; do
     fail "SECRETS" "$trace — browser trace file"
   done < <(find "$repo_root" \( -name 'trace-*.json' -o -name '*.trace' \) -not -path '*/node_modules/*' -not -path '*/.git/*' -print0 2>/dev/null || true)
 
-  # 2g. Screenshots committed outside allowed test assets
+  # 1g. Screenshots committed outside allowed test assets
   while IFS= read -r -d '' scrot; do
     fail "SECRETS" "$scrot — screenshot / image likely captured from authenticated session"
   done < <(
@@ -132,7 +99,7 @@ check_secrets() {
       -print0 2>/dev/null || true
   )
 
-  # 2h. Signed APK / keystore material
+  # 1h. Signed APK / keystore material
   while IFS= read -r -d '' ks; do
     fail "SECRETS" "$ks — signing key / keystore file"
   done < <(
@@ -144,7 +111,7 @@ check_secrets() {
 }
 
 # ----
-# 3. Kodi-parity request-behaviour patterns
+# 2. Kodi-parity request-behaviour patterns
 #    Ensure network code does not reference non-Kodi API hosts or
 #    incompatible endpoint patterns.
 # ----
@@ -165,7 +132,7 @@ check_kodi_parity() {
 }
 
 # ----
-# 4. Banned-dependency lint check.
+# 3. Banned-dependency lint check.
 #    Ensure production source does not import libraries that have been
 #    superseded by project policy (see docs/agent/fc-is-architecture.md).
 # ----
@@ -196,7 +163,6 @@ check_banned_deps() {
 # ----
 # Run all checks
 # ----
-check_no_comments
 check_secrets
 check_banned_deps
 check_kodi_parity

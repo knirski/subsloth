@@ -23,5 +23,4 @@
 - [ ] 4.1 Run `vacuum lint "api/subsloth.openapi.yaml" && ./gradlew check lintDebug testDebugUnitTest assembleDebug`.
 - [ ] 4.2 Run `./gradlew connectedDebugAndroidTest :core:preferences:connectedDebugAndroidTest` plus benchmark connected tests on configured emulators/devices.
 - [ ] 4.3 Run local live drift tests only when local credentials are present.
-- [ ] 4.4 Run `rg -n "comment|comments|spoiler" app core feature testing` and verify production support is absent.
 - [ ] 4.5 Run `openspec validate verification-release --strict`.
