@@ -41,7 +41,6 @@ jobs:
               - 'gradle/**'
               - 'api/**'
               - '.github/**'
-              - '.github/scripts/**'
 
   # ─── Fast pre-checks ──────────────────────────────────────────────────────
   pre-checks:

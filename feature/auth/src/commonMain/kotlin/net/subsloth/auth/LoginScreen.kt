@@ -33,7 +33,16 @@ import net.subsloth.core.model.error.UiError
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
-import subsloth.feature.auth.generated.resources.*
+import subsloth.feature.auth.generated.resources.Res
+import subsloth.feature.auth.generated.resources.app_title
+import subsloth.feature.auth.generated.resources.cancel
+import subsloth.feature.auth.generated.resources.login_label
+import subsloth.feature.auth.generated.resources.offline_library
+import subsloth.feature.auth.generated.resources.password_label
+import subsloth.feature.auth.generated.resources.session_expired
+import subsloth.feature.auth.generated.resources.session_expired_message
+import subsloth.feature.auth.generated.resources.sign_in
+import subsloth.feature.auth.generated.resources.sign_in_again
 
 /**
  * Login screen with standard Autofill/password-manager support.

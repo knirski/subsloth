@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package net.subsloth.details
 
 import androidx.compose.foundation.layout.Box

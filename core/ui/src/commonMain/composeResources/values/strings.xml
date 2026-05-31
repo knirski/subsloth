@@ -1,12 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <resources>
     <string name="error_auth_required">Authentication required</string>
     <string name="error_not_found">Not found</string>
     <string name="error_service">Service error</string>
     <string name="error_offline">You are offline</string>
     <string name="error_unknown">An unexpected error occurred</string>
-    <string name="subtitles">Subtitles: %s</string>
-    <string name="show_ongoing">Ongoing</string>
-    <string name="show_ended">Ended</string>
-    <string name="show_upcoming">Upcoming</string>
 </resources>

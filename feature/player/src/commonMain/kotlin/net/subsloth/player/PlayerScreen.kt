@@ -1,4 +1,4 @@
-@file:Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions", "ktlint:standard:no-wildcard-imports")
 
 package net.subsloth.player
 

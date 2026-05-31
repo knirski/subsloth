@@ -67,7 +67,6 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
-                    "ktlint_standard_no-wildcard-imports" to "disabled",
                 ),
             )
         toggleOffOn()
