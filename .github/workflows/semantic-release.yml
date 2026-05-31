@@ -72,26 +72,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
-          if [ -z "$TAG" ] || ! gh release view "$TAG" >/dev/null 2>&1; then
-            echo "No release tag found — skipping upload"
-            exit 0
-          fi
+          [ -z "$TAG" ] && echo "No release tag — skipping upload" && exit 0
+          gh release view "$TAG" >/dev/null 2>&1 || { echo "Release $TAG not found — skipping upload"; exit 0; }
+          VER="${TAG#v}"
 
           case "${{ matrix.type }}" in
             android)
-              find . -path '*/subsloth-*-debug.apk' -exec gh release upload "$TAG" {} --clobber \;
+              APK=$(find . -path '*/subsloth-*-debug.apk' | head -1)
+              if [ -n "$APK" ]; then
+                cp "$APK" /tmp/subsloth-"$VER"-debug.apk
+                gh release upload "$TAG" /tmp/subsloth-"$VER"-debug.apk --clobber
+              fi
               ;;
             desktop)
               DEB=$(find . -path '*/compose/binaries/main/deb/*.deb' | head -1)
               if [ -n "$DEB" ]; then
-                gh release upload "$TAG" "$DEB" --clobber
+                cp "$DEB" /tmp/subsloth-"$VER"-linux.deb
+                gh release upload "$TAG" /tmp/subsloth-"$VER"-linux.deb --clobber
               fi
               ;;
             web)
               DIST="webApp/build/dist/wasmJs/productionExecutable"
               if [ -d "$DIST" ]; then
-                cd "$DIST" && zip -r /tmp/subsloth-web.zip . && cd -
-                gh release upload "$TAG" /tmp/subsloth-web.zip --clobber
+                cd "$DIST" && zip -r /tmp/subsloth-"$VER"-web.zip . && cd -
+                gh release upload "$TAG" /tmp/subsloth-"$VER"-web.zip --clobber
               fi
               ;;
           esac
