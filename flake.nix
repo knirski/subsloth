@@ -448,6 +448,24 @@
             echo "⚠  AVD '${avdName}' has old relative system-image path. Run: setup-emulator"
           fi
 
+          # Auto-generate local.properties from Nix SDK path
+          # Updates only the sdk.dir line to preserve other properties (signing configs, etc.)
+          if [ -n "$ANDROID_HOME" ]; then
+            LOCAL_PROPERTIES="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/local.properties"
+            if grep -q '^sdk\.dir=' "$LOCAL_PROPERTIES" 2>/dev/null; then
+              if ! grep -q "^sdk\.dir=$ANDROID_HOME$" "$LOCAL_PROPERTIES" 2>/dev/null; then
+                echo "→ Updating local.properties SDK path"
+                TEMP_PROPERTIES="$(mktemp)"
+                grep -v '^sdk\.dir=' "$LOCAL_PROPERTIES" > "$TEMP_PROPERTIES" || true
+                echo "sdk.dir=$ANDROID_HOME" >> "$TEMP_PROPERTIES"
+                mv "$TEMP_PROPERTIES" "$LOCAL_PROPERTIES"
+              fi
+            else
+              echo "→ Adding sdk.dir to local.properties"
+              echo "sdk.dir=$ANDROID_HOME" >> "$LOCAL_PROPERTIES"
+            fi
+          fi
+
           echo "subsloth — emulator: ✓, sdk: $ANDROID_HOME"
           echo "  Emulator scripts: setup-emulator, start-subsloth-emulator, wait-subsloth-emulator, run-subsloth-instrumented-test, stop-subsloth-emulator"
           echo "  One-shot: run-subsloth-instrumented-tests <gradle-task>"
