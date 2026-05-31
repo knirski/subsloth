@@ -453,9 +453,10 @@ private fun ErrorContent(
 }
 
 private fun formatTime(seconds: Long): String {
-    val h = seconds / 3600
-    val m = seconds % 3600 / 60
-    val s = seconds % 60
+    val clamped = maxOf(0L, seconds)
+    val h = clamped / 3600
+    val m = clamped % 3600 / 60
+    val s = clamped % 60
     fun pad(v: Long) = if (v < 10) "0$v" else "$v"
     return if (h > 0) "$h:${pad(m)}:${pad(s)}" else "${pad(m)}:${pad(s)}"
 }
