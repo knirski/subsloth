@@ -35,6 +35,6 @@ dependencies {
     kspJvm(libs.room3.compiler)
 }
 
-kspJvm {
+ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
