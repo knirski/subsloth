@@ -15,11 +15,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  JAVA17_HOME: ""
-  SUBSLOTH_LOGIN: ""
-  SUBSLOTH_PASSWORD: ""
-
 jobs:
   changes:
     runs-on: ubuntu-latest
