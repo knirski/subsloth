@@ -1,5 +1,5 @@
 plugins {
-    id("subsloth.kmp.library")
+    id("subsloth.kmp.library.web")
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -19,7 +19,15 @@ kotlin {
             implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.encoding)
 
-            // Platform engines — CIO supports all targets (JVM, Native, JS)
+            // Ktor client engine declared in platform source sets below
+            // CIO is used for JVM + Native; wasm uses the default engine
+        }
+
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+        }
+
+        iosMain.dependencies {
             implementation(libs.ktor.client.cio)
         }
 

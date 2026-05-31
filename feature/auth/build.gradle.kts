@@ -1,5 +1,7 @@
 plugins {
     id("subsloth.kmp.library")
+// Note: auth stays base KMP (no wasmJs) because it depends on
+// :core:database and :core:preferences which don't support wasm yet.
     id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.compose.gradle)
 }

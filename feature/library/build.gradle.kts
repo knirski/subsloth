@@ -1,16 +1,31 @@
 plugins {
-    id("subsloth.android.feature")
+    id("subsloth.kmp.library")
+    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.compose.gradle)
 }
 
-android {
-    namespace = "net.subsloth.feature.library"
-}
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            implementation(project(":core:database"))
+            implementation(project(":core:preferences"))
 
-dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
-    implementation(project(":core:database"))
-    implementation(project(":core:preferences"))
-
-    implementation(libs.work.runtime.ktx)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.multiplatform.foundation)
+            implementation(libs.compose.multiplatform.material3)
+            implementation(libs.compose.multiplatform.ui)
+            implementation(libs.lifecycle.runtime.compose)
+            implementation(libs.lifecycle.viewmodel.compose)
+        }
+        jvmMain.dependencies {
+            implementation(libs.compose.multiplatform.ui.tooling.preview)
+        }
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+            implementation(libs.turbine)
+            implementation(libs.coroutines.test)
+        }
+    }
 }

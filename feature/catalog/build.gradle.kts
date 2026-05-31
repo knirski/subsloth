@@ -1,5 +1,5 @@
 plugins {
-    id("subsloth.kmp.library")
+    id("subsloth.kmp.library.web")
     id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.compose.gradle)
 }
