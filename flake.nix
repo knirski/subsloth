@@ -454,16 +454,6 @@
             echo "⚠  AVD '${avdName}' has old relative system-image path. Run: setup-emulator"
           fi
 
-          # Pre-populate the Kotlin Node.js download directory with a symlink
-          # to the Nix-provided Node.js so the plugin skips the actual download.
-          KOTLIN_NODEJS_DIR="$HOME/.kotlin/js/nodejs/node-v25.0.0-linux-x64"
-          if [ ! -f "$KOTLIN_NODEJS_DIR/bin/node" ]; then
-            mkdir -p "$KOTLIN_NODEJS_DIR/bin"
-            ln -sf "$(which node)" "$KOTLIN_NODEJS_DIR/bin/node" 2>/dev/null || true
-            ln -sf "$(which npm)" "$KOTLIN_NODEJS_DIR/bin/npm" 2>/dev/null || true
-            ln -sf "$(which npx)" "$KOTLIN_NODEJS_DIR/bin/npx" 2>/dev/null || true
-          fi
-
           # Auto-generate local.properties from Nix SDK path
           # Updates only the sdk.dir line to preserve other properties (signing configs, etc.)
           if [ -n "$ANDROID_HOME" ]; then
