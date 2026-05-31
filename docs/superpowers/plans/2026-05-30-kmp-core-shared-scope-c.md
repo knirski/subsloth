@@ -223,32 +223,32 @@ The `@Database` annotation stays but needs:
 3. Remove `abstract` from class — Room 3.0 generates non-abstract implementation
 
 ```kotlin
-package net.subsloth.database
+package subsloth.database
 
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
-import net.subsloth.database.dao.AccountPlaybackProgressDao
-import net.subsloth.database.dao.CachedOnlineMetadataDao
-import net.subsloth.database.dao.DownloadedMediaDao
-import net.subsloth.database.dao.DownloadedSubtitleDao
-import net.subsloth.database.dao.FavoriteDao
-import net.subsloth.database.dao.LocalLibraryRecordDao
-import net.subsloth.database.dao.OfflineDisplayMetadataDao
-import net.subsloth.database.dao.OfflinePlaybackProgressDao
-import net.subsloth.database.dao.SubscriptionDao
-import net.subsloth.database.dao.WatchLaterDao
-import net.subsloth.database.dao.WatchedStateDao
-import net.subsloth.database.entity.AccountPlaybackProgressEntity
-import net.subsloth.database.entity.CachedOnlineMetadataEntity
-import net.subsloth.database.entity.DownloadedMediaEntity
-import net.subsloth.database.entity.DownloadedSubtitleEntity
-import net.subsloth.database.entity.FavoriteEntity
-import net.subsloth.database.entity.LocalLibraryRecordEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
-import net.subsloth.database.entity.OfflinePlaybackProgressEntity
-import net.subsloth.database.entity.SubscriptionEntity
-import net.subsloth.database.entity.WatchLaterEntity
-import net.subsloth.database.entity.WatchedStateEntity
+import subsloth.database.dao.AccountPlaybackProgressDao
+import subsloth.database.dao.CachedOnlineMetadataDao
+import subsloth.database.dao.DownloadedMediaDao
+import subsloth.database.dao.DownloadedSubtitleDao
+import subsloth.database.dao.FavoriteDao
+import subsloth.database.dao.LocalLibraryRecordDao
+import subsloth.database.dao.OfflineDisplayMetadataDao
+import subsloth.database.dao.OfflinePlaybackProgressDao
+import subsloth.database.dao.SubscriptionDao
+import subsloth.database.dao.WatchLaterDao
+import subsloth.database.dao.WatchedStateDao
+import subsloth.database.entity.AccountPlaybackProgressEntity
+import subsloth.database.entity.CachedOnlineMetadataEntity
+import subsloth.database.entity.DownloadedMediaEntity
+import subsloth.database.entity.DownloadedSubtitleEntity
+import subsloth.database.entity.FavoriteEntity
+import subsloth.database.entity.LocalLibraryRecordEntity
+import subsloth.database.entity.OfflineDisplayMetadataEntity
+import subsloth.database.entity.OfflinePlaybackProgressEntity
+import subsloth.database.entity.SubscriptionEntity
+import subsloth.database.entity.WatchLaterEntity
+import subsloth.database.entity.WatchedStateEntity
 
 @Database(
     entities = [
@@ -288,7 +288,7 @@ abstract class SubSlothDatabase : RoomDatabase() {
 The entity file needs only import changes:
 
 ```kotlin
-package net.subsloth.database.entity
+package subsloth.database.entity
 
 // Change: import androidx.room.Entity → import androidx.room3.Entity
 // Change: import androidx.room.Index → import androidx.room3.Index
@@ -304,7 +304,7 @@ import androidx.room3.PrimaryKey
 - [ ] **Step 4: Update LibraryDao.kt imports**
 
 ```kotlin
-package net.subsloth.database.dao
+package subsloth.database.dao
 
 // Change: import androidx.room.Dao → import androidx.room3.Dao
 // Change: import androidx.room.Delete → import androidx.room3.Delete
@@ -327,7 +327,7 @@ In commonMain, create the `expect object` (implements `RoomDatabaseConstructor`)
 
 ```kotlin
 // File: core/database/src/commonMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.kt
-package net.subsloth.database
+package subsloth.database
 
 import androidx.room3.Room
 import androidx.room3.RoomDatabaseConstructor
@@ -352,7 +352,7 @@ The Android actual uses the same jvmMain builder (no separate androidTarget — 
 
 ```kotlin
 // File: core/database/src/jvmMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.jvm.kt
-package net.subsloth.database
+package subsloth.database
 
 import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -370,7 +370,7 @@ actual fun createSubSlothDatabase(name: String): SubSlothDatabase =
 
 ```kotlin
 // File: core/database/src/jvmMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.desktop.kt
-package net.subsloth.database
+package subsloth.database
 
 import androidx.room3.Room
 import androidx.room3.RoomDatabaseConstructor
@@ -392,7 +392,7 @@ actual fun createSubSlothDatabase(name: String): SubSlothDatabase {
 
 ```kotlin
 // File: core/database/src/iosMain/kotlin/net/subsloth/database/SubSlothDatabaseBuilder.ios.kt
-package net.subsloth.database
+package subsloth.database
 
 import androidx.room3.Room
 import androidx.room3.RoomDatabaseConstructor
@@ -518,7 +518,7 @@ kotlin {
 
 ```kotlin
 // File: core/preferences/src/commonMain/kotlin/net/subsloth/preferences/DataStoreFactory.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -544,7 +544,7 @@ expect fun createDataStorePreferences(
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/DataStoreFactory.android.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -566,7 +566,7 @@ fun createAndroidDataStorePreferences(context: Context): DataStore<Preferences> 
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/DataStoreFactory.desktop.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -611,7 +611,7 @@ private fun resolveAppDataDir(): String {
 
 ```kotlin
 // File: core/preferences/src/iosMain/kotlin/net/subsloth/preferences/DataStoreFactory.ios.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -653,7 +653,7 @@ actual fun createDataStorePreferences(
 The class stays almost identical — only the constructor and companion factory change:
 
 ```kotlin
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -664,7 +664,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import net.subsloth.core.model.identifier.AccountProfileKey
+import subsloth.core.model.identifier.AccountProfileKey
 
 /**
  * Account-scoped user preferences backed by DataStore KMP.
@@ -731,7 +731,7 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/UserPreferences.android.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import android.content.Context
 
@@ -745,7 +745,7 @@ fun UserPreferences.Companion.from(context: Context): UserPreferences =
 Same pattern — injected `DataStore<Preferences>`, companion factory in Android-specific file:
 
 ```kotlin
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -754,7 +754,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import net.subsloth.core.model.identifier.AccountProfileKey
+import subsloth.core.model.identifier.AccountProfileKey
 import java.security.SecureRandom
 import java.text.Normalizer
 import java.util.Locale
@@ -824,7 +824,7 @@ Same pattern for the Android factory:
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/AccountProfileStore.android.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import android.content.Context
 
@@ -840,7 +840,7 @@ The existing `CredentialStore` uses Android Keystore directly. For KMP, it becom
 
 ```kotlin
 // File: core/preferences/src/commonMain/kotlin/net/subsloth/preferences/CredentialStore.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 /**
  * Platform-specific encrypted credential store.
@@ -860,7 +860,7 @@ expect class CredentialStore {
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/CredentialStore.android.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
@@ -951,7 +951,7 @@ actual class CredentialStore(private val context: Context) {
 
 ```kotlin
 // File: core/preferences/src/jvmMain/kotlin/net/subsloth/preferences/CredentialStore.desktop.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import java.io.File
 import java.security.KeyStore
@@ -1021,7 +1021,7 @@ actual class CredentialStore {
 
 ```kotlin
 // File: core/preferences/src/iosMain/kotlin/net/subsloth/preferences/CredentialStore.ios.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
@@ -1056,7 +1056,7 @@ import platform.Security.kSecValueData
  * Uses kSecClassGenericPassword with a fixed service name.
  */
 actual class CredentialStore {
-    private val serviceName = "net.subsloth.credentials"
+    private val serviceName = "subsloth.credentials"
 
     @OptIn(ExperimentalForeignApi::class)
     actual fun save(login: String, password: String) {
@@ -1162,7 +1162,7 @@ The existing test helper uses `java.io.File` (JVM-only). Switch to a KMP-compati
 
 ```kotlin
 // File: core/preferences/src/jvmTest/kotlin/net/subsloth/preferences/DataStoreTestHelper.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -1214,7 +1214,7 @@ fun setUp() {
 
 ```kotlin
 // File: core/preferences/src/commonTest/kotlin/net/subsloth/preferences/CredentialStoreContractTest.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 import kotlin.test.Test
 import kotlin.test.*
@@ -1328,7 +1328,7 @@ Concrete test subclass for JVM platforms:
 
 ```kotlin
 // File: core/preferences/src/jvmTest/kotlin/net/subsloth/preferences/CredentialStoreJvmTest.kt
-package net.subsloth.preferences
+package subsloth.preferences
 
 /**
  * JVM/Android test — uses the platform CredentialStore constructor.

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build `net.subsloth`, a native Kotlin Android app for Android TV 8, Android tablet 13, and Android phone 16 that browses, searches, streams, downloads, and resumes Media movies and TV series while preserving Media metadata and excluding comments.
+**Goal:** Build `subsloth`, a native Kotlin Android app for Android TV 8, Android tablet 13, and Android phone 16 that browses, searches, streams, downloads, and resumes Media movies and TV series while preserving Media metadata and excluding comments.
 
 **Architecture:** Use Functional Core / Imperative Shell with Arrow-first FP design. Pure Kotlin modules own sealed ADTs, typed errors, Raise/Either/Option-based decisions, optics-friendly immutable state, parsing, selection, resume, offline, and library policies; Android shell modules own Compose UI, Media3, Room, DataStore, encrypted credentials, WorkManager, networking, filesystem, and notifications.
 
@@ -52,10 +52,10 @@ gradle.properties
 gradle/libs.versions.toml
 build-logic/settings.gradle.kts
 build-logic/convention/build.gradle.kts
-build-logic/convention/src/main/kotlin/net.subsloth.android.application.gradle.kts
-build-logic/convention/src/main/kotlin/net.subsloth.android.library.gradle.kts
-build-logic/convention/src/main/kotlin/net.subsloth.kotlin.library.gradle.kts
-build-logic/convention/src/main/kotlin/net.subsloth.android.hilt.gradle.kts
+build-logic/convention/src/main/kotlin/subsloth.android.application.gradle.kts
+build-logic/convention/src/main/kotlin/subsloth.android.library.gradle.kts
+build-logic/convention/src/main/kotlin/subsloth.kotlin.library.gradle.kts
+build-logic/convention/src/main/kotlin/subsloth.android.hilt.gradle.kts
 api/subsloth.openapi.yaml
 app/build.gradle.kts
 app/src/main/AndroidManifest.xml
@@ -86,10 +86,10 @@ testing/api-contract/build.gradle.kts
 - Create: `gradle/libs.versions.toml`
 - Create: `build-logic/settings.gradle.kts`
 - Create: `build-logic/convention/build.gradle.kts`
-- Create: `build-logic/convention/src/main/kotlin/net.subsloth.android.application.gradle.kts`
-- Create: `build-logic/convention/src/main/kotlin/net.subsloth.android.library.gradle.kts`
-- Create: `build-logic/convention/src/main/kotlin/net.subsloth.kotlin.library.gradle.kts`
-- Create: `build-logic/convention/src/main/kotlin/net.subsloth.android.hilt.gradle.kts`
+- Create: `build-logic/convention/src/main/kotlin/subsloth.android.application.gradle.kts`
+- Create: `build-logic/convention/src/main/kotlin/subsloth.android.library.gradle.kts`
+- Create: `build-logic/convention/src/main/kotlin/subsloth.kotlin.library.gradle.kts`
+- Create: `build-logic/convention/src/main/kotlin/subsloth.android.hilt.gradle.kts`
 - Create: module `build.gradle.kts` files listed in Target File Structure
 
 - [ ] **Step 1: Create the Gradle wrapper using Gradle 9.5.0**
@@ -291,9 +291,9 @@ Supply-chain baseline:
 - Add a secret/artifact scanning check that fails on credentials, Basic auth headers, signed media URLs, `.playwright-cli/`, HAR files, screenshots, and browser traces.
 
 App identity requirements:
-- `:app` namespace must be `net.subsloth`.
-- `:app` `defaultConfig.applicationId` must be `net.subsloth`.
-- Feature and core module namespaces must live under `net.subsloth.*`.
+- `:app` namespace must be `subsloth`.
+- `:app` `defaultConfig.applicationId` must be `subsloth`.
+- Feature and core module namespaces must live under `subsloth.*`.
 
 Arrow convention requirements:
 - Add `arrow-core` to `:core:model`, `:core:domain`, `:core:network`, and feature modules that expose typed errors in UI state.
@@ -386,7 +386,7 @@ Configure OpenAPI Generator in `core/network/build.gradle.kts` to generate Kotli
 
 OpenAPI tooling requirements:
 - Add an `openApiValidate` verification path for `api/subsloth.openapi.yaml`.
-- Configure `openApiGenerate` with `generatorName = "kotlin"`, Moshi serialization, package names under `net.subsloth.network.generated`, and output under `layout.buildDirectory.dir("generated/openapi")`.
+- Configure `openApiGenerate` with `generatorName = "kotlin"`, Moshi serialization, package names under `subsloth.network.generated`, and output under `layout.buildDirectory.dir("generated/openapi")`.
 - Generate models/DTOs only, not a competing API client layer; use OpenAPI Generator `globalProperties`/equivalent settings to generate `models` and skip generated API/client scaffolding.
 - Add DTO model generation to `:core:network` compile inputs without committing generated files.
 - If generator output is incompatible with Media's discovered schema or Retrofit 3, document the reason in `docs/api-discovery.md`, switch to handwritten DTOs, and keep `openApiValidate` plus fixture/schema tests as the contract gate.
@@ -588,7 +588,7 @@ Expected: fails because client/mappers do not exist.
 
 - [ ] **Step 2: Implement API interface and mappers**
 
-Implement Retrofit/OkHttp client with endpoints from the spec. Use generated DTO models from `net.subsloth.network.generated` by default. Create handwritten DTOs only if Task 2 documented that OpenAPI Generator output is incompatible with the discovered Media schema or Retrofit 3, and keep that fallback isolated under `core/network/src/main/kotlin/net/subsloth/network/dto`.
+Implement Retrofit/OkHttp client with endpoints from the spec. Use generated DTO models from `subsloth.network.generated` by default. Create handwritten DTOs only if Task 2 documented that OpenAPI Generator output is incompatible with the discovered Media schema or Retrofit 3, and keep that fallback isolated under `core/network/src/main/kotlin/net/subsloth/network/dto`.
 
 Prefer Arrow Retrofit integration to expose typed Arrow results; if Retrofit 3 compatibility blocks it, implement a small local adapter from Retrofit responses/exceptions into `Either<NetworkError, A>`. Map API errors into typed failures: unauthorized, payment/free-limit, not found, network unavailable, server failure, decode failure.
 
@@ -795,7 +795,7 @@ Expected: fails because auth ViewModel does not exist.
 
 - [ ] **Step 2: Implement app manifest and shell**
 
-Set package/namespace to `net.subsloth`. Add TV launcher intent, internet permission, foreground service/download permissions as needed, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `FOREGROUND_SERVICE_DATA_SYNC` when a data-sync foreground service is implemented, Android 13 `POST_NOTIFICATIONS` permission guarded by runtime request only for playback/download foreground notifications, backup exclusion resources, edge-to-edge theme defaults, and predictive-back support where available. Manifest services must declare matching foreground-service types and must not be boot-completed receivers for playback/download work.
+Set package/namespace to `subsloth`. Add TV launcher intent, internet permission, foreground service/download permissions as needed, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `FOREGROUND_SERVICE_DATA_SYNC` when a data-sync foreground service is implemented, Android 13 `POST_NOTIFICATIONS` permission guarded by runtime request only for playback/download foreground notifications, backup exclusion resources, edge-to-edge theme defaults, and predictive-back support where available. Manifest services must declare matching foreground-service types and must not be boot-completed receivers for playback/download work.
 
 Implement `SensitiveScreenPolicy` in the app shell to apply Android `FLAG_SECURE` only while credential-sensitive screens are visible: login, auth repair, diagnostics, and logout cleanup confirmation. Do not apply `FLAG_SECURE` globally to catalog, details, library, settings, or playback in v1.
 

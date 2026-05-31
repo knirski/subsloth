@@ -34,7 +34,7 @@ Network DTOs SHALL be handwritten from `api/subsloth.openapi.yaml` evidence and 
 
 #### Scenario: DTOs are handwritten from the OpenAPI spec
 - **WHEN** `:core:network:test` runs against the committed Media fixtures
-- **THEN** typed DTO classes in the `net.subsloth.core.network.media.api.model` package deserialize the contract responses and the build compiles without error
+- **THEN** typed DTO classes in the `subsloth.core.network.media.api.model` package deserialize the contract responses and the build compiles without error
 
 #### Scenario: Moshi is absent
 - **WHEN** the network module's production dependency graph is inspected

@@ -4,7 +4,7 @@ The initial planning material grew too large to execute safely in one pass. This
 
 ## What Changes
 
-- Add the project baseline for the native `net.subsloth` Android app.
+- Add the project baseline for the native `subsloth` Android app.
 - Add the Android toolchain, module, and dependency policy required before implementation.
 - Add the Media Kodi-compatible API contract and discovery gate.
 - Add fixture, OpenAPI, and optional local live-drift test expectations.

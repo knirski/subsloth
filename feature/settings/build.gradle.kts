@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "net.subsloth.feature.settings"
+    namespace = "subsloth.feature.settings"
 }
 
 dependencies {

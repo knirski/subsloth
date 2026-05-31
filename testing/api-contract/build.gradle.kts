@@ -30,7 +30,7 @@ tasks.register<JavaExec>("exportFixtures") {
     description = "Sanitize captured HAR files and export committed fixtures"
 
     classpath = workerClasspath
-    mainClass = "net.subsloth.testing.contract.ExportFixturesKt"
+    mainClass = "subsloth.testing.contract.ExportFixturesKt"
 
     val harCsv = project.providers.gradleProperty("harFiles").orElse("")
     val keepRaw = project.providers.gradleProperty("keepRaw").orElse("false")
@@ -67,7 +67,7 @@ tasks.register<JavaExec>("captureApi") {
     description = "Capture native Media API responses directly as fixture JSON files"
 
     classpath = workerClasspath
-    mainClass = "net.subsloth.testing.contract.CaptureApi"
+    mainClass = "subsloth.testing.contract.CaptureApi"
 
     val email = project.providers.gradleProperty("email").orElse("")
     val password = project.providers.gradleProperty("password").orElse("")

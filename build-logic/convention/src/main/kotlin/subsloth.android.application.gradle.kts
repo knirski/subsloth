@@ -44,7 +44,7 @@ android {
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        applicationId = "net.subsloth"
+        applicationId = "subsloth"
         minSdk = 26
         targetSdk = 37
     }

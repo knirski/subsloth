@@ -33,7 +33,7 @@ Files live in `build-logic/convention/src/main/kotlin/`.
 **`subsloth.android.application.gradle.kts`** -- Android application
 module. Applies `com.android.application`, `spotless`, `detekt`,
 `kotlin.plugin.power-assert`. Sets `compileSdk=36`, `minSdk=26`,
-`targetSdk=36`, `applicationId=net.subsloth`. Configures JUnit 5 via
+`targetSdk=36`, `applicationId=subsloth`. Configures JUnit 5 via
 `useJUnitPlatform()`. Enables `lint.abortOnError`, `warningsAsErrors`,
 `checkAllWarnings`. Disables lint rules `DataExtractionRules`,
 `MissingApplicationIcon`, `NotShrinkingResources`, `GradleDependency`.

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "net.subsloth.core.datasource.ktor"
+    namespace = "subsloth.core.datasource.ktor"
 }
 
 dependencies {

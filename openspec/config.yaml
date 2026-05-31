@@ -2,7 +2,7 @@ schema: spec-driven
 
 context: |
   subsloth is a greenfield native Kotlin Android app with application id and
-  namespace net.subsloth. It targets Android TV 8, Android tablet 13, and
+  namespace subsloth. It targets Android TV 8, Android tablet 13, and
   Android phone 16.
 
   V1 requirements currently live in active changes under

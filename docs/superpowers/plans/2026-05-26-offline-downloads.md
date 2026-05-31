@@ -160,7 +160,7 @@ fun `season queue summary tracks fallback and blocked counts`() {
 
 - [ ] **Step 2: Run the model tests to verify they fail**
 
-Run: `./gradlew :core:model:test --tests "net.subsloth.core.model.CoreModelTest"`
+Run: `./gradlew :core:model:test --tests "subsloth.core.model.CoreModelTest"`
 Expected: FAIL because the new sealed download lifecycle and queue model types do not exist yet.
 
 - [ ] **Step 3: Implement the model types**
@@ -375,7 +375,7 @@ data class VideoSource(
 
 - [ ] **Step 5: Run the model tests to verify they pass**
 
-Run: `./gradlew :core:model:test --tests "net.subsloth.core.model.CoreModelTest"`
+Run: `./gradlew :core:model:test --tests "subsloth.core.model.CoreModelTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the model phase**
@@ -452,7 +452,7 @@ fun `offline home surfaces offline library first when device is offline and down
 
 - [ ] **Step 2: Run the pure-domain tests to verify they fail**
 
-Run: `./gradlew :core:domain:test --tests "net.subsloth.core.domain.policy.*"`
+Run: `./gradlew :core:domain:test --tests "subsloth.core.domain.policy.*"`
 Expected: FAIL because the new reserve, fallback, and offline-home policy functions do not exist yet.
 
 - [ ] **Step 3: Implement the pure policy layer**
@@ -561,7 +561,7 @@ interface StoragePort {
 
 - [ ] **Step 5: Run the policy tests to verify they pass**
 
-Run: `./gradlew :core:domain:test --tests "net.subsloth.core.domain.policy.DownloadPolicyTest" --tests "net.subsloth.core.domain.policy.SeasonQueuePolicyTest"`
+Run: `./gradlew :core:domain:test --tests "subsloth.core.domain.policy.DownloadPolicyTest" --tests "subsloth.core.domain.policy.SeasonQueuePolicyTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the pure policy phase**
@@ -599,7 +599,7 @@ fun `opaque path uses only allowed components`() {
 
 @Test
 fun `redactor removes absolute local path details`() {
-    val redacted = PathRedactor.redact("/data/user/0/net.subsloth/files/downloads/video/7/main.mp4")
+    val redacted = PathRedactor.redact("/data/user/0/subsloth/files/downloads/video/7/main.mp4")
     assertThat(redacted).isEqualTo("[redacted-local-path]")
 }
 
@@ -615,7 +615,7 @@ fun `subtitle deletion does not delete video asset`() {
 
 - [ ] **Step 2: Run the core-media tests to verify they fail**
 
-Run: `./gradlew :core:media:test --tests "net.subsloth.core.media.download.*"`
+Run: `./gradlew :core:media:test --tests "subsloth.core.media.download.*"`
 Expected: FAIL because the storage/redaction classes do not exist yet.
 
 - [ ] **Step 3: Implement path generation and redaction**
@@ -664,7 +664,7 @@ class OfflineAssetStore(private val filesDir: File) {
 
 - [ ] **Step 5: Run the core-media tests to verify they pass**
 
-Run: `./gradlew :core:media:test --tests "net.subsloth.core.media.download.OpaquePathPolicyTest" --tests "net.subsloth.core.media.download.OfflineAssetStoreTest"`
+Run: `./gradlew :core:media:test --tests "subsloth.core.media.download.OpaquePathPolicyTest" --tests "subsloth.core.media.download.OfflineAssetStoreTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the storage phase**
@@ -684,7 +684,7 @@ git commit -m "feat(media): add app private offline asset storage"
 - Modify: `core/database/src/main/kotlin/net/subsloth/database/dao/LibraryDao.kt`
 - Modify: `core/database/src/main/kotlin/net/subsloth/database/SubSlothDatabase.kt`
 - Create: `core/database/src/test/kotlin/net/subsloth/database/OfflineDownloadDaoTest.kt`
-- Create: `core/database/schemas/net.subsloth.database.SubSlothDatabase/2.json`
+- Create: `core/database/schemas/subsloth.database.SubSlothDatabase/2.json`
 
 - [ ] **Step 1: Write failing Room tests for shared offline metadata, queue persistence, and subtitle sidecars**
 
@@ -723,7 +723,7 @@ fun `completed video keeps offline metadata until last shared asset is removed`(
 
 - [ ] **Step 2: Run the database tests to verify they fail**
 
-Run: `./gradlew :core:database:test --tests "net.subsloth.database.OfflineDownloadDaoTest"`
+Run: `./gradlew :core:database:test --tests "subsloth.database.OfflineDownloadDaoTest"`
 Expected: FAIL because queue persistence tables and DAO methods are missing.
 
 - [ ] **Step 3: Extend the offline entities and DAO layer**
@@ -821,7 +821,7 @@ abstract class SubSlothDatabase : RoomDatabase() {
 
 - [ ] **Step 5: Run the database tests to verify they pass**
 
-Run: `./gradlew :core:database:test --tests "net.subsloth.database.OfflineDownloadDaoTest"`
+Run: `./gradlew :core:database:test --tests "subsloth.database.OfflineDownloadDaoTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the persistence phase**
@@ -829,7 +829,7 @@ Expected: PASS
 ```bash
 git add core/database/src/main/kotlin/net/subsloth/database \
   core/database/src/test/kotlin/net/subsloth/database \
-  core/database/schemas/net.subsloth.database.SubSlothDatabase/2.json
+  core/database/schemas/subsloth.database.SubSlothDatabase/2.json
 git commit -m "feat(database): persist offline assets and season queues"
 ```
 
@@ -878,7 +878,7 @@ fun `subtitle sidecar failure does not fail video completion`() = runTest {
 
 - [ ] **Step 2: Run the coordinator tests to verify they fail**
 
-Run: `./gradlew :core:media:test --tests "net.subsloth.core.media.download.DownloadCoordinatorTest"`
+Run: `./gradlew :core:media:test --tests "subsloth.core.media.download.DownloadCoordinatorTest"`
 Expected: FAIL because the coordinator and enqueue result model do not exist yet.
 
 - [ ] **Step 3: Implement the coordinator around the existing ports and policies**
@@ -954,7 +954,7 @@ interface DownloadsPort {
 
 - [ ] **Step 5: Run the coordinator tests to verify they pass**
 
-Run: `./gradlew :core:media:test --tests "net.subsloth.core.media.download.DownloadCoordinatorTest"`
+Run: `./gradlew :core:media:test --tests "subsloth.core.media.download.DownloadCoordinatorTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the item-download phase**
@@ -993,7 +993,7 @@ fun `download notification shows title progress and safe actions only`() {
 
 - [ ] **Step 2: Run the notification tests to verify they fail**
 
-Run: `./gradlew :core:media:test --tests "net.subsloth.core.media.download.DownloadNotificationFactoryTest"`
+Run: `./gradlew :core:media:test --tests "subsloth.core.media.download.DownloadNotificationFactoryTest"`
 Expected: FAIL because the notification factory does not exist yet.
 
 - [ ] **Step 3: Implement the service and notification factory**
@@ -1086,7 +1086,7 @@ fun `logout pauses incomplete queues without deleting completed assets`() {
 
 - [ ] **Step 2: Run the details and auth tests to verify they fail**
 
-Run: `./gradlew :feature:details:test --tests "net.subsloth.details.SeriesDetailViewModelTest" :feature:auth:test --tests "net.subsloth.auth.LoginViewModelTest"`
+Run: `./gradlew :feature:details:test --tests "subsloth.details.SeriesDetailViewModelTest" :feature:auth:test --tests "subsloth.auth.LoginViewModelTest"`
 Expected: FAIL because season confirmation and queue pause hooks do not exist yet.
 
 - [ ] **Step 3: Add explicit season confirmation state to the details view model**
@@ -1157,7 +1157,7 @@ class LoginViewModel(
 
 - [ ] **Step 5: Run the details and auth tests to verify they pass**
 
-Run: `./gradlew :feature:details:test --tests "net.subsloth.details.SeriesDetailViewModelTest" :feature:auth:test --tests "net.subsloth.auth.LoginViewModelTest"`
+Run: `./gradlew :feature:details:test --tests "subsloth.details.SeriesDetailViewModelTest" :feature:auth:test --tests "subsloth.auth.LoginViewModelTest"`
 Expected: PASS
 
 - [ ] **Step 6: Commit the season-queue phase**

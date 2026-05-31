@@ -2,7 +2,7 @@
 
 - [x] 1.1 Create the Gradle wrapper with Gradle 9.5.0.
 - [x] 1.2 Add root Gradle Kotlin DSL files, Gradle properties, version catalog, and precompiled convention plugins under `build-logic/`.
-- [x] 1.3 Create app, core, feature, and testing modules with namespace ownership under `net.subsloth`.
+- [x] 1.3 Create app, core, feature, and testing modules with namespace ownership under `subsloth`.
 - [x] 1.4 Configure JDK 17 bytecode target (daemon runs JDK 25 via Nix flake), AGP 9.2, `minSdk 26`, `targetSdk 36`, and `compileSdk 36`.
 
 ## 2. Project Guardrails

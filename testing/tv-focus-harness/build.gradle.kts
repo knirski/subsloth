@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "net.subsloth.testing.tvfocus"
+    namespace = "subsloth.testing.tvfocus"
 }
 
 dependencies {

@@ -58,7 +58,7 @@
 Create `core/ui/src/commonMain/kotlin/net/subsloth/core/ui/tv/TvFocus.kt`:
 
 ```kotlin
-package net.subsloth.core.ui.tv
+package subsloth.core.ui.tv
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -86,7 +86,7 @@ expect fun AutoFocusInitial(
 Create `core/ui/src/commonMain/kotlin/net/subsloth/core/ui/tv/TvLayouts.kt`:
 
 ```kotlin
-package net.subsloth.core.ui.tv
+package subsloth.core.ui.tv
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -136,7 +136,7 @@ androidMain.dependencies {
 Create `core/ui/src/androidMain/kotlin/net/subsloth/core/ui/tv/TvFocus.android.kt`:
 
 ```kotlin
-package net.subsloth.core.ui.tv
+package subsloth.core.ui.tv
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -186,14 +186,14 @@ actual fun Modifier.tvFocusRequester(): Modifier {
 - [ ] **Step 5: Implement `actual` layout composables for Android**
 
 Create `core/ui/src/androidMain/kotlin/net/subsloth/core/ui/tv/TvLayouts.android.kt`.
-Copy the content from the current `app/src/main/java/net/subsloth/ui/tv/TvLayouts.kt` and replace the package with `net.subsloth.core.ui.tv`. The `actual` keyword goes on each composable function.
+Copy the content from the current `app/src/main/java/net/subsloth/ui/tv/TvLayouts.kt` and replace the package with `subsloth.core.ui.tv`. The `actual` keyword goes on each composable function.
 
 - [ ] **Step 6: Implement `actual` stubs for iOS**
 
 Create `core/ui/src/iosMain/kotlin/net/subsloth/core/ui/tv/TvFocus.ios.kt`:
 
 ```kotlin
-package net.subsloth.core.ui.tv
+package subsloth.core.ui.tv
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -314,9 +314,9 @@ git commit -m "fix(core): replace JVM-only bytesToHex with expect/actual for nat
 Create `feature/player/src/commonMain/kotlin/net/subsloth/player/PlayerErrorHandler.kt`:
 
 ```kotlin
-package net.subsloth.player
+package subsloth.player
 
-import net.subsloth.core.model.playback.PlaybackError
+import subsloth.core.model.playback.PlaybackError
 
 /**
  * Categorizes playback errors from a [Throwable] into domain-specific [PlaybackError] types.

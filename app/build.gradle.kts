@@ -41,10 +41,10 @@ val appVersionCode: Int by lazy {
 }
 
 android {
-    namespace = "net.subsloth"
+    namespace = "subsloth"
 
     defaultConfig {
-        applicationId = "net.subsloth"
+        applicationId = "subsloth"
         versionCode = appVersionCode
         versionName = appVersionName
     }

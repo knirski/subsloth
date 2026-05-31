@@ -5,7 +5,7 @@ Build a new native Kotlin Android app for phone, tablet, and Android TV to brows
 
 Defaults locked:
 - New Android project in the empty workspace.
-- App id / namespace: `net.subsloth`.
+- App id / namespace: `subsloth`.
 - Kotlin + Jetpack Compose + Compose for TV.
 - Equal first-class TV/tablet/phone UX.
 - Login page required before authenticated catalog access.

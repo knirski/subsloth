@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "net.subsloth.core.media"
+    namespace = "subsloth.core.media"
 }
 
 dependencies {

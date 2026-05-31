@@ -184,7 +184,7 @@ Run: `./gradlew :build-logic:convention:compileKotlin` (the plugin change may ca
 Replace `android.util.Log` with a simple platform-independent logger:
 
 ```kotlin
-package net.subsloth.core.network.media.client
+package subsloth.core.network.media.client
 
 import io.ktor.client.plugins.logging.Logger as KtorLogger
 
@@ -212,7 +212,7 @@ internal object InterceptorLogger : KtorLogger {
 Replace `okhttp3.HttpUrl` extension with Ktor `Url` extension:
 
 ```kotlin
-package net.subsloth.core.network.media.client
+package subsloth.core.network.media.client
 
 import io.ktor.http.Url
 
@@ -234,13 +234,13 @@ internal fun Url.toRedactedString(): String {
 Replace `java.net.*` exceptions with Ktor equivalents:
 
 ```kotlin
-package net.subsloth.core.network.error
+package subsloth.core.network.error
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpResponseStatusException
 import io.ktor.network.unreachable.UnreachableAddressException
 import io.ktor.utils.io.errors.IOException
-import net.subsloth.core.model.error.UiError
+import subsloth.core.model.error.UiError
 
 fun Throwable.toUiError(): UiError {
     val message = this.message.orEmpty()
@@ -282,7 +282,7 @@ private fun isIOException(error: Throwable): Boolean = when (error) {
 - [ ] **Step 1: Rewrite ClientFactory**
 
 ```kotlin
-package net.subsloth.core.network.media.client
+package subsloth.core.network.media.client
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRequestRetry
@@ -377,17 +377,17 @@ object ClientFactory {
 - [ ] **Step 1: Rewrite Api.kt**
 
 ```kotlin
-package net.subsloth.core.network.media.api
+package subsloth.core.network.media.api
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import net.subsloth.core.network.media.api.model.Episode
-import net.subsloth.core.network.media.api.model.Movie
-import net.subsloth.core.network.media.api.model.MovieListResponse
-import net.subsloth.core.network.media.api.model.Show
-import net.subsloth.core.network.media.api.model.ShowListResponse
+import subsloth.core.network.media.api.model.Episode
+import subsloth.core.network.media.api.model.Movie
+import subsloth.core.network.media.api.model.MovieListResponse
+import subsloth.core.network.media.api.model.Show
+import subsloth.core.network.media.api.model.ShowListResponse
 
 /**
  * Typed API client for the Media REST API.
@@ -473,12 +473,12 @@ class Api(private val client: HttpClient) {
 - [ ] **Step 1: Create ResponseValidationPlugin**
 
 ```kotlin
-package net.subsloth.core.network.media.client
+package subsloth.core.network.media.client
 
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import net.subsloth.core.model.error.NetworkError
+import subsloth.core.model.error.NetworkError
 
 /**
  * Ktor client plugin that detects unexpected redirect, HTML, and non-JSON

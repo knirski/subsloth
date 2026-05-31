@@ -182,7 +182,7 @@ naming:
     parameterPattern: "[a-z][a-zA-Z0-9]*"
   InvalidPackageDeclaration:
     active: true
-    rootPackage: "net.subsloth"
+    rootPackage: "subsloth"
   LambdaParameterNaming:
     active: true
     parameterPattern: "[a-z][a-zA-Z0-9]*|_"

@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm")
 }
 
-group = "net.subsloth.buildlogic"
+group = "subsloth.buildlogic"
 
 dependencies {
     compileOnly(libs.detekt.api)

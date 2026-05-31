@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "net.subsloth.testing.screenshot"
+    namespace = "subsloth.testing.screenshot"
 
     lint {
         disable += "InvalidPackage"

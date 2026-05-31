@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Android Project Baseline
-The project SHALL build a greenfield native Android app with application id and namespace `net.subsloth` for Android phone, tablet, and Android TV.
+The project SHALL build a greenfield native Android app with application id and namespace `subsloth` for Android phone, tablet, and Android TV.
 
 #### Scenario: Scaffolded modules are present
 - **WHEN** `./gradlew projects` is executed
@@ -9,7 +9,7 @@ The project SHALL build a greenfield native Android app with application id and 
 
 #### Scenario: App identity is locked
 - **WHEN** the app module is configured
-- **THEN** its namespace and application id are both `net.subsloth`
+- **THEN** its namespace and application id are both `subsloth`
 
 ---
 
@@ -58,11 +58,11 @@ The `:core:model` and `:core:domain` modules SHALL be JVM-only. They shall not c
 ---
 
 ### Requirement: Namespace Convention
-Every Android module SHALL declare a namespace that matches its Gradle module path under the `net.subsloth` root.
+Every Android module SHALL declare a namespace that matches its Gradle module path under the `subsloth` root.
 
 #### Scenario: Namespace matches module path
 - **WHEN** an Android module's `android { namespace }` is read
-- **THEN** it equals `net.subsloth` followed by the module path segments joined with `.` (e.g. `:core:network` → `net.subsloth.core.network`, `:feature:player` → `net.subsloth.feature.player`)
+- **THEN** it equals `subsloth` followed by the module path segments joined with `.` (e.g. `:core:network` → `subsloth.core.network`, `:feature:player` → `subsloth.feature.player`)
 
 ---
 

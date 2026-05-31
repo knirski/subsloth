@@ -2,7 +2,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "net.subsloth.buildlogic"
+group = "subsloth.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
