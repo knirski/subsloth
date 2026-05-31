@@ -83,9 +83,9 @@ different row.
 
 **Status:** Resolved
 
-`webCryptoHmacHex` now returns `Promise<String>` from `@JsFun`, and the
+`webCryptoHmacHex` now returns `Promise<JsString>` from `@JsFun`, and the
 `suspend` function calls `.await()` from `kotlinx.coroutines` (1.11.0 supports
-wasmJs). Addressed by replacing the `String` return type with `Promise<String>`,
+wasmJs). Addressed by replacing the `String` return type with `Promise<JsString>`,
 adding `kotlinx-coroutines-core` to wasmJsMain dependencies, and calling
 `.await()` on the Promise.
 
@@ -158,7 +158,7 @@ moved to an `androidMain` source set (requires `androidTarget()` in convention).
 The following items were previously tracked but are now resolved:
 
 | Item | Resolution |
-|---|---|---|
+|---|---|
 | **Compose Hot Reload** | Bundled and enabled by default since CMP 1.10.0. Project is on `1.12.0-alpha01`. No action needed. |
 | **`local.properties` hardcoded Nix path** | Auto-generated from `$ANDROID_HOME` by `flake.nix` shellHook on every `direnv allow` entry. |
 | **DataStore on wasmJs** | `LocalStorageDataStore` backs `DataStore<Preferences>` with browser `localStorage`. Persists across page reloads. |
