@@ -76,22 +76,21 @@ jobs:
   # Each platform target runs in parallel with its required OS runner.
   # Fail-fast is disabled so one platform failure doesn't cancel others.
   build:
+    name: ${{ matrix.display }}
     needs: pre-checks
     strategy:
       fail-fast: false
       matrix:
         include:
-          # ── Android ────────────────────────────────────────────────
-          - target: android
+          - display: 🟢 Android
             os: ubuntu-latest
             tasks: lintDebug testDebugUnitTest assembleDebug
 
-          # ── KMP JVM tests ──────────────────────────────────────────
-          # jvmTest runs on all KMP modules. There's no aggregating
-          # root `test` task for KMP — modules use subsloth.kmp.library
+          # jvmTest runs on all KMP modules. There's no aggregating root
+          # `test` task for KMP — modules use subsloth.kmp.library
           # convention which doesn't apply java-base.
           # When adding a new KMP module, add its :module:jvmTest here.
-          - target: jvm
+          - display: ☕ JVM / KMP
             os: ubuntu-latest
             tasks: >
               :core:model:jvmTest :core:domain:jvmTest
@@ -101,26 +100,22 @@ jobs:
               :feature:details:jvmTest :feature:player:jvmTest
               :feature:library:jvmTest :feature:settings:jvmTest
 
-          # ── Desktop Linux ──────────────────────────────────────────
-          - target: desktop
+          - display: 🖥️ Desktop / Linux
             os: ubuntu-latest
             tasks: :desktopApp:compileKotlinJvm
 
-          # ── Web (wasmJs) ───────────────────────────────────────────
-          - target: web
+          - display: 🌐 Web / wasmJs
             os: ubuntu-latest
             tasks: :webApp:compileKotlinWasmJs
 
-          # ── iOS (requires macOS runner for Apple SDK) ──────────────
-          - target: ios
+          - display: 📱 iOS / Simulator
             os: macos-latest
             tasks: >
               :core:model:iosSimulatorArm64Test
               :core:domain:iosSimulatorArm64Test
               :core:ui:compileKotlinIosArm64
 
-          # ── macOS Native (requires macOS runner) ───────────────────
-          - target: native
+          - display: 🍏 macOS / Native
             os: macos-latest
             tasks: >
               :core:model:compileKotlinMacosArm64
@@ -131,5 +126,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/kmp-setup
-      - name: Build ${{ matrix.target }}
+      - name: Gradle ${{ matrix.display }}
         run: ./gradlew ${{ matrix.tasks }}
