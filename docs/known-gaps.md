@@ -21,9 +21,11 @@ passes. The Kotlin/Wasm toolchain (Node.js, Yarn, Binaryen) is provisioned
 from the Nix environment via pre-populated symlinks in `~/.kotlin/`.
 
 **Remaining:**
-- Set COOP/COEP headers (`Cross-Origin-Opener-Policy: same-origin`,
-  `Cross-Origin-Embedder-Policy: require-corp`) for OPFS support in
-  production deployment config.
+- Cross-Origin headers (`Cross-Origin-Opener-Policy: same-origin`,
+  `Cross-Origin-Embedder-Policy: require-corp`) are set on the
+  webpack-dev-server via `webApp/webpack.config.d/opfs-headers.js`.
+  Production deployments must also set these headers at the reverse proxy
+  or CDN level.
 
 ---
 
@@ -205,4 +207,5 @@ The following items were previously tracked but are now resolved:
 | **Database inMemory → persistent** | Now uses `databaseBuilder` with Worker persistence. ✅ |
 | **`parseMediaId` truncation** | `toIntOrNull()` instead of `toLong().toInt()`. ✅ |
 | **SQLite web worker bundling** | Local `sqlite-wasm-worker` package in `:webApp` with `@sqlite.org/sqlite-wasm` npm dep. Full `wasmJsBrowserDistribution` passes. ✅ |
+| **OPFS headers** | `webApp/webpack.config.d/opfs-headers.js` sets COOP/COEP on dev-server. Production deployment must replicate at reverse proxy. ✅ |
 | **Nix/Gradle webpack environment** | `PREFER_SETTINGS` + Ivy repos in `settings.gradle.kts` + Nix `nodejs`/`yarn`/`binaryen` packages + `~/.kotlin/` pre-population. ✅ |
