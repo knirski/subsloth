@@ -165,44 +165,43 @@ private val fixtureShowDetail =
     }
     """.trimIndent()
 
-fun createMockClient(): HttpClient =
-    HttpClient(MockEngine) {
-        engine {
-            addHandler { request ->
-                val path = request.url.encodedPath
-                val (body, status) =
-                    when {
-                        path == "/api/v2/movies" && request.method.value == "GET" ->
-                            fixtureMovies to HttpStatusCode.OK
+fun createMockClient(): HttpClient = HttpClient(MockEngine) {
+    engine {
+        addHandler { request ->
+            val path = request.url.encodedPath
+            val (body, status) =
+                when {
+                    path == "/api/v2/movies" && request.method.value == "GET" ->
+                        fixtureMovies to HttpStatusCode.OK
 
-                        path.matches(Regex("/api/v2/movies/\\d+")) ->
-                            fixtureMovieDetail to HttpStatusCode.OK
+                    path.matches(Regex("/api/v2/movies/\\d+")) ->
+                        fixtureMovieDetail to HttpStatusCode.OK
 
-                        path == "/api/v2/shows" && request.method.value == "GET" ->
-                            fixtureShows to HttpStatusCode.OK
+                    path == "/api/v2/shows" && request.method.value == "GET" ->
+                        fixtureShows to HttpStatusCode.OK
 
-                        path.matches(Regex("/api/v2/shows/\\d+")) ->
-                            fixtureShowDetail to HttpStatusCode.OK
+                    path.matches(Regex("/api/v2/shows/\\d+")) ->
+                        fixtureShowDetail to HttpStatusCode.OK
 
-                        else -> """{"error": "not found"}""" to HttpStatusCode.NotFound
-                    }
-                respond(
-                    content = ByteReadChannel(body),
-                    status = status,
-                    headers =
-                        headersOf(
-                            HttpHeaders.ContentType,
-                            ContentType.Application.Json.toString(),
-                        ),
-                )
-            }
-        }
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                },
+                    else -> """{"error": "not found"}""" to HttpStatusCode.NotFound
+                }
+            respond(
+                content = ByteReadChannel(body),
+                status = status,
+                headers =
+                headersOf(
+                    HttpHeaders.ContentType,
+                    ContentType.Application.Json.toString(),
+                ),
             )
         }
     }
+    install(ContentNegotiation) {
+        json(
+            Json {
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+            },
+        )
+    }
+}
