@@ -31,6 +31,18 @@ kotlin {
             implementation(libs.ktor.client.cio)
         }
 
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.mock)
+            }
+        }
+
+        // Shared native source set for actual implementations that cover
+        // both Apple (iOS + macOS) targets.
+        val nativeMain by creating { dependsOn(commonMain) }
+        iosMain.dependsOn(nativeMain)
+        getByName("macosArm64Main").dependsOn(nativeMain)
+
         commonTest.dependencies {
             // kotlin("test") is already provided by subsloth.kmp.library convention
         }
