@@ -1,7 +1,7 @@
 package net.subsloth.details
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.MovieId

@@ -55,6 +55,7 @@ class ApiLiveDriftTest {
             } ?: throw AssertionError("Expected HTTP $expectedCode but request succeeded")
         when (error) {
             is ResponseException -> assertThat(error.response.status.value).isEqualTo(expectedCode)
+
             else -> throw AssertionError(
                 "Expected HTTP $expectedCode but got: ${error.message}",
                 error,

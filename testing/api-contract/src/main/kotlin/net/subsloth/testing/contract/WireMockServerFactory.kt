@@ -58,11 +58,13 @@ object WireMockServerFactory {
         }
 
         return when (endpoint.responseKind) {
-            ResponseKind.RedirectLocation ->
+            ResponseKind.RedirectLocation -> {
                 response.withHeader("Location", body.trim()).withBody("")
+            }
 
-            else ->
+            else -> {
                 response.withBody(body)
+            }
         }
     }
 }

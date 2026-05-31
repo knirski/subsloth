@@ -222,6 +222,7 @@ enum class Endpoint(
                 (path == "/movies" || path == "/shows") && (hasFilterParams || !isNativeApi) -> CatalogFilters
 
                 path == "/movies" && isNativeApi -> Movies
+
                 path == "/shows" && isNativeApi -> Shows
 
                 path.endsWith("/download") &&
@@ -232,15 +233,19 @@ enum class Endpoint(
                 path.contains("/subscriptions") -> Subscriptions
 
                 path.startsWith("/movies/") -> MovieDetail
+
                 path.startsWith("/shows/") -> ShowDetail
+
                 path.startsWith("/episodes/") -> EpisodeDetail
 
                 path.startsWith("/favorite_media") || path.startsWith("/favorite-media") -> FavoriteMedia
+
                 path.startsWith("/watched_media") -> WatchedMedia
 
                 path.startsWith("/push_subscriptions") -> PushSubscriptions
 
                 path.startsWith("/message-bus/") -> Statistics
+
                 path == "/comments" -> Comments
 
                 path.startsWith("/catalog/filters") ||
