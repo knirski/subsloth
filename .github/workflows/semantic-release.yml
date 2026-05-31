@@ -26,29 +26,34 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    name: ${{ matrix.display }}
     needs: release
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: android
+          - display: 🟢 Android / APK
+            type: android
             tasks: :androidApp:assembleDebug
-            asset: androidApp/build/outputs/apk/debug/subsloth-*-debug.apk
 
-          - target: desktop
-            tasks: :desktopApp:compileKotlin
+          - display: 🖥️ Desktop / Linux
+            type: desktop
+            tasks: :desktopApp:packageDistributionForCurrentOS
 
-          - target: web
-            tasks: :webApp:compileKotlinWasmJs
+          - display: 🌐 Web / wasmJs
+            type: web
+            tasks: :webApp:wasmJsBrowserProductionRunDistribute
 
           # macOS/iOS targets require macos-latest runner.
           # Uncomment when a macOS CI runner is configured:
           #
-          # - target: ios
+          # - display: 📱 iOS / Simulator Test
+          #   type: ios
           #   os: macos-latest
-          #   tasks: -Pkotlin.native.cacheKind=everything :core:model:iosSimulatorArm64Test
+          #   tasks: :core:model:iosSimulatorArm64Test
           #
-          # - target: native
+          # - display: 🍏 macOS / Native Compile
+          #   type: native
           #   os: macos-latest
           #   tasks: :core:model:compileKotlinMacosArm64
 
@@ -62,13 +67,31 @@ jobs:
 
       - run: ./gradlew ${{ matrix.tasks }}
 
-      - name: Upload artifact to release
-        if: matrix.asset != ''
+      - name: Locate and upload artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
-          if [ -n "$TAG" ] && gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Uploading ${{ matrix.asset }} to release $TAG"
-            gh release upload "$TAG" ${{ matrix.asset }} --clobber
+          if [ -z "$TAG" ] || ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "No release tag found — skipping upload"
+            exit 0
           fi
+
+          case "${{ matrix.type }}" in
+            android)
+              find . -path '*/subsloth-*-debug.apk' -exec gh release upload "$TAG" {} --clobber \;
+              ;;
+            desktop)
+              DEB=$(find . -path '*/compose/binaries/main/deb/*.deb' | head -1)
+              if [ -n "$DEB" ]; then
+                gh release upload "$TAG" "$DEB" --clobber
+              fi
+              ;;
+            web)
+              DIST="webApp/build/dist/wasmJs/productionExecutable"
+              if [ -d "$DIST" ]; then
+                cd "$DIST" && zip -r /tmp/subsloth-web.zip . && cd -
+                gh release upload "$TAG" /tmp/subsloth-web.zip --clobber
+              fi
+              ;;
+          esac
