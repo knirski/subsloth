@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.media.Media
@@ -64,17 +69,29 @@ private fun PlayerContent(
     parsedId: Int,
     onNavigateBack: () -> Unit,
 ) {
-    val vm: PlayerViewModel = viewModel(key = contentId) {
-        PlayerViewModel(
-            mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+    val storeOwner = remember(contentId) {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(
+        LocalViewModelStoreOwner provides storeOwner,
+    ) {
+        val vm: PlayerViewModel = viewModel(key = contentId) {
+            PlayerViewModel(
+                mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+            )
+        }
+        PlayerScreen(
+            viewModel = vm,
+            modifier = Modifier.fillMaxSize(),
+            onNavigateBack = onNavigateBack,
+            onNavigateToAuthRepair = { /* Not yet wired */ },
         )
     }
-    PlayerScreen(
-        viewModel = vm,
-        modifier = Modifier.fillMaxSize(),
-        onNavigateBack = onNavigateBack,
-        onNavigateToAuthRepair = { /* Not yet wired */ },
-    )
 }
 
 /** Simple navigation state for the web app. */
