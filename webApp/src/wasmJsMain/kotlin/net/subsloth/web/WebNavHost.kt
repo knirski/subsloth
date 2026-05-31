@@ -1,74 +1,118 @@
 package net.subsloth.web
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.navigation.AuthRepairKey
+import net.subsloth.navigation.CatalogKey
+import net.subsloth.navigation.DiagnosticsKey
+import net.subsloth.navigation.DownloadsKey
+import net.subsloth.navigation.LibraryKey
+import net.subsloth.navigation.LoginKey
+import net.subsloth.navigation.MovieDetailKey
+import net.subsloth.navigation.OfflineLibraryKey
+import net.subsloth.navigation.PlayerKey
+import net.subsloth.navigation.SettingsKey
+import net.subsloth.navigation.ShowDetailKey
+import net.subsloth.navigation.subslothNavConfig
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
 
 /**
- * Lightweight navigation host for the SubSloth web app.
+ * Web navigation host for SubSloth.
  *
- * Uses simple state-based navigation (no Navigation3) since the
- * Navigation3 KMP runtime is not yet available for wasmJs.
- *
- * Feature screens are the same KMP composables used by Android and Desktop.
- * Navigation will be upgraded to Navigation3 when the KMP runtime is published.
+ * Uses Navigation3 via [androidx.navigation3.runtime] with a
+ * [SavedStateConfiguration], just like Android and Desktop.
+ * Feature screens are the same KMP composables shared across all platforms.
  */
 @Composable
-fun WebNavHost(
-    modifier: Modifier = Modifier,
-) {
-    var currentScreen by remember { mutableStateOf<WebScreen>(WebScreen.Placeholder) }
+fun WebNavHost(modifier: Modifier = Modifier) {
+    val backStack = rememberNavBackStack(subslothNavConfig, LoginKey)
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        when (val screen = currentScreen) {
-            is WebScreen.Placeholder -> {
-                WebPlaceholderScreen(
-                    onNavigateToPlayer = { contentId, contentType ->
-                        currentScreen = WebScreen.Player(contentId, contentType)
-                    },
+    NavDisplay(
+        modifier = modifier,
+        backStack = backStack,
+        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+            ),
+        entryProvider = entryProvider {
+            entry<LoginKey> {
+                // Login screen — wired in auth-persistence-shell
+            }
+
+            entry<CatalogKey> {
+                // Catalog home — wired in catalog-details
+            }
+
+            entry<MovieDetailKey> { key ->
+                // Movie detail — wired in catalog-details
+            }
+
+            entry<ShowDetailKey> { key ->
+                // Show/series detail — wired in catalog-details
+            }
+
+            entry<PlayerKey> { key ->
+                PlayerContent(
+                    contentId = key.contentId,
+                    contentType = key.contentType,
+                    onNavigateBack = { backStack.removeLastOrNull() },
+                    onNavigateToAuthRepair = { backStack += AuthRepairKey },
                 )
             }
 
-            is WebScreen.Player -> {
-                val parsedId = screen.contentId.toIntOrNull()
-                if (parsedId != null) {
-                    PlayerContent(
-                        contentId = screen.contentId,
-                        parsedId = parsedId,
-                        onNavigateBack = { currentScreen = WebScreen.Placeholder },
-                    )
-                }
+            entry<LibraryKey> {
+                // Library screen — wired in library-settings-diagnostics
             }
-        }
-    }
+
+            entry<DownloadsKey> {
+                // Downloads screen — wired in library-settings-diagnostics
+            }
+
+            entry<SettingsKey> {
+                // Settings screen — wired in library-settings-diagnostics
+            }
+
+            entry<DiagnosticsKey> {
+                // Diagnostics screen — wired in library-settings-diagnostics
+            }
+
+            entry<AuthRepairKey> {
+                // Auth repair — wired in auth-persistence-shell
+            }
+
+            entry<OfflineLibraryKey> {
+                // Offline library — wired in library-settings-diagnostics
+            }
+        },
+    )
 }
 
 @Suppress("ViewModelInjection")
 @Composable
 private fun PlayerContent(
     contentId: String,
-    parsedId: Int,
+    contentType: String,
     onNavigateBack: () -> Unit,
+    onNavigateToAuthRepair: () -> Unit,
 ) {
+    val mediaId = parseMediaId(contentId, contentType) ?: return
     val storeOwner = remember(contentId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -77,25 +121,22 @@ private fun PlayerContent(
     DisposableEffect(storeOwner) {
         onDispose { storeOwner.viewModelStore.clear() }
     }
-    CompositionLocalProvider(
-        LocalViewModelStoreOwner provides storeOwner,
-    ) {
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: PlayerViewModel = viewModel(key = contentId) {
-            PlayerViewModel(
-                mediaId = Media.MediaId.Movie(MovieId(parsedId)),
-            )
+            PlayerViewModel(mediaId = mediaId)
         }
         PlayerScreen(
             viewModel = vm,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier,
             onNavigateBack = onNavigateBack,
-            onNavigateToAuthRepair = { /* Not yet wired */ },
+            onNavigateToAuthRepair = onNavigateToAuthRepair,
         )
     }
 }
 
-/** Simple navigation state for the web app. */
-private sealed interface WebScreen {
-    data object Placeholder : WebScreen
-    data class Player(val contentId: String, val contentType: String) : WebScreen
+private fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
+    "movie" -> contentId.toLongOrNull()?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
+    "episode" -> contentId.toLongOrNull()?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
+    "show" -> contentId.toLongOrNull()?.let { Media.MediaId.Show(ShowId(it.toInt())) }
+    else -> null
 }

@@ -2,7 +2,7 @@
 agp = "9.2.1"
 kotlin = "2.3.21"
 ksp = "2.3.9"
-savedstate = "1.3.1"
+savedstate = "1.5.0"
 composeBom = "2026.05.01"
 material3Adaptive = "1.3.0-beta01"
 androidxCore = "1.18.0"
@@ -53,6 +53,7 @@ androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = 
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
 compose-multiplatform-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
 savedstate = { module = "androidx.savedstate:savedstate", version.ref = "savedstate" }
+savedstate-compose = { module = "androidx.savedstate:savedstate-compose", version.ref = "savedstate" }
 compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultplatformRuntime" }
 compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultplatformRuntime" }
 compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultplatformRuntime" }
