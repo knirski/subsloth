@@ -31,6 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.ui.toDisplayStringRes
+import subsloth.feature.auth.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Login screen with standard Autofill/password-manager support.
@@ -102,14 +104,14 @@ fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, o
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Session Expired",
+            text = stringResource(Res.string.session_expired),
             style = MaterialTheme.typography.headlineSmall,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Your session has expired or the service is unavailable. Please sign in again. Your offline downloads and local data remain intact.",
+            text = stringResource(Res.string.session_expired_message),
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -119,7 +121,7 @@ fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, o
             onClick = { viewModel.dismissNeedsAuthRepair() },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Sign In Again")
+            Text(stringResource(Res.string.sign_in_again))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -128,7 +130,7 @@ fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, o
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Cancel")
+            Text(stringResource(Res.string.cancel))
         }
     }
 }
@@ -155,7 +157,7 @@ internal fun LoginFormContent(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "SubSloth",
+            text = stringResource(Res.string.app_title),
             style = MaterialTheme.typography.headlineLarge,
         )
 
@@ -164,7 +166,7 @@ internal fun LoginFormContent(
         OutlinedTextField(
             value = login,
             onValueChange = onLoginChange,
-            label = { Text("Login") },
+            label = { Text(stringResource(Res.string.login_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
@@ -175,7 +177,7 @@ internal fun LoginFormContent(
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
-            label = { Text("Password") },
+            label = { Text(stringResource(Res.string.password_label)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -193,7 +195,7 @@ internal fun LoginFormContent(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = login.isNotBlank() && password.isNotBlank(),
             ) {
-                Text("Sign In")
+                Text(stringResource(Res.string.sign_in))
             }
         }
 
@@ -212,7 +214,7 @@ internal fun LoginFormContent(
                 onClick = onNavigateToOfflineLibrary,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Offline Library")
+                Text(stringResource(Res.string.offline_library))
             }
         }
     }

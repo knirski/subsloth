@@ -36,6 +36,8 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
+import subsloth.feature.player.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PlayerScreen(
@@ -233,19 +235,19 @@ private fun PlaybackControls(
         modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedButton(onClick = onTogglePlayPause) {
-            Text(if (isPlaying) "Pause" else "Play")
+            Text(if (isPlaying) stringResource(Res.string.player_pause) else stringResource(Res.string.player_play))
         }
         Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleSpeed) {
-            Text("Speed")
+            Text(stringResource(Res.string.player_speed))
         }
         Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleSubtitles) {
-            Text("Subtitles")
+            Text(stringResource(Res.string.player_subtitles))
         }
         Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleQuality) {
-            Text("Quality")
+            Text(stringResource(Res.string.player_quality))
         }
     }
 }
@@ -330,7 +332,7 @@ private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSel
                 contentColor = offContentColor,
             ),
         ) {
-            Text("Off")
+            Text(stringResource(Res.string.player_subtitles_off))
         }
         subtitles.forEach { subtitle ->
             val isSelected = selected?.language == subtitle.language
@@ -366,17 +368,17 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Next episode",
+            text = stringResource(Res.string.player_next_episode),
             style = MaterialTheme.typography.headlineSmall,
             color = Color.White,
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onPlay, modifier = Modifier.width(200.dp)) {
-            Text("Play")
+            Text(stringResource(Res.string.player_play))
         }
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(onClick = onDismiss, modifier = Modifier.width(200.dp)) {
-            Text("Cancel")
+            Text(stringResource(Res.string.player_cancel))
         }
     }
 }
@@ -398,18 +400,18 @@ private fun ErrorContent(
     ) {
         Text(
             text = if (isAuthError) {
-                "Session Expired"
+                stringResource(Res.string.player_session_expired)
             } else {
-                "Playback Error"
+                stringResource(Res.string.player_playback_error)
             },
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error,
         )
         Spacer(modifier = Modifier.height(16.dp))
         val errorMessage = when (playbackError) {
-            is PlaybackError.AuthFailure -> "Session Expired"
-            is PlaybackError.StreamUrlExpired -> "Stream URL expired"
-            is PlaybackError.Recoverable -> "Playback Error"
+            is PlaybackError.AuthFailure -> stringResource(Res.string.player_session_expired)
+            is PlaybackError.StreamUrlExpired -> stringResource(Res.string.player_stream_expired)
+            is PlaybackError.Recoverable -> stringResource(Res.string.player_playback_error)
         }
         Text(
             text = errorMessage,
@@ -419,22 +421,22 @@ private fun ErrorContent(
         Spacer(modifier = Modifier.height(24.dp))
         if (isAuthError) {
             Button(onClick = onNavigateToAuthRepair, modifier = Modifier.fillMaxWidth()) {
-                Text("Sign in again")
+                Text(stringResource(Res.string.player_sign_in_again))
             }
         } else {
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-                Text("Retry")
+                Text(stringResource(Res.string.player_retry))
             }
             if (playbackMode == PlaybackMode.ONLINE) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(onClick = onRetryWithRefresh, modifier = Modifier.fillMaxWidth()) {
-                    Text("Retry with fresh link")
+                    Text(stringResource(Res.string.player_retry_with_fresh_link))
                 }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
-            Text("Back to details")
+            Text(stringResource(Res.string.player_back_to_details))
         }
     }
 }
