@@ -28,6 +28,7 @@ kotlin {
         wasmJsMain.dependencies {
             implementation(libs.datastore.core.okio)
             implementation(libs.kotlinx.browser)
+            implementation(libs.coroutines.core)
         }
 
         jvmTest.dependencies {

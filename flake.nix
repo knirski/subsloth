@@ -421,7 +421,12 @@
         JAVA17_HOME = "${pkgs.openjdk17}/lib/openjdk";
         ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
         ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+        # Kotlin/Wasm toolchain — when set, the Kotlin/Wasm plugin uses an
+        # existing Node.js/Yarn/Binaryen installation instead of downloading
+        # one, which avoids the FAIL_ON_PROJECT_REPOS conflict.
         KOTLIN_NODEJS_HOME = "${pkgs.nodejs}";
+        KOTLIN_YARN_HOME = "${pkgs.yarn}";
+        KOTLIN_BINARYEN_HOME = "${pkgs.binaryen}";
 
         shellHook = ''
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
