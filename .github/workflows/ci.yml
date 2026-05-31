@@ -102,7 +102,7 @@ jobs:
 
           - display: 🖥️ Desktop / Linux
             os: ubuntu-latest
-            tasks: :desktopApp:compileKotlinJvm
+            tasks: :desktopApp:compileKotlin
 
           - display: 🌐 Web / wasmJs
             os: ubuntu-latest
