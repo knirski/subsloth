@@ -21,4 +21,4 @@ actual fun createDataStorePreferences(
     name: String,
     corruptionHandler: ReplaceFileCorruptionHandler<Preferences>?,
     scope: CoroutineScope,
-): DataStore<Preferences> = LocalStorageDataStore()
+): DataStore<Preferences> = LocalStorageDataStore(storageKey = "subsloth_preferences_$name")

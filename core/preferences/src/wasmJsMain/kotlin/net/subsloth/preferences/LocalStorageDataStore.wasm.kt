@@ -16,11 +16,11 @@ import kotlinx.browser.localStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
-private const val STORAGE_KEY = "subsloth_preferences"
 
 @Serializable
 private data class PrefEntry(val type: String, val value: String)
@@ -36,18 +36,19 @@ private data class PrefEntry(val type: String, val value: String)
  * If the stored data is corrupt, it is cleared and empty preferences
  * are returned (equivalent to file deletion in the native DataStore).
  */
-internal class LocalStorageDataStore : DataStore<Preferences> {
+internal class LocalStorageDataStore(private val storageKey: String) : DataStore<Preferences> {
 
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
     }
 
+    private val mutex = Mutex()
     private val _data = MutableStateFlow(loadFromStorage())
 
     override val data: Flow<Preferences> = _data.asStateFlow()
 
-    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences = mutex.withLock {
         val current = _data.value
         val new = transform(current)
         saveToStorage(new)
@@ -56,7 +57,7 @@ internal class LocalStorageDataStore : DataStore<Preferences> {
     }
 
     private fun loadFromStorage(): Preferences {
-        val raw = localStorage.getItem(STORAGE_KEY) ?: return preferencesOf()
+        val raw = localStorage.getItem(storageKey) ?: return preferencesOf()
         return try {
             val map = json.decodeFromString<Map<String, PrefEntry>>(raw)
             val pairs = map.mapNotNull { (name, entry) ->
@@ -78,35 +79,44 @@ internal class LocalStorageDataStore : DataStore<Preferences> {
                     "long" -> entry.value.toLong()
                     "double" -> entry.value.toDouble()
                     "int" -> entry.value.toInt()
-                    "set" -> entry.value.split(",").filter { it.isNotEmpty() }.toSet()
+                    "set" -> json.decodeFromString<List<String>>(entry.value).toSet()
                     else -> return@mapNotNull null
                 }
                 key to value
             }
             preferencesOf(*pairs.toTypedArray())
-        } catch (_: Exception) {
-            // Corrupt data — clear and start fresh (equivalent to file deletion)
-            localStorage.removeItem(STORAGE_KEY)
+        } catch (_: kotlinx.serialization.SerializationException) {
+            localStorage.removeItem(storageKey)
+            preferencesOf()
+        } catch (_: NumberFormatException) {
+            localStorage.removeItem(storageKey)
+            preferencesOf()
+        } catch (_: IllegalArgumentException) {
+            localStorage.removeItem(storageKey)
             preferencesOf()
         }
     }
 
     private fun saveToStorage(prefs: Preferences) {
-        val map = mutableMapOf<String, PrefEntry>()
-        for ((key, value) in prefs.asMap()) {
-            @Suppress("UNCHECKED_CAST")
-            val entry = when (value) {
-                is String -> PrefEntry("str", value)
-                is Boolean -> PrefEntry("bool", value.toString())
-                is Float -> PrefEntry("float", value.toString())
-                is Long -> PrefEntry("long", value.toString())
-                is Double -> PrefEntry("double", value.toString())
-                is Int -> PrefEntry("int", value.toString())
-                is Set<*> -> PrefEntry("set", (value as Set<String>).joinToString(","))
-                else -> continue
+        try {
+            val map = mutableMapOf<String, PrefEntry>()
+            for ((key, value) in prefs.asMap()) {
+                @Suppress("UNCHECKED_CAST")
+                val entry = when (value) {
+                    is String -> PrefEntry("str", value)
+                    is Boolean -> PrefEntry("bool", value.toString())
+                    is Float -> PrefEntry("float", value.toString())
+                    is Long -> PrefEntry("long", value.toString())
+                    is Double -> PrefEntry("double", value.toString())
+                    is Int -> PrefEntry("int", value.toString())
+                    is Set<*> -> PrefEntry("set", json.encodeToString((value as Set<String>).toList()))
+                    else -> continue
+                }
+                map[key.name] = entry
             }
-            map[key.name] = entry
+            localStorage.setItem(storageKey, json.encodeToString(map))
+        } catch (_: Exception) {
+            // Fail silently if localStorage is disabled or full (e.g. QuotaExceededError)
         }
-        localStorage.setItem(STORAGE_KEY, json.encodeToString(map))
     }
 }
