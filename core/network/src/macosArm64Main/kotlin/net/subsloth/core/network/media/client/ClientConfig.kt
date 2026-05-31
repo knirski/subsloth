@@ -7,4 +7,4 @@ actual fun createMockClient(
     password: String,
     baseUrl: String,
     enableHttpLogging: Boolean,
-): HttpClient = error("Mock client is not available on native targets")
+): HttpClient = error("Mock client is not available on macOS target")
