@@ -28,11 +28,17 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.sqlite.framework)
         }
+
+        wasmJsMain.dependencies {
+            implementation(libs.sqlite.web)
+            implementation(libs.kotlinx.browser)
+        }
     }
 }
 
 dependencies {
     kspJvm(libs.room3.compiler)
+    kspWasmJs(libs.room3.compiler)
 }
 
 ksp {

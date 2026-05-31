@@ -34,6 +34,7 @@ composeMultplatformRuntime = "1.12.0-alpha01"
 composeMultplatformPlugin = "1.12.0-alpha01"
 kotlinxCollectionsImmutable = "0.5.0-beta01"
 kotlinxDatetime = "0.8.0"
+kotlinxBrowser = "0.5.0"
 kotlinxSchema = "0.5.0"
 ktor = "3.5.0"
 androidxAnnotation = "1.10.0"
@@ -91,6 +92,7 @@ room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room
 # SQLite KMP drivers
 sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqliteKmp" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteKmp" }
+sqlite-web = { module = "androidx.sqlite:sqlite-web", version.ref = "sqliteKmp" }
 
 # DataStore
 datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
@@ -112,6 +114,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-schema-generator-json = { module = "org.jetbrains.kotlinx:kotlinx-schema-generator-json", version.ref = "kotlinxSchema" }
+kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinxBrowser" }
 
 # Ktor (KMP HTTP client)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
