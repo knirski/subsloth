@@ -27,10 +27,7 @@ interface DownloadsPort {
     ): Result<EnqueueOutcome>
 
     /** Enqueues a subtitle download for an existing offline asset. */
-    suspend fun enqueueSubtitle(
-        localId: LocalMediaIdentifier,
-        language: LanguageCode,
-    ): Result<SubtitleEnqueueOutcome>
+    suspend fun enqueueSubtitle(localId: LocalMediaIdentifier, language: LanguageCode): Result<SubtitleEnqueueOutcome>
 
     /** Pauses an active or queued download. */
     suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome>

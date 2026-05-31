@@ -9,9 +9,7 @@ import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
 
 /** Unique identifier for a download or season queue operation. */
-data class QueueId(
-    val value: String,
-)
+data class QueueId(val value: String)
 
 /**
  * A relative path within the app's download directory.
@@ -19,9 +17,7 @@ data class QueueId(
  * Construct directly only when the path is trusted. For untrusted input,
  * use [OfflineRelativePath.safe] which validates the path.
  */
-data class OfflineRelativePath(
-    val value: String,
-) {
+data class OfflineRelativePath(val value: String) {
     companion object {
         /**
          * Creates an [OfflineRelativePath] after validating the input.
@@ -77,9 +73,7 @@ sealed interface TransferPreference {
 /** Estimated size of a download or set of downloads. */
 sealed interface SizeEstimate {
     /** Known byte count. */
-    data class Known(
-        val bytes: Long,
-    ) : SizeEstimate {
+    data class Known(val bytes: Long) : SizeEstimate {
         init {
             require(bytes >= 0) { "bytes must be non-negative" }
         }
@@ -92,14 +86,10 @@ sealed interface SizeEstimate {
 /** Result of selecting a subtitle track for a download. */
 sealed interface SubtitleSelection {
     /** Preferred language track was found and selected. */
-    data class Preferred(
-        val subtitle: Subtitle,
-    ) : SubtitleSelection
+    data class Preferred(val subtitle: Subtitle) : SubtitleSelection
 
     /** Preferred language not found; English substituted as fallback. */
-    data class EnglishFallback(
-        val subtitle: Subtitle,
-    ) : SubtitleSelection
+    data class EnglishFallback(val subtitle: Subtitle) : SubtitleSelection
 
     /** No matching subtitle track was found. */
     data object None : SubtitleSelection

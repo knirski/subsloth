@@ -32,7 +32,7 @@ kotlin {
 }
 
 dependencies {
-    ksp(libs.room3.compiler)
+    kspJvm(libs.room3.compiler)
 }
 
 ksp {

@@ -12,7 +12,5 @@ sealed interface PlaybackError {
     data object StreamUrlExpired : PlaybackError
 
     @Immutable
-    data class Recoverable(
-        val cause: DomainError? = null,
-    ) : PlaybackError
+    data class Recoverable(val cause: DomainError? = null) : PlaybackError
 }

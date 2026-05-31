@@ -17,10 +17,7 @@ object SearchPolicy {
      * fields separately. All query tokens must be present (AND semantics)
      * for a match. An empty or blank query never matches.
      */
-    fun matches(
-        media: Media,
-        query: String,
-    ): Boolean {
+    fun matches(media: Media, query: String): Boolean {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return false
 
@@ -41,10 +38,7 @@ object SearchPolicy {
      * [matches] for each item in a loop.
      * Returns an empty list when no items match or the query is blank.
      */
-    fun filter(
-        items: List<Media>,
-        query: String,
-    ): List<Media> {
+    fun filter(items: List<Media>, query: String): List<Media> {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return emptyList()
 

@@ -67,7 +67,4 @@ data class Movie(
 )
 
 @Serializable
-data class MovieListResponse(
-    val movies: List<MovieSummary>,
-    val meta: PaginationMeta? = null,
-)
+data class MovieListResponse(val movies: List<MovieSummary>, val meta: PaginationMeta? = null)

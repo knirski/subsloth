@@ -115,12 +115,11 @@ class CoreModelArchitectureTest {
         result
     }
 
-    private fun findForbiddenImports(vararg forbiddenPrefixes: String): List<String> =
-        allModelImports.filter { line ->
-            val importTarget = line.removePrefix("import").trim()
-            forbiddenPrefixes.any { prefix ->
-                importTarget.startsWith(prefix) &&
-                    allowedComposePrefixes.none { importTarget == it }
-            }
+    private fun findForbiddenImports(vararg forbiddenPrefixes: String): List<String> = allModelImports.filter { line ->
+        val importTarget = line.removePrefix("import").trim()
+        forbiddenPrefixes.any { prefix ->
+            importTarget.startsWith(prefix) &&
+                allowedComposePrefixes.none { importTarget == it }
         }
+    }
 }

@@ -52,7 +52,8 @@ android {
         checkReleaseBuilds = false
         checkAllWarnings = true
         disable += "GradleDependency"
-        disable += "InvalidPackage" // Ktor's ktor-utils references java.lang.management not available on Android
+        // Ktor's ktor-utils references java.lang.management not available on Android
+        disable += "InvalidPackage"
     }
 }
 
@@ -62,7 +63,6 @@ spotless {
         ktlint(ktlintVersion)
             .editorConfigOverride(
                 mapOf(
-                    // Allow PascalCase composable function names (standard Compose convention).
                     "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
                 ),
             )

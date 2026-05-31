@@ -180,25 +180,19 @@ class NextEpisodePolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun episode(
-        season: Int,
-        episodeNum: Int,
-        id: Int,
-        availability: Availability,
-    ): Episode =
-        Episode(
-            id = EpisodeId(id),
-            showId = ShowId(1),
-            seasonNumber = season,
-            episodeNumber = episodeNum,
-            title = "Episode $episodeNum",
-            plot = null,
-            durationSeconds = 1800L,
-            availability = availability,
-            imdbId = null,
-            qualities = persistentListOf(),
-            subtitles = persistentListOf(),
-            airDateEpochSeconds = null,
-            premiereDateEpochSeconds = null,
-        )
+    private fun episode(season: Int, episodeNum: Int, id: Int, availability: Availability): Episode = Episode(
+        id = EpisodeId(id),
+        showId = ShowId(1),
+        seasonNumber = season,
+        episodeNumber = episodeNum,
+        title = "Episode $episodeNum",
+        plot = null,
+        durationSeconds = 1800L,
+        availability = availability,
+        imdbId = null,
+        qualities = persistentListOf(),
+        subtitles = persistentListOf(),
+        airDateEpochSeconds = null,
+        premiereDateEpochSeconds = null,
+    )
 }

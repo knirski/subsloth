@@ -21,9 +21,7 @@ import net.subsloth.core.model.identifier.AccountProfileKey
  * where normalizedLogin is the login trimmed, NFC-normalized, and
  * lowercased for email-style logins.
  */
-class AccountProfileStore(
-    private val dataStore: DataStore<Preferences>,
-) {
+class AccountProfileStore(private val dataStore: DataStore<Preferences>) {
     private val saltKey = stringPreferencesKey("profile_salt")
 
     /**
@@ -62,24 +60,19 @@ class AccountProfileStore(
     }
 
     /** Indicates whether a profile salt has been generated. */
-    suspend fun hasSalt(): Boolean =
-        dataStore.data
-            .map { prefs ->
-                prefs[saltKey] != null
-            }.first()
+    suspend fun hasSalt(): Boolean = dataStore.data
+        .map { prefs ->
+            prefs[saltKey] != null
+        }.first()
 
     /** Exposes the salt as a Flow for observation. */
-    fun saltFlow(): Flow<String?> =
-        dataStore.data.map { prefs ->
-            prefs[saltKey]
-        }
+    fun saltFlow(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[saltKey]
+    }
 }
 
 expect fun generateSalt(): String
 
-expect fun hmacSha256(
-    key: ByteArray,
-    data: ByteArray,
-): ByteArray
+expect fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
 
 expect fun normalizeLogin(login: String): String

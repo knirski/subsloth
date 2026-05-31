@@ -32,50 +32,49 @@ object ClientFactory {
         password: String,
         baseUrl: String = DEFAULT_BASE_URL,
         enableHttpLogging: Boolean = false,
-    ): HttpClient =
-        HttpClient {
-            install(ContentNegotiation) {
-                json(
-                    Json {
-                        ignoreUnknownKeys = true
-                        coerceInputValues = true
-                    },
-                )
-            }
+    ): HttpClient = HttpClient {
+        install(ContentNegotiation) {
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                },
+            )
+        }
 
-            install(HttpTimeout) {
-                requestTimeoutMillis = 30_000
-                connectTimeoutMillis = 10_000
-                socketTimeoutMillis = 30_000
-            }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 30_000
+        }
 
-            install(ResponseValidationPlugin)
+        install(ResponseValidationPlugin)
 
-            install(Auth) {
-                basic {
-                    credentials {
-                        BasicAuthCredentials(login, password)
-                    }
-                    sendWithoutRequest { true }
+        install(Auth) {
+            basic {
+                credentials {
+                    BasicAuthCredentials(login, password)
                 }
-            }
-
-            install(HttpRequestRetry) {
-                maxRetries = 2
-                retryOnException(retryOnTimeout = true)
-                retryIf { _, response -> response.status.value == 429 || response.status.value in 500..599 }
-                delayMillis { attempt -> (attempt + 1) * 500L }
-            }
-
-            install(Logging) {
-                level = if (enableHttpLogging) LogLevel.HEADERS else LogLevel.NONE
-            }
-
-            defaultRequest {
-                url(baseUrl)
-                header(HttpHeaders.UserAgent, "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
-                header(HttpHeaders.Accept, "application/json, */*")
-                header(HttpHeaders.AcceptLanguage, "en-US,en;q=0.5")
+                sendWithoutRequest { true }
             }
         }
+
+        install(HttpRequestRetry) {
+            maxRetries = 2
+            retryOnException(retryOnTimeout = true)
+            retryIf { _, response -> response.status.value == 429 || response.status.value in 500..599 }
+            delayMillis { attempt -> (attempt + 1) * 500L }
+        }
+
+        install(Logging) {
+            level = if (enableHttpLogging) LogLevel.HEADERS else LogLevel.NONE
+        }
+
+        defaultRequest {
+            url(baseUrl)
+            header(HttpHeaders.UserAgent, "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
+            header(HttpHeaders.Accept, "application/json, */*")
+            header(HttpHeaders.AcceptLanguage, "en-US,en;q=0.5")
+        }
+    }
 }

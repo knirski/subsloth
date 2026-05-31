@@ -33,10 +33,7 @@ import platform.Security.kSecValueData
 actual class CredentialStore {
     private val serviceName = "net.subsloth.credentials"
 
-    actual fun save(
-        login: String,
-        password: String,
-    ) {
+    actual fun save(login: String, password: String) {
         val data = "$login\u0000$password".encodeToByteArray().toNSData()
         val query =
             NSDictionary.dictionaryWithObjects(
@@ -90,7 +87,6 @@ actual class CredentialStore {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun ByteArray.toNSData(): NSData =
-    usePinned { pinned ->
-        NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
-    }
+private fun ByteArray.toNSData(): NSData = usePinned { pinned ->
+    NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
+}

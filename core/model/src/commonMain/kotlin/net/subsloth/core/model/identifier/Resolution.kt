@@ -6,10 +6,7 @@ import androidx.compose.runtime.Immutable
  * A video resolution expressed as width × height in pixels.
  */
 @Immutable
-data class Resolution(
-    val width: Int,
-    val height: Int,
-) : Comparable<Resolution> {
+data class Resolution(val width: Int, val height: Int) : Comparable<Resolution> {
     init {
         require(width > 0) { "width must be positive: $width" }
         require(height > 0) { "height must be positive: $height" }

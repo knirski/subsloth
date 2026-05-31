@@ -6,6 +6,4 @@ import kotlin.jvm.JvmInline
  * Typed identifier for an Media show/series resource.
  */
 @JvmInline
-value class ShowId(
-    val value: Int,
-)
+value class ShowId(val value: Int)

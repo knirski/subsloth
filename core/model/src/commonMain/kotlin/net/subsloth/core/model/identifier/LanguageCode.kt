@@ -8,6 +8,4 @@ import kotlin.jvm.JvmInline
  * Typically stored as a two-letter (ISO 639-1) or three-letter (ISO 639-2) code.
  */
 @JvmInline
-value class LanguageCode(
-    val value: String,
-)
+value class LanguageCode(val value: String)

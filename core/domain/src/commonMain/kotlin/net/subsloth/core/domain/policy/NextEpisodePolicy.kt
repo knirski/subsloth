@@ -17,10 +17,9 @@ object NextEpisodePolicy {
      * repeatedly can avoid redundant O(N log N) sorting by sorting once
      * and passing the result to [nextEpisodeFromSorted].
      */
-    fun sortedAvailableEpisodes(episodes: List<Episode>): List<Episode> =
-        episodes
-            .filter { it.availability is Availability.Available }
-            .sortedWith(compareBy<Episode> { it.seasonNumber }.thenBy { it.episodeNumber })
+    fun sortedAvailableEpisodes(episodes: List<Episode>): List<Episode> = episodes
+        .filter { it.availability is Availability.Available }
+        .sortedWith(compareBy<Episode> { it.seasonNumber }.thenBy { it.episodeNumber })
 
     /**
      * Finds the next playable episode after [current] in the [episodes] list.
@@ -33,10 +32,7 @@ object NextEpisodePolicy {
      * use [nextEpisodeFromSorted] with a pre-sorted list to avoid redundant
      * O(N log N) sorting on every call.
      */
-    fun nextEpisode(
-        current: Episode,
-        episodes: List<Episode>,
-    ): Episode? {
+    fun nextEpisode(current: Episode, episodes: List<Episode>): Episode? {
         val sorted = sortedAvailableEpisodes(episodes)
 
         val currentIndex = sorted.indexOfFirst { it.id == current.id }
@@ -59,10 +55,7 @@ object NextEpisodePolicy {
      * Prefer this function when calling repeatedly with the same episode list
      * to avoid redundant O(N log N) sorting on every call.
      */
-    fun nextEpisodeFromSorted(
-        current: Episode,
-        sortedEpisodes: List<Episode>,
-    ): Episode? {
+    fun nextEpisodeFromSorted(current: Episode, sortedEpisodes: List<Episode>): Episode? {
         val currentIndex = sortedEpisodes.indexOfFirst { it.id == current.id }
         if (currentIndex < 0) return null
 
@@ -84,11 +77,7 @@ object NextEpisodePolicy {
      * - Only returns an episode whose [id] is in [downloadedEpisodeIds].
      * - Returns `null` when no subsequent downloaded episode exists.
      */
-    fun nextEpisodeOffline(
-        current: Episode,
-        episodes: List<Episode>,
-        downloadedEpisodeIds: Set<EpisodeId>,
-    ): Episode? {
+    fun nextEpisodeOffline(current: Episode, episodes: List<Episode>, downloadedEpisodeIds: Set<EpisodeId>): Episode? {
         val sorted = sortedAvailableEpisodes(episodes)
         return nextEpisodeOfflineFromSorted(current, sorted, downloadedEpisodeIds)
     }

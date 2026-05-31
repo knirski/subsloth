@@ -104,9 +104,9 @@ class MapperTest {
                 updatedAt = 1_800_000_000L,
                 subtitles = listOf(DtoSubtitleTrack(code = "en", language = "English", format = "vtt")),
                 qualities =
-                    listOf(
-                        DtoVideoQuality(label = "1080p", width = 1920, height = 1080),
-                    ),
+                listOf(
+                    DtoVideoQuality(label = "1080p", width = 1920, height = 1080),
+                ),
             )
 
         val result = Mapper.mapMovieDetails(dto)
@@ -192,11 +192,11 @@ class MapperTest {
                 title = "Test Show Detail",
                 status = "ongoing",
                 episodes =
-                    listOf(
-                        DtoEpisode(id = 101, showId = 20, season = 1, episode = 1, title = "E1", available = true),
-                        DtoEpisode(id = 102, showId = 20, season = 1, episode = 2, title = "E2", available = true),
-                        DtoEpisode(id = 103, showId = 20, season = 2, episode = 1, title = "S2E1", available = true),
-                    ),
+                listOf(
+                    DtoEpisode(id = 101, showId = 20, season = 1, episode = 1, title = "E1", available = true),
+                    DtoEpisode(id = 102, showId = 20, season = 1, episode = 2, title = "E2", available = true),
+                    DtoEpisode(id = 103, showId = 20, season = 2, episode = 1, title = "S2E1", available = true),
+                ),
                 arrayCountries = listOf("US"),
             )
 
@@ -256,9 +256,9 @@ class MapperTest {
                 premiereDate = "2024-01-01",
                 subtitles = listOf(DtoSubtitleTrack(code = "en", format = "srt")),
                 qualities =
-                    listOf(
-                        DtoVideoQuality(label = "720p", width = 1280, height = 720),
-                    ),
+                listOf(
+                    DtoVideoQuality(label = "720p", width = 1280, height = 720),
+                ),
             )
 
         val result = Mapper.mapEpisode(dto)

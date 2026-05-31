@@ -50,19 +50,13 @@ sealed interface Media {
     @Stable
     sealed interface MediaId {
         @Immutable
-        data class Movie(
-            val value: MovieId,
-        ) : MediaId
+        data class Movie(val value: MovieId) : MediaId
 
         @Immutable
-        data class Show(
-            val value: ShowId,
-        ) : MediaId
+        data class Show(val value: ShowId) : MediaId
 
         @Immutable
-        data class Episode(
-            val value: EpisodeId,
-        ) : MediaId
+        data class Episode(val value: EpisodeId) : MediaId
     }
 }
 

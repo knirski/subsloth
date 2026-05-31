@@ -86,7 +86,7 @@ object Mapper {
                 imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                 tmdbId = dto.tmdbId?.let { ExternalId(it.toString(), ExternalIdSource.TMDB) },
                 countries =
-                    parseCommaSeparated(dto.countries),
+                parseCommaSeparated(dto.countries),
                 posterUrl = dto.posterUrl ?: dto.poster,
                 backdropUrl = dto.backdropUrl ?: dto.backdrop,
             ),
@@ -185,19 +185,17 @@ object Mapper {
 
     // ── Availability ─────────────────────────────────────────────────────
 
-    fun mapAvailability(updatedAt: Instant?): Availability =
-        if (updatedAt != null && updatedAt.epochSeconds > 0) {
-            Availability.Available
-        } else {
-            Availability.Expired
-        }
+    fun mapAvailability(updatedAt: Instant?): Availability = if (updatedAt != null && updatedAt.epochSeconds > 0) {
+        Availability.Available
+    } else {
+        Availability.Expired
+    }
 
-    fun mapEpisodeAvailability(available: Boolean?): Availability =
-        when (available) {
-            true -> Availability.Available
-            false -> Availability.Upcoming.UnknownDate
-            null -> Availability.Expired
-        }
+    fun mapEpisodeAvailability(available: Boolean?): Availability = when (available) {
+        true -> Availability.Available
+        false -> Availability.Upcoming.UnknownDate
+        null -> Availability.Expired
+    }
 
     // ── Quality Mappers ──────────────────────────────────────────────────
 
@@ -208,12 +206,12 @@ object Mapper {
         val resolution = parseResolution(dto.resolution, dto.width, dto.height) ?: return null
         return DomainQuality(
             info =
-                QualityDescriptor(
-                    resolution = resolution,
-                    label = dto.label ?: dto.resolution,
-                    bitrate = dto.bitrate,
-                    mimeType = null,
-                ),
+            QualityDescriptor(
+                resolution = resolution,
+                label = dto.label ?: dto.resolution,
+                bitrate = dto.bitrate,
+                mimeType = null,
+            ),
             url = dto.url,
             downloadUrl = null,
         )
@@ -237,17 +235,13 @@ object Mapper {
 
     // ── Show Status ──────────────────────────────────────────────────────
 
-    fun mapShowStatus(
-        status: String?,
-        ended: Boolean?,
-    ): ShowStatus =
-        when {
-            ended == true -> ShowStatus.ENDED
-            status.equals("ended", ignoreCase = true) -> ShowStatus.ENDED
-            status.equals("ongoing", ignoreCase = true) -> ShowStatus.ONGOING
-            status.equals("upcoming", ignoreCase = true) -> ShowStatus.UPCOMING
-            else -> ShowStatus.UNKNOWN
-        }
+    fun mapShowStatus(status: String?, ended: Boolean?): ShowStatus = when {
+        ended == true -> ShowStatus.ENDED
+        status.equals("ended", ignoreCase = true) -> ShowStatus.ENDED
+        status.equals("ongoing", ignoreCase = true) -> ShowStatus.ONGOING
+        status.equals("upcoming", ignoreCase = true) -> ShowStatus.UPCOMING
+        else -> ShowStatus.UNKNOWN
+    }
 
     // ── Private Helpers ──────────────────────────────────────────────────
 
@@ -269,36 +263,24 @@ object Mapper {
         return MappingResult(results.toImmutableList(), errors.toImmutableList())
     }
 
-    private fun parseCommaSeparated(value: String?): ImmutableList<String> =
-        value
-            ?.split(",")
-            ?.map(String::trim)
-            ?.filter(String::isNotEmpty)
-            .orEmpty()
-            .toImmutableList()
+    private fun parseCommaSeparated(value: String?): ImmutableList<String> = value
+        ?.split(",")
+        ?.map(String::trim)
+        ?.filter(String::isNotEmpty)
+        .orEmpty()
+        .toImmutableList()
 
-    private fun fallbackList(
-        arrayField: List<String>?,
-        field: String?,
-    ): ImmutableList<String> = arrayField?.toImmutableList() ?: parseCommaSeparated(field)
+    private fun fallbackList(arrayField: List<String>?, field: String?): ImmutableList<String> =
+        arrayField?.toImmutableList() ?: parseCommaSeparated(field)
 
-    private fun fallbackList(
-        arrayField: List<String>?,
-        field: List<String>?,
-    ): ImmutableList<String> = (arrayField ?: field.orEmpty()).toImmutableList()
+    private fun fallbackList(arrayField: List<String>?, field: List<String>?): ImmutableList<String> =
+        (arrayField ?: field.orEmpty()).toImmutableList()
 
-    private fun parseResolution(
-        resolution: String?,
-        width: Int?,
-        height: Int?,
-    ): Resolution? =
+    private fun parseResolution(resolution: String?, width: Int?, height: Int?): Resolution? =
         parseFromDimensions(width, height)
             ?: parseFromString(resolution)
 
-    private fun parseFromDimensions(
-        width: Int?,
-        height: Int?,
-    ): Resolution? {
+    private fun parseFromDimensions(width: Int?, height: Int?): Resolution? {
         if (width == null || height == null) return null
         if (width <= 0 || height <= 0) return null
         return Resolution(width, height)
@@ -311,35 +293,32 @@ object Mapper {
         return if (w > 0 && h > 0) Resolution(w, h) else null
     }
 
-    private fun parseSubtitleFormat(format: String?): SubtitleFormat =
-        when {
-            format.equals("srt", ignoreCase = true) -> SubtitleFormat.SRT
-            format.equals("vtt", ignoreCase = true) -> SubtitleFormat.VTT
-            format.equals("ass", ignoreCase = true) -> SubtitleFormat.ASS
-            format.equals("ssa", ignoreCase = true) -> SubtitleFormat.SSA
-            else -> SubtitleFormat.UNKNOWN
-        }
+    private fun parseSubtitleFormat(format: String?): SubtitleFormat = when {
+        format.equals("srt", ignoreCase = true) -> SubtitleFormat.SRT
+        format.equals("vtt", ignoreCase = true) -> SubtitleFormat.VTT
+        format.equals("ass", ignoreCase = true) -> SubtitleFormat.ASS
+        format.equals("ssa", ignoreCase = true) -> SubtitleFormat.SSA
+        else -> SubtitleFormat.UNKNOWN
+    }
 
-    private fun groupEpisodesBySeason(episodes: List<DomainEpisode>): ImmutableList<Season> =
-        episodes
-            .groupBy { it.seasonNumber }
-            .entries
-            .sortedBy { it.key }
-            .map { (seasonNumber, seasonEpisodes) ->
-                Season(
-                    seasonNumber = seasonNumber,
-                    title = "Season $seasonNumber",
-                    plot = null,
-                    episodes = seasonEpisodes.sortedBy { it.episodeNumber }.toImmutableList(),
-                )
-            }.toImmutableList()
+    private fun groupEpisodesBySeason(episodes: List<DomainEpisode>): ImmutableList<Season> = episodes
+        .groupBy { it.seasonNumber }
+        .entries
+        .sortedBy { it.key }
+        .map { (seasonNumber, seasonEpisodes) ->
+            Season(
+                seasonNumber = seasonNumber,
+                title = "Season $seasonNumber",
+                plot = null,
+                episodes = seasonEpisodes.sortedBy { it.episodeNumber }.toImmutableList(),
+            )
+        }.toImmutableList()
 
-    private fun extractShowSubtitles(episodes: List<DomainEpisode>): ImmutableList<DomainSubtitle> =
-        episodes
-            .flatMap { it.subtitles }
-            .distinctBy { it.language }
-            .sortedBy { it.language.value }
-            .toImmutableList()
+    private fun extractShowSubtitles(episodes: List<DomainEpisode>): ImmutableList<DomainSubtitle> = episodes
+        .flatMap { it.subtitles }
+        .distinctBy { it.language }
+        .sortedBy { it.language.value }
+        .toImmutableList()
 
     private fun String?.toInstant(): Instant? {
         if (this == null) return null

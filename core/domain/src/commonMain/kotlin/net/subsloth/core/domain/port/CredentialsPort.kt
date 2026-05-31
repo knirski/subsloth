@@ -8,10 +8,7 @@ package net.subsloth.core.domain.port
  */
 interface CredentialsPort {
     /** Saves encrypted login credentials. */
-    suspend fun save(
-        login: String,
-        password: String,
-    ): Result<Unit>
+    suspend fun save(login: String, password: String): Result<Unit>
 
     /** Reads the saved login credentials, or returns `null` if none exist. */
     suspend fun read(): Result<Credentials?>
@@ -21,7 +18,4 @@ interface CredentialsPort {
 }
 
 /** Login credentials for the Media service. */
-data class Credentials(
-    val login: String,
-    val password: String,
-)
+data class Credentials(val login: String, val password: String)

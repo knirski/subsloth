@@ -97,15 +97,11 @@ class SubtitlePolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun subtitle(
-        language: LanguageCode,
-        displayName: String,
-    ): Subtitle =
-        Subtitle(
-            language = language,
-            languageDisplayName = displayName,
-            url = null,
-            downloadUrl = null,
-            format = SubtitleFormat.SRT,
-        )
+    private fun subtitle(language: LanguageCode, displayName: String): Subtitle = Subtitle(
+        language = language,
+        languageDisplayName = displayName,
+        url = null,
+        downloadUrl = null,
+        format = SubtitleFormat.SRT,
+    )
 }

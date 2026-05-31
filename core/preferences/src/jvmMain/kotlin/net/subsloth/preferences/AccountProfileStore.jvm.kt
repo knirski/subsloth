@@ -13,10 +13,7 @@ actual fun generateSalt(): String {
     return bytes.joinToString("") { "%02x".format(it) }
 }
 
-actual fun hmacSha256(
-    key: ByteArray,
-    data: ByteArray,
-): ByteArray {
+actual fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     val mac = Mac.getInstance("HmacSHA256")
     val keySpec = SecretKeySpec(key, "HmacSHA256")
     mac.init(keySpec)

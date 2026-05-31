@@ -23,16 +23,10 @@ import net.subsloth.database.entity.WatchedStateEntity
 @Dao
 interface CachedOnlineMetadataDao {
     @Query("SELECT * FROM cached_online_metadata WHERE profileKey = :profileKey AND contentType = :contentType")
-    fun getByProfileAndType(
-        profileKey: String,
-        contentType: String,
-    ): Flow<List<CachedOnlineMetadataEntity>>
+    fun getByProfileAndType(profileKey: String, contentType: String): Flow<List<CachedOnlineMetadataEntity>>
 
     @Query("SELECT * FROM cached_online_metadata WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): CachedOnlineMetadataEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): CachedOnlineMetadataEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: CachedOnlineMetadataEntity)
@@ -47,10 +41,7 @@ interface CachedOnlineMetadataDao {
 @Dao
 interface AccountPlaybackProgressDao {
     @Query("SELECT * FROM account_playback_progress WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): AccountPlaybackProgressEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): AccountPlaybackProgressEntity?
 
     @Query("SELECT * FROM account_playback_progress WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<AccountPlaybackProgressEntity>>
@@ -68,10 +59,7 @@ interface FavoriteDao {
     fun getAllForProfile(profileKey: String): Flow<List<FavoriteEntity>>
 
     @Query("SELECT * FROM favorites WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): FavoriteEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): FavoriteEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: FavoriteEntity)
@@ -89,10 +77,7 @@ interface WatchLaterDao {
     fun getAllForProfile(profileKey: String): Flow<List<WatchLaterEntity>>
 
     @Query("SELECT * FROM watch_later WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): WatchLaterEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): WatchLaterEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: WatchLaterEntity)
@@ -110,10 +95,7 @@ interface WatchedStateDao {
     fun getAllForProfile(profileKey: String): Flow<List<WatchedStateEntity>>
 
     @Query("SELECT * FROM watched_state WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): WatchedStateEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): WatchedStateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: WatchedStateEntity)
@@ -128,10 +110,7 @@ interface SubscriptionDao {
     fun getAllForProfile(profileKey: String): Flow<List<SubscriptionEntity>>
 
     @Query("SELECT * FROM subscriptions WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(
-        profileKey: String,
-        contentId: String,
-    ): SubscriptionEntity?
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): SubscriptionEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SubscriptionEntity)
@@ -163,10 +142,7 @@ interface DownloadedMediaDao {
     fun getCompleted(): Flow<List<DownloadedMediaEntity>>
 
     @Query("SELECT * FROM downloaded_media WHERE contentId = :contentId AND mediaType = :mediaType")
-    suspend fun getByContent(
-        contentId: String,
-        mediaType: String,
-    ): DownloadedMediaEntity?
+    suspend fun getByContent(contentId: String, mediaType: String): DownloadedMediaEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: DownloadedMediaEntity)

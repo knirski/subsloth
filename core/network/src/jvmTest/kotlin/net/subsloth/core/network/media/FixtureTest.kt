@@ -68,12 +68,11 @@ class FixtureTest {
     }
 
     private fun fixtureStrings(name: String): List<String> {
-        fun collectStrings(element: JsonElement): List<String> =
-            when (element) {
-                is JsonPrimitive -> if (element.isString) listOf(element.content) else emptyList()
-                is JsonArray -> element.flatMap(::collectStrings)
-                is JsonObject -> element.values.flatMap(::collectStrings)
-            }
+        fun collectStrings(element: JsonElement): List<String> = when (element) {
+            is JsonPrimitive -> if (element.isString) listOf(element.content) else emptyList()
+            is JsonArray -> element.flatMap(::collectStrings)
+            is JsonObject -> element.values.flatMap(::collectStrings)
+        }
 
         return collectStrings(jsonParser.parseToJsonElement(loadFixtureText(name)))
     }
@@ -173,56 +172,54 @@ class FixtureTest {
     // ── API contract test ───────────────────────────────────────────────
 
     @Test
-    fun `listMovies sends expected query parameters`() =
-        runTest {
-            val capturedUrl = mutableListOf<String>()
-            val mockEngine =
-                MockEngine { request ->
-                    capturedUrl.add(request.url.toString())
-                    respond(
-                        content = ByteReadChannel("""{"movies":[],"meta":null}"""),
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
-            val client =
-                HttpClient(mockEngine) {
-                    install(ContentNegotiation) { json(jsonParser) }
-                }
-            val api = Api(client)
+    fun `listMovies sends expected query parameters`() = runTest {
+        val capturedUrl = mutableListOf<String>()
+        val mockEngine =
+            MockEngine { request ->
+                capturedUrl.add(request.url.toString())
+                respond(
+                    content = ByteReadChannel("""{"movies":[],"meta":null}"""),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        val client =
+            HttpClient(mockEngine) {
+                install(ContentNegotiation) { json(jsonParser) }
+            }
+        val api = Api(client)
 
-            api.listMovies(page = 1, perPage = 50, genre = "action")
+        api.listMovies(page = 1, perPage = 50, genre = "action")
 
-            val url = capturedUrl.single()
-            assertTrue("page=1" in url)
-            assertTrue("per_page=50" in url)
-            assertTrue("genre=action" in url)
-        }
+        val url = capturedUrl.single()
+        assertTrue("page=1" in url)
+        assertTrue("per_page=50" in url)
+        assertTrue("genre=action" in url)
+    }
 
     @Test
-    fun `listShows sends expected query parameters`() =
-        runTest {
-            val capturedUrl = mutableListOf<String>()
-            val mockEngine =
-                MockEngine { request ->
-                    capturedUrl.add(request.url.toString())
-                    respond(
-                        content = ByteReadChannel("""{"shows":[],"meta":null}"""),
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
-            val client =
-                HttpClient(mockEngine) {
-                    install(ContentNegotiation) { json(jsonParser) }
-                }
-            val api = Api(client)
+    fun `listShows sends expected query parameters`() = runTest {
+        val capturedUrl = mutableListOf<String>()
+        val mockEngine =
+            MockEngine { request ->
+                capturedUrl.add(request.url.toString())
+                respond(
+                    content = ByteReadChannel("""{"shows":[],"meta":null}"""),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        val client =
+            HttpClient(mockEngine) {
+                install(ContentNegotiation) { json(jsonParser) }
+            }
+        val api = Api(client)
 
-            api.listShows(page = 2, sort = "year", country = "US")
+        api.listShows(page = 2, sort = "year", country = "US")
 
-            val url = capturedUrl.single()
-            assertTrue("page=2" in url)
-            assertTrue("sort=year" in url)
-            assertTrue("country=US" in url)
-        }
+        val url = capturedUrl.single()
+        assertTrue("page=2" in url)
+        assertTrue("sort=year" in url)
+        assertTrue("country=US" in url)
+    }
 }

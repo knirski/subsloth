@@ -172,19 +172,15 @@ class QualityPolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun quality(
-        resolution: Resolution,
-        label: String,
-    ): Quality =
-        Quality(
-            info =
-                QualityDescriptor(
-                    resolution = resolution,
-                    label = label,
-                    bitrate = null,
-                    mimeType = null,
-                ),
-            url = null,
-            downloadUrl = null,
-        )
+    private fun quality(resolution: Resolution, label: String): Quality = Quality(
+        info =
+        QualityDescriptor(
+            resolution = resolution,
+            label = label,
+            bitrate = null,
+            mimeType = null,
+        ),
+        url = null,
+        downloadUrl = null,
+    )
 }

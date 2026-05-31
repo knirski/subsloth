@@ -6,6 +6,4 @@ import kotlin.jvm.JvmInline
  * Typed identifier for an Media movie resource.
  */
 @JvmInline
-value class MovieId(
-    val value: Int,
-)
+value class MovieId(val value: Int)

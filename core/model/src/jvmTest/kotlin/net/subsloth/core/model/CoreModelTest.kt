@@ -81,9 +81,9 @@ class CoreModelTest {
                 plot = "Not yet released",
                 durationSeconds = 1800L,
                 availability =
-                    Availability.Upcoming.At(
-                        availableAtEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
-                    ),
+                Availability.Upcoming.At(
+                    availableAtEpochSeconds = Instant.fromEpochSeconds(1_900_000_000L),
+                ),
                 imdbId = null,
                 qualities = persistentListOf(),
                 subtitles = persistentListOf(),
@@ -121,12 +121,12 @@ class CoreModelTest {
         val q =
             Quality(
                 info =
-                    QualityDescriptor(
-                        resolution = Resolution.FULL_HD,
-                        label = "1080p",
-                        bitrate = 5_000_000,
-                        mimeType = "video/mp4",
-                    ),
+                QualityDescriptor(
+                    resolution = Resolution.FULL_HD,
+                    label = "1080p",
+                    bitrate = 5_000_000,
+                    mimeType = "video/mp4",
+                ),
                 url = "https://example.com/stream",
                 downloadUrl = null,
             )
@@ -282,8 +282,6 @@ class CoreModelTest {
         errors.forEach { assertThat(it).isInstanceOf(DomainError::class.java) }
     }
 
-    private fun qualityDescriptor(
-        resolution: Resolution,
-        label: String,
-    ): QualityDescriptor = QualityDescriptor(resolution = resolution, label = label, bitrate = null, mimeType = null)
+    private fun qualityDescriptor(resolution: Resolution, label: String): QualityDescriptor =
+        QualityDescriptor(resolution = resolution, label = label, bitrate = null, mimeType = null)
 }

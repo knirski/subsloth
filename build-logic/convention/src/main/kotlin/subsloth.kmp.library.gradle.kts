@@ -21,7 +21,6 @@ kotlin {
     jvm()
     iosArm64()
     iosSimulatorArm64()
-    linuxX64()
     macosArm64()
 
     sourceSets {
@@ -65,6 +64,11 @@ spotless {
     kotlin {
         target("src/*/kotlin/**/*.kt")
         ktlint(ktlintVersion)
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                ),
+            )
         toggleOffOn()
     }
     kotlinGradle {

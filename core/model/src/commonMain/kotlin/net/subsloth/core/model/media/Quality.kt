@@ -12,12 +12,7 @@ import net.subsloth.core.model.identifier.Resolution
  * download sessions.
  */
 @Immutable
-data class QualityDescriptor(
-    val resolution: Resolution,
-    val label: String?,
-    val bitrate: Int?,
-    val mimeType: String?,
-)
+data class QualityDescriptor(val resolution: Resolution, val label: String?, val bitrate: Int?, val mimeType: String?)
 
 /**
  * A playable quality/variant available for a media item.

@@ -21,10 +21,7 @@ object CompletionPolicy {
      * Unknown duration (durationSeconds <= 0) is never completed via
      * position alone and requires an explicit playback-ended event.
      */
-    fun isCompleted(
-        positionSeconds: Long,
-        durationSeconds: Long,
-    ): Boolean {
+    fun isCompleted(positionSeconds: Long, durationSeconds: Long): Boolean {
         if (durationSeconds <= 0L) return false
         return positionSeconds.toDouble() / durationSeconds.toDouble() >= COMPLETION_THRESHOLD
     }

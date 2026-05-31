@@ -1,0 +1,27 @@
+name: "KMP Gradle Setup"
+description: "Set up JDK 17 + Gradle + Kotlin/Native cache for KMP builds"
+runs:
+  using: "composite"
+  steps:
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    # Kotlin/Native compiler cache — slow to download on every run (~5 min).
+    # Shared across OS-specific runners via separate keys.
+    - name: Cache Kotlin/Native compiler
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.konan
+        key: ${{ runner.os }}-konan-${{ hashFiles('**/libs.versions.toml', '**/*.gradle.kts') }}
+        restore-keys: |
+          ${{ runner.os }}-konan-
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+        gradle-home-cache-cleanup: true

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_speed">Speed</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_next_episode">Next episode</string>
+    <string name="player_cancel">Cancel</string>
+    <string name="player_session_expired">Session Expired</string>
+    <string name="player_stream_expired">Stream URL expired</string>
+    <string name="player_playback_error">Playback Error</string>
+    <string name="player_sign_in_again">Sign in again</string>
+    <string name="player_retry">Retry</string>
+    <string name="player_back_to_details">Back to details</string>
+    <string name="player_retry_with_fresh_link">Retry with fresh link</string>
+    <string name="player_quality">Quality</string>
+    <string name="player_subtitle_in">Subtitles in %s</string>
+    <string name="player_no_subtitles">No subtitles in preferred language</string>
+    <string name="player_quality_reduced">Quality reduced to %s</string>
+</resources>

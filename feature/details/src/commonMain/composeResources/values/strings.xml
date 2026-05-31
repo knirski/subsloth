@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_ongoing">Ongoing</string>
+    <string name="show_ended">Ended</string>
+    <string name="show_upcoming">Upcoming</string>
+    <string name="subtitles_format">Subtitles: %s</string>
+</resources>

@@ -11,23 +11,15 @@ object DownloadPolicy {
     @Suppress("MagicNumber")
     fun requiredReserveBytes(totalBytes: Long): Long = minOf(RESERVE_CAP_BYTES, totalBytes.coerceAtLeast(0) / 10)
 
-    fun canTransferOnNetwork(
-        isMetered: Boolean,
-        transferPreference: TransferPreference,
-    ): Boolean =
+    fun canTransferOnNetwork(isMetered: Boolean, transferPreference: TransferPreference): Boolean =
         when (transferPreference) {
             TransferPreference.WifiOnly -> !isMetered
             TransferPreference.MeteredAllowed -> true
         }
 
-    fun canReplaceQuality(
-        existing: QualityDescriptor,
-        candidate: QualityDescriptor,
-    ): Boolean = candidate.resolution.pixelCount > existing.resolution.pixelCount
+    fun canReplaceQuality(existing: QualityDescriptor, candidate: QualityDescriptor): Boolean =
+        candidate.resolution.pixelCount > existing.resolution.pixelCount
 
-    fun hasSufficientStorage(
-        availableBytes: Long,
-        requiredBytes: Long,
-        reserveBytes: Long,
-    ): Boolean = availableBytes >= requiredBytes + reserveBytes
+    fun hasSufficientStorage(availableBytes: Long, requiredBytes: Long, reserveBytes: Long): Boolean =
+        availableBytes >= requiredBytes + reserveBytes
 }

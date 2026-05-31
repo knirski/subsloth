@@ -29,10 +29,7 @@ actual fun generateSalt(): String {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun hmacSha256(
-    key: ByteArray,
-    data: ByteArray,
-): ByteArray {
+actual fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     val digest = ByteArray(CC_SHA256_DIGEST_LENGTH)
     memScoped {
         val ctx = alloc<platform.darwin.CCHmacContext>()

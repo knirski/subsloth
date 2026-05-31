@@ -7,26 +7,13 @@ import io.ktor.client.plugins.logging.Logger as KtorLogger
  * Implements Ktor's [KtorLogger] so it can be used as a logging plugin destination.
  */
 internal object InterceptorLogger : KtorLogger {
-    fun v(
-        tag: String,
-        msg: String,
-    ) = log("V", tag, msg)
+    fun v(tag: String, msg: String) = log("V", tag, msg)
 
-    fun w(
-        tag: String,
-        msg: String,
-    ) = log("W", tag, msg)
+    fun w(tag: String, msg: String) = log("W", tag, msg)
 
-    fun e(
-        tag: String,
-        msg: String,
-    ) = log("E", tag, msg)
+    fun e(tag: String, msg: String) = log("E", tag, msg)
 
-    private fun log(
-        level: String,
-        tag: String,
-        msg: String,
-    ) {
+    private fun log(level: String, tag: String, msg: String) {
         println("$level/$tag: $msg")
     }
 

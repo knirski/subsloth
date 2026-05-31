@@ -17,9 +17,9 @@ class SearchPolicyTest {
             id = Media.MediaId.Movie(MovieId(1)),
             title = "The Dark Knight",
             plot =
-                "When the menace known as the Joker wreaks havoc and chaos on " +
-                    "the people of Gotham, Batman must accept one of the greatest " +
-                    "psychological and physical tests of his ability to fight injustice.",
+            "When the menace known as the Joker wreaks havoc and chaos on " +
+                "the people of Gotham, Batman must accept one of the greatest " +
+                "psychological and physical tests of his ability to fight injustice.",
             availability = Availability.Available,
             rating = 9.0,
             year = 2008,
@@ -35,9 +35,9 @@ class SearchPolicyTest {
             id = Media.MediaId.Show(value = ShowId(1)),
             title = "Breaking Bad",
             plot =
-                "A high school chemistry teacher diagnosed with inoperable lung " +
-                    "cancer turns to manufacturing and selling methamphetamine in " +
-                    "order to secure his family's future.",
+            "A high school chemistry teacher diagnosed with inoperable lung " +
+                "cancer turns to manufacturing and selling methamphetamine in " +
+                "order to secure his family's future.",
             availability = Availability.Available,
             rating = 9.5,
             year = 2008,
