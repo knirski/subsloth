@@ -13,8 +13,6 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
@@ -29,31 +27,8 @@ jobs:
       - name: Build web distribution with mock data
         run: ./gradlew :webApp:wasmJsBrowserDistribution
 
-      - name: Upload to Pages
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: subsloth-web-${{ github.sha }}
           path: webApp/build/dist/wasmJs/productionExecutable
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url || '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check if Pages is enabled
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::GitHub Pages is not enabled for this repository. Skipping deploy."
-          fi
-
-      - name: Deploy to GitHub Pages
-        if: steps.check.outputs.enabled == 'true'
-        id: deployment
-        uses: actions/deploy-pages@v4
