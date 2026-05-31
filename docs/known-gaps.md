@@ -8,23 +8,24 @@ includes the reason, impact, and what would be needed to close it.
 
 ## 1. SQLite web worker bundling
 
-**Status:** Known gap
+**Status:** Resolved ✅
 
-`:webApp` doesn't bundle the `sqlite-wasm-worker` NPM package.
-The database wasm builder in `core/database/src/wasmJsMain/` creates
-`Worker("sqlite-wasm-worker/worker.js")` which needs to be available in the
-webpack bundle.
+A local `sqlite-wasm-worker/` package with the AndroidX reference worker
+implementation and `@sqlite.org/sqlite-wasm` dependency is bundled in
+`:webApp`. The worker is declared as `implementation(npm("sqlite-wasm-worker", "file:${project.projectDir}/sqlite-wasm-worker"))` (absolute path to avoid
+Yarn resolution issues from the generated `package.json` directory), and
+`@sqlite.org/sqlite-wasm` is declared as an npm dependency.
 
-The `sqlite-web` library's worker (`@androidx/sqlite-web-worker`) is a **local
-npm package** in the AndroidX repo, not published to npm.
+The full `wasmJsBrowserDistribution` pipeline (including webpack bundling)
+passes. The Kotlin/Wasm toolchain (Node.js, Yarn, Binaryen) is provisioned
+from the Nix environment via pre-populated symlinks in `~/.kotlin/`.
 
-**To close:**
-- Add `implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))` to
-  `:core:database` or `:webApp` wasmJs dependencies
-- Create a worker JS file that imports `@sqlite.org/sqlite-wasm`
-- Add webpack config via `webpack.config.d/` or the `commonWebpackConfig` DSL
-- Set COOP/COEP headers (`Cross-Origin-Opener-Policy: same-origin`,
-  `Cross-Origin-Embedder-Policy: require-corp`) for OPFS support
+**Remaining:**
+- Cross-Origin headers (`Cross-Origin-Opener-Policy: same-origin`,
+  `Cross-Origin-Embedder-Policy: require-corp`) are set on the
+  webpack-dev-server via `webApp/webpack.config.d/opfs-headers.js`.
+  Production deployments must also set these headers at the reverse proxy
+  or CDN level.
 
 ---
 
@@ -205,3 +206,6 @@ The following items were previously tracked but are now resolved:
 | **CredentialStore localStorage security** | Removed "encrypted" claim, added plaintext warning. ✅ |
 | **Database inMemory → persistent** | Now uses `databaseBuilder` with Worker persistence. ✅ |
 | **`parseMediaId` truncation** | `toIntOrNull()` instead of `toLong().toInt()`. ✅ |
+| **SQLite web worker bundling** | Local `sqlite-wasm-worker` package in `:webApp` with `@sqlite.org/sqlite-wasm` npm dep. Full `wasmJsBrowserDistribution` passes. ✅ |
+| **OPFS headers** | `webApp/webpack.config.d/opfs-headers.js` sets COOP/COEP on dev-server. Production deployment must replicate at reverse proxy. ✅ |
+| **Nix/Gradle webpack environment** | `PREFER_SETTINGS` + Ivy repos in `settings.gradle.kts` + Nix `nodejs`/`yarn`/`binaryen` packages + `~/.kotlin/` pre-population. ✅ |

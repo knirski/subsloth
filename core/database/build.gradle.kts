@@ -33,6 +33,10 @@ kotlin {
             implementation(libs.sqlite.web)
             implementation(libs.kotlinx.browser)
         }
+
+        jvmTest.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
     }
 }
 

@@ -400,6 +400,11 @@
           openjdk25
           openjdk17
 
+          # Node.js + Yarn + Binaryen (for Kotlin/Wasm webpack bundling)
+          nodejs
+          yarn
+          binaryen
+
           # Utilities (not provided by stdenv)
           curl
           ripgrep
@@ -416,6 +421,7 @@
         JAVA17_HOME = "${pkgs.openjdk17}/lib/openjdk";
         ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
         ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+        KOTLIN_NODEJS_HOME = "${pkgs.nodejs}";
 
         shellHook = ''
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)

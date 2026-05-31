@@ -20,11 +20,11 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.components.resources)
-            implementation(compose.ui)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.multiplatform.foundation)
+            implementation(libs.compose.multiplatform.material3)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.multiplatform.ui)
 
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
@@ -44,6 +44,9 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.navigation3)
             implementation(libs.savedstate)
             implementation(libs.savedstate.compose)
+
+            implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))
+            implementation(npm("sqlite-wasm-worker", "file:${project.projectDir}/sqlite-wasm-worker"))
         }
     }
 }
