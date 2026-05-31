@@ -6,7 +6,29 @@ includes the reason, impact, and what would be needed to close it.
 
 ---
 
-## 1. `androidTarget()` in KMP Convention
+## 1. SQLite web worker bundling
+
+**Status:** Known gap
+
+`:webApp` doesn't bundle the `sqlite-wasm-worker` NPM package.
+The database wasm builder in `core/database/src/wasmJsMain/` creates
+`Worker("sqlite-wasm-worker/worker.js")` which needs to be available in the
+webpack bundle.
+
+The `sqlite-web` library's worker (`@androidx/sqlite-web-worker`) is a **local
+npm package** in the AndroidX repo, not published to npm.
+
+**To close:**
+- Add `implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))` to
+  `:core:database` or `:webApp` wasmJs dependencies
+- Create a worker JS file that imports `@sqlite.org/sqlite-wasm`
+- Add webpack config via `webpack.config.d/` or the `commonWebpackConfig` DSL
+- Set COOP/COEP headers (`Cross-Origin-Opener-Policy: same-origin`,
+  `Cross-Origin-Embedder-Policy: require-corp`) for OPFS support
+
+---
+
+## 2. `androidTarget()` in KMP Convention
 
 **Status:** Deferred
 
@@ -19,54 +41,77 @@ Adding `androidTarget()` would:
 - Enable `androidMain` source sets for Android-specific `expect`/`actual`
 - Remove the dual-build-system split for some modules
 
+**Blocked by:** Both `com.android.library` and `org.jetbrains.kotlin.multiplatform`
+register a `kotlin` extension, causing a conflict in the precompiled script
+plugin. Possible approaches:
+- Create a separate `subsloth.kmp.android.library` convention
+- Add `androidTarget()` per-module (doesn't need convention changes)
+- Wait for Gradle/AGP/KMP compatibility improvements
+
 **Impact:** Low. The current approach works (Android → JVM bytecode → AGP). The
 main cost is that Android-only libraries (WorkManager, Media3) require separate
 AGP modules rather than `androidMain` in shared modules.
 
-**To close:** Add `androidTarget()` to `subsloth.kmp.library` convention, migrate
-`androidMain` source sets where applicable, and update `:androidApp` consumption.
+**To close:** Resolve the AGP+KMP plugin conflict in the convention, add
+`androidTarget()` to `subsloth.kmp.library`, migrate `androidMain` source sets
+where applicable, and update `:androidApp` consumption.
 
 ---
 
-## 2. Compose Hot Reload
+## 3. `WebWorkerSQLiteDriver` nullable bug
 
-**Status:** Deferred
+**Status:** Blocked on upstream
 
-The `org.jetbrains.compose.hot-reload` Gradle plugin was not available at
-version `1.12.0-alpha01` (the Compose Multiplatform version used by the
-project). It requires:
+`sqlite-web:2.7.0-alpha05` has a bug where `isNull` caches the column
+type from the first row only. Documented in
+`linhvnguyen9/room3-sqlite-web-nullable-npe-repro`.
 
-1. The `org.jetbrains.compose.hot-reload` plugin published at a matching version
-2. The JetBrains Space Maven repository configured in `pluginManagement`
+**Impact:** Affects wasmJs database queries with nullable columns. May cause
+incorrect results or crashes when `isNull` returns a cached type from a
+different row.
 
-**Impact:** Medium. Hot reload speeds up Compose UI iteration significantly,
-especially for desktop development.
-
-**To close:**
-- Add `maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")` to
-  root `settings.gradle.kts` `pluginManagement` (already present for
-  dependencies)
-- Add the plugin and agent to the version catalog at a resolvable version
-- Apply to `:desktopApp` and optionally `:androidApp`
+**To close:** Upgrade `sqlite-web` when a fix is published.
 
 ---
 
-## 3. Split `:core:datasource-ktor`
+## 4. Web Crypto `@JsFun` Promise interop
 
-**Status:** Will not do (by design)
+**Files:** `core/preferences/src/wasmJsMain/AccountProfileStore.wasm.kt`
 
-This module implements a Media3 `BaseDataSource` that delegates to Ktor for
-HTTP. The Ktor code is tightly coupled to Media3's Android data-source
-abstraction — it extends Android classes and uses Android-specific threading.
-The module is correctly scoped as an Android-specific integration.
+**Status:** Known gap
 
-**Impact:** None. The module is properly designed.
+`webCryptoHmacHex` JS function returns a Promise (because `crypto.subtle.sign`
+is async), but Kotlin/Wasm `@JsFun` returns the Promise object synchronously.
+Proper `Promise.await()` interop for wasmJs needs `kotlinx.coroutines` support
+that isn't available for wasmJs.
+
+**Impact:** At runtime, the function receives a Promise object instead of the
+hex string. Profile key derivation will fail on wasmJs. Functionality degrades
+gracefully — other platforms (JVM, iOS) are unaffected.
+
+**To close:** Wait for Kotlin/Wasm Promise interop support, or implement a
+JS-side synchronous wrapper using `crypto.subtle` synchronously (not possible
+with current Web Crypto API design).
+
+---
+
+## 5. `ViewModelInjection` detekt suppressions
+
+**Files:** `desktopApp/DesktopNavHost.kt`, `webApp/WebNavHost.kt`
+
+**Status:** Accepted
+
+Correct `@Suppress` usage — necessary because `viewModel(key = contentId)`
+derives the ViewModel key from composable state. No cleaner approach exists
+with current Navigation3 + KMP lifecycle API.
+
+**Impact:** None. Suppressions are scoped narrowly and correctly.
 
 **To close:** N/A — not a gap.
 
 ---
 
-## 4. iOS-Specific Tests
+## 6. iOS-Specific Tests
 
 **Status:** Skipped per product direction
 
@@ -81,7 +126,7 @@ simulator/devices.
 
 ---
 
-## 5. Navigation3 on Desktop & Web
+## 7. Navigation3 on Desktop & Web
 
 **Status:** Known gap
 
@@ -105,17 +150,12 @@ changing navigation logic requires updating three nav hosts.
 
 ---
 
-## 6. Full Feature Integration on Desktop & Web
+## 8. Full Feature Integration on Desktop & Web
 
 **Status:** Known gap
 
 Desktop and web apps show a placeholder screen with a "Player Demo" button
-rather than the full Catalog / Login / Settings flows. This is because:
-
-- Catalog, Login, and Library screens are not yet wired into the nav hosts
-- Auth and Library depend on `:core:database` and `:core:preferences` which
-  don't compile for wasmJs (no Room/DataStore wasm support)
-- Desktop uses `:core:preferences` (JVM-compatible) and could support login
+rather than the full Catalog / Login / Settings flows.
 
 **Impact:** Medium. User-visible gap — desktop/web apps show a demo screen, not
 a functional app.
@@ -128,7 +168,7 @@ a functional app.
 
 ---
 
-## 7. WorkManager in `:feature:library`
+## 9. WorkManager in `:feature:library`
 
 **Status:** Removed from KMP module
 
@@ -148,18 +188,20 @@ moved to an `androidMain` source set (requires `androidTarget()` in convention).
 
 ---
 
-## 8. `local.properties` Hardcoded Nix SDK Path
+## Resolved
 
-**Status:** Known gap
+The following items were previously tracked but are now resolved:
 
-The `local.properties` file points to a specific Nix store path
-(`5bmn18cl0nk3ndihjqnfj1shbi4zxvdp-androidsdk`). This path changes after
-`nix-collect-garbage` or flake updates.
-
-**Impact:** Low for active development; breaks CI after Nix GC.
-
-**To close:**
-- Generate `local.properties` dynamically via `direnv` or a Nix shell hook
-- Or use the `ANDROID_SDK_ROOT` environment variable with a fallback in
-  `build.gradle.kts`
-- Or add `android.sdk.path` to a shared `gradle.properties` template
+| Item | Resolution |
+|---|---|
+| **Compose Hot Reload** | Bundled and enabled by default since CMP 1.10.0. Project is on `1.12.0-alpha01`. No action needed. |
+| **`local.properties` hardcoded Nix path** | Auto-generated from `$ANDROID_HOME` by `flake.nix` shellHook on every `direnv allow` entry. |
+| **DataStore on wasmJs** | `LocalStorageDataStore` backs `DataStore<Preferences>` with browser `localStorage`. Persists across page reloads. |
+| **Navigation3 on desktop** | `SavedStateConfiguration` + `androidx.savedstate:savedstate:1.5.0`. ✅ |
+| **Navigation3 on web (wasmJs)** | `savedstate:1.5.0` + `savedstate-compose` (wasm support since 1.3.2). ✅ |
+| **Room 3.0 on wasmJs** | `sqlite-web` + `WebWorkerSQLiteDriver` via `kotlinx-browser`. ✅ |
+| **Crypto CSPRNG** | Browser `crypto.getRandomValues()` via `@JsFun`. ✅ |
+| **Normalization order** | `trim → NFC → lowercase` matching JVM/iOS. ✅ |
+| **CredentialStore localStorage security** | Removed "encrypted" claim, added plaintext warning. ✅ |
+| **Database inMemory → persistent** | Now uses `databaseBuilder` with Worker persistence. ✅ |
+| **`parseMediaId` truncation** | `toIntOrNull()` instead of `toLong().toInt()`. ✅ |
