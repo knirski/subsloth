@@ -43,7 +43,7 @@ jobs:
 
           - display: 🌐 Web / wasmJs
             type: web
-            tasks: :webApp:wasmJsBrowserProductionRunDistribute
+            tasks: :webApp:compileKotlinWasmJs
 
           # macOS/iOS targets require macos-latest runner.
           # Uncomment when a macOS CI runner is configured:
