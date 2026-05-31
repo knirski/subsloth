@@ -99,9 +99,7 @@ sealed interface DecodeError : DomainError {
     data object SerializationFailed : DecodeError
 
     /** Critical fields are missing from the response. */
-    data class MissingFields(
-        val fields: List<String>,
-    ) : DecodeError
+    data class MissingFields(val fields: List<String>) : DecodeError
 }
 
 // ── Network ─────────────────────────────────────────────────────────────────
@@ -115,18 +113,13 @@ sealed interface NetworkError : DomainError {
     data object NoConnectivity : NetworkError
 
     /** Server returned a non-retryable HTTP error. */
-    data class HttpError(
-        val code: Int,
-        val message: String,
-    ) : NetworkError
+    data class HttpError(val code: Int, val message: String) : NetworkError
 
     /** Unexpected redirect or non-JSON response detected. */
     data object UnexpectedResponse : NetworkError
 
     /** The request was throttled (HTTP 429). */
-    data class RateLimited(
-        val retryAfterSeconds: Int?,
-    ) : NetworkError
+    data class RateLimited(val retryAfterSeconds: Int?) : NetworkError
 }
 
 // ── Library ─────────────────────────────────────────────────────────────────

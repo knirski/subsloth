@@ -29,9 +29,7 @@ sealed interface Availability {
 
         /** Scheduled for release at the given instant. */
         @Immutable
-        data class At(
-            val availableAtEpochSeconds: Instant,
-        ) : Upcoming
+        data class At(val availableAtEpochSeconds: Instant) : Upcoming
     }
 
     /** Available only in specific geographic regions. */
@@ -43,8 +41,6 @@ sealed interface Availability {
 
         /** Restricted to the specified set of regions. */
         @Immutable
-        data class Known(
-            val allowedRegions: ImmutableSet<RegionCode> = persistentSetOf(),
-        ) : GeoRestricted
+        data class Known(val allowedRegions: ImmutableSet<RegionCode> = persistentSetOf()) : GeoRestricted
     }
 }

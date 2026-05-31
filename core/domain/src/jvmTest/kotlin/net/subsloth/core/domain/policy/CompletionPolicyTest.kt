@@ -80,11 +80,7 @@ class CompletionPolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun progress(
-        positionSeconds: Long,
-        durationSeconds: Long,
-        isWatched: Boolean = false,
-    ): PlaybackProgress =
+    private fun progress(positionSeconds: Long, durationSeconds: Long, isWatched: Boolean = false): PlaybackProgress =
         PlaybackProgress(
             mediaId = Media.MediaId.Movie(MovieId(1)),
             positionSeconds = positionSeconds,

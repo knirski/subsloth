@@ -18,9 +18,7 @@ import net.subsloth.core.model.identifier.AccountProfileKey
  * so that different accounts have independent preferences.
  */
 @Suppress("TooManyFunctions")
-class UserPreferences(
-    private val dataStore: DataStore<Preferences>,
-) {
+class UserPreferences(private val dataStore: DataStore<Preferences>) {
     // ── Preference keys (namespaced by account profile key) ──────────────
 
     private fun subtitleEnabledKey(profileKey: AccountProfileKey) =
@@ -45,29 +43,21 @@ class UserPreferences(
 
     // ── Subtitle ─────────────────────────────────────────────────────────
 
-    fun subtitleEnabled(profileKey: AccountProfileKey): Flow<Boolean> =
-        dataStore.data.map { prefs ->
-            prefs[subtitleEnabledKey(profileKey)] ?: true
-        }
+    fun subtitleEnabled(profileKey: AccountProfileKey): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[subtitleEnabledKey(profileKey)] ?: true
+    }
 
-    suspend fun setSubtitleEnabled(
-        profileKey: AccountProfileKey,
-        enabled: Boolean,
-    ) {
+    suspend fun setSubtitleEnabled(profileKey: AccountProfileKey, enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[subtitleEnabledKey(profileKey)] = enabled
         }
     }
 
-    fun subtitleLanguage(profileKey: AccountProfileKey): Flow<String?> =
-        dataStore.data.map { prefs ->
-            prefs[subtitleLanguageKey(profileKey)]
-        }
+    fun subtitleLanguage(profileKey: AccountProfileKey): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[subtitleLanguageKey(profileKey)]
+    }
 
-    suspend fun setSubtitleLanguage(
-        profileKey: AccountProfileKey,
-        language: String?,
-    ) {
+    suspend fun setSubtitleLanguage(profileKey: AccountProfileKey, language: String?) {
         dataStore.edit { prefs ->
             if (language != null) {
                 prefs[subtitleLanguageKey(profileKey)] = language
@@ -79,15 +69,11 @@ class UserPreferences(
 
     // ── Quality ──────────────────────────────────────────────────────────
 
-    fun quality(profileKey: AccountProfileKey): Flow<String?> =
-        dataStore.data.map { prefs ->
-            prefs[qualityKey(profileKey)]
-        }
+    fun quality(profileKey: AccountProfileKey): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[qualityKey(profileKey)]
+    }
 
-    suspend fun setQuality(
-        profileKey: AccountProfileKey,
-        quality: String?,
-    ) {
+    suspend fun setQuality(profileKey: AccountProfileKey, quality: String?) {
         dataStore.edit { prefs ->
             if (quality != null) {
                 prefs[qualityKey(profileKey)] = quality
@@ -99,15 +85,11 @@ class UserPreferences(
 
     // ── Playback Speed ───────────────────────────────────────────────────
 
-    fun playbackSpeed(profileKey: AccountProfileKey): Flow<Float> =
-        dataStore.data.map { prefs ->
-            prefs[playbackSpeedKey(profileKey)] ?: 1.0f
-        }
+    fun playbackSpeed(profileKey: AccountProfileKey): Flow<Float> = dataStore.data.map { prefs ->
+        prefs[playbackSpeedKey(profileKey)] ?: 1.0f
+    }
 
-    suspend fun setPlaybackSpeed(
-        profileKey: AccountProfileKey,
-        speed: Float,
-    ) {
+    suspend fun setPlaybackSpeed(profileKey: AccountProfileKey, speed: Float) {
         dataStore.edit { prefs ->
             prefs[playbackSpeedKey(profileKey)] = speed
         }
@@ -115,15 +97,11 @@ class UserPreferences(
 
     // ── Downloads ────────────────────────────────────────────────────────
 
-    fun downloadsWifiOnly(profileKey: AccountProfileKey): Flow<Boolean> =
-        dataStore.data.map { prefs ->
-            prefs[downloadsWifiOnlyKey(profileKey)] ?: true
-        }
+    fun downloadsWifiOnly(profileKey: AccountProfileKey): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[downloadsWifiOnlyKey(profileKey)] ?: true
+    }
 
-    suspend fun setDownloadsWifiOnly(
-        profileKey: AccountProfileKey,
-        wifiOnly: Boolean,
-    ) {
+    suspend fun setDownloadsWifiOnly(profileKey: AccountProfileKey, wifiOnly: Boolean) {
         dataStore.edit { prefs ->
             prefs[downloadsWifiOnlyKey(profileKey)] = wifiOnly
         }
@@ -131,29 +109,21 @@ class UserPreferences(
 
     // ── Cache Timestamps ─────────────────────────────────────────────────
 
-    fun catalogCacheTimestamp(profileKey: AccountProfileKey): Flow<Long?> =
-        dataStore.data.map { prefs ->
-            prefs[catalogCacheTimestampKey(profileKey)]
-        }
+    fun catalogCacheTimestamp(profileKey: AccountProfileKey): Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[catalogCacheTimestampKey(profileKey)]
+    }
 
-    suspend fun setCatalogCacheTimestamp(
-        profileKey: AccountProfileKey,
-        timestamp: Long,
-    ) {
+    suspend fun setCatalogCacheTimestamp(profileKey: AccountProfileKey, timestamp: Long) {
         dataStore.edit { prefs ->
             prefs[catalogCacheTimestampKey(profileKey)] = timestamp
         }
     }
 
-    fun detailCacheTimestamp(profileKey: AccountProfileKey): Flow<Long?> =
-        dataStore.data.map { prefs ->
-            prefs[detailCacheTimestampKey(profileKey)]
-        }
+    fun detailCacheTimestamp(profileKey: AccountProfileKey): Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[detailCacheTimestampKey(profileKey)]
+    }
 
-    suspend fun setDetailCacheTimestamp(
-        profileKey: AccountProfileKey,
-        timestamp: Long,
-    ) {
+    suspend fun setDetailCacheTimestamp(profileKey: AccountProfileKey, timestamp: Long) {
         dataStore.edit { prefs ->
             prefs[detailCacheTimestampKey(profileKey)] = timestamp
         }

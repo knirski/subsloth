@@ -97,7 +97,4 @@ data class Show(
 )
 
 @Serializable
-data class ShowListResponse(
-    val shows: List<ShowSummary>,
-    val meta: PaginationMeta? = null,
-)
+data class ShowListResponse(val shows: List<ShowSummary>, val meta: PaginationMeta? = null)

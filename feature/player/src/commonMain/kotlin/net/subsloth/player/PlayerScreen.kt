@@ -36,8 +36,8 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
-import subsloth.feature.player.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.player.generated.resources.*
 
 @Composable
 fun PlayerScreen(

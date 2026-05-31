@@ -110,14 +110,10 @@ class DownloadPolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun qualityDescriptor(
-        resolution: Resolution,
-        label: String,
-    ): QualityDescriptor =
-        QualityDescriptor(
-            resolution = resolution,
-            label = label,
-            bitrate = null,
-            mimeType = null,
-        )
+    private fun qualityDescriptor(resolution: Resolution, label: String): QualityDescriptor = QualityDescriptor(
+        resolution = resolution,
+        label = label,
+        bitrate = null,
+        mimeType = null,
+    )
 }

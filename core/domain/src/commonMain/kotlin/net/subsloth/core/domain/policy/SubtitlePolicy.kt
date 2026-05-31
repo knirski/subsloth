@@ -20,10 +20,7 @@ object SubtitlePolicy {
      * - Falls back to the first available track if both are absent.
      * - Returns `null` when [subtitles] is empty.
      */
-    fun selectDefault(
-        subtitles: List<Subtitle>,
-        preferredLanguage: LanguageCode = DEFAULT_LANGUAGE,
-    ): Subtitle? {
+    fun selectDefault(subtitles: List<Subtitle>, preferredLanguage: LanguageCode = DEFAULT_LANGUAGE): Subtitle? {
         if (subtitles.isEmpty()) return null
         return subtitles.find { it.language == preferredLanguage }
             ?: subtitles.find { it.language == DEFAULT_LANGUAGE }
@@ -46,10 +43,7 @@ object SubtitlePolicy {
      * - Falls back to the first available track.
      * - Returns `null` when [subtitles] is empty.
      */
-    fun fallback(
-        subtitles: List<Subtitle>,
-        preferred: LanguageCode,
-    ): Subtitle? {
+    fun fallback(subtitles: List<Subtitle>, preferred: LanguageCode): Subtitle? {
         if (subtitles.isEmpty()) return null
         return subtitles.find { it.language == preferred }
             ?: subtitles.first()

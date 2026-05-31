@@ -4,7 +4,6 @@ import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
-    id("org.jetbrains.kotlin.plugin.compose")
     id("com.diffplug.spotless")
     id("dev.detekt")
     id("org.jetbrains.kotlin.plugin.power-assert")
@@ -68,6 +67,7 @@ spotless {
             .editorConfigOverride(
                 mapOf(
                     "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    "ktlint_standard_no-wildcard-imports" to "disabled",
                 ),
             )
         toggleOffOn()

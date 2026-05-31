@@ -161,15 +161,11 @@ class ResumePolicyTest {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private fun progress(
-        positionSeconds: Long,
-        durationSeconds: Long,
-    ): PlaybackProgress =
-        PlaybackProgress(
-            mediaId = Media.MediaId.Movie(MovieId(1)),
-            positionSeconds = positionSeconds,
-            durationSeconds = durationSeconds,
-            lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
-            isWatched = false,
-        )
+    private fun progress(positionSeconds: Long, durationSeconds: Long): PlaybackProgress = PlaybackProgress(
+        mediaId = Media.MediaId.Movie(MovieId(1)),
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1_800_000_000L),
+        isWatched = false,
+    )
 }

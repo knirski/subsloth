@@ -20,10 +20,7 @@ object QualityPolicy {
      *
      * Returns `null` when [qualities] is empty.
      */
-    fun selectDefault(
-        qualities: List<Quality>,
-        isTvDevice: Boolean,
-    ): Quality? {
+    fun selectDefault(qualities: List<Quality>, isTvDevice: Boolean): Quality? {
         if (qualities.isEmpty()) return null
 
         return if (isTvDevice) {
@@ -45,10 +42,7 @@ object QualityPolicy {
      * or the next lower quality if available, or `null` if no fallback
      * exists.
      */
-    fun fallback(
-        qualities: List<Quality>,
-        requested: Resolution,
-    ): Quality? {
+    fun fallback(qualities: List<Quality>, requested: Resolution): Quality? {
         if (qualities.isEmpty()) return null
 
         // Prefer exact match
@@ -67,11 +61,10 @@ object QualityPolicy {
      * Known labels: `"auto"`, `"1080p"`, `"720p"`, `"480p"`, `"360p"`, `"240p"`.
      * Unknown labels pass through unchanged.
      */
-    fun normalizeLabel(label: String): String =
-        when (label.lowercase()) {
-            "auto" -> "Auto"
-            else -> label
-        }
+    fun normalizeLabel(label: String): String = when (label.lowercase()) {
+        "auto" -> "Auto"
+        else -> label
+    }
 
     /**
      * Applies a manual in-player quality change.

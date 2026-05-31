@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary

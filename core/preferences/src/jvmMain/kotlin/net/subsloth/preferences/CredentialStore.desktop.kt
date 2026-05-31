@@ -38,7 +38,7 @@ actual class CredentialStore {
             return (
                 ks.getEntry(keyAlias, KeyStore.PasswordProtection(storePass.toCharArray()))
                     as KeyStore.SecretKeyEntry
-            ).secretKey
+                ).secretKey
         }
         val keyGen = KeyGenerator.getInstance("AES")
         keyGen.init(256)
@@ -50,10 +50,7 @@ actual class CredentialStore {
         return key
     }
 
-    actual fun save(
-        login: String,
-        password: String,
-    ) {
+    actual fun save(login: String, password: String) {
         val key = getOrCreateKey()
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key)

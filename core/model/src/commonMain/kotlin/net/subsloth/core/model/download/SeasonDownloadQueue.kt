@@ -35,19 +35,13 @@ sealed interface SeasonQueueExecution {
 
     data object Queued : SeasonQueueExecution
 
-    data class Running(
-        val activeItem: Media.MediaId.Episode,
-    ) : SeasonQueueExecution
+    data class Running(val activeItem: Media.MediaId.Episode) : SeasonQueueExecution
 
-    data class Paused(
-        val reason: DownloadFailureReason,
-    ) : SeasonQueueExecution
+    data class Paused(val reason: DownloadFailureReason) : SeasonQueueExecution
 
     data object Completed : SeasonQueueExecution
 
-    data class Failed(
-        val reason: DownloadFailureReason,
-    ) : SeasonQueueExecution
+    data class Failed(val reason: DownloadFailureReason) : SeasonQueueExecution
 }
 
 /** A single episode within a [SeasonDownloadQueue], with its own execution state. */
@@ -64,9 +58,7 @@ data class SeasonDownloadQueueItem(
 sealed interface SeasonQueueItemExecution {
     data object Pending : SeasonQueueItemExecution
 
-    data class Downloading(
-        val progressPercent: Int,
-    ) : SeasonQueueItemExecution {
+    data class Downloading(val progressPercent: Int) : SeasonQueueItemExecution {
         init {
             require(
                 progressPercent in 0..MAX_PROGRESS_PERCENT,
@@ -76,9 +68,7 @@ sealed interface SeasonQueueItemExecution {
 
     data object Completed : SeasonQueueItemExecution
 
-    data class Failed(
-        val reason: DownloadFailureReason,
-    ) : SeasonQueueItemExecution
+    data class Failed(val reason: DownloadFailureReason) : SeasonQueueItemExecution
 
     data object Cancelled : SeasonQueueItemExecution
 }

@@ -1,5 +1,6 @@
 plugins {
     id("subsloth.kmp.library")
+    id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.compose.gradle)
 }
 
@@ -20,6 +21,9 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.compose)
+        }
+        jvmMain.dependencies {
+            implementation(libs.compose.multiplatform.ui.tooling.preview)
         }
         jvmTest.dependencies {
             implementation(project(":testing:assertions"))

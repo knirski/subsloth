@@ -16,8 +16,5 @@ object StreamRefreshPolicy {
      * A refresh is available only when [refreshUsed] is `false`.
      * Offline playback never allows refresh regardless of [refreshUsed].
      */
-    fun canRefresh(
-        refreshUsed: Boolean,
-        isOfflinePlayback: Boolean,
-    ): Boolean = !refreshUsed && !isOfflinePlayback
+    fun canRefresh(refreshUsed: Boolean, isOfflinePlayback: Boolean): Boolean = !refreshUsed && !isOfflinePlayback
 }

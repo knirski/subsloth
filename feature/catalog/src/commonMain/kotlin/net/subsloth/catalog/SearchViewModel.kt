@@ -136,7 +136,7 @@ class SearchViewModel(
                 MediaTypeFilter.SHOWS -> item is ShowSummary
             }
             val matchesGenre = filters.genre == null ||
-                    item.genres.any { it.contains(filters.genre, ignoreCase = true) }
+                item.genres.any { it.contains(filters.genre, ignoreCase = true) }
 
             matchesType && matchesGenre
         }

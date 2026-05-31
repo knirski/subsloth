@@ -8,9 +8,7 @@ import kotlin.math.abs
  * The numeric values are the speed definitions themselves, not obscure magic numbers.
  */
 @Suppress("MagicNumber") // Speed values are the definition, not obscure constants.
-enum class PlaybackSpeed(
-    val value: Float,
-) {
+enum class PlaybackSpeed(val value: Float) {
     SPEED_0_50(0.50f),
     SPEED_0_60(0.60f),
     SPEED_0_70(0.70f),

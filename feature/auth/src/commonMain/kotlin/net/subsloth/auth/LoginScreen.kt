@@ -31,8 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.ui.toDisplayStringRes
-import subsloth.feature.auth.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.auth.generated.resources.*
 
 /**
  * Login screen with standard Autofill/password-manager support.

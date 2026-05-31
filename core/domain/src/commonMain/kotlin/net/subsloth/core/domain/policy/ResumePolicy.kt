@@ -47,10 +47,7 @@ object ResumePolicy {
      * Returns the later valid resumable position, or `null` if neither
      * progress value qualifies for resume.
      */
-    fun latestResumablePoint(
-        accountProgress: PlaybackProgress,
-        offlineProgress: PlaybackProgress,
-    ): Long? {
+    fun latestResumablePoint(accountProgress: PlaybackProgress, offlineProgress: PlaybackProgress): Long? {
         val accountPos = resumablePosition(accountProgress)
         val offlinePos = resumablePosition(offlineProgress)
 

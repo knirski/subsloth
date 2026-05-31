@@ -17,10 +17,7 @@ interface PlaybackPort {
     suspend fun prepareSource(mediaId: Media.MediaId): Result<VideoSource>
 
     /** Starts playback of the prepared video source. */
-    suspend fun play(
-        source: VideoSource,
-        positionSeconds: Long,
-    ): Result<Unit>
+    suspend fun play(source: VideoSource, positionSeconds: Long): Result<Unit>
 
     /** Pauses the current playback. */
     suspend fun pause(): Result<Unit>

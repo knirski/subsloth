@@ -7,6 +7,4 @@ import net.subsloth.core.model.error.DomainError
  * [kotlin.Result.failure] across module boundaries where domain errors
  * are not themselves Throwable subtypes.
  */
-class DomainResultException(
-    val domainError: DomainError,
-) : Exception(domainError.toString())
+class DomainResultException(val domainError: DomainError) : Exception(domainError.toString())

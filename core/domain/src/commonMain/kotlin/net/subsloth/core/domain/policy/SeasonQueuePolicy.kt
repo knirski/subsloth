@@ -7,10 +7,7 @@ import net.subsloth.core.model.media.Subtitle
 
 /** Pure policies for season-level batch download queues: subtitle selection and queue resume gating. */
 object SeasonQueuePolicy {
-    fun selectInitialSubtitle(
-        available: List<Subtitle>,
-        preferred: LanguageCode,
-    ): SubtitleSelection {
+    fun selectInitialSubtitle(available: List<Subtitle>, preferred: LanguageCode): SubtitleSelection {
         val english = LanguageCode("en")
         val preferredTrack = available.firstOrNull { it.language == preferred }
         val englishTrack = available.firstOrNull { it.language == english }
@@ -27,12 +24,11 @@ object SeasonQueuePolicy {
         transferPreference: TransferPreference,
         isMetered: Boolean,
         authValid: Boolean,
-    ): Boolean =
-        isOnline &&
-            hasStorage &&
-            authValid &&
-            DownloadPolicy.canTransferOnNetwork(
-                isMetered = isMetered,
-                transferPreference = transferPreference,
-            )
+    ): Boolean = isOnline &&
+        hasStorage &&
+        authValid &&
+        DownloadPolicy.canTransferOnNetwork(
+            isMetered = isMetered,
+            transferPreference = transferPreference,
+        )
 }

@@ -37,8 +37,8 @@ val ResponseValidationPlugin =
                 throw ResponseValidationException(
                     error = NetworkError.UnexpectedResponse,
                     message =
-                        "Unexpected redirect ${response.status.value}" +
-                            (location?.let { " -> $it" } ?: ""),
+                    "Unexpected redirect ${response.status.value}" +
+                        (location?.let { " -> $it" } ?: ""),
                 )
             }
 
@@ -76,7 +76,4 @@ val ResponseValidationPlugin =
  * Callers should catch this exception and map it back to the typed
  * [NetworkError] carried in the [error] property.
  */
-class ResponseValidationException(
-    val error: NetworkError,
-    message: String,
-) : Exception(message)
+class ResponseValidationException(val error: NetworkError, message: String) : Exception(message)

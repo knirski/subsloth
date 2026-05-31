@@ -8,6 +8,4 @@ import kotlin.jvm.JvmInline
  * Profiles allow multiple account configurations on the same device.
  */
 @JvmInline
-value class AccountProfileKey(
-    val value: String,
-)
+value class AccountProfileKey(val value: String)

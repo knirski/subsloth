@@ -31,8 +31,8 @@ import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.ui.toDisplayStringRes
-import subsloth.feature.details.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.details.generated.resources.*
 
 @Composable
 fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modifier) {
