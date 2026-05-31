@@ -22,8 +22,53 @@ jobs:
       - uses: ./.github/actions/kmp-setup
 
       - uses: cycjimmy/semantic-release-action@v6
-        with:
-          extra_plugins: |
-            @semantic-release/exec@^7.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: android
+            tasks: :androidApp:assembleDebug
+            asset: androidApp/build/outputs/apk/debug/subsloth-*-debug.apk
+
+          - target: desktop
+            tasks: :desktopApp:compileKotlin
+
+          - target: web
+            tasks: :webApp:compileKotlinWasmJs
+
+          # macOS/iOS targets require macos-latest runner.
+          # Uncomment when a macOS CI runner is configured:
+          #
+          # - target: ios
+          #   os: macos-latest
+          #   tasks: -Pkotlin.native.cacheKind=everything :core:model:iosSimulatorArm64Test
+          #
+          # - target: native
+          #   os: macos-latest
+          #   tasks: :core:model:compileKotlinMacosArm64
+
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/kmp-setup
+
+      - run: ./gradlew ${{ matrix.tasks }}
+
+      - name: Upload artifact to release
+        if: matrix.asset != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
+          if [ -n "$TAG" ] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Uploading ${{ matrix.asset }} to release $TAG"
+            gh release upload "$TAG" ${{ matrix.asset }} --clobber
+          fi
