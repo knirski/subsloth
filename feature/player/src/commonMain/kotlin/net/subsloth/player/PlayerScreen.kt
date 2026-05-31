@@ -39,6 +39,17 @@ import net.subsloth.core.model.playback.PlaybackMode
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
 
+/**
+ * Resolves a [Notice] to a display string using its resource key.
+ */
+@Composable
+private fun PlayerUiState.Notice.resolve(): String = when (resKey) {
+    "subtitle_in" -> stringResource(Res.string.player_subtitle_in, formatArg.orEmpty())
+    "no_subtitles" -> stringResource(Res.string.player_no_subtitles)
+    "quality_reduced" -> stringResource(Res.string.player_quality_reduced, formatArg.orEmpty())
+    else -> message
+}
+
 @Composable
 fun PlayerScreen(
     viewModel: PlayerViewModel,
@@ -134,7 +145,7 @@ internal fun PlayerContent(
 
             if (state.qualityFallbackNotice != null) {
                 Text(
-                    text = state.qualityFallbackNotice.message,
+                    text = state.qualityFallbackNotice.resolve(),
                     color = Color.Yellow,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -143,7 +154,7 @@ internal fun PlayerContent(
 
             if (state.subtitleFallbackNotice != null) {
                 Text(
-                    text = state.subtitleFallbackNotice.message,
+                    text = state.subtitleFallbackNotice.resolve(),
                     color = Color.Yellow,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp),

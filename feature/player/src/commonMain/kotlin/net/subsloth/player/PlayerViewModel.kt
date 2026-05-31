@@ -61,7 +61,7 @@ sealed interface PlayerUiState {
     ) : PlayerUiState
 
     @Immutable
-    data class Notice(val message: String)
+    data class Notice(val message: String = "", val resKey: String? = null, val formatArg: String? = null)
 }
 
 private data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean = false)
@@ -153,15 +153,16 @@ class PlayerViewModel(
 
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
-        val subtitleNotice = when {
+        val subtitleNotice: PlayerUiState.Notice? = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice("No subtitles in preferred language")
+                PlayerUiState.Notice(resKey = "no_subtitles")
 
             initialSubtitle != null &&
                 initialSubtitle.language != preferred &&
                 source.availableSubtitles.isNotEmpty() ->
                 PlayerUiState.Notice(
-                    "Subtitles in ${initialSubtitle.languageDisplayName ?: initialSubtitle.language.value}",
+                    resKey = "subtitle_in",
+                    formatArg = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
                 )
 
             else -> null
@@ -429,7 +430,8 @@ class PlayerViewModel(
                                 (current as? PlayerUiState.Content)?.copy(
                                     qualityFallbackUsed = true,
                                     qualityFallbackNotice = PlayerUiState.Notice(
-                                        "Quality reduced to ${fallback.info.label ?: fallback.info.resolution.label}",
+                                        resKey = "quality_reduced",
+                                        formatArg = fallback.info.label ?: fallback.info.resolution.label,
                                     ),
                                 ) ?: current
                             }

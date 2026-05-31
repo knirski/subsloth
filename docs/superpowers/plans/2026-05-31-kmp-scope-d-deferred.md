@@ -98,7 +98,7 @@ val tvItemSpacing = 16.dp
 val tvRowSpacing = 32.dp
 
 @Composable
-expect fun TvRow(
+expect fun <T> TvRow(
     title: String,
     items: List<T>,
     modifier: Modifier = Modifier,

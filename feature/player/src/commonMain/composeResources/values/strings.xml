@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <resources>
     <string name="player_play">Play</string>
     <string name="player_pause">Pause</string>
@@ -16,4 +16,6 @@
     <string name="player_retry_with_fresh_link">Retry with fresh link</string>
     <string name="player_quality">Quality</string>
     <string name="player_subtitle_in">Subtitles in %s</string>
+    <string name="player_no_subtitles">No subtitles in preferred language</string>
+    <string name="player_quality_reduced">Quality reduced to %s</string>
 </resources>
