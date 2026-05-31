@@ -39,6 +39,11 @@ kotlin {
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.navigation3.runtime)
+            implementation(libs.navigation3.ui.kmp)
+            implementation(libs.lifecycle.viewmodel.navigation3)
+            implementation(libs.savedstate)
+            implementation(libs.savedstate.compose)
         }
     }
 }

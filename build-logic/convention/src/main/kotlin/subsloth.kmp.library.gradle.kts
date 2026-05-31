@@ -22,6 +22,13 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
     macosArm64()
+    wasmJs {
+        browser {
+            commonWebpackConfig {
+                outputFileName = "subsloth.js"
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {

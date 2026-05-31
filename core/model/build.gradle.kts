@@ -1,5 +1,5 @@
 plugins {
-    id("subsloth.kmp.library.web")
+    id("subsloth.kmp.library")
 }
 
 kotlin {

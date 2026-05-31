@@ -54,8 +54,12 @@ class AccountProfileStore(private val dataStore: DataStore<Preferences>) {
     suspend fun deriveProfileKey(login: String): AccountProfileKey {
         val salt = getOrCreateSalt()
         val normalized = normalizeLogin(login)
-        val hash = hmacSha256(salt.toByteArray(Charsets.UTF_8), normalized.toByteArray(Charsets.UTF_8))
-        val hex = hash.joinToString("") { "%02x".format(it) }
+        val hash = hmacSha256(salt.encodeToByteArray(), normalized.encodeToByteArray())
+        val hex = hash.joinToString("") { b ->
+            (b.toInt() and 0xff).let { v ->
+                if (v < 16) "0${v.toString(16)}" else v.toString(16)
+            }
+        }
         return AccountProfileKey(hex)
     }
 
@@ -73,6 +77,6 @@ class AccountProfileStore(private val dataStore: DataStore<Preferences>) {
 
 expect fun generateSalt(): String
 
-expect fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
+expect suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
 
 expect fun normalizeLogin(login: String): String

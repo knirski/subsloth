@@ -25,6 +25,11 @@ kotlin {
             implementation(libs.datastore.core.okio)
         }
 
+        wasmJsMain.dependencies {
+            implementation(libs.datastore.core.okio)
+            implementation(libs.kotlinx.browser)
+        }
+
         jvmTest.dependencies {
             implementation(project(":testing:assertions"))
             implementation(libs.coroutines.test)
