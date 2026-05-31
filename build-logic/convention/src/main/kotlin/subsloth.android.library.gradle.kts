@@ -40,7 +40,8 @@ tasks.withType<Test>().configureEach {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         minSdk = 26

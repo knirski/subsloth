@@ -40,12 +40,13 @@ tasks.withType<Test>().configureEach {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "net.subsloth"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
     }
 
     lint {

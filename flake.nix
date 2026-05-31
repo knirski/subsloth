@@ -21,10 +21,10 @@
 
       # ── Android SDK ──────────────────────────────────────────────────────
       androidPackages = pkgs.androidenv.composeAndroidPackages {
-        cmdLineToolsVersion = "16.0";
-        platformVersions = [ "36" ];
-        buildToolsVersions = [ "36.0.0" ];
-        platformToolsVersion = "36.0.0";
+        cmdLineToolsVersion = "17.0";
+        platformVersions = [ "37" ];
+        buildToolsVersions = [ "37.0.0" ];
+        platformToolsVersion = "37.0.0";
       };
 
       androidSdk = androidPackages.androidsdk;
@@ -37,7 +37,7 @@
 
       # System image for x86_64 emulation. google_apis includes Play
       # Services and is the standard choice for app testing.
-      systemImage = "system-images;android-36;google_apis;x86_64";
+      systemImage = "system-images;android-37;google_apis;x86_64";
       systemImageDir = "${writableSdkRoot}/${builtins.replaceStrings [ ";" ] [ "/" ] systemImage}";
       avdName = "subsloth-device";
 
@@ -76,7 +76,7 @@
 
         # Write the AVD .ini file
         cat > "$AVD_DIR/${avdName}.ini" << INI
-        target=android-36
+        target=android-37
         path=$AVD_DIR/${avdName}.avd
         INI
 
@@ -419,7 +419,7 @@
 
         shellHook = ''
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
-          CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/16.0/bin"
+          CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
           if [ -d "$CMDLINE_TOOLS_BIN" ]; then
             export PATH="$CMDLINE_TOOLS_BIN:$PATH"
           fi
@@ -434,7 +434,7 @@
 
           # Add writable SDK's cmdline-tools to PATH (comes after Nix's
           # so sdkmanager writes to the writable root by default).
-          WRITABLE_CMDLINE_TOOLS_BIN="$ANDROID_WRITABLE_SDK/cmdline-tools/16.0/bin"
+          WRITABLE_CMDLINE_TOOLS_BIN="$ANDROID_WRITABLE_SDK/cmdline-tools/17.0/bin"
           if [ -d "$WRITABLE_CMDLINE_TOOLS_BIN" ]; then
             export PATH="$WRITABLE_CMDLINE_TOOLS_BIN:$PATH"
           fi

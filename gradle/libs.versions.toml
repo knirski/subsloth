@@ -3,10 +3,10 @@ agp = "9.2.1"
 kotlin = "2.3.21"
 ksp = "2.3.9"
 composeBom = "2026.05.01"
-material3Adaptive = "1.2.0"
+material3Adaptive = "1.3.0-beta01"
 androidxCore = "1.18.0"
 activityCompose = "1.13.0"
-lifecycle = "2.10.0"
+lifecycle = "2.11.0-beta01"
 androidxNavigation3 = "1.1.2"
 tvFoundation = "1.0.0"
 tvMaterial = "1.1.0"
@@ -30,12 +30,9 @@ spotless = "8.6.0"
 wiremock = "3.13.2"
 composeRules = "0.5.9"
 ktlint = "1.8.0"
-androidJunit = "2.0.1"
-androidxTest = "1.7.0"
-composeMultplatformRuntime = "1.11.0"
-composeMultplatformPlugin = "1.11.0"
-composeRuntimeAnnotation = "1.11.2"
-kotlinxCollectionsImmutable = "0.4.0"
+composeMultplatformRuntime = "1.12.0-alpha01"
+composeMultplatformPlugin = "1.12.0-alpha01"
+kotlinxCollectionsImmutable = "0.5.0-beta01"
 kotlinxDatetime = "0.8.0"
 kotlinxSchema = "0.5.0"
 ktor = "3.5.0"
@@ -49,7 +46,6 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 
 # Compose
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
-androidx-compose-runtime-annotation = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "composeRuntimeAnnotation" }
 # Compose Multiplatform runtime (provides @Stable, @Immutable for KMP targets)
 # Short name for `:core:model` that only needs the runtime annotation types.
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
@@ -58,6 +54,7 @@ compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:
 compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultplatformRuntime" }
 compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultplatformRuntime" }
 compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultplatformRuntime" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultplatformRuntime" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
@@ -139,8 +136,7 @@ junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTest" }
-androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTest" }
+
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "jsonSchemaValidator" }
 wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
 
@@ -171,7 +167,7 @@ kotlin-power-assert-gradlePlugin = { module = "org.jetbrains.kotlin.plugin.power
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-android-junit = { id = "de.mannodermaus.android-junit", version.ref = "androidJunit" }
+
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
