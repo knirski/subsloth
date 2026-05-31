@@ -59,7 +59,11 @@ fun WebNavHost(modifier: Modifier = Modifier) {
         entryProvider = entryProvider {
             entry<LoginKey> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("SubSloth", style = MaterialTheme.typography.headlineLarge)
+                    Text(
+                        "SubSloth",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
             }
 
