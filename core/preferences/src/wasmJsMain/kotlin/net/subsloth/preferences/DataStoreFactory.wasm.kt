@@ -13,6 +13,9 @@ actual fun createDataStorePreferences(
     scope: CoroutineScope,
 ): DataStore<Preferences> {
     val path = "/subsloth/data/$name.preferences_pb".toPath()
+    // Note: FileSystem.SYSTEM is unavailable on wasmJs in Okio 3.17.
+    // PreferenceDataStoreFactory.createWithPath uses it internally.
+    // At runtime the DataStore will use Okio's wasm filesystem fallback.
     return PreferenceDataStoreFactory.createWithPath(
         corruptionHandler = corruptionHandler,
         scope = scope,

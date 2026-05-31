@@ -2,15 +2,20 @@
 
 package net.subsloth.preferences
 
-import kotlin.random.Random
+/**
+ * Cryptographically secure salt generation using browser Web Crypto API.
+ * Uses crypto.getRandomValues() instead of kotlin.random.Random (PRNG).
+ */
+actual fun generateSalt(): String = webCryptoRandomHex()
 
-actual fun generateSalt(): String {
-    val bytes = ByteArray(32)
-    Random.nextBytes(bytes)
-    return bytes.joinToString("") { b ->
-        (b.toInt() and 0xff).let { if (it < 16) "0${it.toString(16)}" else it.toString(16) }
-    }
-}
+@JsFun(
+    """() => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+}""",
+)
+private external fun webCryptoRandomHex(): String
 
 actual suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     val keyHex = key.joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
@@ -19,10 +24,11 @@ actual suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     return hexToBytes(resultHex)
 }
 
-actual fun normalizeLogin(login: String): String = jsStringNormalizeNfc(login.trim().lowercase())
+actual fun normalizeLogin(login: String): String = jsStringNormalizeNfc(login.trim()).lowercase()
 
 // Uses browser Web Crypto API via @JsFun interop for HMAC-SHA256.
-// The hex-string encoding avoids ByteArray interop limitations on wasmJs.
+// The JS function returns a Promise (crypto.subtle APIs are async).
+// Kotlin/Wasm @JsFun returns the Promise object synchronously.
 @JsFun(
     """(k, d) => {
     const key = new Uint8Array(k.match(/.{2}/g).map(b => parseInt(b, 16)));

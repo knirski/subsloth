@@ -140,8 +140,8 @@ private fun PlayerContent(
 }
 
 private fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
-    "movie" -> contentId.toLongOrNull()?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
-    "episode" -> contentId.toLongOrNull()?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
-    "show" -> contentId.toLongOrNull()?.let { Media.MediaId.Show(ShowId(it.toInt())) }
+    "movie" -> contentId.toIntOrNull()?.let { Media.MediaId.Movie(MovieId(it)) }
+    "episode" -> contentId.toIntOrNull()?.let { Media.MediaId.Episode(EpisodeId(it)) }
+    "show" -> contentId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
     else -> null
 }

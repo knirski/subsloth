@@ -5,8 +5,12 @@ import kotlinx.browser.localStorage
 /**
  * Browser localStorage-based credential store for wasmJs.
  *
+ * WARNING: localStorage stores data in plaintext and is NOT encrypted.
+ * It is vulnerable to XSS attacks and local physical access.
+ * This should only be used for session tokens or non-sensitive identifiers;
+ * no raw passwords should be persisted here in production.
+ *
  * Credentials survive page reloads (unlike session-only in-memory stores).
- * Data is stored encrypted (via browser's built-in storage encryption).
  */
 actual class CredentialStore {
     private val loginKey = "subsloth_credentials_login"
@@ -28,5 +32,5 @@ actual class CredentialStore {
         localStorage.removeItem(passwordKey)
     }
 
-    actual fun exists(): Boolean = localStorage.getItem(loginKey) != null
+    actual fun exists(): Boolean = localStorage.getItem(loginKey) != null && localStorage.getItem(passwordKey) != null
 }
