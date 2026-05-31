@@ -46,7 +46,7 @@ kotlin {
             implementation(libs.savedstate.compose)
 
             implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))
-            implementation(npm("sqlite-wasm-worker", "file:./sqlite-wasm-worker"))
+            implementation(npm("sqlite-wasm-worker", "file:${project.projectDir}/sqlite-wasm-worker"))
         }
     }
 }

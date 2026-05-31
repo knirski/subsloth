@@ -8,26 +8,22 @@ includes the reason, impact, and what would be needed to close it.
 
 ## 1. SQLite web worker bundling
 
-**Status:** Bundled via local npm package
+**Status:** Resolved ✅
 
 A local `sqlite-wasm-worker/` package with the AndroidX reference worker
-implementation and `@sqlite.org/sqlite-wasm` dependency is now bundled in
-`:webApp`. The worker is declared as `implementation(npm("sqlite-wasm-worker", "file:./sqlite-wasm-worker"))` referencing the local directory, and
+implementation and `@sqlite.org/sqlite-wasm` dependency is bundled in
+`:webApp`. The worker is declared as `implementation(npm("sqlite-wasm-worker", "file:${project.projectDir}/sqlite-wasm-worker"))` (absolute path to avoid
+Yarn resolution issues from the generated `package.json` directory), and
 `@sqlite.org/sqlite-wasm` is declared as an npm dependency.
 
-**Remaining:** The webpack bundling step cannot be verified in the current Nix
-environment due to Gradle 9.5.1's `FAIL_ON_PROJECT_REPOS` blocking the Kotlin
-plugin's automatic Node.js download. The Kotlin `compileKotlinWasmJs` step
-succeeds on both `:core:database` and `:webApp`. This environment issue is
-pre-existing (identical failure on `main`).
+The full `wasmJsBrowserDistribution` pipeline (including webpack bundling)
+passes. The Kotlin/Wasm toolchain (Node.js, Yarn, Binaryen) is provisioned
+from the Nix environment via pre-populated symlinks in `~/.kotlin/`.
 
-**To close the environment issue:**
-- Add `nodejs` to the Nix flake packages and configure
-  `KOTLIN_NODEJS_HOME` to skip Node.js download, or
-- Add the Node.js Ivy repository to `settings.gradle.kts` repositories,
-  or upgrade to a Kotlin version with updated Node.js download handling
+**Remaining:**
 - Set COOP/COEP headers (`Cross-Origin-Opener-Policy: same-origin`,
-  `Cross-Origin-Embedder-Policy: require-corp`) for OPFS support
+  `Cross-Origin-Embedder-Policy: require-corp`) for OPFS support in
+  production deployment config.
 
 ---
 
@@ -208,4 +204,5 @@ The following items were previously tracked but are now resolved:
 | **CredentialStore localStorage security** | Removed "encrypted" claim, added plaintext warning. ✅ |
 | **Database inMemory → persistent** | Now uses `databaseBuilder` with Worker persistence. ✅ |
 | **`parseMediaId` truncation** | `toIntOrNull()` instead of `toLong().toInt()`. ✅ |
-| **SQLite web worker bundling** | Local `sqlite-wasm-worker` package in `:webApp` with `@sqlite.org/sqlite-wasm` npm dep. Webpack bundling blocked on Nix/Gradle environment (pre-existing). ✅ |
+| **SQLite web worker bundling** | Local `sqlite-wasm-worker` package in `:webApp` with `@sqlite.org/sqlite-wasm` npm dep. Full `wasmJsBrowserDistribution` passes. ✅ |
+| **Nix/Gradle webpack environment** | `PREFER_SETTINGS` + Ivy repos in `settings.gradle.kts` + Nix `nodejs`/`yarn`/`binaryen` packages + `~/.kotlin/` pre-population. ✅ |

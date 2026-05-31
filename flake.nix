@@ -400,6 +400,11 @@
           openjdk25
           openjdk17
 
+          # Node.js + Yarn + Binaryen (for Kotlin/Wasm webpack bundling)
+          nodejs
+          yarn
+          binaryen
+
           # Utilities (not provided by stdenv)
           curl
           ripgrep
@@ -416,6 +421,7 @@
         JAVA17_HOME = "${pkgs.openjdk17}/lib/openjdk";
         ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
         ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+        KOTLIN_NODEJS_HOME = "${pkgs.nodejs}";
 
         shellHook = ''
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
@@ -446,6 +452,16 @@
             echo "⚠  AVD '${avdName}' not created. Run: setup-emulator"
           elif ! grep -q "${systemImageDir}" "$HOME/.android/avd/${avdName}.avd/config.ini" 2>/dev/null; then
             echo "⚠  AVD '${avdName}' has old relative system-image path. Run: setup-emulator"
+          fi
+
+          # Pre-populate the Kotlin Node.js download directory with a symlink
+          # to the Nix-provided Node.js so the plugin skips the actual download.
+          KOTLIN_NODEJS_DIR="$HOME/.kotlin/js/nodejs/node-v25.0.0-linux-x64"
+          if [ ! -f "$KOTLIN_NODEJS_DIR/bin/node" ]; then
+            mkdir -p "$KOTLIN_NODEJS_DIR/bin"
+            ln -sf "$(which node)" "$KOTLIN_NODEJS_DIR/bin/node" 2>/dev/null || true
+            ln -sf "$(which npm)" "$KOTLIN_NODEJS_DIR/bin/npm" 2>/dev/null || true
+            ln -sf "$(which npx)" "$KOTLIN_NODEJS_DIR/bin/npx" 2>/dev/null || true
           fi
 
           # Auto-generate local.properties from Nix SDK path
