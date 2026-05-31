@@ -44,6 +44,9 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.navigation3)
             implementation(libs.savedstate)
             implementation(libs.savedstate.compose)
+
+            implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))
+            implementation(npm("sqlite-wasm-worker", "file:./sqlite-wasm-worker"))
         }
     }
 }
