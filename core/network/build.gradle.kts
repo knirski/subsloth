@@ -31,6 +31,12 @@ kotlin {
             implementation(libs.ktor.client.cio)
         }
 
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.mock)
+            }
+        }
+
         commonTest.dependencies {
             // kotlin("test") is already provided by subsloth.kmp.library convention
         }

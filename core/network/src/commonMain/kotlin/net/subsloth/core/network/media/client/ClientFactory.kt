@@ -26,12 +26,26 @@ object ClientFactory {
      * - Response validation for unexpected redirect/HTML detection
      * - Bounded retry on 429/5xx responses
      * - Optional HTTP logging (headers only, with redacted auth headers)
+     *
+     * When [ClientConfig.useMock] is `true`, returns a mock client (wasmJs only).
      */
     fun create(
         login: String,
         password: String,
         baseUrl: String = DEFAULT_BASE_URL,
         enableHttpLogging: Boolean = false,
+    ): HttpClient {
+        if (ClientConfig.useMock) {
+            return createMockClient(login, password, baseUrl, enableHttpLogging)
+        }
+        return createRealClient(login, password, baseUrl, enableHttpLogging)
+    }
+
+    private fun createRealClient(
+        login: String,
+        password: String,
+        baseUrl: String,
+        enableHttpLogging: Boolean,
     ): HttpClient = HttpClient {
         install(ContentNegotiation) {
             json(

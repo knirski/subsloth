@@ -29,17 +29,18 @@ class ApiLiveDriftTest {
     private val api by lazy { Api(client) }
 
     @BeforeEach
-    @AfterEach
-    fun tearDown() {
-        clients.forEach { it.close() }
-        clients.clear()
-    }
-
     fun checkCredentials() {
         assumeTrue(
             login.isNotEmpty() && password.isNotEmpty(),
             "Live drift tests skipped: SUBSLOTH_LOGIN and SUBSLOTH_PASSWORD must be set",
         )
+    }
+
+    @BeforeEach
+    @AfterEach
+    fun tearDown() {
+        clients.forEach { it.close() }
+        clients.clear()
     }
 
     @Suppress("TooGenericExceptionCaught")

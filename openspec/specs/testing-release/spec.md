@@ -4,7 +4,7 @@
 Defines the baseline requirements for the CI pipeline and release process, ensuring deterministic builds, secure artifact handling, and standardized versioning.
 ## Requirements
 ### Requirement: Offline CI
-Required CI on pull requests and pushes to `main` SHALL be deterministic, offline-only, and SHALL use JDK 25 for the Gradle runtime, JDK 17 for the Kotlin/Java compile toolchain, and the Gradle wrapper.
+Required CI on pull requests and pushes to `main` SHALL be deterministic, offline-only, use the Gradle wrapper with JDK 17 for both the Gradle runtime and the Kotlin/Java compile toolchain, and verify wrapper integrity via `gradle/actions/wrapper-validation`.
 
 #### Scenario: CI runs
 - **WHEN** required CI executes
