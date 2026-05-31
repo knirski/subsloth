@@ -33,6 +33,8 @@ jobs:
         with:
           filters: |
             source:
+              - 'gradlew'
+              - 'gradlew.bat'
               - '**/*.kt'
               - '**/*.kts'
               - '**/*.java'

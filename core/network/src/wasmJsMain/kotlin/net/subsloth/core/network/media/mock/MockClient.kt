@@ -165,6 +165,9 @@ private val fixtureShowDetail =
     }
     """.trimIndent()
 
+private val movieDetailPath = Regex("/api/v2/movies/\\d+")
+private val showDetailPath = Regex("/api/v2/shows/\\d+")
+
 fun createMockClient(): HttpClient = HttpClient(MockEngine) {
     engine {
         addHandler { request ->
@@ -174,13 +177,13 @@ fun createMockClient(): HttpClient = HttpClient(MockEngine) {
                     path == "/api/v2/movies" && request.method.value == "GET" ->
                         fixtureMovies to HttpStatusCode.OK
 
-                    path.matches(Regex("/api/v2/movies/\\d+")) ->
+                    path.matches(movieDetailPath) ->
                         fixtureMovieDetail to HttpStatusCode.OK
 
                     path == "/api/v2/shows" && request.method.value == "GET" ->
                         fixtureShows to HttpStatusCode.OK
 
-                    path.matches(Regex("/api/v2/shows/\\d+")) ->
+                    path.matches(showDetailPath) ->
                         fixtureShowDetail to HttpStatusCode.OK
 
                     else -> """{"error": "not found"}""" to HttpStatusCode.NotFound
