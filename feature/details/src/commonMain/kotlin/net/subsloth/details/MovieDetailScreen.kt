@@ -19,8 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.subsloth.core.ui.toUiErrorMessage
 import net.subsloth.core.ui.toDisplayString
+import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 

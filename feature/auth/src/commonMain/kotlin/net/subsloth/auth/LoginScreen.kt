@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import net.subsloth.core.model.error.UiError
-import net.subsloth.core.ui.toUiErrorMessage
 import net.subsloth.core.ui.toDisplayString
+import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.auth.generated.resources.*
 
