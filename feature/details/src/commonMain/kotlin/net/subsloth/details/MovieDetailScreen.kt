@@ -19,7 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.subsloth.core.ui.toDisplayStringRes
+import net.subsloth.core.ui.toUiErrorMessage
+import net.subsloth.core.ui.toDisplayString
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 
@@ -47,7 +48,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.error.toDisplayStringRes(),
+                    text = s.error.toUiErrorMessage().toDisplayString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )

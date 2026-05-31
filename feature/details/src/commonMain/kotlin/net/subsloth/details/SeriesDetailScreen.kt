@@ -30,7 +30,8 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
-import net.subsloth.core.ui.toDisplayStringRes
+import net.subsloth.core.ui.toUiErrorMessage
+import net.subsloth.core.ui.toDisplayString
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 
@@ -62,7 +63,7 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = s.error.toDisplayStringRes(),
+                    text = s.error.toUiErrorMessage().toDisplayString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )

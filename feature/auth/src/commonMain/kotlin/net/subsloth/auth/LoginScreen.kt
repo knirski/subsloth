@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import net.subsloth.core.model.error.UiError
-import net.subsloth.core.ui.toDisplayStringRes
+import net.subsloth.core.ui.toUiErrorMessage
+import net.subsloth.core.ui.toDisplayString
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.auth.generated.resources.*
 
@@ -202,7 +203,7 @@ internal fun LoginFormContent(
         error?.let { err ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = err.toDisplayStringRes(),
+                text = err.toUiErrorMessage().toDisplayString(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
