@@ -7,7 +7,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "./gradlew :app:assembleDebug && gh release upload ${nextRelease.gitTag} app/build/outputs/apk/debug/subsloth-${nextRelease.version}-debug.apk --clobber"
+        "publishCmd": "./gradlew :androidApp:assembleDebug && gh release upload ${nextRelease.gitTag} androidApp/build/outputs/apk/debug/subsloth-${nextRelease.version}-debug.apk --clobber"
       }
     ]
   ]
