@@ -17,8 +17,8 @@ kotlin {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation(compose.material3)
-    implementation(compose.components.resources)
+    implementation(libs.compose.multiplatform.material3)
+    implementation(libs.compose.components.resources)
 
     implementation(project(":core:model"))
     implementation(project(":core:domain"))

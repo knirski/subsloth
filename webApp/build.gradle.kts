@@ -20,11 +20,11 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.components.resources)
-            implementation(compose.ui)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.multiplatform.foundation)
+            implementation(libs.compose.multiplatform.material3)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.multiplatform.ui)
 
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
