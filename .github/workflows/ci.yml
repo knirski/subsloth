@@ -76,14 +76,7 @@ jobs:
       - uses: ./.github/actions/kmp-setup
 
       - name: Compile KMP JVM targets
-        run: >
-          ./gradlew :core:model:compileKotlinJvm
-                    :core:domain:compileKotlinJvm
-                    :core:ui:compileKotlinJvm
-                    :feature:auth:compileKotlinJvm
-                    :feature:catalog:compileKotlinJvm
-                    :feature:details:compileKotlinJvm
-                    :feature:player:compileKotlinJvm
+        run: ./gradlew :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :core:ui:compileKotlinJvm :feature:auth:compileKotlinJvm :feature:catalog:compileKotlinJvm :feature:details:compileKotlinJvm :feature:player:compileKotlinJvm
 
       - name: Run all JVM tests
         run: ./gradlew test
@@ -98,16 +91,10 @@ jobs:
       - uses: ./.github/actions/kmp-setup
 
       - name: Compile iOS ARM64
-        run: >
-          ./gradlew :core:model:compileKotlinIosArm64
-                    :core:domain:compileKotlinIosArm64
-                    :core:ui:compileKotlinIosArm64
+        run: ./gradlew :core:model:compileKotlinIosArm64 :core:domain:compileKotlinIosArm64 :core:ui:compileKotlinIosArm64
 
       - name: Compile macOS ARM64
-        run: >
-          ./gradlew :core:model:compileKotlinMacosArm64
-                    :core:domain:compileKotlinMacosArm64
-                    :core:ui:compileKotlinMacosArm64
+        run: ./gradlew :core:model:compileKotlinMacosArm64 :core:domain:compileKotlinMacosArm64 :core:ui:compileKotlinMacosArm64
 
   # ─── Static analysis ─────────────────────────────────────────────────────
   lint:
