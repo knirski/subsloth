@@ -24,7 +24,7 @@ main cost is that Android-only libraries (WorkManager, Media3) require separate
 AGP modules rather than `androidMain` in shared modules.
 
 **To close:** Add `androidTarget()` to `subsloth.kmp.library` convention, migrate
-`androidMain` source sets where applicable, and update `:app` consumption.
+`androidMain` source sets where applicable, and update `:androidApp` consumption.
 
 ---
 

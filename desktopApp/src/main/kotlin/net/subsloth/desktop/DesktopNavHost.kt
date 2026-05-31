@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.media.Media
 import net.subsloth.player.PlayerScreen
@@ -42,16 +43,19 @@ fun DesktopNavHost(modifier: Modifier = Modifier) {
             }
 
             is DesktopScreen.Player -> {
-                val viewModel = remember(screen.contentId) {
+                val parsedId = screen.contentId.toIntOrNull()
+                if (parsedId == null) {
+                    currentScreen = DesktopScreen.Placeholder
+                    return@Surface
+                }
+                val vm: PlayerViewModel = viewModel(key = screen.contentId) {
                     PlayerViewModel(
-                        mediaId = Media.MediaId.Movie(
-                            MovieId(screen.contentId.toIntOrNull() ?: 0),
-                        ),
+                        mediaId = Media.MediaId.Movie(MovieId(parsedId)),
                     )
                 }
                 PlayerScreen(
-                    viewModel = viewModel,
-                    modifier = Modifier,
+                    viewModel = vm,
+                    modifier = Modifier.fillMaxSize(),
                     onNavigateBack = { currentScreen = DesktopScreen.Placeholder },
                     onNavigateToAuthRepair = { /* Not yet wired */ },
                 )

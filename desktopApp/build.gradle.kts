@@ -84,5 +84,4 @@ detekt {
 dependencies {
     detektPlugins(project(":testing:detekt-rules"))
     detektPlugins(libs.compose.rules.detekt)
-    detektPlugins(libs.detekt.api)
 }
