@@ -28,12 +28,10 @@ jobs:
       pull-requests: read
     outputs:
       source: ${{ steps.filter.outputs.source }}
-      androidTest: ${{ steps.filter.outputs.androidTest }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -47,15 +45,10 @@ jobs:
               - 'config/**'
               - 'gradle/**'
               - 'api/**'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/pr-agent.yml'
+              - '.github/**'
               - '.github/scripts/**'
-            androidTest:
-              - '**/src/androidTest/**'
 
-  # ------------------------------------------------------------------
-  # Fast pre-checks — no compilation, ~30s
-  # ------------------------------------------------------------------
+  # ─── Fast pre-checks ──────────────────────────────────────────────────────
   pre-checks:
     needs: changes
     if: needs.changes.outputs.source == 'true'
@@ -70,30 +63,7 @@ jobs:
           tar xzf /tmp/vacuum.tar.gz -C /usr/local/bin vacuum
           vacuum lint api/subsloth.openapi.yaml --ruleset config/vacuum.yaml --fail-severity error
 
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
+      - uses: ./.github/actions/kmp-setup
 
       - name: Check code formatting
         run: ./gradlew spotlessCheck
@@ -101,41 +71,14 @@ jobs:
       - name: Run invariant checks
         run: .github/scripts/check-invariants.sh
 
-  # ------------------------------------------------------------------
-  # KMP JVM — compiles all KMP modules for JVM + runs unit tests
-  # Runs on ubuntu (fastest runner).
-  # ------------------------------------------------------------------
+  # ─── Shared JVM tests (KMP jvmTest + Android test) ───────────────────────
   test:
     needs: pre-checks
     if: success()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
+      - uses: ./.github/actions/kmp-setup
 
       - name: Compile KMP JVM targets
         run: >
@@ -147,96 +90,39 @@ jobs:
                     :feature:details:compileKotlinJvm
                     :feature:player:compileKotlinJvm
 
-      - name: Run all JVM tests (KMP + Android)
+      - name: Run all JVM tests
         run: ./gradlew test
 
-  # ------------------------------------------------------------------
-  # KMP Native — compiles KMP modules for iOS + macOS targets
-  # Runs on macOS (required for iOS toolchain).
-  # ------------------------------------------------------------------
+  # ─── KMP Native (iOS + macOS) ───────────────────────────────────────────
   kmp-native:
     needs: pre-checks
     if: success()
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/kmp-setup
 
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
-
-      # Compile iOS ARM64 — validates iOS native target compilation
-      - name: Compile iOS ARM64 targets
+      - name: Compile iOS ARM64
         run: >
           ./gradlew :core:model:compileKotlinIosArm64
                     :core:domain:compileKotlinIosArm64
                     :core:ui:compileKotlinIosArm64
 
-      # Compile macOS ARM64 — validates desktop native target compilation
-      - name: Compile macOS ARM64 targets
+      - name: Compile macOS ARM64
         run: >
           ./gradlew :core:model:compileKotlinMacosArm64
                     :core:domain:compileKotlinMacosArm64
                     :core:ui:compileKotlinMacosArm64
 
-  # ------------------------------------------------------------------
-  # Static analysis — Android lint + detekt
-  # ------------------------------------------------------------------
+  # ─── Static analysis ─────────────────────────────────────────────────────
   lint:
     needs: pre-checks
     if: success()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
-
-      - name: Run Android lint
-        run: ./gradlew lintDebug
+      - uses: ./.github/actions/kmp-setup
+      - run: ./gradlew lintDebug
 
   detekt:
     needs: pre-checks
@@ -244,97 +130,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
-
-      - name: Run detekt
-        run: ./gradlew detekt
-
-  # ------------------------------------------------------------------
-  # Instrumented tests — Android emulator (requires KVM)
-  # Only runs when androidTest source sets are present (currently none).
-  # ------------------------------------------------------------------
-  instrumented-test:
-    needs: [changes, pre-checks]
-    if: needs.changes.outputs.androidTest == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 25 (Gradle daemon)
-        id: jdk25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up JDK 17 (compile toolchain)
-        id: jdk17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set environment JDK variables
-        run: |
-          echo "JAVA_HOME=${{ steps.jdk25.outputs.path }}" >> "$GITHUB_ENV"
-          echo "JAVA17_HOME=${{ steps.jdk17.outputs.path }}" >> "$GITHUB_ENV"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-          gradle-home-cache-cleanup: true
-
-      - name: Check for androidTest directories
-        id: check
-        run: |
-          dirs=$(find . -type d -name androidTest -path '*/src/androidTest' 2>/dev/null)
-          if [ -n "$dirs" ]; then
-            echo "has_android_test=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_android_test=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Enable KVM
-        if: steps.check.outputs.has_android_test == 'true'
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
-          sudo udevadm control --reload-rules && sudo udevadm trigger || true
-          sudo chmod 666 /dev/kvm
-
-      - name: Run instrumented tests
-        if: steps.check.outputs.has_android_test == 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 36
-          target: google_apis
-          arch: x86_64
-          avd-name: subsloth-ci
-          force-avd-creation: true
-          emulator-options: -no-window -no-audio -gpu swiftshader_indirect -no-snapshot -no-metrics
-          disable-animations: true
-          script: ./gradlew :core:preferences:connectedDebugAndroidTest
+      - uses: ./.github/actions/kmp-setup
+      - run: ./gradlew detekt
