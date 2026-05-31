@@ -27,7 +27,7 @@ jobs:
       - uses: ./.github/actions/kmp-setup
 
       - name: Build web distribution with mock data
-        run: ./gradlew :webApp:compileKotlinWasmJs
+        run: ./gradlew :webApp:wasmJsBrowserDistribution
 
       - name: Upload to Pages
         uses: actions/upload-pages-artifact@v3
