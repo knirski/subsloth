@@ -13,6 +13,8 @@ concurrency:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
@@ -27,8 +29,18 @@ jobs:
       - name: Build web distribution with mock data
         run: ./gradlew :webApp:wasmJsBrowserDistribution
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: subsloth-web-${{ github.sha }}
           path: webApp/build/dist/wasmJs/productionExecutable
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
