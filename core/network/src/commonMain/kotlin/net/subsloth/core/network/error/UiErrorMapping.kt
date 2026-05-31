@@ -9,6 +9,7 @@ fun Throwable.toUiError(): UiError {
     val message = this.message.orEmpty()
     return when {
         this is HttpRequestTimeoutException -> UiError.Offline(message)
+
         this is ResponseException ->
             when (response.status.value) {
                 401 -> UiError.AuthRequired(message)
@@ -18,7 +19,9 @@ fun Throwable.toUiError(): UiError {
             }
 
         this is ResponseValidationException -> UiError.ServiceError(message)
+
         isIoError(this) -> UiError.Offline(message)
+
         else -> UiError.Unknown(message)
     }
 }

@@ -97,8 +97,13 @@ fun redactFields(
                 JsonObject(newFields)
             }
 
-            is JsonArray -> JsonArray(e.map(::walk))
-            is JsonPrimitive -> e
+            is JsonArray -> {
+                JsonArray(e.map(::walk))
+            }
+
+            is JsonPrimitive -> {
+                e
+            }
         }
     return walk(element)
 }
@@ -118,8 +123,13 @@ fun rewriteUrlsToString(
                 }
             }
 
-            is JsonArray -> JsonArray(e.map(::walk))
-            is JsonObject -> JsonObject(e.entries.associate { (key, value) -> key to walk(value) })
+            is JsonArray -> {
+                JsonArray(e.map(::walk))
+            }
+
+            is JsonObject -> {
+                JsonObject(e.entries.associate { (key, value) -> key to walk(value) })
+            }
         }
     return prettyJson.encodeToString(JsonElement.serializer(), walk(element)) + "\n"
 }
