@@ -91,6 +91,7 @@ function closeRequest(id, requestData) {
         databases.delete(requestData.databaseId);
       }
     }
+    postMessage({ id });
   } catch (error) {
     postMessage({ id, error: error.message });
   }
@@ -131,5 +132,11 @@ sqlite3InitModule().then(instance => {
   sqlite3 = instance;
   while (messageQueue.length > 0) {
     handleMessage(messageQueue.shift());
+  }
+}).catch(error => {
+  while (messageQueue.length > 0) {
+    const queued = messageQueue.shift();
+    const requestId = queued?.data?.id;
+    postMessage({ id: requestId, error: `sqlite3 init failed: ${error?.message ?? String(error)}` });
   }
 });
