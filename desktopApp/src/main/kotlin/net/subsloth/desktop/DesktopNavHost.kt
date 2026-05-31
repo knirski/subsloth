@@ -44,24 +44,32 @@ fun DesktopNavHost(modifier: Modifier = Modifier) {
 
             is DesktopScreen.Player -> {
                 val parsedId = screen.contentId.toIntOrNull()
-                if (parsedId == null) {
-                    currentScreen = DesktopScreen.Placeholder
-                    return@Surface
-                }
-                val vm: PlayerViewModel = viewModel(key = screen.contentId) {
-                    PlayerViewModel(
-                        mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+                if (parsedId != null) {
+                    PlayerContent(
+                        contentId = screen.contentId,
+                        parsedId = parsedId,
+                        onNavigateBack = { currentScreen = DesktopScreen.Placeholder },
                     )
                 }
-                PlayerScreen(
-                    viewModel = vm,
-                    modifier = Modifier.fillMaxSize(),
-                    onNavigateBack = { currentScreen = DesktopScreen.Placeholder },
-                    onNavigateToAuthRepair = { /* Not yet wired */ },
-                )
             }
         }
     }
+}
+
+@Suppress("ViewModelInjection")
+@Composable
+private fun PlayerContent(contentId: String, parsedId: Int, onNavigateBack: () -> Unit) {
+    val vm: PlayerViewModel = viewModel(key = contentId) {
+        PlayerViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+        )
+    }
+    PlayerScreen(
+        viewModel = vm,
+        modifier = Modifier.fillMaxSize(),
+        onNavigateBack = onNavigateBack,
+        onNavigateToAuthRepair = { /* Not yet wired */ },
+    )
 }
 
 /** Simple navigation state for the desktop app. */

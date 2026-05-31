@@ -45,24 +45,36 @@ fun WebNavHost(
 
             is WebScreen.Player -> {
                 val parsedId = screen.contentId.toIntOrNull()
-                if (parsedId == null) {
-                    currentScreen = WebScreen.Placeholder
-                    return@Surface
-                }
-                val vm: PlayerViewModel = viewModel(key = screen.contentId) {
-                    PlayerViewModel(
-                        mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+                if (parsedId != null) {
+                    PlayerContent(
+                        contentId = screen.contentId,
+                        parsedId = parsedId,
+                        onNavigateBack = { currentScreen = WebScreen.Placeholder },
                     )
                 }
-                PlayerScreen(
-                    viewModel = vm,
-                    modifier = Modifier.fillMaxSize(),
-                    onNavigateBack = { currentScreen = WebScreen.Placeholder },
-                    onNavigateToAuthRepair = { /* Not yet wired */ },
-                )
             }
         }
     }
+}
+
+@Suppress("ViewModelInjection")
+@Composable
+private fun PlayerContent(
+    contentId: String,
+    parsedId: Int,
+    onNavigateBack: () -> Unit,
+) {
+    val vm: PlayerViewModel = viewModel(key = contentId) {
+        PlayerViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(parsedId)),
+        )
+    }
+    PlayerScreen(
+        viewModel = vm,
+        modifier = Modifier.fillMaxSize(),
+        onNavigateBack = onNavigateBack,
+        onNavigateToAuthRepair = { /* Not yet wired */ },
+    )
 }
 
 /** Simple navigation state for the web app. */
