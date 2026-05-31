@@ -18,7 +18,9 @@ Yarn resolution issues from the generated `package.json` directory), and
 
 The full `wasmJsBrowserDistribution` pipeline (including webpack bundling)
 passes. The Kotlin/Wasm toolchain (Node.js, Yarn, Binaryen) is provisioned
-from the Nix environment via pre-populated symlinks in `~/.kotlin/`.
+from the Nix environment via `KOTLIN_NODEJS_HOME`, `KOTLIN_YARN_HOME`, and
+`KOTLIN_BINARYEN_HOME` env vars in `flake.nix`, with Ivy repos in
+`settings.gradle.kts` as a fallback.
 
 **Remaining:**
 - Cross-Origin headers (`Cross-Origin-Opener-Policy: same-origin`,
@@ -77,22 +79,15 @@ different row.
 
 ## 4. Web Crypto `@JsFun` Promise interop
 
-**Files:** `core/preferences/src/wasmJsMain/AccountProfileStore.wasm.kt`
+**Files:** `core/preferences/src/wasmJsMain/kotlin/net/subsloth/preferences/AccountProfileStore.wasm.kt`
 
-**Status:** Known gap
+**Status:** Resolved
 
-`webCryptoHmacHex` JS function returns a Promise (because `crypto.subtle.sign`
-is async), but Kotlin/Wasm `@JsFun` returns the Promise object synchronously.
-Proper `Promise.await()` interop for wasmJs needs `kotlinx.coroutines` support
-that isn't available for wasmJs.
-
-**Impact:** At runtime, the function receives a Promise object instead of the
-hex string. Profile key derivation will fail on wasmJs. Functionality degrades
-gracefully — other platforms (JVM, iOS) are unaffected.
-
-**To close:** Wait for Kotlin/Wasm Promise interop support, or implement a
-JS-side synchronous wrapper using `crypto.subtle` synchronously (not possible
-with current Web Crypto API design).
+`webCryptoHmacHex` now returns `Promise<String>` from `@JsFun`, and the
+`suspend` function calls `.await()` from `kotlinx.coroutines` (1.11.0 supports
+wasmJs). Addressed by replacing the `String` return type with `Promise<String>`,
+adding `kotlinx-coroutines-core` to wasmJsMain dependencies, and calling
+`.await()` on the Promise.
 
 ---
 
@@ -129,43 +124,12 @@ simulator/devices.
 
 ## 7. Navigation3 on Desktop & Web
 
-**Status:** Known gap
+**Status:** Resolved
 
-The Android app uses Navigation3 (`NavDisplay`, `rememberNavBackStack`,
-`entryProvider`). Desktop and web apps use simple state-based navigation
-(`mutableStateOf` + `when` branches).
-
-The KMP Navigation3 runtime (`org.jetbrains.androidx.navigation3`) is not fully
-published for all targets (the `navigation3-runtime` KMP artifact did not
-resolve). Additionally, the KMP `ViewModelProvider.Factory` API differs from
-AndroidX, causing type-mismatch issues with Navigation3's `entry<PlayerKey>`.
-
-**Impact:** Medium. Feature screens (PlayerScreen, CatalogScreen, etc.) are
-shared, but the navigation structure is duplicated. Adding new routes or
-changing navigation logic requires updating three nav hosts.
-
-**To close:**
-- Wait for the KMP Navigation3 runtime to be published for all targets
-- Or define a shared navigation abstraction in a KMP module
-- Upgrade desktop/web nav hosts to Navigation3 when available
-
----
-
-## 8. Full Feature Integration on Desktop & Web
-
-**Status:** Known gap
-
-Desktop and web apps show a placeholder screen with a "Player Demo" button
-rather than the full Catalog / Login / Settings flows.
-
-**Impact:** Medium. User-visible gap — desktop/web apps show a demo screen, not
-a functional app.
-
-**To close:**
-- Wire CatalogScreen into `DesktopNavHost` and `WebNavHost` when available
-- Add login flow for desktop (preferences work on JVM)
-- For web, provide stub/storage-free implementations of database/preferences
-  ports, or use browser-localStorage-based alternatives
+All three platforms (Android, Desktop, Web) use `NavDisplay`/`entryProvider`/
+`rememberNavBackStack` from `androidx.navigation3.runtime` with the same
+`subslothNavConfig` and navigation key hierarchy. `DesktopNavHost.kt` and
+`WebNavHost.kt` mirror the Android nav host structure.
 
 ---
 
@@ -194,7 +158,7 @@ moved to an `androidMain` source set (requires `androidTarget()` in convention).
 The following items were previously tracked but are now resolved:
 
 | Item | Resolution |
-|---|---|
+|---|---|---|
 | **Compose Hot Reload** | Bundled and enabled by default since CMP 1.10.0. Project is on `1.12.0-alpha01`. No action needed. |
 | **`local.properties` hardcoded Nix path** | Auto-generated from `$ANDROID_HOME` by `flake.nix` shellHook on every `direnv allow` entry. |
 | **DataStore on wasmJs** | `LocalStorageDataStore` backs `DataStore<Preferences>` with browser `localStorage`. Persists across page reloads. |
@@ -208,4 +172,6 @@ The following items were previously tracked but are now resolved:
 | **`parseMediaId` truncation** | `toIntOrNull()` instead of `toLong().toInt()`. ✅ |
 | **SQLite web worker bundling** | Local `sqlite-wasm-worker` package in `:webApp` with `@sqlite.org/sqlite-wasm` npm dep. Full `wasmJsBrowserDistribution` passes. ✅ |
 | **OPFS headers** | `webApp/webpack.config.d/opfs-headers.js` sets COOP/COEP on dev-server. Production deployment must replicate at reverse proxy. ✅ |
-| **Nix/Gradle webpack environment** | `PREFER_SETTINGS` + Ivy repos in `settings.gradle.kts` + Nix `nodejs`/`yarn`/`binaryen` packages + `~/.kotlin/` pre-population. ✅ |
+| **Nix/Gradle webpack environment** | `PREFER_SETTINGS` + Ivy repos in `settings.gradle.kts` + Nix `nodejs`/`yarn`/`binaryen` packages + `KOTLIN_*_HOME` env vars. ✅ |
+| **Navigation3 desktop & web** | Both `DesktopNavHost` and `WebNavHost` use `NavDisplay`/`entryProvider` matching Android. ✅ |
+| **Web Crypto Promise interop** | `@JsFun` returns `Promise<JsString>` + `.await()` from `kotlinx.coroutines` 1.11.0-wasmJs. ✅ |
