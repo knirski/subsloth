@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.toDisplayStringRes
+import subsloth.feature.details.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
@@ -135,11 +137,9 @@ internal fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Mod
         if (details.subtitles.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Subtitles: ${
-                    details.subtitles.joinToString(", ") {
-                        it.languageDisplayName ?: it.language.value
-                    }
-                }",
+                text = stringResource(
+                    Res.string.subtitles_format,
+                    details.subtitles.joinToString(", ") { it.languageDisplayName ?: it.language.value }),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

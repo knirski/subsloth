@@ -31,6 +31,8 @@ import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.ui.toDisplayStringRes
+import subsloth.feature.details.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modifier) {
@@ -105,9 +107,9 @@ internal fun ShowDetailContent(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = when (details.status) {
-                    ShowStatus.ONGOING -> "Ongoing"
-                    ShowStatus.ENDED -> "Ended"
-                    ShowStatus.UPCOMING -> "Upcoming"
+                    ShowStatus.ONGOING -> stringResource(Res.string.show_ongoing)
+                    ShowStatus.ENDED -> stringResource(Res.string.show_ended)
+                    ShowStatus.UPCOMING -> stringResource(Res.string.show_upcoming)
                     ShowStatus.UNKNOWN -> ""
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -204,7 +206,7 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
                 )
                 if (isUpcoming) {
                     Text(
-                        text = "Upcoming",
+                        text = stringResource(Res.string.show_upcoming),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
