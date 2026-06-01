@@ -33,6 +33,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.findLibrary("kotlinx-collections-immutable").get())
+            implementation(libs.findLibrary("kermit").get())
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
