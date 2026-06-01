@@ -12,6 +12,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import co.touchlab.kermit.Logger
 
+private val log = Logger.withTag("PlaybackService")
+
 /**
  * Foreground service for media playback.
  *
@@ -27,14 +29,14 @@ class PlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Logger.withTag(TAG).d { "Service created" }
+        log.d { "Service created" }
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Logger.withTag(TAG).d { "onStartCommand: action=${intent?.action}, startId=$startId" }
+        log.d { "onStartCommand: action=${intent?.action}, startId=$startId" }
         if (intent?.action == ACTION_STOP) {
-            Logger.withTag(TAG).d { "Stopping foreground service" }
+            log.d { "Stopping foreground service" }
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -56,7 +58,7 @@ class PlaybackService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        Logger.withTag(TAG).d { "Service destroyed" }
+        log.d { "Service destroyed" }
         super.onDestroy()
     }
 

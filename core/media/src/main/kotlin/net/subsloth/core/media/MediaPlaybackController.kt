@@ -16,6 +16,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+private val log = Logger.withTag("MediaPlaybackCtrl")
+
 @UnstableApi
 @Suppress("TooManyFunctions")
 class MediaPlaybackController(private val application: Application) {
@@ -34,7 +36,7 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun buildPlayer(): ExoPlayer {
-        Logger.withTag(TAG).d { "Building online player" }
+        log.d { "Building online player" }
         release()
         val dataSourceFactory = DefaultDataSource.Factory(
             application,
@@ -58,7 +60,7 @@ class MediaPlaybackController(private val application: Application) {
      * refresh or quality fallback.
      */
     fun buildLocalPlayer(): ExoPlayer {
-        Logger.withTag(TAG).d { "Building local player" }
+        log.d { "Building local player" }
         release()
         val exoPlayer = ExoPlayer.Builder(application)
             .setMediaSourceFactory(DefaultMediaSourceFactory(application))
@@ -76,10 +78,10 @@ class MediaPlaybackController(private val application: Application) {
      */
     fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
         val p = player ?: run {
-            Logger.withTag(TAG).w { "startPlayback: no player built" }
+            log.w { "startPlayback: no player built" }
             return
         }
-        Logger.withTag(TAG).d {
+        log.d {
             "Starting playback at ${positionSeconds}s, subtitles=${source.availableSubtitles.size}"
         }
         val mediaItem = MediaItemFactory.createMediaItem(source)
@@ -102,10 +104,10 @@ class MediaPlaybackController(private val application: Application) {
      */
     fun startLocalPlayback(localFileUri: String, source: VideoSource, positionSeconds: Long = 0L) {
         val p = player ?: run {
-            Logger.withTag(TAG).w { "startLocalPlayback: no player built" }
+            log.w { "startLocalPlayback: no player built" }
             return
         }
-        Logger.withTag(TAG).d { "Starting local playback from: $localFileUri at ${positionSeconds}s" }
+        log.d { "Starting local playback from: $localFileUri at ${positionSeconds}s" }
         val mediaItem = MediaItemFactory.createLocalMediaItem(localFileUri, source)
             .buildUpon()
             .setSubtitleConfigurations(MediaItemFactory.buildSubtitleMediaItem(source))
@@ -135,7 +137,7 @@ class MediaPlaybackController(private val application: Application) {
         errorListener?.let { p.removeListener(it) }
         val listener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                Logger.withTag(TAG).e(error) { "Player error: ${error.errorCodeName}" }
+                log.e(error) { "Player error: ${error.errorCodeName}" }
                 callback.onError(error)
             }
         }
@@ -145,13 +147,13 @@ class MediaPlaybackController(private val application: Application) {
 
     fun setPlaybackSpeed(speed: Float) {
         require(speed > 0f) { "Playback speed must be positive, was $speed" }
-        Logger.withTag(TAG).v { "Setting playback speed: $speed" }
+        log.v { "Setting playback speed: $speed" }
         player?.setPlaybackSpeed(speed)
     }
 
     fun setPreferredTextLanguage(language: String?) {
         val p = player ?: return
-        Logger.withTag(TAG).v { "Setting preferred text language: $language" }
+        log.v { "Setting preferred text language: $language" }
         p.trackSelectionParameters = p.trackSelectionParameters
             .buildUpon()
             .setPreferredTextLanguage(language)
@@ -159,7 +161,7 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun release() {
-        Logger.withTag(TAG).d { "Releasing player" }
+        log.d { "Releasing player" }
         errorListener?.let { player?.removeListener(it) }
         errorListener = null
         player?.release()

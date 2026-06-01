@@ -113,7 +113,7 @@ class HomeViewModel(
             }.toImmutableList()
 
             val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
-            log.d { "Catalog loaded: ${rows.size} rows, $movies movies, $shows shows" }
+            log.d { "Catalog loaded: ${rows.size} rows, ${movies.size} movies, ${shows.size} shows" }
             _uiState.value = HomeUiState.Content(
                 rows = rows,
                 selectedTab = restoredTab,
