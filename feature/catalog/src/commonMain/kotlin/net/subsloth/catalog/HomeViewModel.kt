@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +75,7 @@ class HomeViewModel(
         "searchQuery" to "",
     ),
 ) : ViewModel() {
+    private val log = Logger.withTag("HomeViewModel")
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -83,10 +85,15 @@ class HomeViewModel(
 
     private fun loadCatalog() {
         viewModelScope.launch {
+            log.d { "Loading catalog..." }
             _uiState.value = HomeUiState.Loading
 
             val catalogResult = listCatalog()
             val catalog = catalogResult.getOrDefault(emptyList())
+
+            catalogResult.onFailure { error ->
+                log.e(error) { "Catalog load failed: ${error.message}" }
+            }
 
             val movies = catalog.filterIsInstance<MovieSummary>()
             val shows = catalog.filterIsInstance<ShowSummary>()
@@ -106,6 +113,7 @@ class HomeViewModel(
             }.toImmutableList()
 
             val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
+            log.d { "Catalog loaded: ${rows.size} rows, $movies movies, $shows shows" }
             _uiState.value = HomeUiState.Content(
                 rows = rows,
                 selectedTab = restoredTab,

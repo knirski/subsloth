@@ -30,6 +30,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.HttpUtil
 import androidx.media3.datasource.TransferListener
+import co.touchlab.kermit.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.headers
@@ -108,7 +109,9 @@ constructor(
         val urlString = dataSpec.uri.toString()
         val uri = Uri.parse(urlString)
         val scheme = uri.scheme
+        Logger.withTag(TAG).d { "Opening: ${uri.lastPathSegment}, pos=${dataSpec.position}, len=${dataSpec.length}" }
         if (scheme == null || !scheme.lowercase().startsWith("http")) {
+            Logger.withTag(TAG).e { "Malformed URL: $urlString" }
             throw HttpDataSource.HttpDataSourceException(
                 "Malformed URL",
                 dataSpec,
@@ -175,6 +178,7 @@ constructor(
         }
 
         val responseCode = httpResponse.status.value
+        Logger.withTag(TAG).v { "Response $responseCode for ${uri.lastPathSegment}" }
 
         if (responseCode !in 200..299) {
             if (responseCode == 416) {
@@ -268,8 +272,13 @@ constructor(
 
     @Throws(HttpDataSource.HttpDataSourceException::class)
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int = try {
-        runBlocking { readInternal(buffer, offset, length) }
+        val result = runBlocking { readInternal(buffer, offset, length) }
+        if (result == C.RESULT_END_OF_INPUT) {
+            Logger.withTag(TAG).v { "Read complete, ${bytesRead}B total" }
+        }
+        result
     } catch (_: CancellationException) {
+        Logger.withTag(TAG).w { "Read cancelled" }
         throw HttpDataSource.HttpDataSourceException(
             InterruptedIOException(),
             dataSpec!!,
@@ -277,6 +286,7 @@ constructor(
             HttpDataSource.HttpDataSourceException.TYPE_READ,
         )
     } catch (e: IOException) {
+        Logger.withTag(TAG).e(e) { "Read error" }
         throw HttpDataSource.HttpDataSourceException.createForIOException(
             e,
             dataSpec!!,
@@ -284,6 +294,7 @@ constructor(
         )
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
         if (e is HttpDataSource.HttpDataSourceException) throw e
+        Logger.withTag(TAG).e(e) { "Unexpected read error" }
         throw HttpDataSource.HttpDataSourceException(
             e.message ?: "Unknown error",
             null,
@@ -294,6 +305,7 @@ constructor(
     }
 
     override fun close() {
+        Logger.withTag(TAG).v { "Closing data source, read ${bytesRead}B" }
         if (connectionEstablished) {
             connectionEstablished = false
             transferEnded()

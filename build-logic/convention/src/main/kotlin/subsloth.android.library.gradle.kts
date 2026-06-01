@@ -84,6 +84,7 @@ detekt {
 dependencies {
     detektPlugins(project(":testing:detekt-rules"))
     detektPlugins(libs.findLibrary("compose-rules-detekt").get())
+    implementation(libs.findLibrary("kermit").get())
     testImplementation(kotlin("test"))
     androidTestImplementation(kotlin("test"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:${libs.findVersion("junitPlatform").get().requiredVersion}")

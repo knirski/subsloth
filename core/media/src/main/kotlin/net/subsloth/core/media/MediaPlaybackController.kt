@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import co.touchlab.kermit.Logger
 import net.subsloth.core.datasource.ktor.KtorDataSource
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
@@ -33,6 +34,7 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun buildPlayer(): ExoPlayer {
+        Logger.withTag(TAG).d { "Building online player" }
         release()
         val dataSourceFactory = DefaultDataSource.Factory(
             application,
@@ -56,6 +58,7 @@ class MediaPlaybackController(private val application: Application) {
      * refresh or quality fallback.
      */
     fun buildLocalPlayer(): ExoPlayer {
+        Logger.withTag(TAG).d { "Building local player" }
         release()
         val exoPlayer = ExoPlayer.Builder(application)
             .setMediaSourceFactory(DefaultMediaSourceFactory(application))
@@ -72,7 +75,13 @@ class MediaPlaybackController(private val application: Application) {
      * local file URI. No network refresh or quality fallback is attempted.
      */
     fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
-        val p = player ?: return
+        val p = player ?: run {
+            Logger.withTag(TAG).w { "startPlayback: no player built" }
+            return
+        }
+        Logger.withTag(TAG).d {
+            "Starting playback at ${positionSeconds}s, subtitles=${source.availableSubtitles.size}"
+        }
         val mediaItem = MediaItemFactory.createMediaItem(source)
             .buildUpon()
             .setSubtitleConfigurations(MediaItemFactory.buildSubtitleMediaItem(source))
@@ -92,7 +101,11 @@ class MediaPlaybackController(private val application: Application) {
      * to an app-private file on local storage.
      */
     fun startLocalPlayback(localFileUri: String, source: VideoSource, positionSeconds: Long = 0L) {
-        val p = player ?: return
+        val p = player ?: run {
+            Logger.withTag(TAG).w { "startLocalPlayback: no player built" }
+            return
+        }
+        Logger.withTag(TAG).d { "Starting local playback from: $localFileUri at ${positionSeconds}s" }
         val mediaItem = MediaItemFactory.createLocalMediaItem(localFileUri, source)
             .buildUpon()
             .setSubtitleConfigurations(MediaItemFactory.buildSubtitleMediaItem(source))
@@ -122,6 +135,7 @@ class MediaPlaybackController(private val application: Application) {
         errorListener?.let { p.removeListener(it) }
         val listener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
+                Logger.withTag(TAG).e(error) { "Player error: ${error.errorCodeName}" }
                 callback.onError(error)
             }
         }
@@ -131,11 +145,13 @@ class MediaPlaybackController(private val application: Application) {
 
     fun setPlaybackSpeed(speed: Float) {
         require(speed > 0f) { "Playback speed must be positive, was $speed" }
+        Logger.withTag(TAG).v { "Setting playback speed: $speed" }
         player?.setPlaybackSpeed(speed)
     }
 
     fun setPreferredTextLanguage(language: String?) {
         val p = player ?: return
+        Logger.withTag(TAG).v { "Setting preferred text language: $language" }
         p.trackSelectionParameters = p.trackSelectionParameters
             .buildUpon()
             .setPreferredTextLanguage(language)
@@ -143,6 +159,7 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     fun release() {
+        Logger.withTag(TAG).d { "Releasing player" }
         errorListener?.let { player?.removeListener(it) }
         errorListener = null
         player?.release()
@@ -172,6 +189,7 @@ class MediaPlaybackController(private val application: Application) {
     }
 
     companion object {
+        private const val TAG = "MediaPlaybackCtrl"
         private val DEFAULT_LIVE_OFFSET: Duration = 5.seconds
     }
 }

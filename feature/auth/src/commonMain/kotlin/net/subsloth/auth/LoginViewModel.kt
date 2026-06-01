@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,6 +50,7 @@ class LoginViewModel(
     },
     private val onLogout: () -> Unit = {},
 ) : ViewModel() {
+    private val log = Logger.withTag("LoginViewModel")
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.LoginForm())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -57,10 +59,12 @@ class LoginViewModel(
     }
 
     private fun checkInitialState() {
+        log.d { "Checking initial auth state" }
         viewModelScope.launch {
             val hasCredentials = hasStoredCredentials()
             val hasOffline = hasPlayableDownloads()
 
+            log.d { "Stored credentials: $hasCredentials, offline items: $hasOffline" }
             if (hasCredentials) {
                 _uiState.value = LoginUiState.LoggedIn
                 onLoginSuccess()
@@ -71,6 +75,7 @@ class LoginViewModel(
     }
 
     fun login(login: String, password: String) {
+        log.d { "Login attempt" }
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
 
@@ -78,10 +83,12 @@ class LoginViewModel(
 
             result.fold(
                 onSuccess = {
+                    log.d { "Login successful" }
                     _uiState.value = LoginUiState.LoggedIn
                     onLoginSuccess()
                 },
                 onFailure = { error ->
+                    log.e(error) { "Login failed: ${error.message}" }
                     _uiState.value = LoginUiState.LoginForm(
                         hasOfflineLibrary = hasPlayableDownloads(),
                         error = error.toUiError(),

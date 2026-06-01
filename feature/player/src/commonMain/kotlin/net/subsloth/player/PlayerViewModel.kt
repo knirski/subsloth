@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -90,6 +91,7 @@ class PlayerViewModel(
     private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     private val stopService: () -> Unit = {},
 ) : ViewModel() {
+    private val log = Logger.withTag("PlayerViewModel")
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -102,10 +104,12 @@ class PlayerViewModel(
     }
 
     private fun loadContent() {
+        log.d { "Loading content for mediaId=$mediaId" }
         viewModelScope.launch {
             fetchVideoSource(mediaId).fold(
                 onSuccess = { source -> startPlayback(source) },
                 onFailure = { error ->
+                    log.e(error) { "Failed to fetch video source" }
                     val playbackError = categorizePlaybackError(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
@@ -129,6 +133,9 @@ class PlayerViewModel(
     }
 
     private suspend fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
+        log.d {
+            "Starting playback: mode=${source.playbackMode}, pos=${positionSeconds}s, url=${source.streamUrl.take(80)}"
+        }
         session = PlayerSession(source = source)
 
         playerController?.let { controller ->
@@ -263,7 +270,11 @@ class PlayerViewModel(
         val currentSession = session ?: return
         val quality = currentSession.source.availableQualities.find {
             it.info.label == qualityLabel || it.info.resolution.label == qualityLabel
-        } ?: return
+        } ?: run {
+            log.w { "Quality not found: $qualityLabel" }
+            return
+        }
+        log.d { "Switching quality to: ${quality.info.label}" }
         val updatedSource = currentSession.source.copy(selectedQuality = quality)
         viewModelScope.launch {
             startPlayback(updatedSource, positionSeconds = state.positionSeconds)
@@ -298,6 +309,7 @@ class PlayerViewModel(
     }
 
     private fun performStreamRefresh(currentSession: PlayerSession) {
+        log.d { "Performing stream refresh" }
         viewModelScope.launch {
             refreshStreamUrl(currentSession.source.mediaId).fold(
                 onSuccess = { refreshedSource ->
@@ -326,6 +338,7 @@ class PlayerViewModel(
     }
 
     override fun onCleared() {
+        log.d { "ViewModel cleared, releasing player" }
         progressJob?.cancel()
         super.onCleared()
         playerController?.release()
@@ -386,6 +399,7 @@ class PlayerViewModel(
         val state = _uiState.value as? PlayerUiState.Content ?: return
 
         val playbackError = categorizePlaybackError(error)
+        log.e(error) { "Player error: $playbackError (mode=${state.playbackMode})" }
 
         if (state.playbackMode == PlaybackMode.OFFLINE && playbackError is PlaybackError.AuthFailure) return
 

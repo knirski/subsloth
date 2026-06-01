@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import co.touchlab.kermit.Logger
 
 /**
  * Foreground service for media playback.
@@ -26,11 +27,14 @@ class PlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Logger.withTag(TAG).d { "Service created" }
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Logger.withTag(TAG).d { "onStartCommand: action=${intent?.action}, startId=$startId" }
         if (intent?.action == ACTION_STOP) {
+            Logger.withTag(TAG).d { "Stopping foreground service" }
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -50,6 +54,11 @@ class PlaybackService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        Logger.withTag(TAG).d { "Service destroyed" }
+        super.onDestroy()
+    }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
@@ -74,6 +83,7 @@ class PlaybackService : Service() {
 
     internal companion object {
         internal const val ACTION_STOP = "net.subsloth.core.media.action.STOP"
+        private const val TAG = "PlaybackService"
         private const val CHANNEL_ID = "playback"
         private const val CHANNEL_NAME = "Media Playback"
         private const val CHANNEL_DESCRIPTION = "Shows when media is playing in the background"
