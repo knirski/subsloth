@@ -26,6 +26,6 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `./gradlew :core:domain:test :core:media:test :feature:library:test :app:assembleDebug`.
-- [ ] 5.2 Run manifest/lint checks for `dataSync` foreground-service type and notification permission behavior.
-- [ ] 5.3 Run `openspec validate offline-downloads --strict`.
+- [x] 5.1 Run `./gradlew :core:domain:jvmTest :core:media:jvmTest :feature:library:jvmTest :androidApp:assembleDebug`.
+- [x] 5.2 Run manifest/lint checks for `dataSync` foreground-service type and notification permission behavior.
+- [x] 5.3 Run `openspec validate offline-downloads --strict`.
