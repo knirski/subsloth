@@ -8,20 +8,24 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.domain.policy.QualityFallbackPolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
 import net.subsloth.core.domain.policy.SubtitlePolicy
+import net.subsloth.core.media.PlayCommand
+import net.subsloth.core.media.PlayerSnapshot
+import net.subsloth.core.media.SubtitleMapper
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.ShowId
@@ -32,8 +36,6 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 @Stable
 sealed interface PlayerUiState {
@@ -70,7 +72,6 @@ private data class PlayerSession(val source: VideoSource, val streamRefreshUsed:
 @Suppress("TooManyFunctions")
 class PlayerViewModel(
     val mediaId: Media.MediaId,
-    private val playerController: PlayerController? = null,
     private val fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
         Result.failure(UnsupportedOperationException("Not implemented"))
     },
@@ -89,15 +90,16 @@ class PlayerViewModel(
         LanguageCode("en")
     },
     private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
-    private val stopService: () -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("PlayerViewModel")
 
     private val _uiState = MutableStateFlow<PlayerUiState>(PlayerUiState.Loading)
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private val _playCommands = Channel<PlayCommand>(Channel.UNLIMITED)
+    val playCommands: Flow<PlayCommand> = _playCommands.receiveAsFlow()
+
     private var session: PlayerSession? = null
-    private var progressJob: Job? = null
 
     init {
         loadContent()
@@ -138,28 +140,18 @@ class PlayerViewModel(
         }
         session = PlayerSession(source = source)
 
-        playerController?.let { controller ->
-            if (source.playbackMode == PlaybackMode.OFFLINE) {
-                controller.buildLocalPlayer()
-                controller.startLocalPlayback(
-                    localFileUri = source.streamUrl,
-                    source = source,
-                    positionSeconds = positionSeconds,
-                )
-                controller.setErrorCallback { error ->
-                    handlePlayerError(error)
-                }
-            } else {
-                controller.buildPlayer()
-                controller.startPlayback(source, positionSeconds = positionSeconds)
-                controller.setErrorCallback { error ->
-                    handlePlayerError(error)
-                }
-            }
-        }
-
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
+        val subtitleTrack = initialSubtitle?.let { SubtitleMapper.toSubtitleTrack(it) }
+
+        _playCommands.send(
+            PlayCommand(
+                url = source.streamUrl,
+                positionSeconds = positionSeconds,
+                subtitleTrack = subtitleTrack,
+            ),
+        )
+
         val subtitleNotice: PlayerUiState.Notice? = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
                 PlayerUiState.Notice(resKey = "no_subtitles")
@@ -174,13 +166,9 @@ class PlayerViewModel(
 
             else -> null
         }
-        if (initialSubtitle != null) {
-            playerController?.setPreferredTextLanguage(initialSubtitle.language.value)
-        }
 
         val currentSpeed = (uiState.value as? PlayerUiState.Content)?.playbackSpeed
         val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
-        playerController?.setPlaybackSpeed(initialSpeed)
 
         _uiState.value = PlayerUiState.Content(
             title = source.mediaId.toString(),
@@ -202,11 +190,56 @@ class PlayerViewModel(
             mediaId = mediaId,
         )
 
-        if (playerController != null) {
-            startProgressTracking()
+        populateNextEpisode(source)
+    }
+
+    fun onPlayerSnapshot(snapshot: PlayerSnapshot) {
+        val dur = snapshot.durationSeconds
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(
+                positionSeconds = snapshot.positionSeconds,
+                durationSeconds = dur,
+                isPlaying = snapshot.isPlaying,
+            ) ?: current
         }
 
-        populateNextEpisode(source)
+        state.mediaId?.let { id ->
+            viewModelScope.launch { saveProgress(id, snapshot.positionSeconds, dur) }
+        }
+
+        if (dur > 0L && CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) && !state.showNextEpisodePrompt) {
+            showNextEpisodePrompt(state)
+        }
+    }
+
+    fun onPlayerError(message: String) {
+        val playbackError = categorizePlaybackError(RuntimeException(message))
+        val isAuth = playbackError is PlaybackError.AuthFailure
+        if (isAuth) {
+            saveProgressAndRouteToAuthRepair()
+        }
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
+        }
+    }
+
+    fun onPlaybackEnded() {
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        showNextEpisodePrompt(state)
+    }
+
+    private fun showNextEpisodePrompt(state: PlayerUiState.Content) {
+        state.mediaId?.let { id ->
+            viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds) }
+        }
+        val nextEp = state.nextEpisode
+        if (nextEp != null) {
+            _uiState.update { current ->
+                (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = true) ?: current
+            }
+        }
     }
 
     private fun populateNextEpisode(source: VideoSource) {
@@ -214,7 +247,7 @@ class PlayerViewModel(
             val showId = when (val id = mediaId) {
                 is Media.MediaId.Show -> id.value
                 is Media.MediaId.Episode -> resolveShowIdForEpisode(id.value)
-                else -> null
+                else -> return@launch
             } ?: return@launch
             fetchEpisodes(Media.MediaId.Show(showId)).onSuccess { episodes ->
                 val currentEpisodeId = (source.mediaId as? Media.MediaId.Episode)?.value
@@ -234,21 +267,7 @@ class PlayerViewModel(
         }
     }
 
-    fun togglePlayPause() {
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        playerController?.let {
-            if (state.isPlaying) it.pause() else it.playWhenReady()
-        }
-        updatePlayingState()
-    }
-
-    fun seekTo(positionSeconds: Long) {
-        playerController?.seekTo(positionSeconds.seconds)
-        updatePlayingState()
-    }
-
     fun setPlaybackSpeed(speed: Float) {
-        playerController?.setPlaybackSpeed(speed)
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(playbackSpeed = speed) ?: current
         }
@@ -259,7 +278,6 @@ class PlayerViewModel(
     }
 
     fun selectSubtitle(subtitle: Subtitle?) {
-        playerController?.setPreferredTextLanguage(subtitle?.language?.value)
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(selectedSubtitle = subtitle) ?: current
         }
@@ -298,7 +316,6 @@ class PlayerViewModel(
         loadContent()
     }
 
-    @Suppress("ReturnCount")
     fun retryWithRefresh() {
         val state = _uiState.value as? PlayerUiState.Content ?: return
         val currentSession = session ?: return
@@ -338,137 +355,17 @@ class PlayerViewModel(
     }
 
     override fun onCleared() {
-        log.d { "ViewModel cleared, releasing player" }
-        progressJob?.cancel()
+        log.d { "ViewModel cleared" }
         super.onCleared()
-        playerController?.release()
-        stopService()
-    }
-
-    private fun startProgressTracking() {
-        progressJob?.cancel()
-        progressJob = viewModelScope.launch {
-            while (isActive) {
-                delay(PROGRESS_UPDATE_INTERVAL)
-                val pos = playerController?.currentPosition()?.inWholeSeconds ?: 0L
-                val dur = playerController?.duration()?.inWholeSeconds ?: 0L
-                val playing = playerController?.isPlaying() ?: false
-                _uiState.update { current ->
-                    (current as? PlayerUiState.Content)?.copy(
-                        positionSeconds = pos,
-                        durationSeconds = dur,
-                        isPlaying = playing,
-                    ) ?: current
-                }
-                val state = _uiState.value as? PlayerUiState.Content ?: continue
-
-                state.mediaId?.let { id ->
-                    saveProgress(id, pos, dur)
-                }
-
-                if (dur > 0L && CompletionPolicy.isCompleted(pos, dur) && !state.showNextEpisodePrompt) {
-                    onEpisodeCompleted(state)
-                }
-            }
-        }
-    }
-
-    private fun onEpisodeCompleted(state: PlayerUiState.Content) {
-        state.mediaId?.let { id ->
-            viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds) }
-        }
-        val nextEp = state.nextEpisode
-        if (nextEp != null) {
-            _uiState.update { current ->
-                (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = true) ?: current
-            }
-        }
-    }
-
-    private fun updatePlayingState() {
-        val playing = playerController?.isPlaying() ?: false
-        _uiState.update { current ->
-            (current as? PlayerUiState.Content)?.copy(
-                isPlaying = playing,
-            ) ?: current
-        }
-    }
-
-    @Suppress("CyclomaticComplexMethod")
-    private fun handlePlayerError(error: Throwable) {
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-
-        val playbackError = categorizePlaybackError(error)
-        log.e(error) { "Player error: $playbackError (mode=${state.playbackMode})" }
-
-        if (state.playbackMode == PlaybackMode.OFFLINE && playbackError is PlaybackError.AuthFailure) return
-
-        when (playbackError) {
-            is PlaybackError.AuthFailure -> {
-                saveProgressAndRouteToAuthRepair()
-                _uiState.update { current ->
-                    (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
-                }
-            }
-
-            is PlaybackError.StreamUrlExpired -> {
-                val currentSession = session
-                if (currentSession != null &&
-                    StreamRefreshPolicy.canRefresh(
-                        currentSession.streamRefreshUsed,
-                        state.playbackMode == PlaybackMode.OFFLINE,
-                    )
-                ) {
-                    retryWithRefresh()
-                } else {
-                    _uiState.update { current ->
-                        (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
-                    }
-                }
-            }
-
-            is PlaybackError.Recoverable -> {
-                val currentSession = session
-                if (currentSession != null && QualityFallbackPolicy.canFallback(state.qualityFallbackUsed)) {
-                    val fallback = QualityFallbackPolicy.selectFallback(
-                        availableQualities = currentSession.source.availableQualities,
-                        currentResolution = currentSession.source.selectedQuality.info.resolution,
-                        fallbackUsed = state.qualityFallbackUsed,
-                    )
-                    if (fallback != null) {
-                        viewModelScope.launch {
-                            val fallbackSource = currentSession.source.copy(selectedQuality = fallback)
-                            startPlayback(fallbackSource, positionSeconds = state.positionSeconds)
-
-                            _uiState.update { current ->
-                                (current as? PlayerUiState.Content)?.copy(
-                                    qualityFallbackUsed = true,
-                                    qualityFallbackNotice = PlayerUiState.Notice(
-                                        resKey = "quality_reduced",
-                                        formatArg = fallback.info.label ?: fallback.info.resolution.label,
-                                    ),
-                                ) ?: current
-                            }
-                        }
-                    } else {
-                        _uiState.update { current ->
-                            (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
-                        }
-                    }
-                } else {
-                    _uiState.update { current ->
-                        (current as? PlayerUiState.Content)?.copy(playbackError = playbackError) ?: current
-                    }
-                }
-            }
-        }
     }
 
     private fun saveProgressAndRouteToAuthRepair() {
         val state = _uiState.value as? PlayerUiState.Content
         if (state != null) {
-            viewModelScope.launch(NonCancellable) {
-                saveProgress(state.mediaId ?: return@launch, state.positionSeconds, state.durationSeconds)
+            viewModelScope.launch {
+                withContext(NonCancellable) {
+                    saveProgress(state.mediaId ?: return@withContext, state.positionSeconds, state.durationSeconds)
+                }
             }
         }
         onAuthFailure()
@@ -489,8 +386,4 @@ class PlayerViewModel(
 
     private fun isLikelyStreamExpired(message: String): Boolean =
         message.contains("403") || message.contains("expired", ignoreCase = true)
-
-    private companion object {
-        private val PROGRESS_UPDATE_INTERVAL: Duration = 1.seconds
-    }
 }

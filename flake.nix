@@ -23,7 +23,7 @@
       androidPackages = pkgs.androidenv.composeAndroidPackages {
         cmdLineToolsVersion = "17.0";
         platformVersions = [ "37" ];
-        buildToolsVersions = [ "37.0.0" ];
+        buildToolsVersions = [ "37.0.0" "36.0.0" ];
         platformToolsVersion = "37.0.0";
       };
 

@@ -18,4 +18,6 @@
     <string name="player_subtitle_in">Subtitles in %s</string>
     <string name="player_no_subtitles">No subtitles in preferred language</string>
     <string name="player_quality_reduced">Quality reduced to %s</string>
+    <string name="player_quality_auto">Auto (ABR)</string>
+    <string name="player_close">Close</string>
 </resources>

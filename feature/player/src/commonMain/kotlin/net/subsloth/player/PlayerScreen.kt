@@ -31,7 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import net.subsloth.core.domain.policy.PlaybackSpeed
+import net.subsloth.core.media.PlayerBridgeSurface
+import net.subsloth.core.media.PlayerEvent
+import net.subsloth.core.media.SubtitleMapper
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
@@ -39,9 +43,6 @@ import net.subsloth.core.model.playback.PlaybackMode
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
 
-/**
- * Resolves a [Notice] to a display string using its resource key.
- */
 @Composable
 private fun PlayerUiState.Notice.resolve(): String = when (resKey) {
     "subtitle_in" -> stringResource(Res.string.player_subtitle_in, formatArg.orEmpty())
@@ -67,38 +68,35 @@ fun PlayerScreen(
         }
 
         is PlayerUiState.Content -> {
-            PlayerContent(
-                state = s,
-                modifier = modifier,
-                onTogglePlayPause = viewModel::togglePlayPause,
-                onSeek = viewModel::seekTo,
-                onSetSpeed = viewModel::setPlaybackSpeed,
-                onSelectSubtitle = viewModel::selectSubtitle,
-                onSelectQuality = viewModel::selectQuality,
-                onDismissNextEpisode = viewModel::dismissNextEpisode,
-                onPlayNextEpisode = viewModel::playNextEpisode,
-                onRetry = viewModel::retryPlayback,
-                onRetryWithRefresh = viewModel::retryWithRefresh,
-                onNavigateBack = onNavigateBack,
-                onNavigateToAuthRepair = onNavigateToAuthRepair,
+            PlayerBridgeSurface(
+                modifier = modifier.fillMaxSize(),
+                playCommands = viewModel.playCommands,
+                onEvent = { event ->
+                    when (event) {
+                        is PlayerEvent.Snapshot -> viewModel.onPlayerSnapshot(event.value)
+                        is PlayerEvent.Error -> viewModel.onPlayerError(event.message)
+                        is PlayerEvent.PlaybackEnded -> viewModel.onPlaybackEnded()
+                    }
+                },
+                overlay = { playerState ->
+                    PlayerOverlay(
+                        state = s,
+                        playerState = playerState,
+                        viewModel = viewModel,
+                        onNavigateBack = onNavigateBack,
+                        onNavigateToAuthRepair = onNavigateToAuthRepair,
+                    )
+                },
             )
         }
     }
 }
 
 @Composable
-internal fun PlayerContent(
+internal fun PlayerOverlay(
     state: PlayerUiState.Content,
-    modifier: Modifier = Modifier,
-    onTogglePlayPause: () -> Unit = {},
-    onSeek: (Long) -> Unit = {},
-    onSetSpeed: (Float) -> Unit = {},
-    onSelectSubtitle: (Subtitle?) -> Unit = {},
-    onSelectQuality: (String) -> Unit = {},
-    onDismissNextEpisode: () -> Unit = {},
-    onPlayNextEpisode: () -> Unit = {},
-    onRetry: () -> Unit = {},
-    onRetryWithRefresh: () -> Unit = {},
+    playerState: VideoPlayerState,
+    viewModel: PlayerViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
 ) {
@@ -108,15 +106,15 @@ internal fun PlayerContent(
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
     Box(
-        modifier = modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
         if (state.playbackError != null) {
             ErrorContent(
                 playbackError = state.playbackError,
                 playbackMode = state.playbackMode,
-                onRetry = onRetry,
-                onRetryWithRefresh = onRetryWithRefresh,
+                onRetry = viewModel::retryPlayback,
+                onRetryWithRefresh = viewModel::retryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -125,9 +123,14 @@ internal fun PlayerContent(
 
         if (state.showNextEpisodePrompt) {
             NextEpisodePrompt(
-                onPlay = onPlayNextEpisode,
-                onDismiss = onDismissNextEpisode,
+                onPlay = viewModel::playNextEpisode,
+                onDismiss = viewModel::dismissNextEpisode,
             )
+            return
+        }
+
+        if (playerState.isLoading) {
+            CircularProgressIndicator(color = Color.White)
             return
         }
 
@@ -163,21 +166,27 @@ internal fun PlayerContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val displaySeconds = draggingPosition?.let {
+                (it / 1000f * state.durationSeconds).toLong()
+            } ?: state.positionSeconds
             Text(
-                text = formatTime(state.positionSeconds),
+                text = formatTime(displaySeconds),
                 color = Color.White,
                 style = MaterialTheme.typography.bodyLarge,
             )
 
             if (state.durationSeconds > 0) {
                 Slider(
-                    value = draggingPosition ?: state.positionSeconds.toFloat(),
-                    onValueChange = { draggingPosition = it },
+                    value = draggingPosition ?: playerState.sliderPos,
+                    onValueChange = { value ->
+                        draggingPosition = value
+                        playerState.seekStart(value)
+                    },
                     onValueChangeFinished = {
-                        onSeek((draggingPosition ?: state.positionSeconds.toFloat()).toLong())
+                        playerState.seekFinished()
                         draggingPosition = null
                     },
-                    valueRange = 0f..state.durationSeconds.toFloat(),
+                    valueRange = 0f..1000f,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 )
 
@@ -192,7 +201,9 @@ internal fun PlayerContent(
 
             PlaybackControls(
                 isPlaying = state.isPlaying,
-                onTogglePlayPause = onTogglePlayPause,
+                onTogglePlayPause = {
+                    if (playerState.isPlaying) playerState.pause() else playerState.play()
+                },
                 onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                 onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
                 onToggleQuality = { showQualityPicker = !showQualityPicker },
@@ -202,7 +213,8 @@ internal fun PlayerContent(
                 SpeedPicker(
                     currentSpeed = state.playbackSpeed,
                     onSelect = { speed ->
-                        onSetSpeed(speed)
+                        playerState.playbackSpeed = speed
+                        viewModel.setPlaybackSpeed(speed)
                         showSpeedPicker = false
                     },
                 )
@@ -213,21 +225,35 @@ internal fun PlayerContent(
                     subtitles = state.availableSubtitles,
                     selected = state.selectedSubtitle,
                     onSelect = { subtitle ->
-                        onSelectSubtitle(subtitle)
+                        if (subtitle != null) {
+                            val track = SubtitleMapper.toSubtitleTrack(subtitle)
+                            if (track != null) {
+                                playerState.selectSubtitleTrack(track)
+                                viewModel.selectSubtitle(subtitle)
+                            }
+                        } else {
+                            playerState.disableSubtitles()
+                            viewModel.selectSubtitle(null)
+                        }
                         showSubtitlePicker = false
                     },
                 )
             }
 
             if (showQualityPicker) {
-                QualityPicker(
-                    qualities = state.availableQualities,
-                    selectedLabel = state.selectedQualityLabel,
-                    onSelect = { label ->
-                        onSelectQuality(label)
-                        showQualityPicker = false
-                    },
-                )
+                val isAdaptive = state.availableQualities.none { it.url != null }
+                if (isAdaptive) {
+                    AutoQualityNotice(onDismiss = { showQualityPicker = false })
+                } else {
+                    QualityPicker(
+                        qualities = state.availableQualities,
+                        selectedLabel = state.selectedQualityLabel,
+                        onSelect = { label ->
+                            viewModel.selectQuality(label)
+                            showQualityPicker = false
+                        },
+                    )
+                }
             }
         }
     }
@@ -346,6 +372,7 @@ private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSel
             Text(stringResource(Res.string.player_subtitles_off))
         }
         subtitles.forEach { subtitle ->
+            val supported = SubtitleMapper.isFormatSupported(subtitle.format)
             val isSelected = selected?.language == subtitle.language
             val containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primary
@@ -358,15 +385,37 @@ private fun SubtitlePicker(subtitles: List<Subtitle>, selected: Subtitle?, onSel
                 MaterialTheme.colorScheme.onSurfaceVariant
             }
             Button(
-                onClick = { onSelect(subtitle) },
+                onClick = {
+                    if (supported) onSelect(subtitle)
+                },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = containerColor,
-                    contentColor = contentColor,
+                    contentColor = if (supported) contentColor else contentColor.copy(alpha = 0.5f),
                 ),
+                enabled = supported,
             ) {
-                Text(text = subtitle.languageDisplayName ?: subtitle.language.value)
+                Text(
+                    text = subtitle.languageDisplayName ?: subtitle.language.value,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun AutoQualityNotice(onDismiss: () -> Unit) {
+    Column(
+        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.player_quality_auto),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(8.dp),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(Res.string.player_close))
         }
     }
 }
