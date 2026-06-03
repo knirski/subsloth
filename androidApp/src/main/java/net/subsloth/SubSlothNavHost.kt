@@ -154,7 +154,7 @@ fun SubSlothNavHost(
             entry<DiagnosticsKey> {
                 @Suppress("ViewModelInjection")
                 val viewModel: SettingsViewModel = viewModel(
-                    key = "settings",
+                    key = "diagnostics",
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
