@@ -8,7 +8,7 @@ The project SHALL build a greenfield multiplatform KMP app with application id a
 
 #### Scenario: Scaffolded modules are present
 - **WHEN** `./gradlew projects` is executed
-- **THEN** the listed modules include `:androidApp`, `:desktopApp`, `:webApp`, `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, `:feature:auth`, `:feature:catalog`, `:feature:details`, `:feature:player`, `:feature:library`, and `:feature:settings`
+- **THEN** the listed modules include `:androidApp`, `:desktopApp`, `:webApp`, `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, `:core:ui`, `:feature:auth`, `:feature:catalog`, `:feature:details`, `:feature:player`, `:feature:library`, and `:feature:settings`
 
 #### Scenario: App identity is locked
 - **WHEN** the app module is configured

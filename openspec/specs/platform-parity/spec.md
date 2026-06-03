@@ -1,7 +1,7 @@
 # platform-parity Specification
 
 ## Purpose
-TBD - created by archiving change multiplatform-parity. Update Purpose after archive.
+Define the supported platform targets for subsloth (Android, desktop, and web), establish feature parity expectations across them, outline exemptions for iOS and macOS, and define boundaries for platform-exclusive features that must degrade gracefully on unsupported targets.
 ## Requirements
 ### Requirement: Supported Platforms
 
