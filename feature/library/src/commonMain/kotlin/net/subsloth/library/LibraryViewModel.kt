@@ -134,7 +134,7 @@ class LibraryViewModel(
         catalog: Map<Media.MediaId, Media>,
     ): List<Media> {
         return progress
-            .filter { it.positionSeconds > 0 && it.durationSeconds > 0 }
+            .filter { it.fraction in 0.05..0.9 }
             .mapNotNull { catalog[it.mediaId] }
     }
 

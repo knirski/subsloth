@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -79,151 +80,151 @@ internal fun SettingsContent(
     onPerformLogoutCleanup: (Boolean, Boolean, Boolean) -> Unit = { _, _, _ -> },
     onDismissLogoutCleanup: () -> Unit = {},
 ) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
-        }
-
-        item {
-            Text(
-                text = "Subtitle",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Subtitles enabled", style = MaterialTheme.typography.bodyMedium)
-                Checkbox(
-                    checked = state.subtitleEnabled,
-                    onCheckedChange = onSubtitleEnabledChanged,
-                )
-            }
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Subtitle language", style = MaterialTheme.typography.bodyMedium)
+    Box(modifier = modifier) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
                 Text(
-                    text = state.subtitleLanguage ?: "Default",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(vertical = 16.dp),
                 )
             }
-        }
 
-        item {
-            Text(
-                text = "Quality & Playback",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Preferred quality", style = MaterialTheme.typography.bodyMedium)
+            item {
                 Text(
-                    text = state.quality ?: "Auto",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Subtitle",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
             }
-        }
 
-        item {
-            Column {
-                Text("Playback speed: ${state.playbackSpeed}x", style = MaterialTheme.typography.bodyMedium)
-                Slider(
-                    value = state.playbackSpeed,
-                    onValueChange = onPlaybackSpeedChanged,
-                    valueRange = 0.5f..2.0f,
-                    steps = 5,
+            item {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Subtitles enabled", style = MaterialTheme.typography.bodyMedium)
+                    Checkbox(
+                        checked = state.subtitleEnabled,
+                        onCheckedChange = onSubtitleEnabledChanged,
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Subtitle language", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = state.subtitleLanguage ?: "Default",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            item {
+                Text(
+                    text = "Quality & Playback",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
             }
-        }
 
-        item {
-            Text(
-                text = "Downloads",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-        }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Preferred quality", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = state.quality ?: "Auto",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Downloads on Wi-Fi only", style = MaterialTheme.typography.bodyMedium)
-                Checkbox(
-                    checked = state.downloadsWifiOnly,
-                    onCheckedChange = onDownloadsWifiOnlyChanged,
+            item {
+                Column {
+                    Text("Playback speed: ${state.playbackSpeed}x", style = MaterialTheme.typography.bodyMedium)
+                    Slider(
+                        value = state.playbackSpeed,
+                        onValueChange = onPlaybackSpeedChanged,
+                        valueRange = 0.5f..2.0f,
+                        steps = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            item {
+                Text(
+                    text = "Downloads",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
             }
-        }
 
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        item {
-            OutlinedButton(
-                onClick = onNavigateToDiagnostics,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Diagnostics")
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Downloads on Wi-Fi only", style = MaterialTheme.typography.bodyMedium)
+                    Checkbox(
+                        checked = state.downloadsWifiOnly,
+                        onCheckedChange = onDownloadsWifiOnlyChanged,
+                    )
+                }
             }
-        }
 
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
-        item {
-            Button(
-                onClick = onLogoutClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                ),
-            ) {
-                Text("Logout")
+            item {
+                OutlinedButton(
+                    onClick = onNavigateToDiagnostics,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Diagnostics")
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            item {
+                Button(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Text("Logout")
+                }
             }
         }
 
         if (state.showLogoutCleanup) {
-            item(key = "logout_cleanup") {
-                LogoutCleanupDialog(
-                    onConfirm = onPerformLogoutCleanup,
-                    onDismiss = onDismissLogoutCleanup,
-                )
-            }
+            LogoutCleanupDialog(
+                onConfirm = onPerformLogoutCleanup,
+                onDismiss = onDismissLogoutCleanup,
+            )
         }
     }
 }
@@ -233,50 +234,44 @@ private fun LogoutCleanupDialog(
     onConfirm: (deleteDownloads: Boolean, resetPreferences: Boolean, clearLibrary: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-    ) {
-        Text(
-            text = "Logout Cleanup",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Choose what to clear for this profile:",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    var deleteDownloads by remember { mutableStateOf(false) }
+    var resetPreferences by remember { mutableStateOf(false) }
+    var clearLibraryData by remember { mutableStateOf(false) }
 
-        var deleteDownloads by remember { mutableStateOf(false) }
-        var resetPreferences by remember { mutableStateOf(false) }
-        var clearLibraryData by remember { mutableStateOf(false) }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = deleteDownloads, onCheckedChange = { deleteDownloads = it })
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Delete downloaded videos & subtitles", style = MaterialTheme.typography.bodyMedium)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = resetPreferences, onCheckedChange = { resetPreferences = it })
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Reset active-profile preferences", style = MaterialTheme.typography.bodyMedium)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = clearLibraryData, onCheckedChange = { clearLibraryData = it })
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Clear active-profile watch & library data", style = MaterialTheme.typography.bodyMedium)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Logout Cleanup") },
+        text = {
+            Column {
+                Text(
+                    text = "Choose what to clear for this profile:",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = deleteDownloads, onCheckedChange = { deleteDownloads = it })
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Delete downloaded videos & subtitles", style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = resetPreferences, onCheckedChange = { resetPreferences = it })
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reset active-profile preferences", style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = clearLibraryData, onCheckedChange = { clearLibraryData = it })
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Clear active-profile watch & library data", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(deleteDownloads, resetPreferences, clearLibraryData) }) {
+                Text("Logout")
+            }
+        },
+        dismissButton = {
             OutlinedButton(onClick = onDismiss) { Text("Cancel") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { onConfirm(deleteDownloads, resetPreferences, clearLibraryData) }) { Text("Logout") }
-        }
-    }
+        },
+    )
 }
