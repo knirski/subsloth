@@ -4,10 +4,12 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
@@ -71,34 +73,39 @@ class SettingsViewModel(
     private val clearLibrary: () -> Unit = {},
     private val clearCredentials: () -> Unit = {},
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<SettingsUiState>(
-        SettingsUiState.Content(
-            subtitleEnabled = true,
-            subtitleLanguage = null,
-            quality = null,
-            playbackSpeed = 1.0f,
-            downloadsWifiOnly = true,
-            diagnostics = DiagnosticsState.REDACTED,
-        ),
-    )
+    private val log = Logger.withTag("SettingsViewModel")
+    private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        loadSettings()
+    }
+
+    private fun loadSettings() {
         viewModelScope.launch {
+            _uiState.value = SettingsUiState.Loading
             val key = profileKey()
-            val enabled = readSubtitleEnabled(key).first()
-            val lang = readSubtitleLanguage(key).first()
-            val qual = readQuality(key).first()
-            val speed = readPlaybackSpeed(key).first()
-            val wifi = readDownloadsWifiOnly(key).first()
-            _uiState.value = SettingsUiState.Content(
-                subtitleEnabled = enabled,
-                subtitleLanguage = lang,
-                quality = qual,
-                playbackSpeed = speed,
-                downloadsWifiOnly = wifi,
-                diagnostics = DiagnosticsState.REDACTED,
-            )
+            try {
+                val result = combine(
+                    readSubtitleEnabled(key),
+                    readSubtitleLanguage(key),
+                    readQuality(key),
+                    readPlaybackSpeed(key),
+                    readDownloadsWifiOnly(key),
+                ) { enabled, lang, qual, speed, wifi ->
+                    SettingsUiState.Content(
+                        subtitleEnabled = enabled,
+                        subtitleLanguage = lang,
+                        quality = qual,
+                        playbackSpeed = speed,
+                        downloadsWifiOnly = wifi,
+                        diagnostics = DiagnosticsState.REDACTED,
+                    )
+                }.first()
+                _uiState.value = result
+            } catch (e: Exception) {
+                log.e(e) { "Failed to load settings: ${e.message}" }
+            }
         }
     }
 

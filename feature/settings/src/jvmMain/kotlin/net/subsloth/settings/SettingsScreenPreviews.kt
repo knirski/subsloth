@@ -19,6 +19,6 @@ fun SettingsScreenPreview() {
 @Composable
 fun DiagnosticsScreenPreview() {
     DiagnosticsContent(
-        diagnostics = DiagnosticsState.REDACTED,
+        state = DiagnosticsState.REDACTED,
     )
 }

@@ -33,6 +33,7 @@ import net.subsloth.library.LibraryViewModel
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
 import net.subsloth.settings.DiagnosticsScreen
+import net.subsloth.settings.DiagnosticsViewModel
 import net.subsloth.settings.SettingsScreen
 import net.subsloth.settings.SettingsViewModel
 
@@ -153,12 +154,12 @@ fun SubSlothNavHost(
 
             entry<DiagnosticsKey> {
                 @Suppress("ViewModelInjection")
-                val viewModel: SettingsViewModel = viewModel(
+                val viewModel: DiagnosticsViewModel = viewModel(
                     key = "diagnostics",
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            SettingsViewModel() as T
+                            DiagnosticsViewModel() as T
                     },
                 )
                 DiagnosticsScreen(

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -52,6 +53,7 @@ class DownloadsViewModel(
     private val retryDownload: suspend (String) -> EnqueueOutcome = { EnqueueOutcome.Queued },
     private val removeDownload: suspend (String) -> DownloadCommandOutcome = { DownloadCommandOutcome.NoOp },
 ) : ViewModel() {
+    private val log = Logger.withTag("DownloadsViewModel")
     private val _uiState = MutableStateFlow<DownloadsUiState>(DownloadsUiState.Loading)
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
 
@@ -62,9 +64,15 @@ class DownloadsViewModel(
     private fun loadDownloads() {
         viewModelScope.launch {
             _uiState.value = DownloadsUiState.Loading
-            val downloadsDeferred = async { listDownloads().getOrDefault(persistentListOf()) }
-            val seasonQueuesDeferred = async { listSeasonQueues().getOrDefault(persistentListOf()) }
-            val progressDeferred = async { listProgress().getOrDefault(emptyList()) }
+            val downloadsDeferred = async {
+                listDownloads().onFailure { log.e(it) { "listDownloads failed" } }.getOrDefault(persistentListOf())
+            }
+            val seasonQueuesDeferred = async {
+                listSeasonQueues().onFailure { log.e(it) { "listSeasonQueues failed" } }.getOrDefault(persistentListOf())
+            }
+            val progressDeferred = async {
+                listProgress().onFailure { log.e(it) { "listProgress failed" } }.getOrDefault(emptyList())
+            }
 
             val downloads = downloadsDeferred.await()
             val seasonQueues = seasonQueuesDeferred.await()

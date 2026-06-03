@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -58,6 +59,7 @@ class LibraryViewModel(
         Result.success(DownloadCommandOutcome.NoOp)
     },
 ) : ViewModel() {
+    private val log = Logger.withTag("LibraryViewModel")
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
@@ -70,19 +72,25 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val downloadsDeferred = async { downloadsPort().getOrDefault(persistentListOf()) }
-            val moviesDeferred = async { listMovies().getOrDefault(emptyList()) }
-            val showsDeferred = async { listShows().getOrDefault(emptyList()) }
+            val downloadsDeferred = async {
+                downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }.getOrDefault(persistentListOf())
+            }
+            val moviesDeferred = async {
+                listMovies().onFailure { log.e(it) { "listMovies failed" } }.getOrDefault(emptyList())
+            }
+            val showsDeferred = async {
+                listShows().onFailure { log.e(it) { "listShows failed" } }.getOrDefault(emptyList())
+            }
             val libraryDeferred: kotlinx.coroutines.Deferred<List<LibraryItem>>? = if (loggedIn) {
                 async {
-                    libraryPort().getOrDefault(emptyList())
+                    libraryPort().onFailure { log.e(it) { "libraryPort failed" } }.getOrDefault(emptyList())
                 }
             } else {
                 null
             }
             val progressDeferred: kotlinx.coroutines.Deferred<List<PlaybackProgress>>? = if (loggedIn) {
                 async {
-                    listProgress().getOrDefault(emptyList())
+                    listProgress().onFailure { log.e(it) { "listProgress failed" } }.getOrDefault(emptyList())
                 }
             } else {
                 null

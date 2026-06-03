@@ -18,30 +18,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun DiagnosticsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    when (val s = state) {
-        is SettingsUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-
-        is SettingsUiState.Content -> {
-            DiagnosticsContent(
-                diagnostics = s.diagnostics,
-                modifier = modifier,
-            )
-        }
-    }
+fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, modifier: Modifier = Modifier) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    DiagnosticsContent(state = state, modifier = modifier)
 }
 
 @Composable
-internal fun DiagnosticsContent(diagnostics: DiagnosticsState, modifier: Modifier = Modifier) {
+internal fun DiagnosticsContent(state: DiagnosticsState, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -63,11 +46,11 @@ internal fun DiagnosticsContent(diagnostics: DiagnosticsState, modifier: Modifie
             )
         }
 
-        item { DiagnosticRow("Installed app version", diagnostics.installedAppVersion) }
-        item { DiagnosticRow("Build type", diagnostics.buildType) }
-        item { DiagnosticRow("Version code", diagnostics.versionCode) }
-        diagnostics.gitSha?.let { item { DiagnosticRow("Git SHA", it) } }
-        item { DiagnosticRow("Release channel", diagnostics.releaseChannel) }
+        item { DiagnosticRow("Installed app version", state.installedAppVersion) }
+        item { DiagnosticRow("Build type", state.buildType) }
+        item { DiagnosticRow("Version code", state.versionCode) }
+        state.gitSha?.let { item { DiagnosticRow("Git SHA", it) } }
+        item { DiagnosticRow("Release channel", state.releaseChannel) }
 
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -81,7 +64,7 @@ internal fun DiagnosticsContent(diagnostics: DiagnosticsState, modifier: Modifie
             )
         }
 
-        diagnostics.deviceApiLevel?.let { item { DiagnosticRow("Device / API level", it) } }
+        state.deviceApiLevel?.let { item { DiagnosticRow("Device / API level", it) } }
 
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -95,9 +78,9 @@ internal fun DiagnosticsContent(diagnostics: DiagnosticsState, modifier: Modifie
             )
         }
 
-        item { DiagnosticRow("API base URL", diagnostics.apiBaseUrl) }
-        item { DiagnosticRow("Auth state", diagnostics.authStateCategory) }
-        item { DiagnosticRow("Kodi mode", diagnostics.kodiMode) }
+        item { DiagnosticRow("API base URL", state.apiBaseUrl) }
+        item { DiagnosticRow("Auth state", state.authStateCategory) }
+        item { DiagnosticRow("Kodi mode", state.kodiMode) }
 
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -111,12 +94,12 @@ internal fun DiagnosticsContent(diagnostics: DiagnosticsState, modifier: Modifie
             )
         }
 
-        diagnostics.cacheAge?.let { item { DiagnosticRow("Cache age", it) } }
-        diagnostics.lastRefreshTime?.let { item { DiagnosticRow("Last refresh", it) } }
-        diagnostics.downloadQueueCounts?.let { item { DiagnosticRow("Download queue", it) } }
-        diagnostics.storageUsage?.let { item { DiagnosticRow("Storage usage", it) } }
-        diagnostics.lastStatusCategory?.let { item { DiagnosticRow("Last status", it) } }
-        diagnostics.lastSuccessfulRefreshAge?.let { item { DiagnosticRow("Last successful refresh", it) } }
+        state.cacheAge?.let { item { DiagnosticRow("Cache age", it) } }
+        state.lastRefreshTime?.let { item { DiagnosticRow("Last refresh", it) } }
+        state.downloadQueueCounts?.let { item { DiagnosticRow("Download queue", it) } }
+        state.storageUsage?.let { item { DiagnosticRow("Storage usage", it) } }
+        state.lastStatusCategory?.let { item { DiagnosticRow("Last status", it) } }
+        state.lastSuccessfulRefreshAge?.let { item { DiagnosticRow("Last successful refresh", it) } }
 
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
