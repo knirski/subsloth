@@ -104,7 +104,9 @@ If resolve fails, reply-only is acceptable — unresolved non-blocking threads d
 ### f. Re-request Review
 
 ```bash
-gh pr comment "$PR_NUMBER" --body "/review && /improve && /gemini review"
+gh pr comment "$PR_NUMBER" --body "/review"
+gh pr comment "$PR_NUMBER" --body "/improve"
+gh pr comment "$PR_NUMBER" --body "/gemini review"
 ```
 
 Then back to (a).

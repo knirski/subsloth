@@ -70,7 +70,7 @@ items(items.indices) { index -> ItemRow(items[index]) }     // ✗ index key bre
 
 | Tool | Purpose |
 |---|---|
-| Compose Layout Inspector | Composab≤le tree, recomposition counts |
+| Compose Layout Inspector | Composable tree, recomposition counts |
 | Compose compiler metrics | `./gradlew assembleRelease -PcomposeCompilerMetrics=true` — per-file stability reports |
 | detekt compose rules | Catches missing stability, unstable lambdas, index-keyed LazyColumn |
 

@@ -55,13 +55,13 @@ Instrumented tests run on every PR and push to main via GitHub Actions: `reactiv
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| `EMULATOR_TIMEOUT` | Check `/dev/kvm`; `stop-subsloth-emulator` then retry |
-| `TEST_FAILED` | Check `build/reports/androidTests/` for HTML report |
-| Connection refused on adb | Run `wait-subsloth-emulator` first |
-| Emulator crashes on launch | Ensure `/dev/kvm` exists and is readable |
-| Gradle daemon timeout | Run `./gradlew --stop && ./gradlew :core:model:classes` once to warm up |
+| Symptom | Cause | Fix |
+|---|---|---|
+| `EMULATOR_TIMEOUT` | Emulator not booting | Check `/dev/kvm`; `stop-subsloth-emulator` then retry |
+| `TEST_FAILED` | Test assertion failed | Check `build/reports/androidTests/` for HTML report |
+| Connection refused on adb | Emulator not started | Run `wait-subsloth-emulator` first |
+| Emulator crashes on launch | KVM not available | Ensure `/dev/kvm` exists and is readable |
+| Gradle daemon timeout | Cold start | Run `./gradlew --stop && ./gradlew :core:model:classes` once to warm up |
 
 ## Tips
 
