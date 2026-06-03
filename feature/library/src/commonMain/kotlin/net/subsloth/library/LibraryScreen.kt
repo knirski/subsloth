@@ -134,7 +134,7 @@ internal fun LibraryContent(
         if (state.availableOffline.isEmpty() && !state.isLoggedIn) {
             item {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillParentMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

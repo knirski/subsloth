@@ -182,6 +182,7 @@ class SettingsViewModelTest {
         var deletedDownloads = false
         var clearedPreferences = false
         var clearedLibrary = false
+        var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
             subtitleEnabled = { flowOf(true) },
@@ -189,17 +190,16 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = {
-                deletedDownloads = true
-                Result.success(Unit)
-            },
+            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
+            clearCredentials = { clearedCredentials = true },
         )
         viewModel.performLogoutCleanup(deleteDownloads = true, resetPreferences = false, clearLibraryData = false)
         assertThat(deletedDownloads).isTrue()
         assertThat(clearedPreferences).isFalse()
         assertThat(clearedLibrary).isFalse()
+        assertThat(clearedCredentials).isTrue()
     }
 
     @Test
@@ -207,6 +207,7 @@ class SettingsViewModelTest {
         var deletedDownloads = false
         var clearedPreferences = false
         var clearedLibrary = false
+        var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
             subtitleEnabled = { flowOf(true) },
@@ -214,24 +215,24 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = {
-                deletedDownloads = true
-                Result.success(Unit)
-            },
+            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
+            clearCredentials = { clearedCredentials = true },
         )
         viewModel.performLogoutCleanup(deleteDownloads = true, resetPreferences = true, clearLibraryData = true)
         assertThat(deletedDownloads).isTrue()
         assertThat(clearedPreferences).isTrue()
         assertThat(clearedLibrary).isTrue()
+        assertThat(clearedCredentials).isTrue()
     }
 
     @Test
-    fun `logout cleanup without any options`() = runTest(testDispatcher) {
+    fun `logout cleanup without any options still clears credentials`() = runTest(testDispatcher) {
         var deletedDownloads = false
         var clearedPreferences = false
         var clearedLibrary = false
+        var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
             subtitleEnabled = { flowOf(true) },
@@ -239,17 +240,16 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = {
-                deletedDownloads = true
-                Result.success(Unit)
-            },
+            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
+            clearCredentials = { clearedCredentials = true },
         )
         viewModel.performLogoutCleanup(deleteDownloads = false, resetPreferences = false, clearLibraryData = false)
         assertThat(deletedDownloads).isFalse()
         assertThat(clearedPreferences).isFalse()
         assertThat(clearedLibrary).isFalse()
+        assertThat(clearedCredentials).isTrue()
     }
 
     @Test
@@ -283,13 +283,11 @@ class SettingsViewModelTest {
         viewModel.uiState.test {
             val content = awaitItem() as SettingsUiState.Content
             val diag = content.diagnostics
-            assertThat(diag.credentials).isNull()
-            assertThat(diag.authHeaders).isNull()
-            assertThat(diag.mediaUrls).isNull()
-            assertThat(diag.downloadUrls).isNull()
-            assertThat(diag.mediaFilePaths).isNull()
-            assertThat(diag.rawLoginEmail).isNull()
-            assertThat(diag.profileKeys).isNull()
+            assertThat(diag.gitSha).isNull()
+            assertThat(diag.deviceApiLevel).isNull()
+            assertThat(diag.cacheAge).isNull()
+            assertThat(diag.downloadQueueCounts).isNull()
+            assertThat(diag.storageUsage).isNull()
         }
     }
 }

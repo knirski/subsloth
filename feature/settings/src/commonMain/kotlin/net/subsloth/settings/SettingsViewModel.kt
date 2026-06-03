@@ -47,13 +47,6 @@ data class DiagnosticsState(
     val lastStatusCategory: String? = null,
     val lastSuccessfulRefreshAge: String? = null,
     val kodiMode: String = "Kodi-compatible request mode: enabled",
-    val credentials: String? = null,
-    val authHeaders: String? = null,
-    val mediaUrls: String? = null,
-    val downloadUrls: String? = null,
-    val mediaFilePaths: String? = null,
-    val rawLoginEmail: String? = null,
-    val profileKeys: String? = null,
 ) {
     companion object {
         val REDACTED: DiagnosticsState = DiagnosticsState()

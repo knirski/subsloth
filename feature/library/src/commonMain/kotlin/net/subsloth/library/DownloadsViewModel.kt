@@ -54,7 +54,6 @@ class DownloadsViewModel(
     private val cancelDownload: suspend (String) -> DownloadCommandOutcome = { DownloadCommandOutcome.NoOp },
     private val retryDownload: suspend (String) -> EnqueueOutcome = { EnqueueOutcome.Queued },
     private val removeDownload: suspend (String) -> DownloadCommandOutcome = { DownloadCommandOutcome.NoOp },
-    private val isOnline: () -> Boolean = { true },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<DownloadsUiState>(DownloadsUiState.Loading)
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
