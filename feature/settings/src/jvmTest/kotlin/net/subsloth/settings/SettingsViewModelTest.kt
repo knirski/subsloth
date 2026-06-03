@@ -3,7 +3,6 @@ package net.subsloth.settings
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -60,7 +59,7 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
             setSubtitleEnabled = { savedEnabled = it },
         )
-        viewModel.setSubtitleEnabled(false)
+        viewModel.onSubtitleEnabledChanged(false)
         assertThat(savedEnabled).isFalse()
     }
 
@@ -76,7 +75,7 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
             setQuality = { savedQuality = it },
         )
-        viewModel.setQuality("720p")
+        viewModel.onQualityChanged("720p")
         assertThat(savedQuality).isEqualTo("720p")
     }
 
@@ -92,7 +91,7 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
             setPlaybackSpeed = { savedSpeed = it },
         )
-        viewModel.setPlaybackSpeed(1.5f)
+        viewModel.onPlaybackSpeedChanged(1.5f)
         assertThat(savedSpeed).isEqualTo(1.5f)
     }
 
@@ -108,7 +107,7 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
             setDownloadsWifiOnly = { savedWifiOnly = it },
         )
-        viewModel.setDownloadsWifiOnly(false)
+        viewModel.onDownloadsWifiOnlyChanged(false)
         assertThat(savedWifiOnly).isFalse()
     }
 
@@ -124,7 +123,7 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
             setSubtitleLanguage = { savedLanguage = it },
         )
-        viewModel.setSubtitleLanguage(null)
+        viewModel.onSubtitleLanguageChanged(null)
         assertThat(savedLanguage).isNull()
     }
 
@@ -145,7 +144,7 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `shows loading state initially`() = runTest(testDispatcher) {
+    fun `shows content state on init`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
             initialSubtitleEnabled = true,
@@ -155,8 +154,8 @@ class SettingsViewModelTest {
             initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
-            val loading = awaitItem() as SettingsUiState.Loading
-            assertThat(loading).isNotNull()
+            val content = awaitItem() as SettingsUiState.Content
+            assertThat(content.subtitleEnabled).isTrue()
         }
     }
 

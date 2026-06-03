@@ -3,12 +3,10 @@ package net.subsloth.settings
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 @Stable
@@ -58,15 +56,15 @@ class SettingsViewModel(
     initialQuality: String? = null,
     initialPlaybackSpeed: Float = 1.0f,
     initialDownloadsWifiOnly: Boolean = true,
-    private val setSubtitleEnabled: suspend (Boolean) -> Unit = {},
-    private val setSubtitleLanguage: suspend (String?) -> Unit = {},
-    private val setQuality: suspend (String?) -> Unit = {},
-    private val setPlaybackSpeed: suspend (Float) -> Unit = {},
-    private val setDownloadsWifiOnly: suspend (Boolean) -> Unit = {},
-    private val deleteAllDownloads: suspend () -> Result<Unit> = { Result.success(Unit) },
-    private val clearPreferences: suspend (AccountProfileKey) -> Unit = {},
-    private val clearLibrary: suspend () -> Unit = {},
-    private val clearCredentials: suspend () -> Unit = {},
+    private val setSubtitleEnabled: (Boolean) -> Unit = {},
+    private val setSubtitleLanguage: (String?) -> Unit = {},
+    private val setQuality: (String?) -> Unit = {},
+    private val setPlaybackSpeed: (Float) -> Unit = {},
+    private val setDownloadsWifiOnly: (Boolean) -> Unit = {},
+    private val deleteAllDownloads: () -> Unit = {},
+    private val clearPreferences: (AccountProfileKey) -> Unit = {},
+    private val clearLibrary: () -> Unit = {},
+    private val clearCredentials: () -> Unit = {},
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Content(
         subtitleEnabled = initialSubtitleEnabled,
@@ -78,25 +76,15 @@ class SettingsViewModel(
     ))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    fun setSubtitleEnabled(enabled: Boolean) {
-        viewModelScope.launch { setSubtitleEnabled(enabled) }
-    }
+    fun onSubtitleEnabledChanged(enabled: Boolean) { this.setSubtitleEnabled(enabled) }
 
-    fun setSubtitleLanguage(language: String?) {
-        viewModelScope.launch { setSubtitleLanguage(language) }
-    }
+    fun onSubtitleLanguageChanged(language: String?) { this.setSubtitleLanguage(language) }
 
-    fun setQuality(quality: String?) {
-        viewModelScope.launch { setQuality(quality) }
-    }
+    fun onQualityChanged(quality: String?) { this.setQuality(quality) }
 
-    fun setPlaybackSpeed(speed: Float) {
-        viewModelScope.launch { setPlaybackSpeed(speed) }
-    }
+    fun onPlaybackSpeedChanged(speed: Float) { this.setPlaybackSpeed(speed) }
 
-    fun setDownloadsWifiOnly(wifiOnly: Boolean) {
-        viewModelScope.launch { setDownloadsWifiOnly(wifiOnly) }
-    }
+    fun onDownloadsWifiOnlyChanged(wifiOnly: Boolean) { this.setDownloadsWifiOnly(wifiOnly) }
 
     fun showLogoutCleanup() {
         _uiState.update { current ->
@@ -111,15 +99,13 @@ class SettingsViewModel(
     }
 
     fun performLogoutCleanup(deleteDownloads: Boolean, resetPreferences: Boolean, clearLibraryData: Boolean) {
-        viewModelScope.launch {
-            if (deleteDownloads) deleteAllDownloads()
-            val key = profileKey()
-            if (resetPreferences) clearPreferences(key)
-            if (clearLibraryData) clearLibrary()
-            clearCredentials()
-            _uiState.update { current ->
-                if (current is SettingsUiState.Content) current.copy(showLogoutCleanup = false) else current
-            }
+        if (deleteDownloads) deleteAllDownloads()
+        val key = profileKey()
+        if (resetPreferences) clearPreferences(key)
+        if (clearLibraryData) clearLibrary()
+        clearCredentials()
+        _uiState.update { current ->
+            if (current is SettingsUiState.Content) current.copy(showLogoutCleanup = false) else current
         }
     }
 }
