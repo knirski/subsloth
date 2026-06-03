@@ -68,7 +68,9 @@ class LibraryViewModel(
 
     private fun loadLibrary() {
         viewModelScope.launch {
-            _uiState.value = LibraryUiState.Loading
+            if (_uiState.value !is LibraryUiState.Content) {
+                _uiState.value = LibraryUiState.Loading
+            }
             val loggedIn = isLoggedIn()
 
             val downloads = downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }

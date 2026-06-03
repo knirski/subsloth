@@ -62,7 +62,9 @@ class DownloadsViewModel(
 
     private fun loadDownloads() {
         viewModelScope.launch {
-            _uiState.value = DownloadsUiState.Loading
+            if (_uiState.value !is DownloadsUiState.Content) {
+                _uiState.value = DownloadsUiState.Loading
+            }
             val downloads = listDownloads()
                 .onFailure { log.e(it) { "listDownloads failed" } }
                 .getOrDefault(persistentListOf())

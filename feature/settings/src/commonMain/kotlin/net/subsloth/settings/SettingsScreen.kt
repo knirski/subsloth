@@ -168,18 +168,20 @@ internal fun SettingsContent(
                 }
             }
 
-            item {
-                Column {
-                    Text("Playback speed: ${state.playbackSpeed}x", style = MaterialTheme.typography.bodyMedium)
-                    Slider(
-                        value = state.playbackSpeed,
-                        onValueChange = onPlaybackSpeedChanged,
-                        valueRange = 0.5f..2.0f,
-                        steps = 5,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+        item {
+            Column {
+                var sliderValue by remember(state.playbackSpeed) { mutableStateOf(state.playbackSpeed) }
+                Text("Playback speed: ${sliderValue}x", style = MaterialTheme.typography.bodyMedium)
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    onValueChangeFinished = { onPlaybackSpeedChanged(sliderValue) },
+                    valueRange = 0.5f..2.0f,
+                    steps = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
+        }
 
             item {
                 Text(
