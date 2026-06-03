@@ -60,6 +60,20 @@ Before editing or running write actions:
 - Before creating a PR, ensure lint, detekt, and tests are all green. Do not create a PR with failing checks.
 - When resolving review comments in a PR, reply to each comment explaining the fix or reasoning, then resolve the thread.
 
+## Format-Before-Commit Rule
+
+Before every commit, run `spotlessApply` and amend any formatting changes into the commit.
+
+```bash
+./gradlew spotlessApply
+if ! git diff --quiet; then
+  git add -A
+  git commit --amend --no-edit
+fi
+```
+
+This prevents CI failures from spotless formatting violations and keeps the commit history clean. The `spotlessCheck` step in Pre-Commit Checks below validates that formatting is correct — this rule prevents it from ever failing.
+
 ## Pre-Commit Checks
 
 **MUST run ALL of these before every commit that touches Kotlin or build files. Do not commit until they pass. This is not optional.**
@@ -79,7 +93,7 @@ Before editing or running write actions:
 
 **If spotlessApply made changes, re-stage them before committing.** Check with `git diff --name-only` to verify only intended files were modified.
 
-**Why this exists:** CI runs `spotlessCheck` and `detekt` on every push. A failure here means a red CI, wasted review cycles, and an extra commit to fix formatting. Run checks locally first.
+**Why this exists:** CI runs `spotlessCheck` and `detekt` on every push. A failure here means a red CI, wasted review cycles, and an extra commit to fix formatting. The Format-Before-Commit Rule above prevents `spotlessCheck` from ever failing — run checks locally to confirm.
 
 ## Verification Selection
 
