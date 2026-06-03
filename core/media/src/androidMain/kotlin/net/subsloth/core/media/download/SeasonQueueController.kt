@@ -1,7 +1,6 @@
 package net.subsloth.core.media.download
 
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.domain.policy.SeasonQueuePolicy
@@ -70,7 +69,7 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
             queueId = queueId,
             showId = showId,
             seasonNumber = seasonNumber,
-            items = persistentListOf(),
+            items = items.toImmutableList(),
             execution = SeasonQueueExecution.PendingConfirmation,
             transferPreference = transferPreference,
         )
@@ -91,7 +90,7 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
                 ),
             )
         }
-        return queue.copy(items = persistentListOf())
+        return queue
     }
 
     suspend fun confirmQueue(queueId: QueueId) {
@@ -105,6 +104,10 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
             ?: return SeasonQueueExecution.Completed
 
         seasonQueueDao.upsertItem(nextPending.copy(status = "downloading"))
+        val queueEntity = seasonQueueDao.getQueue(queueId.value)
+        if (queueEntity != null) {
+            seasonQueueDao.upsertQueue(queueEntity.copy(status = "running"))
+        }
 
         val mediaId = Media.MediaId.Episode(
             net.subsloth.core.model.identifier.EpisodeId(nextPending.episodeId.toIntOrNull() ?: 0),
@@ -115,6 +118,17 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
             requiredBytes = nextPending.sizeBytes,
             transferPreference = TransferPreference.WifiOnly,
         )
+
+        val localId = net.subsloth.core.model.identifier.LocalMediaIdentifier(
+            "${nextPending.episodeId}/${nextPending.id}",
+        )
+        val subtitleLang = nextPending.subtitleLanguages
+        if (subtitleLang != null) {
+            downloadsPort.enqueueSubtitle(
+                localId = localId,
+                language = LanguageCode(subtitleLang),
+            )
+        }
 
         return result.fold(
             onSuccess = { outcome ->
