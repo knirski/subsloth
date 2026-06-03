@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -36,6 +37,9 @@ sealed interface LibraryUiState {
         val custom: ImmutableList<Media>,
         val showCatalogLink: Boolean,
     ) : LibraryUiState
+
+    @Immutable
+    data class Error(val error: UiError) : LibraryUiState
 }
 
 class LibraryViewModel(
@@ -72,35 +76,55 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val downloadsDeferred = async {
-                downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }.getOrDefault(persistentListOf())
+            val downloadsResult = async {
+                downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }
             }
-            val moviesDeferred = async {
-                listMovies().onFailure { log.e(it) { "listMovies failed" } }.getOrDefault(emptyList())
+            val moviesResult = async {
+                listMovies().onFailure { log.e(it) { "listMovies failed" } }
             }
-            val showsDeferred = async {
-                listShows().onFailure { log.e(it) { "listShows failed" } }.getOrDefault(emptyList())
+            val showsResult = async {
+                listShows().onFailure { log.e(it) { "listShows failed" } }
             }
-            val libraryDeferred: kotlinx.coroutines.Deferred<List<LibraryItem>>? = if (loggedIn) {
+            val libraryResult = if (loggedIn) {
                 async {
-                    libraryPort().onFailure { log.e(it) { "libraryPort failed" } }.getOrDefault(emptyList())
+                    libraryPort().onFailure { log.e(it) { "libraryPort failed" } }
                 }
             } else {
                 null
             }
-            val progressDeferred: kotlinx.coroutines.Deferred<List<PlaybackProgress>>? = if (loggedIn) {
+            val progressResult = if (loggedIn) {
                 async {
-                    listProgress().onFailure { log.e(it) { "listProgress failed" } }.getOrDefault(emptyList())
+                    listProgress().onFailure { log.e(it) { "listProgress failed" } }
                 }
             } else {
                 null
             }
 
-            val downloads = downloadsDeferred.await()
-            val movies = moviesDeferred.await()
-            val shows = showsDeferred.await()
-            val library = libraryDeferred?.await() ?: emptyList()
-            val progress = progressDeferred?.await() ?: emptyList()
+            val downloadsR = downloadsResult.await()
+            val moviesR = moviesResult.await()
+            val showsR = showsResult.await()
+            val libraryR = libraryResult?.await()
+            val progressR = progressResult?.await()
+
+            val failures = listOfNotNull(
+                downloadsR.exceptionOrNull()?.let { "Downloads" },
+                moviesR.exceptionOrNull()?.let { "Movies" },
+                showsR.exceptionOrNull()?.let { "Shows" },
+                libraryR?.exceptionOrNull()?.let { "Library" },
+                progressR?.exceptionOrNull()?.let { "Progress" },
+            )
+            if (failures.isNotEmpty()) {
+                _uiState.value = LibraryUiState.Error(
+                    UiError.Unknown("Failed to load: ${failures.joinToString(", ")}"),
+                )
+                return@launch
+            }
+
+            val downloads = downloadsR.getOrDefault(persistentListOf())
+            val movies = moviesR.getOrDefault(emptyList())
+            val shows = showsR.getOrDefault(emptyList())
+            val library = libraryR?.getOrDefault(emptyList()) ?: emptyList()
+            val progress = progressR?.getOrDefault(emptyList()) ?: emptyList()
 
             val catalog = buildList {
                 addAll(movies)

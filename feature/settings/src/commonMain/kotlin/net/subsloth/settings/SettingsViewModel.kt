@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 @Stable
@@ -31,6 +32,9 @@ sealed interface SettingsUiState {
         val showLogoutCleanup: Boolean = false,
         val diagnostics: DiagnosticsState,
     ) : SettingsUiState
+
+    @Immutable
+    data class Error(val error: UiError) : SettingsUiState
 }
 
 @Immutable
@@ -105,6 +109,7 @@ class SettingsViewModel(
                 _uiState.value = result
             } catch (e: Exception) {
                 log.e(e) { "Failed to load settings: ${e.message}" }
+                _uiState.value = SettingsUiState.Error(UiError.Unknown(e.message))
             }
         }
     }

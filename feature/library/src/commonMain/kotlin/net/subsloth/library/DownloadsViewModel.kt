@@ -18,6 +18,7 @@ import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.progress.PlaybackProgress
 
 @Stable
@@ -32,6 +33,9 @@ sealed interface DownloadsUiState {
         val completed: ImmutableList<DownloadGroupItem>,
         val seasonQueues: ImmutableList<SeasonDownloadQueue>,
     ) : DownloadsUiState
+
+    @Immutable
+    data class Error(val error: UiError) : DownloadsUiState
 }
 
 @Immutable
@@ -64,19 +68,35 @@ class DownloadsViewModel(
     private fun loadDownloads() {
         viewModelScope.launch {
             _uiState.value = DownloadsUiState.Loading
-            val downloadsDeferred = async {
-                listDownloads().onFailure { log.e(it) { "listDownloads failed" } }.getOrDefault(persistentListOf())
+            val downloadsResult = async {
+                listDownloads().onFailure { log.e(it) { "listDownloads failed" } }
             }
-            val seasonQueuesDeferred = async {
-                listSeasonQueues().onFailure { log.e(it) { "listSeasonQueues failed" } }.getOrDefault(persistentListOf())
+            val seasonQueuesResult = async {
+                listSeasonQueues().onFailure { log.e(it) { "listSeasonQueues failed" } }
             }
-            val progressDeferred = async {
-                listProgress().onFailure { log.e(it) { "listProgress failed" } }.getOrDefault(emptyList())
+            val progressResult = async {
+                listProgress().onFailure { log.e(it) { "listProgress failed" } }
             }
 
-            val downloads = downloadsDeferred.await()
-            val seasonQueues = seasonQueuesDeferred.await()
-            val progress = progressDeferred.await()
+            val downloadsR = downloadsResult.await()
+            val seasonQueuesR = seasonQueuesResult.await()
+            val progressR = progressResult.await()
+
+            val failures = listOfNotNull(
+                downloadsR.exceptionOrNull()?.let { "Downloads" },
+                seasonQueuesR.exceptionOrNull()?.let { "Season queues" },
+                progressR.exceptionOrNull()?.let { "Progress" },
+            )
+            if (failures.isNotEmpty()) {
+                _uiState.value = DownloadsUiState.Error(
+                    UiError.Unknown("Failed to load: ${failures.joinToString(", ")}"),
+                )
+                return@launch
+            }
+
+            val downloads = downloadsR.getOrDefault(persistentListOf())
+            val seasonQueues = seasonQueuesR.getOrDefault(persistentListOf())
+            val progress = progressR.getOrDefault(emptyList())
 
             val watchedIds = progress
                 .filter { it.fraction > 0.9 }
@@ -160,7 +180,9 @@ class DownloadsViewModel(
     fun deleteWatchedCompleted() {
         viewModelScope.launch {
             supervisorScope {
-                val progress = listProgress().getOrDefault(emptyList())
+                val progress = listProgress()
+                    .onFailure { log.e(it) { "listProgress failed" } }
+                    .getOrDefault(emptyList())
                 val watchedIds = progress
                     .filter { it.fraction > 0.9 }
                     .map { it.mediaId }

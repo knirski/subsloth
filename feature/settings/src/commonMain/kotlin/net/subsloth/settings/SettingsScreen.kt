@@ -48,6 +48,19 @@ fun SettingsScreen(
             }
         }
 
+        is SettingsUiState.Error -> {
+            Box(
+                modifier = modifier.fillMaxSize().padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = s.error.detail ?: "Something went wrong",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
         is SettingsUiState.Content -> {
             SettingsContent(
                 state = s,
