@@ -73,8 +73,20 @@ class LibraryViewModel(
             val downloadsDeferred = async { downloadsPort().getOrDefault(persistentListOf()) }
             val moviesDeferred = async { listMovies().getOrDefault(emptyList()) }
             val showsDeferred = async { listShows().getOrDefault(emptyList()) }
-            val libraryDeferred: kotlinx.coroutines.Deferred<List<LibraryItem>>? = if (loggedIn) async { libraryPort().getOrDefault(emptyList()) } else null
-            val progressDeferred: kotlinx.coroutines.Deferred<List<PlaybackProgress>>? = if (loggedIn) async { listProgress().getOrDefault(emptyList()) } else null
+            val libraryDeferred: kotlinx.coroutines.Deferred<List<LibraryItem>>? = if (loggedIn) {
+                async {
+                    libraryPort().getOrDefault(emptyList())
+                }
+            } else {
+                null
+            }
+            val progressDeferred: kotlinx.coroutines.Deferred<List<PlaybackProgress>>? = if (loggedIn) {
+                async {
+                    listProgress().getOrDefault(emptyList())
+                }
+            } else {
+                null
+            }
 
             val downloads = downloadsDeferred.await()
             val movies = moviesDeferred.await()
@@ -132,11 +144,9 @@ class LibraryViewModel(
     private fun buildContinueWatching(
         progress: List<PlaybackProgress>,
         catalog: Map<Media.MediaId, Media>,
-    ): List<Media> {
-        return progress
-            .filter { it.fraction in 0.05..0.9 }
-            .mapNotNull { catalog[it.mediaId] }
-    }
+    ): List<Media> = progress
+        .filter { it.fraction in 0.05..0.9 }
+        .mapNotNull { catalog[it.mediaId] }
 
     fun deleteDownload(localId: String) {
         viewModelScope.launch {

@@ -190,7 +190,10 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
+            deleteAllDownloads = {
+                deletedDownloads = true
+                Result.success(Unit)
+            },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
             clearCredentials = { clearedCredentials = true },
@@ -215,7 +218,10 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
+            deleteAllDownloads = {
+                deletedDownloads = true
+                Result.success(Unit)
+            },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
             clearCredentials = { clearedCredentials = true },
@@ -240,7 +246,10 @@ class SettingsViewModelTest {
             quality = { flowOf("1080p") },
             playbackSpeed = { flowOf(1.0f) },
             downloadsWifiOnly = { flowOf(true) },
-            deleteAllDownloads = { deletedDownloads = true; Result.success(Unit) },
+            deleteAllDownloads = {
+                deletedDownloads = true
+                Result.success(Unit)
+            },
             clearPreferences = { clearedPreferences = true },
             clearLibrary = { clearedLibrary = true },
             clearCredentials = { clearedCredentials = true },

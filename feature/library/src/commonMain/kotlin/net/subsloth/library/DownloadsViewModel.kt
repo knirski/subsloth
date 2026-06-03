@@ -34,10 +34,7 @@ sealed interface DownloadsUiState {
 }
 
 @Immutable
-data class DownloadGroupItem(
-    val state: DownloadState,
-    val progressFraction: Double? = null,
-)
+data class DownloadGroupItem(val state: DownloadState, val progressFraction: Double? = null)
 
 class DownloadsViewModel(
     private val listDownloads: suspend () -> Result<ImmutableList<DownloadState>> = {
