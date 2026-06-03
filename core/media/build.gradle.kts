@@ -45,7 +45,11 @@ kotlin {
             implementation(libs.kermit)
         }
         androidMain.dependencies {
+            implementation(project(":core:database"))
+            implementation(project(":core:preferences"))
             implementation(libs.media3.exoplayer.hls)
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.kotlinx.collections.immutable)
         }
         jvmMain.dependencies {
             implementation(libs.compose.multiplatform.ui.tooling.preview)
