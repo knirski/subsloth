@@ -26,12 +26,12 @@ These docs cover architecture and technology-specific conventions. Load the matc
 
 | Doc | Skill | When to use |
 |---|---|---|
-| `docs/agent/fc-is-architecture.md` | `fc-is-architecture` | Writing or reviewing architecture — FC/IS separation, sealed ADTs, pure functions, port/adapter, `Result<T>`, module deps |
-| `docs/agent/compose-performance.md` | `compose-performance` | Writing Compose UI — stability annotations, recomposition, key stability, Flow collection |
-| `docs/agent/compose-ui-patterns.md` | `compose-ui-patterns` | Writing Compose UI — state hoisting, slot APIs, UDF, sealed UiState mapping, Material3, adaptive layouts |
-| `docs/agent/kotlin-coroutines.md` | `kotlin-coroutines` | Writing async code — scopes, dispatchers, `StateFlow`, cancellation, testing |
-| `docs/agent/agp-migration.md` | `agp-migration` | Upgrading AGP, Gradle, or Kotlin — convention plugins, version catalog, toolchain |
-| `docs/agent/fc-is-data-layer.md` | `fc-is-data-layer` | Writing data access — Room, Retrofit 3, DataStore, DTO mapping, offline-first |
-| `docs/agent/retrofit-networking.md` | `retrofit-networking` | Writing network code — OkHttp interceptors, Kodi identity, rate limiting, coalescing |
+| `fc-is-architecture.md` | `fc-is-architecture` | Writing or reviewing architecture — FC/IS separation, sealed ADTs, pure functions, port/adapter, `Result<T>`, module deps |
+| `compose-performance.md` | `compose-performance` | Writing Compose UI — stability annotations, recomposition, key stability, Flow collection |
+| `compose-ui-patterns.md` | `compose-ui-patterns` | Writing Compose UI — state hoisting, slot APIs, UDF, sealed UiState mapping, Material3, adaptive layouts |
+| `kotlin-coroutines.md` | `kotlin-coroutines` | Writing async code — scopes, dispatchers, `StateFlow`, cancellation, testing |
+| `agp-migration.md` | `agp-migration` | Upgrading AGP, Gradle, or Kotlin — convention plugins, version catalog, toolchain |
+| `fc-is-data-layer.md` | `fc-is-data-layer` | Writing data access — Room, Retrofit 3, DataStore, DTO mapping, offline-first |
+| `retrofit-networking.md` | `retrofit-networking` | Writing network code — OkHttp interceptors, Kodi identity, rate limiting, coalescing |
 
 Agent-specific skill files (`.codex/skills/`, `.opencode/skills/`, `.agents/skills/`) should stay thin and point back here instead of duplicating policy text.
