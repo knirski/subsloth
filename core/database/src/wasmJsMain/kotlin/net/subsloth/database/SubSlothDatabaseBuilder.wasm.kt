@@ -15,4 +15,5 @@ actual fun createSubSlothDatabase(name: String): SubSlothDatabase = Room
         factory = SubSlothDatabaseCtor::initialize,
     )
     .setDriver(WebWorkerSQLiteDriver(worker))
+    .fallbackToDestructiveMigration()
     .build()

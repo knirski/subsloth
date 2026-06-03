@@ -19,10 +19,10 @@
 
 ## 4. Confirmed Season Queues
 
-- [ ] 4.1 Implement season preflight only after "Download season" selection.
-- [ ] 4.2 Implement per-episode quality fallback, subtitle fallback, confirmation summaries, and no "don't ask again" behavior.
-- [ ] 4.3 Implement confirmed sequential season queues and persisted queue resume without adaptive download concurrency.
-- [ ] 4.4 Implement logout pause and login resume checks for incomplete queues.
+- [x] 4.1 Implement season preflight only after "Download season" selection.
+- [x] 4.2 Implement per-episode quality fallback, subtitle fallback, confirmation summaries, and no "don't ask again" behavior.
+- [x] 4.3 Implement confirmed sequential season queues and persisted queue resume without adaptive download concurrency.
+- [x] 4.4 Implement logout pause and login resume checks for incomplete queues.
 
 ## 5. Verification
 

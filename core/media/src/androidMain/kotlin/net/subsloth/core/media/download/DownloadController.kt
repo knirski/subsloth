@@ -245,7 +245,7 @@ internal enum class DownloadStatus {
     REMOVED,
 }
 
-private fun parseResolution(label: String?): Resolution = when {
+internal fun parseResolution(label: String?): Resolution = when {
     label == null -> Resolution.HD_720
     label.contains("4K") || label.contains("2160") || label.contains("UHD") -> Resolution.UHD_4K
     label.contains("1440") || label.contains("QHD") -> Resolution.QHD

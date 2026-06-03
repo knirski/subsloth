@@ -8,4 +8,5 @@ actual fun createSubSlothDatabase(name: String): SubSlothDatabase = Room
         name = name,
         factory = SubSlothDatabaseCtor::initialize,
     ).setDriver(NativeSQLiteDriver())
+    .fallbackToDestructiveMigration()
     .build()
