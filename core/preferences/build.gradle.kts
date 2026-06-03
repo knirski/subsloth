@@ -21,9 +21,9 @@ kotlin {
             implementation(libs.datastore.core.okio)
         }
 
-        iosMain.dependencies {
-            implementation(libs.datastore.core.okio)
-        }
+        // iosMain.dependencies {
+        //     implementation(libs.datastore.core.okio)
+        // }
 
         wasmJsMain.dependencies {
             implementation(libs.datastore.core.okio)

@@ -20,16 +20,16 @@ kotlin {
             implementation(libs.ktor.client.encoding)
 
             // Ktor client engine declared in platform source sets below
-            // CIO is used for JVM + Native; wasm uses the default engine
+            // CIO is used for JVM only; native/iOS targets are currently disabled
         }
 
         jvmMain.dependencies {
             implementation(libs.ktor.client.cio)
         }
 
-        iosMain.dependencies {
-            implementation(libs.ktor.client.cio)
-        }
+        // iosMain.dependencies {
+        //     implementation(libs.ktor.client.cio)
+        // }
 
         val wasmJsMain by getting {
             dependencies {

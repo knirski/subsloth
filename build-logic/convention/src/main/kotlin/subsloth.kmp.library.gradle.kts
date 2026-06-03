@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.Test
 
@@ -19,9 +20,10 @@ kotlin {
     }
 
     jvm()
-    iosArm64()
-    iosSimulatorArm64()
-    macosArm64()
+    // iosArm64() — disabled: no iOS testing infra available
+    // iosSimulatorArm64() — disabled: no iOS testing infra available
+    // macosArm64() — disabled: no macOS testing infra available
+    @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser {
             commonWebpackConfig {

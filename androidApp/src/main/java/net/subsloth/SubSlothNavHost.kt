@@ -26,8 +26,16 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.library.DownloadsScreen
+import net.subsloth.library.DownloadsViewModel
+import net.subsloth.library.LibraryScreen
+import net.subsloth.library.LibraryViewModel
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
+import net.subsloth.settings.DiagnosticsScreen
+import net.subsloth.settings.DiagnosticsViewModel
+import net.subsloth.settings.SettingsScreen
+import net.subsloth.settings.SettingsViewModel
 
 /**
  * Top-level navigation host for the app.
@@ -94,19 +102,70 @@ fun SubSlothNavHost(
             }
 
             entry<LibraryKey> {
-                // Library screen — wired in library-settings-diagnostics
+                @Suppress("ViewModelInjection")
+                val viewModel: LibraryViewModel = viewModel(
+                    key = "library",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            LibraryViewModel() as T
+                    },
+                )
+                LibraryScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
 
             entry<DownloadsKey> {
-                // Downloads screen — wired in library-settings-diagnostics
+                @Suppress("ViewModelInjection")
+                val viewModel: DownloadsViewModel = viewModel(
+                    key = "downloads",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            DownloadsViewModel() as T
+                    },
+                )
+                DownloadsScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                )
             }
 
             entry<SettingsKey> {
-                // Settings screen — wired in library-settings-diagnostics
+                @Suppress("ViewModelInjection")
+                val viewModel: SettingsViewModel = viewModel(
+                    key = "settings",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            SettingsViewModel() as T
+                    },
+                )
+                SettingsScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onNavigateToDiagnostics = { backStack += DiagnosticsKey },
+                )
             }
 
             entry<DiagnosticsKey> {
-                // Diagnostics screen — wired in library-settings-diagnostics
+                @Suppress("ViewModelInjection")
+                val viewModel: DiagnosticsViewModel = viewModel(
+                    key = "diagnostics",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            DiagnosticsViewModel() as T
+                    },
+                )
+                DiagnosticsScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                )
             }
 
             entry<AuthRepairKey> {
@@ -114,7 +173,21 @@ fun SubSlothNavHost(
             }
 
             entry<OfflineLibraryKey> {
-                // Offline library — wired in library-settings-diagnostics
+                @Suppress("ViewModelInjection")
+                val viewModel: LibraryViewModel = viewModel(
+                    key = "offline_library",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            LibraryViewModel(isLoggedIn = { false }) as T
+                    },
+                )
+                LibraryScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
         },
     )
@@ -138,9 +211,12 @@ fun SubSlothNavHost(
  * ```
  */
 internal fun parseMediaId(contentId: String, contentType: String): Media.MediaId? = when (contentType) {
-    "movie" -> contentId.toLongOrNull()?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
-    "episode" -> contentId.toLongOrNull()?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
-    "show" -> contentId.toLongOrNull()?.let { Media.MediaId.Show(ShowId(it.toInt())) }
+    "movie" -> contentId.toLongOrNull()?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
+        ?.let { Media.MediaId.Movie(MovieId(it.toInt())) }
+    "episode" -> contentId.toLongOrNull()?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
+        ?.let { Media.MediaId.Episode(EpisodeId(it.toInt())) }
+    "show" -> contentId.toLongOrNull()?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
+        ?.let { Media.MediaId.Show(ShowId(it.toInt())) }
     else -> null
 }
 
