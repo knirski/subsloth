@@ -3,10 +3,15 @@ package net.subsloth.settings
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 @Stable
@@ -51,40 +56,71 @@ data class DiagnosticsState(
 
 class SettingsViewModel(
     private val profileKey: () -> AccountProfileKey = { AccountProfileKey("default") },
-    initialSubtitleEnabled: Boolean = true,
-    initialSubtitleLanguage: String? = null,
-    initialQuality: String? = null,
-    initialPlaybackSpeed: Float = 1.0f,
-    initialDownloadsWifiOnly: Boolean = true,
-    private val setSubtitleEnabled: (Boolean) -> Unit = {},
-    private val setSubtitleLanguage: (String?) -> Unit = {},
-    private val setQuality: (String?) -> Unit = {},
-    private val setPlaybackSpeed: (Float) -> Unit = {},
-    private val setDownloadsWifiOnly: (Boolean) -> Unit = {},
+    private val readSubtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
+    private val readSubtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
+    private val readQuality: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
+    private val readPlaybackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { flowOf(1.0f) },
+    private val readDownloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
+    private val writeSubtitleEnabled: (Boolean) -> Unit = {},
+    private val writeSubtitleLanguage: (String?) -> Unit = {},
+    private val writeQuality: (String?) -> Unit = {},
+    private val writePlaybackSpeed: (Float) -> Unit = {},
+    private val writeDownloadsWifiOnly: (Boolean) -> Unit = {},
     private val deleteAllDownloads: () -> Unit = {},
     private val clearPreferences: (AccountProfileKey) -> Unit = {},
     private val clearLibrary: () -> Unit = {},
     private val clearCredentials: () -> Unit = {},
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Content(
-        subtitleEnabled = initialSubtitleEnabled,
-        subtitleLanguage = initialSubtitleLanguage,
-        quality = initialQuality,
-        playbackSpeed = initialPlaybackSpeed,
-        downloadsWifiOnly = initialDownloadsWifiOnly,
-        diagnostics = DiagnosticsState.REDACTED,
-    ))
+    private val _uiState = MutableStateFlow<SettingsUiState>(
+        SettingsUiState.Content(
+            subtitleEnabled = true,
+            subtitleLanguage = null,
+            quality = null,
+            playbackSpeed = 1.0f,
+            downloadsWifiOnly = true,
+            diagnostics = DiagnosticsState.REDACTED,
+        ),
+    )
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    fun onSubtitleEnabledChanged(enabled: Boolean) { this.setSubtitleEnabled(enabled) }
+    init {
+        viewModelScope.launch {
+            val key = profileKey()
+            val enabled = readSubtitleEnabled(key).first()
+            val lang = readSubtitleLanguage(key).first()
+            val qual = readQuality(key).first()
+            val speed = readPlaybackSpeed(key).first()
+            val wifi = readDownloadsWifiOnly(key).first()
+            _uiState.value = SettingsUiState.Content(
+                subtitleEnabled = enabled,
+                subtitleLanguage = lang,
+                quality = qual,
+                playbackSpeed = speed,
+                downloadsWifiOnly = wifi,
+                diagnostics = DiagnosticsState.REDACTED,
+            )
+        }
+    }
 
-    fun onSubtitleLanguageChanged(language: String?) { this.setSubtitleLanguage(language) }
+    fun onSubtitleEnabledChanged(enabled: Boolean) {
+        writeSubtitleEnabled(enabled)
+    }
 
-    fun onQualityChanged(quality: String?) { this.setQuality(quality) }
+    fun onSubtitleLanguageChanged(language: String?) {
+        writeSubtitleLanguage(language)
+    }
 
-    fun onPlaybackSpeedChanged(speed: Float) { this.setPlaybackSpeed(speed) }
+    fun onQualityChanged(quality: String?) {
+        writeQuality(quality)
+    }
 
-    fun onDownloadsWifiOnlyChanged(wifiOnly: Boolean) { this.setDownloadsWifiOnly(wifiOnly) }
+    fun onPlaybackSpeedChanged(speed: Float) {
+        writePlaybackSpeed(speed)
+    }
+
+    fun onDownloadsWifiOnlyChanged(wifiOnly: Boolean) {
+        writeDownloadsWifiOnly(wifiOnly)
+    }
 
     fun showLogoutCleanup() {
         _uiState.update { current ->
