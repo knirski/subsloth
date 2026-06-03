@@ -27,9 +27,9 @@ kotlin {
             implementation(libs.ktor.client.cio)
         }
 
-        iosMain.dependencies {
-            implementation(libs.ktor.client.cio)
-        }
+        // iosMain.dependencies {
+        //     implementation(libs.ktor.client.cio)
+        // }
 
         val wasmJsMain by getting {
             dependencies {

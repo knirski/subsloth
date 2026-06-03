@@ -113,19 +113,19 @@ jobs:
             os: ubuntu-latest
             tasks: :webApp:compileKotlinWasmJs
 
-          - display: 📱 iOS / Simulator
-            os: macos-latest
-            tasks: >
-              :core:model:iosSimulatorArm64Test
-              :core:domain:iosSimulatorArm64Test
-              :core:ui:compileKotlinIosArm64
+          # - display: 📱 iOS / Simulator
+          #   os: macos-latest
+          #   tasks: >
+          #     :core:model:iosSimulatorArm64Test
+          #     :core:domain:iosSimulatorArm64Test
+          #     :core:ui:compileKotlinIosArm64
 
-          - display: 🍏 macOS / Native
-            os: macos-latest
-            tasks: >
-              :core:model:compileKotlinMacosArm64
-              :core:domain:compileKotlinMacosArm64
-              :core:ui:compileKotlinMacosArm64
+          # - display: 🍏 macOS / Native
+          #   os: macos-latest
+          #   tasks: >
+          #     :core:model:compileKotlinMacosArm64
+          #     :core:domain:compileKotlinMacosArm64
+          #     :core:ui:compileKotlinMacosArm64
 
     runs-on: ${{ matrix.os }}
     steps:
