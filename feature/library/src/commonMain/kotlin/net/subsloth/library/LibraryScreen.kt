@@ -131,14 +131,20 @@ internal fun LibraryContent(
             }
         }
 
-        if (state.availableOffline.isEmpty() && !state.isLoggedIn) {
+        val isEmpty = state.continueWatching.isEmpty() && state.favorites.isEmpty() &&
+            state.watchLater.isEmpty() && state.availableOffline.isEmpty() && state.custom.isEmpty()
+        if (isEmpty) {
             item {
                 Box(
                     modifier = Modifier.fillParentMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No offline content available. Go online to browse and download.",
+                        text = if (state.isLoggedIn) {
+                            "Your library is empty. Browse the catalog to add items."
+                        } else {
+                            "No offline content available. Go online to browse and download."
+                        },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
