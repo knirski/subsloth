@@ -1,14 +1,14 @@
 # project Specification
 
 ## Purpose
-Define the Android project baseline, module/convention boundaries, dependency guardrails, and v1 scope/security constraints for subsloth.
+Define the multiplatform project baseline, module/convention boundaries, dependency guardrails, and v1 scope/security constraints for subsloth.
 ## Requirements
 ### Requirement: Android Project Baseline
-The project SHALL build a greenfield native Android app with application id and namespace `net.subsloth` for Android phone, tablet, and Android TV.
+The project SHALL build a greenfield multiplatform KMP app with application id and namespace `net.subsloth` for Android (phone, tablet, TV), desktop (JVM), and web (Wasm JS).
 
 #### Scenario: Scaffolded modules are present
 - **WHEN** `./gradlew projects` is executed
-- **THEN** the listed modules include `:app`, `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, `:feature:auth`, `:feature:catalog`, `:feature:details`, `:feature:player`, `:feature:library`, and `:feature:settings`
+- **THEN** the listed modules include `:androidApp`, `:desktopApp`, `:webApp`, `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, `:feature:auth`, `:feature:catalog`, `:feature:details`, `:feature:player`, `:feature:library`, and `:feature:settings`
 
 #### Scenario: App identity is locked
 - **WHEN** the app module is configured
@@ -39,7 +39,7 @@ The project SHALL use Gradle 9.5, AGP 9.2, Kotlin 2.3, `minSdk 26`, `targetSdk 3
 ---
 
 ### Requirement: Convention Plugin Discipline
-Every Android and JVM module SHALL apply exactly one project-level convention plugin. Raw AGP or Kotlin plugin IDs shall not appear directly in module `build.gradle.kts` files.
+Every module SHALL apply exactly one project-level convention plugin. Raw AGP, Kotlin JVM, Kotlin Wasm, or Kotlin Multiplatform plugin IDs shall not appear directly in module `build.gradle.kts` files.
 
 #### Scenario: Module applies a convention plugin
 - **WHEN** a module `build.gradle.kts` is inspected
@@ -52,7 +52,7 @@ Every Android and JVM module SHALL apply exactly one project-level convention pl
 ---
 
 ### Requirement: Functional Core Isolation
-The `:core:model` and `:core:domain` modules SHALL be JVM-only. They shall not carry Android runtime dependencies.
+The `:core:model` and `:core:domain` modules SHALL be platform-agnostic. They shall not carry Android runtime dependencies.
 
 #### Scenario: Model and domain have no Android deps
 - **WHEN** the dependency graph of `:core:model` or `:core:domain` is resolved
@@ -61,7 +61,7 @@ The `:core:model` and `:core:domain` modules SHALL be JVM-only. They shall not c
 ---
 
 ### Requirement: Namespace Convention
-Every Android module SHALL declare a namespace that matches its Gradle module path under the `net.subsloth` root.
+Every module with an Android target or `androidMain` source set SHALL declare a namespace that matches its Gradle module path under the `net.subsloth` root.
 
 #### Scenario: Namespace matches module path
 - **WHEN** an Android module's `android { namespace }` is read
