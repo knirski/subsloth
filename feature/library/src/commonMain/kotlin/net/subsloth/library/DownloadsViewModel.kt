@@ -68,29 +68,18 @@ class DownloadsViewModel(
     private fun loadDownloads() {
         viewModelScope.launch {
             _uiState.value = DownloadsUiState.Loading
-            val downloadsResult = async {
-                listDownloads().onFailure { log.e(it) { "listDownloads failed" } }
-            }
-            val seasonQueuesResult = async {
-                listSeasonQueues().onFailure { log.e(it) { "listSeasonQueues failed" } }
-            }
-            val progressResult = async {
-                listProgress().onFailure { log.e(it) { "listProgress failed" } }
-            }
+            val downloadsD = async { listDownloads() }
+            val seasonQueuesD = async { listSeasonQueues() }
+            val progressD = async { listProgress() }
 
-            val downloadsR = downloadsResult.await()
-            val seasonQueuesR = seasonQueuesResult.await()
-            val progressR = progressResult.await()
+            val downloadsR = downloadsD.await()
+            val seasonQueuesR = seasonQueuesD.await()
+            val progressR = progressD.await()
 
-            val failures = listOfNotNull(
-                downloadsR.exceptionOrNull()?.let { "Downloads" },
-                seasonQueuesR.exceptionOrNull()?.let { "Season queues" },
-                progressR.exceptionOrNull()?.let { "Progress" },
-            )
-            if (failures.isNotEmpty()) {
-                _uiState.value = DownloadsUiState.Error(
-                    UiError.Unknown("Failed to load: ${failures.joinToString(", ")}"),
-                )
+            val firstError = listOf(downloadsR, seasonQueuesR, progressR).firstOrNull { it.isFailure }
+            if (firstError != null) {
+                firstError.onFailure { log.e(it) { "Downloads load failed: ${it.message}" } }
+                _uiState.value = DownloadsUiState.Error(UiError.Unknown(firstError.exceptionOrNull()?.message))
                 return@launch
             }
 

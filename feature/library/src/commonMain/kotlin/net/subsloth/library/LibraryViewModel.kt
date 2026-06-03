@@ -76,47 +76,24 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val downloadsResult = async {
-                downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }
-            }
-            val moviesResult = async {
-                listMovies().onFailure { log.e(it) { "listMovies failed" } }
-            }
-            val showsResult = async {
-                listShows().onFailure { log.e(it) { "listShows failed" } }
-            }
-            val libraryResult = if (loggedIn) {
-                async {
-                    libraryPort().onFailure { log.e(it) { "libraryPort failed" } }
-                }
-            } else {
-                null
-            }
-            val progressResult = if (loggedIn) {
-                async {
-                    listProgress().onFailure { log.e(it) { "listProgress failed" } }
-                }
-            } else {
-                null
-            }
+            val downloadsD = async { downloadsPort() }
+            val moviesD = async { listMovies() }
+            val showsD = async { listShows() }
+            val libraryD = if (loggedIn) async { libraryPort() } else null
+            val progressD = if (loggedIn) async { listProgress() } else null
 
-            val downloadsR = downloadsResult.await()
-            val moviesR = moviesResult.await()
-            val showsR = showsResult.await()
-            val libraryR = libraryResult?.await()
-            val progressR = progressResult?.await()
+            val downloadsR = downloadsD.await()
+            val moviesR = moviesD.await()
+            val showsR = showsD.await()
+            val libraryR = libraryD?.await()
+            val progressR = progressD?.await()
 
-            val failures = listOfNotNull(
-                downloadsR.exceptionOrNull()?.let { "Downloads" },
-                moviesR.exceptionOrNull()?.let { "Movies" },
-                showsR.exceptionOrNull()?.let { "Shows" },
-                libraryR?.exceptionOrNull()?.let { "Library" },
-                progressR?.exceptionOrNull()?.let { "Progress" },
-            )
-            if (failures.isNotEmpty()) {
-                _uiState.value = LibraryUiState.Error(
-                    UiError.Unknown("Failed to load: ${failures.joinToString(", ")}"),
-                )
+            val firstError = listOfNotNull(
+                downloadsR, moviesR, showsR, libraryR, progressR,
+            ).firstOrNull { it.isFailure }
+            if (firstError != null) {
+                firstError.onFailure { log.e(it) { "Library load failed: ${it.message}" } }
+                _uiState.value = LibraryUiState.Error(UiError.Unknown(firstError.exceptionOrNull()?.message))
                 return@launch
             }
 

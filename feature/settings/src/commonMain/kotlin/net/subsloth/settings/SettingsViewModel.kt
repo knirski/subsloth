@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
@@ -90,23 +89,19 @@ class SettingsViewModel(
             _uiState.value = SettingsUiState.Loading
             val key = profileKey()
             try {
-                val result = combine(
-                    readSubtitleEnabled(key),
-                    readSubtitleLanguage(key),
-                    readQuality(key),
-                    readPlaybackSpeed(key),
-                    readDownloadsWifiOnly(key),
-                ) { enabled, lang, qual, speed, wifi ->
-                    SettingsUiState.Content(
-                        subtitleEnabled = enabled,
-                        subtitleLanguage = lang,
-                        quality = qual,
-                        playbackSpeed = speed,
-                        downloadsWifiOnly = wifi,
-                        diagnostics = DiagnosticsState.REDACTED,
-                    )
-                }.first()
-                _uiState.value = result
+                val enabled = readSubtitleEnabled(key).first()
+                val lang = readSubtitleLanguage(key).first()
+                val qual = readQuality(key).first()
+                val speed = readPlaybackSpeed(key).first()
+                val wifi = readDownloadsWifiOnly(key).first()
+                _uiState.value = SettingsUiState.Content(
+                    subtitleEnabled = enabled,
+                    subtitleLanguage = lang,
+                    quality = qual,
+                    playbackSpeed = speed,
+                    downloadsWifiOnly = wifi,
+                    diagnostics = DiagnosticsState.REDACTED,
+                )
             } catch (e: Exception) {
                 log.e(e) { "Failed to load settings: ${e.message}" }
                 _uiState.value = SettingsUiState.Error(UiError.Unknown(e.message))
