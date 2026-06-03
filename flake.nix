@@ -23,7 +23,12 @@
       androidPackages = pkgs.androidenv.composeAndroidPackages {
         cmdLineToolsVersion = "17.0";
         platformVersions = [ "37" ];
-        buildToolsVersions = [ "37.0.0" ];
+        # 37 is the default for compileSdk 37. 36 is required by AGP 9's
+        # com.android.kotlin.multiplatform.library plugin — without it the
+        # plugin tries to install build-tools 36 via sdkmanager into the
+        # read-only Nix store and fails. 36 is inert (only satisfies the
+        # bootstrap check); actual compilation uses 37.
+        buildToolsVersions = [ "37.0.0" "36.0.0" ];
         platformToolsVersion = "37.0.0";
       };
 

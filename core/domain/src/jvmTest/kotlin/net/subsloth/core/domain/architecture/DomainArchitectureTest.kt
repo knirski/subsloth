@@ -68,6 +68,7 @@ class DomainArchitectureTest {
             findImportsInDomainSource(
                 "androidx.media3",
                 "android.media",
+                "io.github.kdroidfilter",
             )
         assertThat(violations).isEmpty()
     }

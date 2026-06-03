@@ -2,14 +2,14 @@ package net.subsloth.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import io.github.kdroidfilter.composemediaplayer.PreviewableVideoPlayerState
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.playback.PlaybackMode
 
-// Previews
 @Preview
 @Composable
-private fun PlayerContentPreview() {
-    PlayerContent(
+private fun PlayerOverlayPreview() {
+    PlayerOverlay(
         state = PlayerUiState.Content(
             title = "Sample Video",
             positionSeconds = 0L,
@@ -26,6 +26,12 @@ private fun PlayerContentPreview() {
             playbackMode = PlaybackMode.ONLINE,
             qualityFallbackNotice = null,
             subtitleFallbackNotice = null,
+        ),
+        playerState = PreviewableVideoPlayerState(),
+        viewModel = PlayerViewModel(
+            mediaId = net.subsloth.core.model.media.Media.MediaId.Movie(
+                net.subsloth.core.model.identifier.MovieId(1),
+            ),
         ),
     )
 }

@@ -68,7 +68,7 @@ class CoreModelArchitectureTest {
 
     @Test
     fun `model module has no media player imports`() {
-        val violations = findForbiddenImports("androidx.media3", "android.media")
+        val violations = findForbiddenImports("androidx.media3", "android.media", "io.github.kdroidfilter")
         assertThat(violations).isEmpty()
     }
 

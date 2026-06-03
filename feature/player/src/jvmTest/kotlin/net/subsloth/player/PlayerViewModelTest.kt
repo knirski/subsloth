@@ -617,7 +617,6 @@ class PlayerViewModelTest {
         resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     ): PlayerViewModel = PlayerViewModel(
         mediaId = mediaId,
-        playerController = null,
         fetchVideoSource = fetchVideoSource,
         fetchEpisodes = fetchEpisodes,
         onAuthFailure = onAuthFailure,
