@@ -23,7 +23,7 @@ The existing project spec (`openspec/specs/project/spec.md`) describes the proje
 
 ### 1. Supported platforms
 
-Android (phone, tablet, TV), desktop (Linux via Compose Desktop), and web (Wasm JS via Compose for Web) are supported platforms and subject to feature parity.
+Android (phone, tablet, TV), desktop (JVM / Compose Desktop), and web (Wasm JS / Compose for Web) are supported platforms and subject to feature parity.
 
 Desktop packaging targets (Dmg, Msi, Deb) are distribution formats, not distinct platforms — parity applies to the Compose Desktop runtime, not to each packaging format.
 
