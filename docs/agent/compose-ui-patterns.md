@@ -1,178 +1,79 @@
-# Compose UI Patterns: Agent Instructions
+# Compose UI Patterns
 
-Conventions for writing Jetpack Compose UI in the subsloth project. Compose is the Imperative Shell's rendering layer. It consumes sealed UiState ADTs from ViewModels and emits user actions back.
-
-This project uses the FC/IS architecture (see `docs/codestyle.md` and `docs/agent/fc-is-architecture.md`). The core/shell boundary matters for Compose: domain state stays in pure model types, and the Compose layer is where those types become render trees. See `docs/agent/compose-performance.md` for efficiency rules (stability, recomposition, Flow collection).
-
----
+Conventions for writing Compose UI. Compose is the Imperative Shell's rendering layer — consumes sealed UiState from ViewModels, emits user actions back.
 
 ## Unidirectional Data Flow
 
-State flows DOWN (ViewModel to Composable). Events flow UP (Composable to ViewModel via lambda callbacks). Never mutate state from composables.
-
-The pattern used across the project:
+State DOWN (ViewModel → Composable via `StateFlow`). Events UP (Composable → ViewModel via lambda callbacks). Never mutate state from composables.
 
 ```kotlin
-// ViewModel exposes a sealed UiState as StateFlow.
+// ViewModel exposes sealed UiState as StateFlow
 private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
 val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-// Composable collects with collectAsStateWithLifecycle().
-// Lambda callbacks flow events UP.
+// Composable collects, passes lambdas for actions
 @Composable
-fun HomeScreen(
-    viewModel: HomeViewModel,
-    modifier: Modifier = Modifier,
+fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
-    onShowClick: (Media.MediaId.Show) -> Unit = {},
-) {
+    onShowClick: (Media.MediaId.Show) -> Unit = {}) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    when (val s = state) {
-        // ...
-    }
+    when (val s = state) { /* render */ }
 }
 ```
 
-Every screen follows this structure: one sealed UiState, one ViewModel, one composable entry point with lambda callbacks for actions.
-
----
+Every screen: one sealed UiState, one ViewModel, one composable entry point with lambda callbacks.
 
 ## State Hoisting
 
-Lift state to the nearest common ancestor. The ViewModel is the state holder for screen-level state. Composables receive state as parameters and emit events through lambdas. A composable that reads its own `remember` or `mutableStateOf` should be a leaf widget with no screen-level responsibility.
+Lift state to nearest common ancestor. ViewModel holds screen-level state. Composables receive state as parameters, emit events through lambdas. A composable reading its own `remember`/`mutableStateOf` should be a leaf widget.
 
-```kotlin
-// ViewModel holds uiState, composable receives it.
-@Composable
-fun HomeScreen(state: HomeUiState, onAction: (HomeAction) -> Unit)
-
-// Leaf widgets receive the slice they need.
-@Composable
-fun MediaCard(media: Media, onClick: () -> Unit)
-```
-
-Do not pass the ViewModel down more than one level. Extract the state slice each child needs and pass it as a parameter.
-
----
+Do not pass ViewModel down more than one level. Extract the state slice each child needs.
 
 ## Slot APIs
 
-Use composable lambda parameters (`content: @Composable () -> Unit`) for flexible component composition. Prefer slot APIs over boolean flags or enum-based configuration. A component that toggles between two layouts with a boolean will grow into three, then four variants. A slot component stays open.
-
-Project examples:
+Use composable lambda parameters (`content: @Composable () -> Unit`) for flexible composition. Prefer slots over boolean flags or enum-based configuration.
 
 ```kotlin
-// PhoneScaffold uses a content slot.
 @Composable
-fun PhoneScaffold(
-    modifier: Modifier = Modifier,
+fun PhoneScaffold(modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: @Composable (padding: PaddingValues) -> Unit,
-)
-
-// ListDetailLayout uses two slots for list and detail panes.
-@Composable
-fun SubSlothListDetailLayout(
-    listContent: @Composable () -> Unit,
-    detailContent: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    onBackFromDetail: () -> Unit = {},
-)
+    content: @Composable (padding: PaddingValues) -> Unit)
 ```
 
-When you see a parameter that selects between rendering strategies, replace it with a composable slot.
-
----
+When you see a parameter selecting between rendering strategies, replace with a slot.
 
 ## Sealed UiState to Compose Mapping
 
-A `when` block on the sealed UiState branches maps each state variant to a distinct Compose render tree. The compiler enforces exhaustiveness: adding a new variant to the sealed interface produces a compilation error at every `when` site until all branches are covered.
+Exhaustive `when` on sealed UiState maps each variant to a distinct render tree. Adding a new variant produces a compilation error at every `when` site.
 
 ```kotlin
 when (val s = state) {
-    is HomeUiState.Loading -> {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    }
-    is HomeUiState.Content -> {
-        CatalogContent(state = s, modifier = modifier, ...)
-    }
+    is HomeUiState.Loading -> { Box { CircularProgressIndicator() } }
+    is HomeUiState.Content -> { CatalogContent(state = s) }
 }
 ```
 
-UiState variants in the project follow a `Loading` / `Content` / `Error` pattern. Some screens add domain-specific content branches like `MovieContent` vs `ShowContent` in `DetailUiState`. Each branch is a `data class` with the data the render tree needs. No rendering logic lives in the ViewModel.
-
-All `when` blocks on sealed UiState types are exhaustive; the `else` branch is not used. When adding a new UiState variant, the compiler forces every `when` site to handle it.
-
----
+Pattern: `Loading` / `Content` / `Error`. No `else` branch. No rendering logic in ViewModel.
 
 ## Material3 Conventions
 
-Use Material3 components throughout. Key conventions:
-
-- `Scaffold` for screen-level chrome (TopAppBar, NavigationBar, FAB).
-- `TopAppBar` (not `CenterAlignedTopAppBar` except on tablet/TV).
-- `NavigationBar` for phone, `NavigationRail` for tablet, leanback/tv navigation for TV surfaces.
-- `MaterialTheme.colorScheme` for all colors. Do not hardcode color values.
+- `Scaffold` for screen-level chrome. `TopAppBar` (not CenterAligned except tablet/TV).
+- `NavigationBar` for phone, `NavigationRail` for tablet, leanback for TV.
+- `MaterialTheme.colorScheme` for all colors. No hardcoded values.
 - `MaterialTheme.typography` for all text styles.
 - `Card` with `CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)` for media cards.
-- Surface variants for containers: `surfaceVariant`, `surfaceContainerHigh`, `surfaceContainerLow`.
-
----
 
 ## Adaptive Layouts
 
-The project targets phone, tablet, and TV with different layouts. The `DeviceFormFactor` enum (`Phone`, `Tablet`, `Tv`) classifies the current window width using `LocalWindowInfo.current.containerSize.width`. Thresholds follow Material3 window size classes: compact <600dp, medium 600-840dp, expanded >840dp.
-
-```kotlin
-@Composable
-fun currentDeviceFormFactor(): DeviceFormFactor {
-    val widthDp = LocalWindowInfo.current.containerSize.width
-    return when {
-        widthDp < COMPACT_WIDTH_THRESHOLD -> DeviceFormFactor.Phone
-        widthDp < MEDIUM_WIDTH_THRESHOLD -> DeviceFormFactor.Tablet
-        else -> DeviceFormFactor.Tv
-    }
-}
-```
-
-Phone uses `PhoneScaffold` with a single-pane layout and bottom navigation. Tablet uses `SubSlothListDetailLayout` with side-by-side list and detail panes. TV uses leanback navigation patterns with `TvRow`, `TvLargeCard`, and `TvActionRail`. Use `isTabletOrWider()` for single-condition branching in layout code.
-
----
+Phone (compact <600dp), Tablet (medium 600-840dp), TV (expanded >840dp). Classify via `LocalWindowInfo.current.containerSize.width`. Phone: single-pane `PhoneScaffold` + bottom nav. Tablet: `SubSlothListDetailLayout` side-by-side. TV: leanback with `TvRow`, `TvLargeCard`, `TvActionRail`.
 
 ## Compose Previews
 
-Add `@Preview` functions for every variant of the sealed UiState. Each variant gets its own preview composable. This catches rendering regressions at edit time without running the app.
-
-```kotlin
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenLoadingPreview() = HomeScreen(
-    state = HomeUiState.Loading,
-    onMovieClick = {},
-    onShowClick = {},
-)
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenContentPreview() = HomeScreen(
-    state = HomeUiState.Content(rows = previewRows, selectedTab = HomeTab.MOVIES),
-    onMovieClick = {},
-    onShowClick = {},
-)
-```
-
-Include light/dark mode previews and font scale previews for accessibility. Use `@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)` for dark mode. Use `@Preview(fontScale = 1.5f)` for large text.
-
-**Project state (current):** `@Preview` annotations exist for most screen composables. `HomeScreen` and `LoginScreen` have full coverage. `PlayerScreen` has previews for Loading, Content, and Error states. `SearchScreen`, `MovieDetailScreen`, and `SeriesDetailScreen` have previews for their main content states. Add previews for any newly created composable branches.
-
----
+`@Preview` for every UiState variant. Include light/dark mode (`uiMode = Configuration.UI_MODE_NIGHT_YES`) and font scale (`fontScale = 1.5f`) variants for accessibility.
 
 ## References
 
-- `docs/codestyle.md`: FC/IS architecture rules, sealed types, pure functions.
-- `docs/agent/fc-is-architecture.md`: core/shell boundary, sealed ADTs, port/adapter.
-- `docs/agent/compose-performance.md`: stability annotations, `ImmutableList`, `derivedStateOf`, `collectAsStateWithLifecycle`, recomposition prevention.
-- `docs/agent/README.md`: shared agent guidance routing for domain skills.
-- Official Jetpack Compose docs: state hoisting, slot APIs, Material3, adaptive layouts.
+- `docs/codestyle.md`: FC/IS architecture rules
+- `docs/agent/fc-is-architecture.md`: core/shell boundary
+- `docs/agent/compose-performance.md`: stability, ImmutableList, collectAsStateWithLifecycle
+- Official Jetpack Compose docs: state hoisting, slot APIs, Material3, adaptive layouts
