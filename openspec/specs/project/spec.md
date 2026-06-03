@@ -1,10 +1,10 @@
 # project Specification
 
 ## Purpose
-Define the Android project baseline, module/convention boundaries, dependency guardrails, and v1 scope/security constraints for subsloth.
+Define the multiplatform project baseline, module/convention boundaries, dependency guardrails, and v1 scope/security constraints for subsloth.
 ## Requirements
 ### Requirement: Android Project Baseline
-The project SHALL build a greenfield native Android app with application id and namespace `net.subsloth` for Android phone, tablet, and Android TV.
+The project SHALL build a greenfield multiplatform KMP app with application id and namespace `net.subsloth` for Android (phone, tablet, TV), desktop (JVM), and web (Wasm JS).
 
 #### Scenario: Scaffolded modules are present
 - **WHEN** `./gradlew projects` is executed
