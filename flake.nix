@@ -416,9 +416,6 @@
           unzip
           which
           zip
-
-          # Desktop app runtime (libGL for Skiko/Compose)
-          libglvnd
         ];
 
         # JDK 25 runs the Gradle daemon because Metro requires at least 21.
