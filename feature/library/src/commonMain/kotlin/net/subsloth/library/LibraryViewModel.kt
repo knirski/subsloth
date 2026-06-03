@@ -8,14 +8,12 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -37,9 +35,6 @@ sealed interface LibraryUiState {
         val custom: ImmutableList<Media>,
         val showCatalogLink: Boolean,
     ) : LibraryUiState
-
-    @Immutable
-    data class Error(val error: UiError) : LibraryUiState
 }
 
 class LibraryViewModel(
@@ -76,32 +71,26 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val downloadsD = async { downloadsPort() }
-            val moviesD = async { listMovies() }
-            val showsD = async { listShows() }
-            val libraryD = if (loggedIn) async { libraryPort() } else null
-            val progressD = if (loggedIn) async { listProgress() } else null
-
-            val downloadsR = downloadsD.await()
-            val moviesR = moviesD.await()
-            val showsR = showsD.await()
-            val libraryR = libraryD?.await()
-            val progressR = progressD?.await()
-
-            val firstError = listOfNotNull(
-                downloadsR, moviesR, showsR, libraryR, progressR,
-            ).firstOrNull { it.isFailure }
-            if (firstError != null) {
-                firstError.onFailure { log.e(it) { "Library load failed: ${it.message}" } }
-                _uiState.value = LibraryUiState.Error(UiError.Unknown(firstError.exceptionOrNull()?.message))
-                return@launch
+            val downloads = downloadsPort().onFailure { log.e(it) { "listDownloads failed" } }
+                .getOrDefault(persistentListOf())
+            val movies = listMovies().onFailure { log.e(it) { "listMovies failed" } }
+                .getOrDefault(emptyList())
+            val shows = listShows().onFailure { log.e(it) { "listShows failed" } }
+                .getOrDefault(emptyList())
+            val library = if (loggedIn) {
+                libraryPort()
+                    .onFailure { log.e(it) { "libraryPort failed" } }
+                    .getOrDefault(emptyList())
+            } else {
+                emptyList()
             }
-
-            val downloads = downloadsR.getOrDefault(persistentListOf())
-            val movies = moviesR.getOrDefault(emptyList())
-            val shows = showsR.getOrDefault(emptyList())
-            val library = libraryR?.getOrDefault(emptyList()) ?: emptyList()
-            val progress = progressR?.getOrDefault(emptyList()) ?: emptyList()
+            val progress = if (loggedIn) {
+                listProgress()
+                    .onFailure { log.e(it) { "listProgress failed" } }
+                    .getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
 
             val catalog = buildList {
                 addAll(movies)

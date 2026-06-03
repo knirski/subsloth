@@ -8,7 +8,6 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +17,6 @@ import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
-import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.progress.PlaybackProgress
 
 @Stable
@@ -33,9 +31,6 @@ sealed interface DownloadsUiState {
         val completed: ImmutableList<DownloadGroupItem>,
         val seasonQueues: ImmutableList<SeasonDownloadQueue>,
     ) : DownloadsUiState
-
-    @Immutable
-    data class Error(val error: UiError) : DownloadsUiState
 }
 
 @Immutable
@@ -68,24 +63,15 @@ class DownloadsViewModel(
     private fun loadDownloads() {
         viewModelScope.launch {
             _uiState.value = DownloadsUiState.Loading
-            val downloadsD = async { listDownloads() }
-            val seasonQueuesD = async { listSeasonQueues() }
-            val progressD = async { listProgress() }
-
-            val downloadsR = downloadsD.await()
-            val seasonQueuesR = seasonQueuesD.await()
-            val progressR = progressD.await()
-
-            val firstError = listOf(downloadsR, seasonQueuesR, progressR).firstOrNull { it.isFailure }
-            if (firstError != null) {
-                firstError.onFailure { log.e(it) { "Downloads load failed: ${it.message}" } }
-                _uiState.value = DownloadsUiState.Error(UiError.Unknown(firstError.exceptionOrNull()?.message))
-                return@launch
-            }
-
-            val downloads = downloadsR.getOrDefault(persistentListOf())
-            val seasonQueues = seasonQueuesR.getOrDefault(persistentListOf())
-            val progress = progressR.getOrDefault(emptyList())
+            val downloads = listDownloads()
+                .onFailure { log.e(it) { "listDownloads failed" } }
+                .getOrDefault(persistentListOf())
+            val seasonQueues = listSeasonQueues()
+                .onFailure { log.e(it) { "listSeasonQueues failed" } }
+                .getOrDefault(persistentListOf())
+            val progress = listProgress()
+                .onFailure { log.e(it) { "listProgress failed" } }
+                .getOrDefault(emptyList())
 
             val watchedIds = progress
                 .filter { it.fraction > 0.9 }

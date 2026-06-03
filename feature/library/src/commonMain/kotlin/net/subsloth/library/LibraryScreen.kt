@@ -44,19 +44,6 @@ fun LibraryScreen(
             }
         }
 
-        is LibraryUiState.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize().padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = s.error.detail ?: "Something went wrong",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-
         is LibraryUiState.Content -> {
             LibraryContent(
                 state = s,
