@@ -25,9 +25,8 @@ kotlin {
             implementation(libs.sqlite.bundled)
         }
 
-        // iosMain.dependencies {
-        //     implementation(libs.sqlite.framework)
-        // }
+        // TODO: restore when iOS targets re-enabled — iosMain.dependencies needs
+        // libs.sqlite.framework for NativeSQLiteDriver in core/database/src/iosMain/
 
         wasmJsMain.dependencies {
             implementation(libs.sqlite.web)
