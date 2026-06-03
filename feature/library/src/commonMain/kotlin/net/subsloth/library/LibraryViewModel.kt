@@ -70,17 +70,17 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val libraryDeferred = async { libraryPort().getOrDefault(emptyList()) }
             val downloadsDeferred = async { downloadsPort().getOrDefault(persistentListOf()) }
             val moviesDeferred = async { listMovies().getOrDefault(emptyList()) }
             val showsDeferred = async { listShows().getOrDefault(emptyList()) }
-            val progressDeferred = async { listProgress().getOrDefault(emptyList()) }
+            val libraryDeferred: kotlinx.coroutines.Deferred<List<LibraryItem>>? = if (loggedIn) async { libraryPort().getOrDefault(emptyList()) } else null
+            val progressDeferred: kotlinx.coroutines.Deferred<List<PlaybackProgress>>? = if (loggedIn) async { listProgress().getOrDefault(emptyList()) } else null
 
-            val library = libraryDeferred.await()
             val downloads = downloadsDeferred.await()
             val movies = moviesDeferred.await()
             val shows = showsDeferred.await()
-            val progress = progressDeferred.await()
+            val library = libraryDeferred?.await() ?: emptyList()
+            val progress = progressDeferred?.await() ?: emptyList()
 
             val catalog = buildList {
                 addAll(movies)

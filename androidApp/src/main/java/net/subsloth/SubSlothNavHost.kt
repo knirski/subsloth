@@ -178,7 +178,7 @@ fun SubSlothNavHost(
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            LibraryViewModel() as T
+                            LibraryViewModel(isLoggedIn = { false }) as T
                     },
                 )
                 LibraryScreen(

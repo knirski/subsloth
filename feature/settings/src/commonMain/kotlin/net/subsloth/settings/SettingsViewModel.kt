@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.identifier.AccountProfileKey
@@ -55,11 +56,11 @@ data class DiagnosticsState(
 
 class SettingsViewModel(
     private val profileKey: () -> AccountProfileKey = { AccountProfileKey("default") },
-    private val subtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { kotlinx.coroutines.flow.flowOf(true) },
-    private val subtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { kotlinx.coroutines.flow.flowOf(null) },
-    private val quality: suspend (AccountProfileKey) -> Flow<String?> = { kotlinx.coroutines.flow.flowOf(null) },
-    private val playbackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { kotlinx.coroutines.flow.flowOf(1.0f) },
-    private val downloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { kotlinx.coroutines.flow.flowOf(true) },
+    private val subtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
+    private val subtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
+    private val quality: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
+    private val playbackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { flowOf(1.0f) },
+    private val downloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
     private val setSubtitleEnabled: suspend (Boolean) -> Unit = {},
     private val setSubtitleLanguage: suspend (String?) -> Unit = {},
     private val setQuality: suspend (String?) -> Unit = {},

@@ -357,6 +357,13 @@ private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Mod
                     )
                 }
             }
+            if (queue.items.size > 5) {
+                Text(
+                    text = "+${queue.items.size - 5} more...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
