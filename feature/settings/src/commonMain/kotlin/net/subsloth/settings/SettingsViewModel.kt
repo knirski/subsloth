@@ -4,13 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.identifier.AccountProfileKey
@@ -57,11 +53,11 @@ data class DiagnosticsState(
 
 class SettingsViewModel(
     private val profileKey: () -> AccountProfileKey = { AccountProfileKey("default") },
-    private val subtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
-    private val subtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
-    private val quality: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
-    private val playbackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { flowOf(1.0f) },
-    private val downloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
+    initialSubtitleEnabled: Boolean = true,
+    initialSubtitleLanguage: String? = null,
+    initialQuality: String? = null,
+    initialPlaybackSpeed: Float = 1.0f,
+    initialDownloadsWifiOnly: Boolean = true,
     private val setSubtitleEnabled: suspend (Boolean) -> Unit = {},
     private val setSubtitleLanguage: suspend (String?) -> Unit = {},
     private val setQuality: suspend (String?) -> Unit = {},
@@ -72,38 +68,15 @@ class SettingsViewModel(
     private val clearLibrary: suspend () -> Unit = {},
     private val clearCredentials: suspend () -> Unit = {},
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
+    private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Content(
+        subtitleEnabled = initialSubtitleEnabled,
+        subtitleLanguage = initialSubtitleLanguage,
+        quality = initialQuality,
+        playbackSpeed = initialPlaybackSpeed,
+        downloadsWifiOnly = initialDownloadsWifiOnly,
+        diagnostics = DiagnosticsState.REDACTED,
+    ))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
-
-    init {
-        loadSettings()
-    }
-
-    private fun loadSettings() {
-        viewModelScope.launch {
-            _uiState.value = SettingsUiState.Loading
-            val key = profileKey()
-
-            val result = combine(
-                subtitleEnabled(key),
-                subtitleLanguage(key),
-                quality(key),
-                playbackSpeed(key),
-                downloadsWifiOnly(key),
-            ) { enabled, lang, qual, speed, wifi ->
-                SettingsUiState.Content(
-                    subtitleEnabled = enabled,
-                    subtitleLanguage = lang,
-                    quality = qual,
-                    playbackSpeed = speed,
-                    downloadsWifiOnly = wifi,
-                    diagnostics = DiagnosticsState.REDACTED,
-                )
-            }.first()
-
-            _uiState.value = result
-        }
-    }
 
     fun setSubtitleEnabled(enabled: Boolean) {
         viewModelScope.launch { setSubtitleEnabled(enabled) }

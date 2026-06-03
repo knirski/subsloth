@@ -32,11 +32,11 @@ class SettingsViewModelTest {
     fun `loads settings on init`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
             val content = awaitItem() as SettingsUiState.Content
@@ -53,11 +53,11 @@ class SettingsViewModelTest {
         var savedEnabled: Boolean? = null
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             setSubtitleEnabled = { savedEnabled = it },
         )
         viewModel.setSubtitleEnabled(false)
@@ -69,11 +69,11 @@ class SettingsViewModelTest {
         var savedQuality: String? = null
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             setQuality = { savedQuality = it },
         )
         viewModel.setQuality("720p")
@@ -85,11 +85,11 @@ class SettingsViewModelTest {
         var savedSpeed: Float? = null
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             setPlaybackSpeed = { savedSpeed = it },
         )
         viewModel.setPlaybackSpeed(1.5f)
@@ -101,11 +101,11 @@ class SettingsViewModelTest {
         var savedWifiOnly: Boolean? = null
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             setDownloadsWifiOnly = { savedWifiOnly = it },
         )
         viewModel.setDownloadsWifiOnly(false)
@@ -117,11 +117,11 @@ class SettingsViewModelTest {
         var savedLanguage: String? = "en"
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             setSubtitleLanguage = { savedLanguage = it },
         )
         viewModel.setSubtitleLanguage(null)
@@ -132,11 +132,11 @@ class SettingsViewModelTest {
     fun `no new-episode notification settings in v1`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
             val content = awaitItem() as SettingsUiState.Content
@@ -148,11 +148,11 @@ class SettingsViewModelTest {
     fun `shows loading state initially`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
             val loading = awaitItem() as SettingsUiState.Loading
@@ -164,11 +164,11 @@ class SettingsViewModelTest {
     fun `logout sets cleanup choices visible`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.showLogoutCleanup()
         viewModel.uiState.test {
@@ -185,11 +185,11 @@ class SettingsViewModelTest {
         var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             deleteAllDownloads = {
                 deletedDownloads = true
                 Result.success(Unit)
@@ -213,11 +213,11 @@ class SettingsViewModelTest {
         var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             deleteAllDownloads = {
                 deletedDownloads = true
                 Result.success(Unit)
@@ -241,11 +241,11 @@ class SettingsViewModelTest {
         var clearedCredentials = false
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
             deleteAllDownloads = {
                 deletedDownloads = true
                 Result.success(Unit)
@@ -265,11 +265,11 @@ class SettingsViewModelTest {
     fun `diagnostics state shows redacted fields`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
             val content = awaitItem() as SettingsUiState.Content
@@ -283,11 +283,11 @@ class SettingsViewModelTest {
     fun `diagnostics does not expose sensitive fields`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },
-            subtitleEnabled = { flowOf(true) },
-            subtitleLanguage = { flowOf("en") },
-            quality = { flowOf("1080p") },
-            playbackSpeed = { flowOf(1.0f) },
-            downloadsWifiOnly = { flowOf(true) },
+            initialSubtitleEnabled = true,
+            initialSubtitleLanguage = "en",
+            initialQuality = "1080p",
+            initialPlaybackSpeed = 1.0f,
+            initialDownloadsWifiOnly = true,
         )
         viewModel.uiState.test {
             val content = awaitItem() as SettingsUiState.Content
