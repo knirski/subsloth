@@ -135,9 +135,21 @@ class DownloadPolicyTest {
     }
 
     @Test
-    fun `is duplicate detects completed download for same media`() {
+    fun `is duplicate detects completed download for same media at equal quality`() {
         val existing = listOf(downloadCompleted())
-        assertThat(DownloadPolicy.isDuplicate(existing, testMediaId)).isTrue()
+        assertThat(DownloadPolicy.isDuplicate(existing, testMediaId, Resolution.HD_720)).isTrue()
+    }
+
+    @Test
+    fun `is duplicate detects completed when requested quality is lower`() {
+        val existing = listOf(downloadCompleted())
+        assertThat(DownloadPolicy.isDuplicate(existing, testMediaId, Resolution.SD)).isTrue()
+    }
+
+    @Test
+    fun `is duplicate allows download when requested quality is higher`() {
+        val existing = listOf(downloadCompleted())
+        assertThat(DownloadPolicy.isDuplicate(existing, testMediaId, Resolution.FULL_HD)).isFalse()
     }
 
     @Test
@@ -149,13 +161,22 @@ class DownloadPolicyTest {
     @Test
     fun `can start new download when no active or queued exists`() {
         val existing = listOf(downloadCompleted())
-        assertThat(DownloadPolicy.canStartNewDownload(existing)).isTrue()
+        assertThat(DownloadPolicy.canStartNewDownload(existing, testMediaId)).isTrue()
     }
 
     @Test
-    fun `cannot start new download when active exists`() {
+    fun `cannot start new download when active exists for same media`() {
         val existing = listOf(downloadActive())
-        assertThat(DownloadPolicy.canStartNewDownload(existing)).isFalse()
+        assertThat(DownloadPolicy.canStartNewDownload(existing, testMediaId)).isFalse()
+    }
+
+    @Test
+    fun `can start new download when active exists for different media`() {
+        val otherId = net.subsloth.core.model.media.Media.MediaId.Movie(
+            net.subsloth.core.model.identifier.MovieId(999),
+        )
+        val existing = listOf(downloadActive())
+        assertThat(DownloadPolicy.canStartNewDownload(existing, otherId)).isTrue()
     }
 
     @Test

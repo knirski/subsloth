@@ -32,11 +32,25 @@ object DownloadPolicy {
     fun hasSufficientStorage(availableBytes: Long, requiredBytes: Long, reserveBytes: Long): Boolean =
         availableBytes >= requiredBytes + reserveBytes
 
-    fun isDuplicate(existing: List<DownloadState>, mediaId: net.subsloth.core.model.media.Media.MediaId): Boolean =
-        existing.any { it.mediaId == mediaId && it is DownloadState.Completed }
+    fun isDuplicate(
+        existing: List<DownloadState>,
+        mediaId: net.subsloth.core.model.media.Media.MediaId,
+        requestedResolution: Resolution? = null,
+    ): Boolean = existing.any { state ->
+        if (state.mediaId != mediaId || state !is DownloadState.Completed) return@any false
+        if (requestedResolution != null) {
+            state.quality.resolution.pixelCount >= requestedResolution.pixelCount
+        } else {
+            true
+        }
+    }
 
-    fun canStartNewDownload(existing: List<DownloadState>): Boolean =
-        existing.none { it is DownloadState.Active || it is DownloadState.Queued }
+    fun canStartNewDownload(
+        existing: List<DownloadState>,
+        mediaId: net.subsloth.core.model.media.Media.MediaId,
+    ): Boolean = existing.none {
+        it.mediaId == mediaId && (it is DownloadState.Active || it is DownloadState.Queued)
+    }
 
     fun selectFallbackQuality(available: List<QualityDescriptor>, preferred: Resolution): QualityDescriptor? {
         if (available.isEmpty()) return null
@@ -79,6 +93,7 @@ object DownloadPolicy {
         qualityPref: Resolution,
         subtitlePref: LanguageCode,
         transferPreference: TransferPreference,
+        alreadyDownloaded: Set<net.subsloth.core.model.media.Media.MediaId> = emptySet(),
     ): SeasonDownloadConfirmation {
         var fallbackQualityCount = 0
         var fallbackSubtitleCount = 0
@@ -87,6 +102,13 @@ object DownloadPolicy {
         var alreadyAvailableCount = 0
 
         for (episode in episodes) {
+            if (alreadyDownloaded.contains(
+                    net.subsloth.core.model.media.Media.MediaId.Episode(episode.id),
+                )
+            ) {
+                alreadyAvailableCount++
+                continue
+            }
             if (episode.availability !is Availability.Available) {
                 unavailableCount++
                 continue

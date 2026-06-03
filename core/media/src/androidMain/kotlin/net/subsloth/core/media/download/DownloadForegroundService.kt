@@ -17,7 +17,15 @@ class DownloadForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = buildNotification(activeCount = 1)
-        startForeground(NOTIFICATION_ID, notification)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
         return START_STICKY
     }
 
@@ -30,6 +38,7 @@ class DownloadForegroundService : Service() {
     }
 
     private fun createNotificationChannel() {
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
             CHANNEL_ID,
             CHANNEL_NAME,
@@ -37,8 +46,15 @@ class DownloadForegroundService : Service() {
         ).apply {
             description = "Download progress notifications"
         }
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
+        val silentChannel = NotificationChannel(
+            CHANNEL_ID_SILENT,
+            "$CHANNEL_NAME (Silent)",
+            NotificationManager.IMPORTANCE_MIN,
+        ).apply {
+            description = "Silent download progress notifications"
+        }
+        manager.createNotificationChannel(silentChannel)
     }
 
     @Suppress("Deprecation")

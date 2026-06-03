@@ -67,11 +67,11 @@ class DownloadController(
         transferPreference: TransferPreference,
     ): Result<EnqueueOutcome> = runCatching {
         val existing = downloadedMediaDao.getAll().first().map { it.toDownloadState() }
-        if (DownloadPolicy.isDuplicate(existing, mediaId)) {
+        if (DownloadPolicy.isDuplicate(existing, mediaId, requestedResolution = requested)) {
             return@runCatching EnqueueOutcome.AlreadyAvailableHigherQuality
         }
-        if (!DownloadPolicy.canStartNewDownload(existing)) {
-            error("An active download is already in progress")
+        if (!DownloadPolicy.canStartNewDownload(existing, mediaId)) {
+            error("A download for this media is already active or queued")
         }
         if (!DownloadPolicy.canTransferOnNetwork(
                 isMetered = connectivityChecker.isMetered(),
@@ -247,10 +247,10 @@ internal enum class DownloadStatus {
 
 private fun parseResolution(label: String?): Resolution = when {
     label == null -> Resolution.HD_720
-    label.contains("1080") || label.contains("FHD") || label.contains("full", ignoreCase = true) -> Resolution.FULL_HD
-    label.contains("720") || label.contains("HD") -> Resolution.HD_720
     label.contains("4K") || label.contains("2160") || label.contains("UHD") -> Resolution.UHD_4K
     label.contains("1440") || label.contains("QHD") -> Resolution.QHD
+    label.contains("1080") || label.contains("FHD") || label.contains("full", ignoreCase = true) -> Resolution.FULL_HD
+    label.contains("720") || label.contains("HD") -> Resolution.HD_720
     else -> Resolution.HD_720
 }
 
