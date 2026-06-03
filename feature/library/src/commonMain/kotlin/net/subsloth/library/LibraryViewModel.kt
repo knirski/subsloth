@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,20 +70,22 @@ class LibraryViewModel(
             _uiState.value = LibraryUiState.Loading
             val loggedIn = isLoggedIn()
 
-            val libraryResult = libraryPort()
-            val library = libraryResult.getOrDefault(emptyList())
+            val libraryDeferred = async { libraryPort().getOrDefault(emptyList()) }
+            val downloadsDeferred = async { downloadsPort().getOrDefault(persistentListOf()) }
+            val moviesDeferred = async { listMovies().getOrDefault(emptyList()) }
+            val showsDeferred = async { listShows().getOrDefault(emptyList()) }
+            val progressDeferred = async { listProgress().getOrDefault(emptyList()) }
 
-            val downloadsResult = downloadsPort()
-            val downloads = downloadsResult.getOrDefault(persistentListOf())
+            val library = libraryDeferred.await()
+            val downloads = downloadsDeferred.await()
+            val movies = moviesDeferred.await()
+            val shows = showsDeferred.await()
+            val progress = progressDeferred.await()
 
-            val moviesResult = listMovies()
-            val movies = moviesResult.getOrDefault(emptyList())
-            val showsResult = listShows()
-            val shows = showsResult.getOrDefault(emptyList())
-            val catalog = (movies + shows).associateBy { it.id }
-
-            val progressResult = listProgress()
-            val progress = progressResult.getOrDefault(emptyList())
+            val catalog = buildList {
+                addAll(movies)
+                addAll(shows)
+            }.associateBy { it.id }
 
             val continueWatching = buildContinueWatching(progress, catalog)
 
@@ -129,9 +132,11 @@ class LibraryViewModel(
     private fun buildContinueWatching(
         progress: List<PlaybackProgress>,
         catalog: Map<Media.MediaId, Media>,
-    ): List<Media> = progress
-        .filter { it.positionSeconds > 0 && it.durationSeconds > 0 }
-        .mapNotNull { catalog[it.mediaId] }
+    ): List<Media> {
+        return progress
+            .filter { it.positionSeconds > 0 && it.durationSeconds > 0 }
+            .mapNotNull { catalog[it.mediaId] }
+    }
 
     fun deleteDownload(localId: String) {
         viewModelScope.launch {

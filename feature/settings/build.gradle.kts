@@ -10,7 +10,6 @@ kotlin {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
             implementation(project(":core:preferences"))
-            implementation(project(":core:database"))
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.multiplatform.foundation)

@@ -59,6 +59,7 @@ fun SettingsScreen(
                 onLogoutClick = viewModel::showLogoutCleanup,
                 onNavigateToDiagnostics = onNavigateToDiagnostics,
                 onPerformLogoutCleanup = viewModel::performLogoutCleanup,
+                onDismissLogoutCleanup = viewModel::dismissLogoutCleanup,
             )
         }
     }
@@ -76,6 +77,7 @@ internal fun SettingsContent(
     onLogoutClick: () -> Unit = {},
     onNavigateToDiagnostics: () -> Unit = {},
     onPerformLogoutCleanup: (Boolean, Boolean, Boolean) -> Unit = { _, _, _ -> },
+    onDismissLogoutCleanup: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = modifier
@@ -219,7 +221,7 @@ internal fun SettingsContent(
             item(key = "logout_cleanup") {
                 LogoutCleanupDialog(
                     onConfirm = onPerformLogoutCleanup,
-                    onDismiss = {},
+                    onDismiss = onDismissLogoutCleanup,
                 )
             }
         }

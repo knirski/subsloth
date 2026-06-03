@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +33,10 @@ sealed interface DownloadsUiState {
 }
 
 @Immutable
-data class DownloadGroupItem(val state: DownloadState, val progressFraction: Double? = null)
+data class DownloadGroupItem(
+    val state: DownloadState,
+    val progressFraction: Double? = null,
+)
 
 class DownloadsViewModel(
     private val listDownloads: suspend () -> Result<ImmutableList<DownloadState>> = {
@@ -61,9 +65,13 @@ class DownloadsViewModel(
     private fun loadDownloads() {
         viewModelScope.launch {
             _uiState.value = DownloadsUiState.Loading
-            val downloads = listDownloads().getOrDefault(persistentListOf())
-            val seasonQueues = listSeasonQueues().getOrDefault(persistentListOf())
-            val progress = listProgress().getOrDefault(emptyList())
+            val downloadsDeferred = async { listDownloads().getOrDefault(persistentListOf()) }
+            val seasonQueuesDeferred = async { listSeasonQueues().getOrDefault(persistentListOf()) }
+            val progressDeferred = async { listProgress().getOrDefault(emptyList()) }
+
+            val downloads = downloadsDeferred.await()
+            val seasonQueues = seasonQueuesDeferred.await()
+            val progress = progressDeferred.await()
 
             val watchedIds = progress
                 .filter { it.fraction > 0.9 }
@@ -131,13 +139,13 @@ class DownloadsViewModel(
 
     fun deleteAllCompleted() {
         viewModelScope.launch {
-            _uiState.value.let { current ->
-                if (current is DownloadsUiState.Content) {
-                    current.completed.forEach { item ->
-                        removeDownload(item.state.localId.value)
-                    }
-                    loadDownloads()
+            val current = _uiState.value
+            if (current is DownloadsUiState.Content) {
+                val jobs = current.completed.map { item ->
+                    launch { removeDownload(item.state.localId.value) }
                 }
+                jobs.forEach { it.join() }
+                loadDownloads()
             }
         }
     }
@@ -150,15 +158,15 @@ class DownloadsViewModel(
                 .map { it.mediaId }
                 .toSet()
 
-            _uiState.value.let { current ->
-                if (current is DownloadsUiState.Content) {
-                    current.completed
-                        .filter { it.state.mediaId in watchedIds }
-                        .forEach { item ->
-                            removeDownload(item.state.localId.value)
-                        }
-                    loadDownloads()
-                }
+            val current = _uiState.value
+            if (current is DownloadsUiState.Content) {
+                val jobs = current.completed
+                    .filter { it.state.mediaId in watchedIds }
+                    .map { item ->
+                        launch { removeDownload(item.state.localId.value) }
+                    }
+                jobs.forEach { it.join() }
+                loadDownloads()
             }
         }
     }

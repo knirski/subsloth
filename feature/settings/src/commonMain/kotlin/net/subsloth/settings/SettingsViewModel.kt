@@ -62,11 +62,11 @@ data class DiagnosticsState(
 
 class SettingsViewModel(
     private val profileKey: () -> AccountProfileKey = { AccountProfileKey("default") },
-    private val subtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { error("Not implemented") },
-    private val subtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { error("Not implemented") },
-    private val quality: suspend (AccountProfileKey) -> Flow<String?> = { error("Not implemented") },
-    private val playbackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { error("Not implemented") },
-    private val downloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { error("Not implemented") },
+    private val subtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { kotlinx.coroutines.flow.flowOf(true) },
+    private val subtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { kotlinx.coroutines.flow.flowOf(null) },
+    private val quality: suspend (AccountProfileKey) -> Flow<String?> = { kotlinx.coroutines.flow.flowOf(null) },
+    private val playbackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { kotlinx.coroutines.flow.flowOf(1.0f) },
+    private val downloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { kotlinx.coroutines.flow.flowOf(true) },
     private val setSubtitleEnabled: suspend (Boolean) -> Unit = {},
     private val setSubtitleLanguage: suspend (String?) -> Unit = {},
     private val setQuality: suspend (String?) -> Unit = {},
@@ -134,6 +134,12 @@ class SettingsViewModel(
     fun showLogoutCleanup() {
         _uiState.update { current ->
             if (current is SettingsUiState.Content) current.copy(showLogoutCleanup = true) else current
+        }
+    }
+
+    fun dismissLogoutCleanup() {
+        _uiState.update { current ->
+            if (current is SettingsUiState.Content) current.copy(showLogoutCleanup = false) else current
         }
     }
 
