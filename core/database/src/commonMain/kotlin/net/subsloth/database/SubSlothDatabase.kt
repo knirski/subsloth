@@ -11,6 +11,7 @@ import net.subsloth.database.dao.FavoriteDao
 import net.subsloth.database.dao.LocalLibraryRecordDao
 import net.subsloth.database.dao.OfflineDisplayMetadataDao
 import net.subsloth.database.dao.OfflinePlaybackProgressDao
+import net.subsloth.database.dao.SeasonQueueDao
 import net.subsloth.database.dao.SubscriptionDao
 import net.subsloth.database.dao.WatchLaterDao
 import net.subsloth.database.dao.WatchedStateDao
@@ -22,6 +23,8 @@ import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
 import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.database.entity.OfflinePlaybackProgressEntity
+import net.subsloth.database.entity.QueueItemEntity
+import net.subsloth.database.entity.SeasonQueueEntity
 import net.subsloth.database.entity.SubscriptionEntity
 import net.subsloth.database.entity.WatchLaterEntity
 import net.subsloth.database.entity.WatchedStateEntity
@@ -40,8 +43,10 @@ import net.subsloth.database.entity.WatchedStateEntity
         DownloadedSubtitleEntity::class,
         OfflineDisplayMetadataEntity::class,
         OfflinePlaybackProgressEntity::class,
+        SeasonQueueEntity::class,
+        QueueItemEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class SubSlothDatabase : RoomDatabase() {
@@ -66,4 +71,6 @@ abstract class SubSlothDatabase : RoomDatabase() {
     abstract fun offlineDisplayMetadataDao(): OfflineDisplayMetadataDao
 
     abstract fun offlinePlaybackProgressDao(): OfflinePlaybackProgressDao
+
+    abstract fun seasonQueueDao(): SeasonQueueDao
 }
