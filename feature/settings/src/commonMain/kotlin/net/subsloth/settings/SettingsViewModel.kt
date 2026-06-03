@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -83,7 +84,7 @@ class SettingsViewModel(
             _uiState.value = SettingsUiState.Loading
             val key = profileKey()
 
-            combine(
+            val result = combine(
                 subtitleEnabled(key),
                 subtitleLanguage(key),
                 quality(key),
@@ -98,9 +99,9 @@ class SettingsViewModel(
                     downloadsWifiOnly = wifi,
                     diagnostics = DiagnosticsState.REDACTED,
                 )
-            }.collect { state ->
-                _uiState.value = state
-            }
+            }.first()
+
+            _uiState.value = result
         }
     }
 
