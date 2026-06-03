@@ -105,6 +105,21 @@ Every commit on `main` triggers a release via semantic-release. PR title must be
 - `gh` CLI for GitHub. No browser.
 - `@Suppress` only for false positives with no cleaner fix. Narrowest scope.
 
+## KMP Safety
+
+Code in `commonMain` compiles for ALL targets (JVM, iOS, Wasm, macOS desktop).
+Before pushing, verify that any API used in common code exists across all targets:
+
+- `String.format("...")` — JVM-only. Use string templates or KMP-safe formatting (`"${value}"`).
+- `java.*`, `javax.*` — not available on non-JVM targets.
+- `android.*` — not available on non-Android targets.
+- Platform math (`Math.*`, `StrictMath`) — use `kotlin.math.*` instead.
+
+When in doubt, grep the codebase for the same API usage in common code, or run:
+```bash
+./gradlew :core:model:compileKotlinWasmJs :core:model:compileKotlinIosArm64 2>&1 | tail -5
+```
+
 ## Autonomy
 
 - Investigate first (`rg`, `find`, `openspec/` files). Act independently on implementation details.
