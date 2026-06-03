@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
@@ -139,34 +140,38 @@ class DownloadsViewModel(
 
     fun deleteAllCompleted() {
         viewModelScope.launch {
-            val current = _uiState.value
-            if (current is DownloadsUiState.Content) {
-                val jobs = current.completed.map { item ->
-                    launch { removeDownload(item.state.localId.value) }
+            supervisorScope {
+                val current = _uiState.value
+                if (current is DownloadsUiState.Content) {
+                    val jobs = current.completed.map { item ->
+                        launch { removeDownload(item.state.localId.value) }
+                    }
+                    jobs.forEach { it.join() }
+                    loadDownloads()
                 }
-                jobs.forEach { it.join() }
-                loadDownloads()
             }
         }
     }
 
     fun deleteWatchedCompleted() {
         viewModelScope.launch {
-            val progress = listProgress().getOrDefault(emptyList())
-            val watchedIds = progress
-                .filter { it.fraction > 0.9 }
-                .map { it.mediaId }
-                .toSet()
+            supervisorScope {
+                val progress = listProgress().getOrDefault(emptyList())
+                val watchedIds = progress
+                    .filter { it.fraction > 0.9 }
+                    .map { it.mediaId }
+                    .toSet()
 
-            val current = _uiState.value
-            if (current is DownloadsUiState.Content) {
-                val jobs = current.completed
-                    .filter { it.state.mediaId in watchedIds }
-                    .map { item ->
-                        launch { removeDownload(item.state.localId.value) }
-                    }
-                jobs.forEach { it.join() }
-                loadDownloads()
+                val current = _uiState.value
+                if (current is DownloadsUiState.Content) {
+                    val jobs = current.completed
+                        .filter { it.state.mediaId in watchedIds }
+                        .map { item ->
+                            launch { removeDownload(item.state.localId.value) }
+                        }
+                    jobs.forEach { it.join() }
+                    loadDownloads()
+                }
             }
         }
     }

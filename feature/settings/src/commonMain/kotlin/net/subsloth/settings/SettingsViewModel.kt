@@ -76,7 +76,6 @@ class SettingsViewModel(
     private val clearPreferences: suspend (AccountProfileKey) -> Unit = {},
     private val clearLibrary: suspend () -> Unit = {},
     private val clearCredentials: suspend () -> Unit = {},
-    private val isOnline: () -> Boolean = { true },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
