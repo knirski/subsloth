@@ -126,3 +126,42 @@ require(numeric.matches(Regex("""\d+\.\d+\.\d+"""))) { "Version must be SemVer" 
 ## 14. Issue-Level Comments are Separate from Review Threads
 
 `github-actions[bot]` and `gemini-code-assist` post issue-level comments — they don't appear in `reviewThreads`. Always fetch both: `get_review_comments` (inline) + `get_comments` (issue-level).
+
+## 15. Method Name Shadowing Causes Silent StackOverflow
+
+```kotlin
+private val setQuality: (String?) -> Unit = {},
+fun setQuality(quality: String?) { setQuality(quality) }  // calls itself
+```
+
+Constructor param and method with identical name = infinite recursion. The StackOverflowError kills the test executor thread without a visible crash — tests just hang. Fix: prefix either the param or method (e.g. `writeQuality` / `onQualityChanged`).
+
+## 16. Force-Push Orphans Review Threads
+
+Every `git push --force` makes existing inline review comments unresolvable because they reference commits that no longer exist in the branch. Use incremental commits + normal pushes during review. Squash at merge, not before.
+
+## 17. Stale Gradle Configuration Cache Masks Errors
+
+When a build hangs, run with `--no-configuration-cache` first. In this session, a stale cache hid a StackOverflowError and made it look like a coroutine deadlock. Fresh cache revealed the real error immediately.
+
+## 18. Keep PRs Small
+
+This PR grew to ~2600 lines across 22 files (library + settings + downloads + diagnostics + KMP targets + CI + AGENTS.md). Scope creep makes review harder and merge slower. Split into multiple PRs: one per feature, one per infra change.
+
+## 19. `combine` Not the Enemy
+
+```kotlin
+combine(f1, f2) { a, b -> ... }.collect { state = it }
+```
+
+`combine` is the correct reactive pattern for settings/preferences screens. Earlier churn between `combine` → `.first()` → `combine` came from misdiagnosing a hang as a combine issue. The hang was a StackOverflowError (see §15). When you need reactive collection from multiple flows, use `combine` — it's correct, not the problem.
+
+## 20. Slider Without `onValueChangeFinished` Writes on Every Pixel
+
+```kotlin
+var localValue by remember { mutableStateOf(initial) }
+Slider(value = localValue, onValueChange = { localValue = it },
+    onValueChangeFinished = { save(localValue) })
+```
+
+Without this pattern, every drag pixel triggers a disk write (DataStore). Always debounce sliders with local state + `onValueChangeFinished`.
