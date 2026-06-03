@@ -100,6 +100,7 @@ class PlayerViewModel(
     val playCommands: Flow<PlayCommand> = _playCommands.receiveAsFlow()
 
     private var session: PlayerSession? = null
+    private var snapshotCountSinceSave: Int = 0
 
     init {
         loadContent()
@@ -205,8 +206,10 @@ class PlayerViewModel(
             ) ?: current
         }
 
-        state.mediaId?.let { id ->
-            viewModelScope.launch { saveProgress(id, snapshot.positionSeconds, dur) }
+        if (snapshotCountSinceSave++ % 60 == 0) {
+            state.mediaId?.let { id ->
+                viewModelScope.launch { saveProgress(id, snapshot.positionSeconds, dur) }
+            }
         }
 
         if (dur > 0L && CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) && !state.showNextEpisodePrompt) {

@@ -2,6 +2,7 @@ package net.subsloth.core.media
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,6 +15,7 @@ import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
 import io.github.kdroidfilter.composemediaplayer.rememberVideoPlayerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
@@ -27,6 +29,7 @@ fun PlayerBridgeSurface(
     overlay: @Composable (VideoPlayerState) -> Unit = {},
 ) {
     val playerState = rememberVideoPlayerState()
+    val currentOnEvent = rememberUpdatedState(onEvent)
 
     playerState.subtitleTextStyle = subtitleTextStyle
     playerState.subtitleBackgroundColor = subtitleBackground
@@ -40,7 +43,7 @@ fun PlayerBridgeSurface(
                 isLoading = playerState.isLoading,
             )
         }.collect { snapshot ->
-            onEvent(PlayerEvent.Snapshot(snapshot))
+            currentOnEvent.value(PlayerEvent.Snapshot(snapshot))
         }
     }
 
@@ -54,7 +57,7 @@ fun PlayerBridgeSurface(
                         is VideoPlayerError.SourceError -> error.message
                         is VideoPlayerError.UnknownError -> error.message
                     }
-                    onEvent(PlayerEvent.Error(msg))
+                    currentOnEvent.value(PlayerEvent.Error(msg))
                     playerState.clearError()
                 }
             }
@@ -62,12 +65,12 @@ fun PlayerBridgeSurface(
 
     LaunchedEffect(playerState) {
         playerState.onPlaybackEnded = {
-            onEvent(PlayerEvent.PlaybackEnded)
+            currentOnEvent.value(PlayerEvent.PlaybackEnded)
         }
     }
 
-    LaunchedEffect(playerState) {
-        playCommands.collect { cmd ->
+    LaunchedEffect(playerState, playCommands) {
+        playCommands.collectLatest { cmd ->
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
             if (cmd.positionSeconds > 0L) {
                 var attempts = 0
