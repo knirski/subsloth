@@ -110,12 +110,11 @@ Every commit on `main` triggers a release via semantic-release. PR title must be
 Code in `commonMain` compiles for ALL targets (JVM, iOS, Wasm, macOS desktop).
 Before pushing, verify that any API used in common code exists across all targets:
 
-- `String.format("...")` — JVM-only. Use string templates or KMP-safe formatting (`"${value}"`).
-- `java.*`, `javax.*` — not available on non-JVM targets.
-- `android.*` — not available on non-Android targets.
-- Platform math (`Math.*`, `StrictMath`) — use `kotlin.math.*` instead.
+- `String.format("...")` — JVM-only. Use string templates.
+- `java.*`, `javax.*`, `android.*` — not on non-JVM/non-Android targets.
+- `Math.*`, `StrictMath` — use `kotlin.math.*`.
 
-When in doubt, grep the codebase for the same API usage in common code, or run:
+When in doubt, run:
 ```bash
 ./gradlew :core:model:compileKotlinWasmJs :core:model:compileKotlinIosArm64 2>&1 | tail -5
 ```
