@@ -33,7 +33,7 @@ import platform.Security.kSecValueData
 actual class CredentialStore {
     private val serviceName = "net.subsloth.credentials"
 
-    actual fun save(login: String, password: String) {
+    actual suspend fun save(login: String, password: String) {
         val data = "$login\u0000$password".encodeToByteArray().toNSData()
         val query =
             NSDictionary.dictionaryWithObjects(
@@ -56,7 +56,7 @@ actual class CredentialStore {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    actual fun read(): Pair<String, String>? {
+    actual suspend fun read(): Pair<String, String>? {
         val query =
             NSDictionary.dictionaryWithObjects(
                 objects = listOf(kSecClassGenericPassword, serviceName, "credentials", true, kSecMatchLimitOne),
@@ -74,7 +74,7 @@ actual class CredentialStore {
         }
     }
 
-    actual fun clear() {
+    actual suspend fun clear() {
         val query =
             NSDictionary.dictionaryWithObjects(
                 objects = listOf(kSecClassGenericPassword, serviceName, "credentials"),
@@ -83,7 +83,7 @@ actual class CredentialStore {
         SecItemDelete(query as CFDictionaryRef)
     }
 
-    actual fun exists(): Boolean = read() != null
+    actual suspend fun exists(): Boolean = read() != null
 }
 
 @OptIn(ExperimentalForeignApi::class)
