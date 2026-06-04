@@ -54,7 +54,7 @@ interface CredentialBackend {
 
 ### Backend Detection
 
-On startup, the `CredentialStore` detects the best available backend:
+On startup, the `CredentialStore` detects the best available backend by probing the CLI tool once (checking if it exists on PATH via `ProcessBuilder` with `which`/`where` or attempting a no-op call). The result is cached for the lifetime of the `CredentialStore` instance.
 
 1. **OS Keychain** (primary): Try the platform's CLI credential tool.
    - Linux: `secret-tool` (libsecret)
@@ -71,15 +71,17 @@ No migration logic between backends. On first run with the new code, if old `cre
 
 **Linux: `LinuxKeychainBackend`**
 
+Uses `secret-tool` (part of libsecret). Data is base64-encoded before storage since `secret-tool` works with strings.
+
 ```bash
-# Store (stdin binary data)
-echo -n "binary_data" | secret-tool store --application=subsloth credentials net.subsloth.credentials
+# Store
+secret-tool store --label "SubSloth credentials" service net.subsloth.credentials account credentials <<< "BASE64_DATA"
 
 # Load
-secret-tool lookup --application=subsloth credentials net.subsloth.credentials
+secret-tool lookup service net.subsloth.credentials account credentials
 
 # Delete
-secret-tool clear --application=subsloth credentials net.subsloth.credentials
+secret-tool clear service net.subsloth.credentials account credentials
 ```
 
 **macOS: `MacosKeychainBackend`**
@@ -117,7 +119,7 @@ Uses per-user key derivation (machine-id / platform UUID) to derive an AES-256 k
 
 ### Data Format
 
-All backends store the same raw bytes: `login + "\u0000" + password` encoded as UTF-8. Keychain backends store this directly. The file-based fallback encrypts with AES/GCM/NoPadding using the derived key.
+All backends operate on the same raw bytes: `login + "\u0000" + password` encoded as UTF-8. Keychain backends base64-encode this before passing to CLI tools (since the tools work with strings). The file-based fallback encrypts with AES/GCM/NoPadding using the derived key.
 
 ### Error Handling
 
