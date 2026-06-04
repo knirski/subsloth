@@ -20,7 +20,6 @@ actual class CredentialStore {
         val encrypted = localStorage.getItem(dataKey) ?: return null
         return try {
             val decrypted = webCryptoDecrypt(encrypted).await().toString()
-            if (decrypted.isEmpty()) return null
             val parts = decrypted.split("\u0000", limit = 2)
             if (parts.size == 2) Pair(parts[0], parts[1]) else null
         } catch (_: Exception) {
@@ -69,11 +68,10 @@ private external fun webCryptoEncrypt(plaintext: String): Promise<JsString>
     const iv = combined.slice(0, 12);
     const ct = combined.slice(12);
     const stored = localStorage.getItem('subsloth_credentials_key');
-    if (!stored) return Promise.resolve('');
+    if (!stored) return Promise.reject(new Error('Missing crypto key for stored credentials'));
     return crypto.subtle.importKey('jwk', JSON.parse(stored), {name:'AES-GCM'}, false, ['decrypt'])
         .then(key => crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ct))
-        .then(decrypted => new TextDecoder().decode(decrypted))
-        .catch(() => '');
+        .then(decrypted => new TextDecoder().decode(decrypted));
 }""",
 )
 private external fun webCryptoDecrypt(base64Data: String): Promise<JsString>
