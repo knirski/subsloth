@@ -11,4 +11,4 @@ echo "Press Ctrl+C to stop"
 echo ""
 
 cd "$PROJECT_ROOT"
-python3 -m http.server "$PORT"
+python3 -m http.server "$PORT" --bind 127.0.0.1

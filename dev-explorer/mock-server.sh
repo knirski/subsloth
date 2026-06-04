@@ -20,4 +20,21 @@ echo "Press Ctrl+C to stop"
 echo ""
 
 cd "$FIXTURE_DIR"
-python3 -m http.server "$PORT"
+python3 -c "
+import http.server
+import socketserver
+
+class CORSHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
+
+with socketserver.TCPServer(('127.0.0.1', $PORT), CORSHandler) as httpd:
+    httpd.serve_forever()
+"
