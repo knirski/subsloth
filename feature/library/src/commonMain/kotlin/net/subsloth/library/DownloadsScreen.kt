@@ -10,15 +10,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +69,86 @@ fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier
 
 @Composable
 internal fun DownloadsContent(
+    state: DownloadsUiState.Content,
+    modifier: Modifier = Modifier,
+    onPause: (String) -> Unit = {},
+    onResume: (String) -> Unit = {},
+    onCancel: (String) -> Unit = {},
+    onRetry: (String) -> Unit = {},
+    onRemove: (String) -> Unit = {},
+    onDeleteAllCompleted: () -> Unit = {},
+    onDeleteWatchedCompleted: () -> Unit = {},
+) {
+    var showDeleteConfirmation by remember { mutableStateOf<DeleteConfirmationType?>(null) }
+
+    Box(modifier = modifier) {
+        DownloadsContentBody(
+            state = state,
+            onPause = onPause,
+            onResume = onResume,
+            onCancel = onCancel,
+            onRetry = onRetry,
+            onRemove = onRemove,
+            onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
+            onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
+        )
+    }
+
+    showDeleteConfirmation?.let { type ->
+        DeleteConfirmationDialog(
+            type = type,
+            onConfirm = {
+                when (type) {
+                    DeleteConfirmationType.ALL -> onDeleteAllCompleted()
+                    DeleteConfirmationType.WATCHED -> onDeleteWatchedCompleted()
+                }
+                showDeleteConfirmation = null
+            },
+            onDismiss = { showDeleteConfirmation = null },
+        )
+    }
+}
+
+private enum class DeleteConfirmationType { ALL, WATCHED }
+
+@Composable
+private fun DeleteConfirmationDialog(type: DeleteConfirmationType, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val title = when (type) {
+        DeleteConfirmationType.ALL -> "Delete All Downloads"
+        DeleteConfirmationType.WATCHED -> "Delete Watched Downloads"
+    }
+    val message = when (type) {
+        DeleteConfirmationType.ALL ->
+            "This will delete all downloaded videos and subtitles. " +
+                "Shared offline progress for these media items will also be removed."
+
+        DeleteConfirmationType.WATCHED ->
+            "This will delete watched completed downloads. " +
+                "Shared offline progress for these media items will also be removed."
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun DownloadsContentBody(
     state: DownloadsUiState.Content,
     modifier: Modifier = Modifier,
     onPause: (String) -> Unit = {},
