@@ -75,7 +75,7 @@ fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modi
 }
 
 @Composable
-internal fun ShowDetailContent(
+fun ShowDetailContent(
     state: ShowDetailUiState.Content,
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},

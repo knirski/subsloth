@@ -1,0 +1,54 @@
+@file:Suppress("ktlint:standard:max-line-length")
+
+package net.subsloth.screenshot
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import com.android.tools.screenshot.PreviewTest
+import kotlinx.collections.immutable.persistentListOf
+import net.subsloth.core.model.Availability
+import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MovieDetails
+import net.subsloth.details.MovieDetailContent
+import net.subsloth.details.MovieDetailUiState
+
+@PreviewTest
+@Preview(name = "Phone", device = "spec:width=411dp,height=731dp,dpi=420", showBackground = true)
+@Preview(name = "Tablet", device = "spec:width=800dp,height=1280dp,dpi=320", showBackground = true)
+@Preview(name = "TV", device = "spec:width=960dp,height=540dp,dpi=320", showBackground = true)
+@Composable
+fun MovieDetailScreenshot() {
+    MaterialTheme {
+        MovieDetailContent(state = movieDetailContentState())
+    }
+}
+
+private fun movieDetailContentState(): MovieDetailUiState.Content =
+    MovieDetailUiState.Content(
+        details =
+            MovieDetails(
+                id = Media.MediaId.Movie(MovieId(1)),
+                title = "Sample Movie Title",
+                plot = "A brave explorer discovers an ancient civilization hidden beneath the ocean, facing challenges that test both courage and wit.",
+                description = "An epic adventure spanning three continents, this critically acclaimed film follows the journey of discovery, loss, and redemption.",
+                availability = Availability.Available,
+                rating = 8.5,
+                year = 2024,
+                genres = persistentListOf("Adventure", "Drama", "Sci-Fi"),
+                durationMinutes = 148,
+                qualities = persistentListOf(),
+                subtitles = persistentListOf(),
+                slug = null,
+                imdbId = null,
+                tmdbId = null,
+                countries = persistentListOf("US", "UK"),
+                posterUrl = null,
+                backdropUrl = null,
+            ),
+        isFavorite = true,
+        isWatchLater = false,
+        isDownloaded = false,
+        progressFraction = 0.0,
+    )
