@@ -1,5 +1,7 @@
 package net.subsloth.preferences
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.security.KeyStore
@@ -48,16 +50,18 @@ actual class CredentialStore {
     }
 
     actual suspend fun save(login: String, password: String) {
-        val key = getOrCreateKey()
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, key)
-        val ct = cipher.doFinal("$login\u0000$password".toByteArray(Charsets.UTF_8))
-        dataFile.writeBytes(cipher.iv + ct)
+        withContext(Dispatchers.IO) {
+            val key = getOrCreateKey()
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+            val ct = cipher.doFinal("$login\u0000$password".toByteArray(Charsets.UTF_8))
+            dataFile.writeBytes(cipher.iv + ct)
+        }
     }
 
-    actual suspend fun read(): Pair<String, String>? {
-        if (!dataFile.exists()) return null
-        return try {
+    actual suspend fun read(): Pair<String, String>? = withContext(Dispatchers.IO) {
+        if (!dataFile.exists()) return@withContext null
+        try {
             val data = dataFile.readBytes()
             val iv = data.copyOfRange(0, 12)
             val ct = data.copyOfRange(12, data.size)
@@ -73,11 +77,15 @@ actual class CredentialStore {
     }
 
     actual suspend fun clear() {
-        dataFile.delete()
-        keystoreFile.delete()
+        withContext(Dispatchers.IO) {
+            dataFile.delete()
+            keystoreFile.delete()
+        }
     }
 
-    actual suspend fun exists(): Boolean = dataFile.exists()
+    actual suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
+        dataFile.exists()
+    }
 
     private val storePassword: CharArray by lazy { resolveMachineId().toCharArray() }
 
