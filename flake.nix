@@ -438,7 +438,7 @@
 
         shellHook = ''
           # Desktop GL runtime (Skiko/Compose)
-          export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib:$LD_LIBRARY_PATH"
 
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
           CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
