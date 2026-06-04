@@ -29,6 +29,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.settings.generated.resources.Res
+import subsloth.feature.settings.generated.resources.settings_diagnostics
+import subsloth.feature.settings.generated.resources.settings_downloads_section
+import subsloth.feature.settings.generated.resources.settings_downloads_wifi_only
+import subsloth.feature.settings.generated.resources.settings_logout
+import subsloth.feature.settings.generated.resources.settings_logout_cancel
+import subsloth.feature.settings.generated.resources.settings_logout_cleanup_clear_library
+import subsloth.feature.settings.generated.resources.settings_logout_cleanup_delete_downloads
+import subsloth.feature.settings.generated.resources.settings_logout_cleanup_message
+import subsloth.feature.settings.generated.resources.settings_logout_cleanup_reset_preferences
+import subsloth.feature.settings.generated.resources.settings_logout_cleanup_title
+import subsloth.feature.settings.generated.resources.settings_logout_confirm
+import subsloth.feature.settings.generated.resources.settings_playback_speed
+import subsloth.feature.settings.generated.resources.settings_preferred_quality
+import subsloth.feature.settings.generated.resources.settings_quality_playback_section
+import subsloth.feature.settings.generated.resources.settings_subtitle_language
+import subsloth.feature.settings.generated.resources.settings_subtitle_section
+import subsloth.feature.settings.generated.resources.settings_subtitles_enabled
+import subsloth.feature.settings.generated.resources.settings_title
 
 @Composable
 fun SettingsScreen(
@@ -102,7 +122,7 @@ internal fun SettingsContent(
         ) {
             item {
                 Text(
-                    text = "Settings",
+                    text = stringResource(Res.string.settings_title),
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
@@ -110,7 +130,7 @@ internal fun SettingsContent(
 
             item {
                 Text(
-                    text = "Subtitle",
+                    text = stringResource(Res.string.settings_subtitle_section),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
@@ -122,7 +142,10 @@ internal fun SettingsContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Subtitles enabled", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_subtitles_enabled),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Checkbox(
                         checked = state.subtitleEnabled,
                         onCheckedChange = onSubtitleEnabledChanged,
@@ -136,7 +159,10 @@ internal fun SettingsContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Subtitle language", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_subtitle_language),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Text(
                         text = state.subtitleLanguage ?: "Default",
                         style = MaterialTheme.typography.bodyMedium,
@@ -147,7 +173,7 @@ internal fun SettingsContent(
 
             item {
                 Text(
-                    text = "Quality & Playback",
+                    text = stringResource(Res.string.settings_quality_playback_section),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
@@ -159,7 +185,10 @@ internal fun SettingsContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Preferred quality", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_preferred_quality),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Text(
                         text = state.quality ?: "Auto",
                         style = MaterialTheme.typography.bodyMedium,
@@ -171,7 +200,10 @@ internal fun SettingsContent(
             item {
                 Column {
                     var sliderValue by remember(state.playbackSpeed) { mutableStateOf(state.playbackSpeed) }
-                    Text("Playback speed: ${sliderValue}x", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_playback_speed, sliderValue),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Slider(
                         value = sliderValue,
                         onValueChange = { sliderValue = it },
@@ -185,7 +217,7 @@ internal fun SettingsContent(
 
             item {
                 Text(
-                    text = "Downloads",
+                    text = stringResource(Res.string.settings_downloads_section),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
@@ -197,7 +229,10 @@ internal fun SettingsContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Downloads on Wi-Fi only", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_downloads_wifi_only),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Checkbox(
                         checked = state.downloadsWifiOnly,
                         onCheckedChange = onDownloadsWifiOnlyChanged,
@@ -214,7 +249,7 @@ internal fun SettingsContent(
                     onClick = onNavigateToDiagnostics,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Diagnostics")
+                    Text(stringResource(Res.string.settings_diagnostics))
                 }
             }
 
@@ -230,7 +265,7 @@ internal fun SettingsContent(
                         containerColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Logout")
+                    Text(stringResource(Res.string.settings_logout))
                 }
             }
         }
@@ -255,38 +290,47 @@ private fun LogoutCleanupDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Logout Cleanup") },
+        title = { Text(stringResource(Res.string.settings_logout_cleanup_title)) },
         text = {
             Column {
                 Text(
-                    text = "Choose what to clear for this profile:",
+                    text = stringResource(Res.string.settings_logout_cleanup_message),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = deleteDownloads, onCheckedChange = { deleteDownloads = it })
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Delete downloaded videos & subtitles", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_logout_cleanup_delete_downloads),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = resetPreferences, onCheckedChange = { resetPreferences = it })
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Reset active-profile preferences", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_logout_cleanup_reset_preferences),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = clearLibraryData, onCheckedChange = { clearLibraryData = it })
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Clear active-profile watch & library data", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(Res.string.settings_logout_cleanup_clear_library),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         },
         confirmButton = {
             Button(onClick = { onConfirm(deleteDownloads, resetPreferences, clearLibraryData) }) {
-                Text("Logout")
+                Text(stringResource(Res.string.settings_logout_confirm))
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(Res.string.settings_logout_cancel)) }
         },
     )
 }

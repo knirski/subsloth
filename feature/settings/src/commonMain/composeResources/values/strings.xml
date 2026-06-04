@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle_section">Subtitle</string>
+    <string name="settings_subtitles_enabled">Subtitles enabled</string>
+    <string name="settings_subtitle_language">Subtitle language</string>
+    <string name="settings_quality_playback_section">Quality &amp; Playback</string>
+    <string name="settings_preferred_quality">Preferred quality</string>
+    <string name="settings_playback_speed">Playback speed: %sx</string>
+    <string name="settings_downloads_section">Downloads</string>
+    <string name="settings_downloads_wifi_only">Downloads on Wi-Fi only</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_logout">Logout</string>
+
+    <!-- Logout cleanup dialog -->
+    <string name="settings_logout_cleanup_title">Logout Cleanup</string>
+    <string name="settings_logout_cleanup_message">Choose what to clear for this profile:</string>
+    <string name="settings_logout_cleanup_delete_downloads">Delete downloaded videos &amp; subtitles</string>
+    <string name="settings_logout_cleanup_reset_preferences">Reset active-profile preferences</string>
+    <string name="settings_logout_cleanup_clear_library">Clear active-profile watch &amp; library data</string>
+    <string name="settings_logout_confirm">Logout</string>
+    <string name="settings_logout_cancel">Cancel</string>
+
+    <!-- Diagnostics screen -->
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_version_section">Version information</string>
+    <string name="diagnostics_installed_version">Installed app version</string>
+    <string name="diagnostics_build_type">Build type</string>
+    <string name="diagnostics_version_code">Version code</string>
+    <string name="diagnostics_git_sha">Git SHA</string>
+    <string name="diagnostics_release_channel">Release channel</string>
+    <string name="diagnostics_device_section">Device</string>
+    <string name="diagnostics_api_level">Device / API level</string>
+    <string name="diagnostics_network_section">Network</string>
+    <string name="diagnostics_api_base_url">API base URL</string>
+    <string name="diagnostics_auth_state">Auth state</string>
+    <string name="diagnostics_kodi_mode">Kodi mode</string>
+    <string name="diagnostics_cache_section">Cache &amp; Storage</string>
+    <string name="diagnostics_cache_age">Cache age</string>
+    <string name="diagnostics_last_refresh">Last refresh</string>
+    <string name="diagnostics_download_queue">Download queue</string>
+    <string name="diagnostics_storage_usage">Storage usage</string>
+    <string name="diagnostics_last_status">Last status</string>
+    <string name="diagnostics_last_successful_refresh">Last successful refresh</string>
+    <string name="diagnostics_no_export">No export, share, or copy actions are available in v1.</string>
+</resources>

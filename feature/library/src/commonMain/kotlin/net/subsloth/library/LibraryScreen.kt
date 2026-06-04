@@ -24,6 +24,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.media.Media
+import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.library.generated.resources.Res
+import subsloth.feature.library.generated.resources.library_available_offline
+import subsloth.feature.library.generated.resources.library_collections
+import subsloth.feature.library.generated.resources.library_continue_watching
+import subsloth.feature.library.generated.resources.library_empty_logged_in
+import subsloth.feature.library.generated.resources.library_empty_logged_out
+import subsloth.feature.library.generated.resources.library_favorites
+import subsloth.feature.library.generated.resources.library_offline_title
+import subsloth.feature.library.generated.resources.library_title
+import subsloth.feature.library.generated.resources.library_watch_later
 
 @Composable
 fun LibraryScreen(
@@ -70,7 +81,11 @@ internal fun LibraryContent(
     ) {
         item {
             Text(
-                text = if (state.isLoggedIn) "My Library" else "Offline Library",
+                text = if (state.isLoggedIn) {
+                    stringResource(Res.string.library_title)
+                } else {
+                    stringResource(Res.string.library_offline_title)
+                },
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp),
             )
@@ -79,7 +94,7 @@ internal fun LibraryContent(
         if (state.continueWatching.isNotEmpty()) {
             item(key = "continue_watching") {
                 LibraryRowSection(
-                    label = "Continue Watching",
+                    label = stringResource(Res.string.library_continue_watching),
                     items = state.continueWatching,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
@@ -90,7 +105,7 @@ internal fun LibraryContent(
         if (state.favorites.isNotEmpty()) {
             item(key = "favorites") {
                 LibraryRowSection(
-                    label = "Favorites",
+                    label = stringResource(Res.string.library_favorites),
                     items = state.favorites,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
@@ -101,7 +116,7 @@ internal fun LibraryContent(
         if (state.watchLater.isNotEmpty()) {
             item(key = "watch_later") {
                 LibraryRowSection(
-                    label = "Watch Later",
+                    label = stringResource(Res.string.library_watch_later),
                     items = state.watchLater,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
@@ -112,7 +127,7 @@ internal fun LibraryContent(
         if (state.custom.isNotEmpty()) {
             item(key = "custom") {
                 LibraryRowSection(
-                    label = "Collections",
+                    label = stringResource(Res.string.library_collections),
                     items = state.custom,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
@@ -123,7 +138,7 @@ internal fun LibraryContent(
         if (state.availableOffline.isNotEmpty()) {
             item(key = "available_offline") {
                 LibraryRowSection(
-                    label = "Available Offline",
+                    label = stringResource(Res.string.library_available_offline),
                     items = state.availableOffline,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
@@ -141,9 +156,9 @@ internal fun LibraryContent(
                 ) {
                     Text(
                         text = if (state.isLoggedIn) {
-                            "Your library is empty. Browse the catalog to add items."
+                            stringResource(Res.string.library_empty_logged_in)
                         } else {
-                            "No offline content available. Go online to browse and download."
+                            stringResource(Res.string.library_empty_logged_out)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
