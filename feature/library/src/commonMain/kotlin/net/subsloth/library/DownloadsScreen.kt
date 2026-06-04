@@ -161,6 +161,7 @@ private fun DeleteConfirmationDialog(type: DeleteConfirmationType, onConfirm: ()
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
                 ),
             ) {
                 Text(stringResource(Res.string.downloads_delete_confirm))
