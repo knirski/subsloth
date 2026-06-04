@@ -3,6 +3,7 @@ package net.subsloth.preferences
 import java.io.File
 import java.io.IOException
 import java.security.KeyStore
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -12,22 +13,19 @@ actual class CredentialStore {
     private val dir = File(System.getProperty("user.home"), ".subsloth")
     private val keystoreFile = File(dir, "credentials.ks")
     private val dataFile = File(dir, "credentials.dat")
+    private val machineIdFile = File(dir, ".mid")
     private val keyAlias = "credentials_key"
 
     init {
         dir.mkdirs()
     }
 
-    private fun getStorePassword(): CharArray = resolveMachineId().getOrThrow().toCharArray()
-
     private fun getOrCreateKey(): SecretKey {
         val ks = KeyStore.getInstance("PKCS12")
-        val password = getStorePassword()
+        val password = storePassword
         try {
             if (keystoreFile.exists()) {
-                keystoreFile.inputStream().use { stream ->
-                    ks.load(stream, password)
-                }
+                keystoreFile.inputStream().use { stream -> ks.load(stream, password) }
             } else {
                 ks.load(null, password)
             }
@@ -45,9 +43,7 @@ actual class CredentialStore {
         keyGen.init(256)
         val key = keyGen.generateKey()
         ks.setEntry(keyAlias, KeyStore.SecretKeyEntry(key), KeyStore.PasswordProtection(password))
-        keystoreFile.outputStream().use { stream ->
-            ks.store(stream, password)
-        }
+        keystoreFile.outputStream().use { stream -> ks.store(stream, password) }
         return key
     }
 
@@ -70,7 +66,8 @@ actual class CredentialStore {
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
             val parts = String(cipher.doFinal(ct), Charsets.UTF_8).split("\u0000", limit = 2)
             if (parts.size != 2) null else Pair(parts[0], parts[1])
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             null
         }
     }
@@ -82,38 +79,58 @@ actual class CredentialStore {
 
     actual suspend fun exists(): Boolean = dataFile.exists()
 
-    private fun resolveMachineId(): Result<String> = runCatching {
-        when {
-            System.getProperty("os.name")?.lowercase()?.contains("linux") == true ->
-                File("/etc/machine-id").readText().trim().ifEmpty {
-                    File("/var/lib/dbus/machine-id").readText().trim()
-                }
+    private val storePassword: CharArray by lazy { resolveMachineId().toCharArray() }
 
-            System.getProperty("os.name")?.lowercase()?.contains("mac") == true ->
-                ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
-                    .redirectErrorStream(true)
-                    .start()
-                    .inputStream.bufferedReader().readText()
-                    .lines()
-                    .first { it.contains("IOPlatformUUID") }
-                    .substringAfter("= \"")
-                    .substringBeforeLast("\"")
-
-            else ->
-                ProcessBuilder(
-                    "reg",
-                    "query",
-                    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
-                    "/v",
-                    "MachineGuid",
-                )
-                    .redirectErrorStream(true)
-                    .start()
-                    .inputStream.bufferedReader().readText()
-                    .lines()
-                    .first { it.contains("MachineGuid") }
-                    .substringAfter("REG_SZ")
-                    .trim()
+    private fun resolveMachineId(): String {
+        val osName = System.getProperty("os.name")?.lowercase() ?: ""
+        return when {
+            osName.contains("mac") -> readMacosUUID() ?: fallbackId()
+            osName.contains("win") -> readWindowsGuid() ?: fallbackId()
+            osName.contains("linux") -> readEtcMachineId() ?: fallbackId()
+            else -> fallbackId()
         }
+    }
+
+    private fun readEtcMachineId(): String? = runCatching {
+        File("/etc/machine-id").readText().trim().ifEmpty {
+            File("/var/lib/dbus/machine-id").readText().trim()
+        }
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+
+    private fun readMacosUUID(): String? = runCatching {
+        ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+            .redirectErrorStream(true)
+            .start()
+            .inputStream.bufferedReader().readText()
+            .lines()
+            .firstOrNull { it.contains("IOPlatformUUID") }
+            ?.substringAfter("= \"")
+            ?.substringBeforeLast("\"")
+    }.getOrNull()?.takeIf { !it.isNullOrEmpty() }
+
+    private fun readWindowsGuid(): String? = runCatching {
+        ProcessBuilder(
+            "reg",
+            "query",
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
+            "/v",
+            "MachineGuid",
+        )
+            .redirectErrorStream(true)
+            .start()
+            .inputStream.bufferedReader().readText()
+            .lines()
+            .firstOrNull { it.contains("MachineGuid") }
+            ?.substringAfter("REG_SZ")
+            ?.trim()
+    }.getOrNull()?.takeIf { !it.isNullOrEmpty() }
+
+    private fun fallbackId(): String {
+        if (machineIdFile.exists()) {
+            return machineIdFile.readText().trim()
+        }
+        val id = UUID.randomUUID().toString()
+        machineIdFile.writeText(id)
+        return id
     }
 }

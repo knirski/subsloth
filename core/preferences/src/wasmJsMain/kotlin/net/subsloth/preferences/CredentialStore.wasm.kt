@@ -18,9 +18,14 @@ actual class CredentialStore {
 
     actual suspend fun read(): Pair<String, String>? {
         val encrypted = localStorage.getItem(dataKey) ?: return null
-        val decrypted = webCryptoDecrypt(encrypted).await().toString()
-        val parts = decrypted.split("\u0000", limit = 2)
-        return if (parts.size == 2) Pair(parts[0], parts[1]) else null
+        return try {
+            val decrypted = webCryptoDecrypt(encrypted).await().toString()
+            if (decrypted.isEmpty()) return null
+            val parts = decrypted.split("\u0000", limit = 2)
+            if (parts.size == 2) Pair(parts[0], parts[1]) else null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     actual suspend fun clear() {
@@ -67,7 +72,8 @@ private external fun webCryptoEncrypt(plaintext: String): Promise<JsString>
     if (!stored) return Promise.resolve('');
     return crypto.subtle.importKey('jwk', JSON.parse(stored), {name:'AES-GCM'}, false, ['decrypt'])
         .then(key => crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ct))
-        .then(decrypted => new TextDecoder().decode(decrypted));
+        .then(decrypted => new TextDecoder().decode(decrypted))
+        .catch(() => '');
 }""",
 )
 private external fun webCryptoDecrypt(base64Data: String): Promise<JsString>
