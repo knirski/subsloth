@@ -437,6 +437,9 @@
         KOTLIN_BINARYEN_HOME = "${pkgs.binaryen}";
 
         shellHook = ''
+          # Desktop GL runtime (Skiko/Compose)
+          export LD_LIBRARY_PATH="${pkgs.libglvnd}/lib:$LD_LIBRARY_PATH"
+
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
           CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
           if [ -d "$CMDLINE_TOOLS_BIN" ]; then
