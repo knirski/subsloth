@@ -76,6 +76,13 @@ class CredentialStoreJvmTest {
     }
 
     @Test
+    fun `handles empty login`() = runTest {
+        credentialStore.save("", "password")
+        val result = credentialStore.read()
+        assertThat(result).isEqualTo("" to "password")
+    }
+
+    @Test
     fun `clear is idempotent`() = runTest {
         credentialStore.clear()
         credentialStore.clear()

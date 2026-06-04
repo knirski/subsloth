@@ -98,18 +98,19 @@ actual class CredentialStore {
     }.getOrNull()?.takeIf { it.isNotEmpty() }
 
     private fun readMacosUUID(): String? = runCatching {
-        ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+        val proc = ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
             .redirectErrorStream(true)
             .start()
-            .inputStream.bufferedReader().readText()
-            .lines()
+        val output = proc.inputStream.bufferedReader().use { it.readText() }
+        proc.waitFor()
+        output.lines()
             .firstOrNull { it.contains("IOPlatformUUID") }
             ?.substringAfter("= \"")
             ?.substringBeforeLast("\"")
     }.getOrNull()?.takeIf { !it.isNullOrEmpty() }
 
     private fun readWindowsGuid(): String? = runCatching {
-        ProcessBuilder(
+        val proc = ProcessBuilder(
             "reg",
             "query",
             "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
@@ -118,8 +119,9 @@ actual class CredentialStore {
         )
             .redirectErrorStream(true)
             .start()
-            .inputStream.bufferedReader().readText()
-            .lines()
+        val output = proc.inputStream.bufferedReader().use { it.readText() }
+        proc.waitFor()
+        output.lines()
             .firstOrNull { it.contains("MachineGuid") }
             ?.substringAfter("REG_SZ")
             ?.trim()
