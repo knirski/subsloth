@@ -40,6 +40,13 @@ dependencies {
     implementation(libs.savedstate)
 }
 
+// Forward LD_LIBRARY_PATH from the shell to the forked desktop app JVM.
+// The Nix shell sets ORG_GRADLE_PROJECT_desktopLibPath in the environment;
+// gradlew forwards ORG_GRADLE_PROJECT_* vars to the daemon as project
+// properties regardless of when the daemon was started.  Without this,
+// the daemon would need a restart after entering the nix-shell.
+val desktopLibPath = providers.gradleProperty("desktopLibPath").orNull
+
 compose.desktop {
     application {
         mainClass = "net.subsloth.desktop.MainKt"
@@ -59,6 +66,12 @@ compose.desktop {
                 iconFile.set(project.file("src/main/resources/icon.png"))
             }
         }
+    }
+}
+
+tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
+    if (desktopLibPath != null) {
+        environment("LD_LIBRARY_PATH", desktopLibPath)
     }
 }
 
