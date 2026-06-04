@@ -8,14 +8,14 @@ interface CredentialBackend {
 }
 
 internal fun ProcessBuilder.execute(): String {
+    redirectErrorStream(true)
     val process = start()
-    val stdout = process.inputStream.bufferedReader().readText()
-    val stderr = process.errorStream.bufferedReader().readText()
+    val output = process.inputStream.bufferedReader().readText()
     val exitCode = process.waitFor()
     if (exitCode != 0) {
-        throw java.io.IOException("Command failed with exit code $exitCode: $stderr")
+        throw java.io.IOException("Command failed with exit code $exitCode: $output")
     }
-    return stdout.trim()
+    return output.trim()
 }
 
 internal fun ProcessBuilder.executeOrNull(): String? = try {

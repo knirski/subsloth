@@ -9,10 +9,13 @@ internal class WindowsKeychainBackend : CredentialBackend {
     override fun save(key: String, data: ByteArray) {
         val encoded = Base64.getEncoder().encodeToString(data)
         ProcessBuilder(
-            "cmdkey",
-            "/add:net.subsloth.credentials",
-            "/user:$key",
-            "/pass:$encoded",
+            "powershell",
+            "-Command",
+            "\$vault = New-Object Windows.Security.Credentials.PasswordVault; " +
+                "\$cred = New-Object " +
+                "Windows.Security.Credentials.PasswordCredential(" +
+                "'net.subsloth.credentials', '$key', '$encoded'); " +
+                "\$vault.Add(\$cred)",
         )
             .execute()
     }
@@ -21,15 +24,26 @@ internal class WindowsKeychainBackend : CredentialBackend {
         val stdout = ProcessBuilder(
             "powershell",
             "-Command",
-            "\$cred = Get-StoredCredential -Target 'net.subsloth.credentials' -Type Generic; " +
-                "if (\$cred) { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String(\$cred.Password)) }",
+            "try { " +
+                "\$vault = New-Object Windows.Security.Credentials.PasswordVault; " +
+                "\$cred = \$vault.Retrieve('net.subsloth.credentials', '$key'); " +
+                "\$cred.Password " +
+                "} catch {}",
         )
             .executeOrNull() ?: return null
         return if (stdout.isEmpty()) null else Base64.getDecoder().decode(stdout)
     }
 
     override fun delete(key: String) {
-        ProcessBuilder("cmdkey", "/delete:net.subsloth.credentials")
+        ProcessBuilder(
+            "powershell",
+            "-Command",
+            "try { " +
+                "\$vault = New-Object Windows.Security.Credentials.PasswordVault; " +
+                "\$cred = \$vault.Retrieve('net.subsloth.credentials', '$key'); " +
+                "\$vault.Remove(\$cred) " +
+                "} catch {}",
+        )
             .executeOrNull()
     }
 }

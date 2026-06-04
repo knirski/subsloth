@@ -72,16 +72,25 @@ internal class FileBasedBackend(private val dataDir: File) : CredentialBackend {
                 ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
                     .execute()
                     .lines()
-                    .first { it.contains("IOPlatformUUID") }
-                    .substringAfter("= \"")
-                    .substringBeforeLast("\"")
+                    .firstOrNull { it.contains("IOPlatformUUID") }
+                    ?.substringAfter("= \"")
+                    ?.substringBeforeLast("\"")
+                    ?: throw IOException("Could not find IOPlatformUUID")
 
             else -> // Windows
-                ProcessBuilder("wmic", "csproduct", "get", "UUID")
+                ProcessBuilder(
+                    "reg",
+                    "query",
+                    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
+                    "/v",
+                    "MachineGuid",
+                )
                     .execute()
                     .lines()
-                    .first { it.isNotBlank() && !it.startsWith("UUID") }
-                    .trim()
+                    .firstOrNull { it.contains("MachineGuid") }
+                    ?.substringAfter("REG_SZ")
+                    ?.trim()
+                    ?: throw IOException("Could not find MachineGuid")
         }
     } catch (e: Exception) {
         throw IOException("Cannot determine machine ID for credential encryption", e)

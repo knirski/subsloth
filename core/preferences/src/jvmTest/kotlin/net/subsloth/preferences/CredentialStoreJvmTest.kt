@@ -4,14 +4,19 @@ import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
 
 class CredentialStoreJvmTest {
+
+    @TempDir
+    lateinit var tempDir: File
 
     private lateinit var credentialStore: CredentialStore
 
     @BeforeEach
     fun setUp() {
-        credentialStore = CredentialStore()
+        credentialStore = CredentialStore.createForTesting(tempDir)
     }
 
     @AfterEach

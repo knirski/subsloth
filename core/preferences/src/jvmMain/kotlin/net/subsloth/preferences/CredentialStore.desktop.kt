@@ -3,8 +3,8 @@ package net.subsloth.preferences
 import java.io.File
 
 actual class CredentialStore {
-    private val dataDir = File(System.getProperty("user.home"), ".subsloth")
-    private val backend = detectBackend()
+    private var dataDir = File(System.getProperty("user.home"), ".subsloth")
+    private var backend = detectBackend(dataDir)
 
     init {
         dataDir.mkdirs()
@@ -34,15 +34,27 @@ actual class CredentialStore {
         File(dataDir, "credentials.dat").delete()
     }
 
-    private companion object {
-        fun detectBackend(): CredentialBackend {
+    internal fun reconfigure(baseDir: File) {
+        dataDir = baseDir
+        backend = FileBasedBackend(baseDir)
+        dataDir.mkdirs()
+    }
+
+    companion object {
+        fun createForTesting(baseDir: File): CredentialStore {
+            val store = CredentialStore()
+            store.reconfigure(baseDir)
+            return store
+        }
+
+        private fun detectBackend(dataDir: File): CredentialBackend {
             val candidates = listOf(
                 LinuxKeychainBackend(),
                 MacosKeychainBackend(),
                 WindowsKeychainBackend(),
             )
             return candidates.firstOrNull { it.isAvailable() }
-                ?: FileBasedBackend(File(System.getProperty("user.home"), ".subsloth"))
+                ?: FileBasedBackend(dataDir)
         }
     }
 }
