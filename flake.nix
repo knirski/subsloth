@@ -315,6 +315,27 @@
         echo "EMULATOR_STOPPED"
       '';
 
+      # ── Desktop app runtime libraries (Skiko/Compose) ──────────────────────
+      # These Nix packages provide the native libraries that Skiko (Compose
+      # Desktop's rendering engine) dlopen's at runtime: libGL, libX11,
+      # libfontconfig, libstdc++, etc.  Each package's lib/ directory is added
+      # to LD_LIBRARY_PATH so the dynamic linker resolves them without relying
+      # on the system path (which can cause glibc version mismatch with Nix).
+      desktopLibs = with pkgs; [
+        # Skiko/Compose Desktop direct dependencies (libskiko.so has no RUNPATH)
+        libglvnd     # libGL.so.1 — GL dispatch layer
+        mesa         # libGLX_mesa.so.0 / libEGL_mesa.so.0 — GL impl (dlopen'd by libglvnd)
+        libx11       # libX11.so.6 — X11 client library
+        libxext      # libXext.so.6 — X11 extensions
+        libxcb       # libxcb.so.1 — X11 protocol (needed by libGL but not in its RUNPATH)
+        fontconfig   # libfontconfig.so.1 — font configuration
+        # Wayland native rendering (optional — only loaded when $WAYLAND_DISPLAY is set)
+        wayland      # libwayland-client.so.0, libwayland-egl.so.1
+        libxkbcommon # libxkbcommon.so.0 — keyboard handling for Wayland
+        # libstdc++.so.6 — C++ stdlib (already loaded by JDK at runtime)
+      ];
+      desktopLibPath = pkgs.lib.makeLibraryPath desktopLibs;
+
       # ── run-subsloth-instrumented-tests script ──────────────────────────────
       # Full one-shot pipeline: start emulator → wait for boot → run tests →
       # stop emulator.  All-in-one convenience for AI agents and humans.
@@ -417,9 +438,8 @@
           which
           zip
 
-          # Desktop app runtime (libGL for Skiko/Compose)
-          libglvnd
-        ];
+          # Desktop app runtime (Skiko/Compose native libraries)
+        ] ++ desktopLibs;
 
         # JDK 25 runs the Gradle daemon because Metro requires at least 21.
         # JDK 17 powers the Kotlin/Java compile toolchain via JAVA17_HOME +
@@ -438,7 +458,15 @@
 
         shellHook = ''
           # Desktop GL runtime (Skiko/Compose)
-          LD_LIBRARY_PATH="${pkgs.libglvnd}/lib"
+          # Nix packages provide all native deps: libglvnd+mesa (GL dispatch +
+          # vendor implementation), X11, fontconfig, etc.
+          old_path="''${LD_LIBRARY_PATH:-}"
+          export LD_LIBRARY_PATH="${desktopLibPath}''${old_path:+:}''${old_path}"
+
+          # Gradle daemon project property forwarding: ORG_GRADLE_PROJECT_*
+          # env vars are passed from the client shell to the daemon by gradlew.
+          # The desktopApp build reads this and forwards it to the forked JVM.
+          export ORG_GRADLE_PROJECT_desktopLibPath="$LD_LIBRARY_PATH"
 
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
           CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
