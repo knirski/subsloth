@@ -1,12 +1,12 @@
 package net.subsloth.preferences
 
 import net.subsloth.testing.assertions.assertThat
-import org.junit.jupiter.api.io.TempDir
-import java.io.File
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 abstract class CredentialBackendContractTest {
 

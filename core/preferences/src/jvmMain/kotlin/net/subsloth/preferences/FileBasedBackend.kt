@@ -61,29 +61,29 @@ internal class FileBasedBackend(private val dataDir: File) : CredentialBackend {
         return SecretKeySpec(tmp.encoded, "AES")
     }
 
-    private fun getMachineId(): String {
-        return try {
-            when {
-                System.getProperty("os.name")?.lowercase()?.contains("linux") == true ->
-                    File("/etc/machine-id").readText().trim().ifEmpty {
-                        File("/var/lib/dbus/machine-id").readText().trim()
-                    }
-                System.getProperty("os.name")?.lowercase()?.contains("mac") == true ->
-                    ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
-                        .execute()
-                        .lines()
-                        .first { it.contains("IOPlatformUUID") }
-                        .substringAfter("= \"")
-                        .substringBeforeLast("\"")
-                else -> // Windows
-                    ProcessBuilder("wmic", "csproduct", "get", "UUID")
-                        .execute()
-                        .lines()
-                        .first { it.isNotBlank() && !it.startsWith("UUID") }
-                        .trim()
-            }
-        } catch (e: Exception) {
-            throw IOException("Cannot determine machine ID for credential encryption", e)
+    private fun getMachineId(): String = try {
+        when {
+            System.getProperty("os.name")?.lowercase()?.contains("linux") == true ->
+                File("/etc/machine-id").readText().trim().ifEmpty {
+                    File("/var/lib/dbus/machine-id").readText().trim()
+                }
+
+            System.getProperty("os.name")?.lowercase()?.contains("mac") == true ->
+                ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                    .execute()
+                    .lines()
+                    .first { it.contains("IOPlatformUUID") }
+                    .substringAfter("= \"")
+                    .substringBeforeLast("\"")
+
+            else -> // Windows
+                ProcessBuilder("wmic", "csproduct", "get", "UUID")
+                    .execute()
+                    .lines()
+                    .first { it.isNotBlank() && !it.startsWith("UUID") }
+                    .trim()
         }
+    } catch (e: Exception) {
+        throw IOException("Cannot determine machine ID for credential encryption", e)
     }
 }

@@ -18,10 +18,8 @@ internal fun ProcessBuilder.execute(): String {
     return stdout.trim()
 }
 
-internal fun ProcessBuilder.executeOrNull(): String? {
-    return try {
-        execute()
-    } catch (_: java.io.IOException) {
-        null
-    }
+internal fun ProcessBuilder.executeOrNull(): String? = try {
+    execute()
+} catch (_: java.io.IOException) {
+    null
 }
