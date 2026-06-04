@@ -96,6 +96,11 @@
       const BASE_URL_KEY = 'subsloth-dev-base-url';
       const AUTH_TOKEN_KEY = 'subsloth-dev-auth-token';
       const SOURCE_KEY = 'subsloth-dev-source';
+      const MOCK_PORT = 8124;
+
+      let savedBaseUrl = localStorage.getItem(BASE_URL_KEY) || '';
+      let savedAuthToken = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+      let savedSource = localStorage.getItem(SOURCE_KEY) || 'live';
 
       const baseUrlInput = document.getElementById('baseUrl');
       const authTokenInput = document.getElementById('authToken');
@@ -111,34 +116,74 @@
           (source === 'live' ? 'source-live' : 'source-mock');
       }
 
-      // Restore saved values
-      baseUrlInput.value = localStorage.getItem(BASE_URL_KEY) || '';
-      authTokenInput.value = localStorage.getItem(AUTH_TOKEN_KEY) || '';
-      sourceSelect.value = localStorage.getItem(SOURCE_KEY) || 'live';
+      // Restore saved values to inputs
+      baseUrlInput.value = savedBaseUrl;
+      authTokenInput.value = savedAuthToken;
+      sourceSelect.value = savedSource;
       updateSourceIndicator();
 
       sourceSelect.addEventListener('change', updateSourceIndicator);
 
-      applyBtn.addEventListener('click', () => {
-        const baseUrl = baseUrlInput.value.trim();
-        const authToken = authTokenInput.value.trim();
-        const source = sourceSelect.value;
+      // Intercept fetch to inject base URL rewrite and auth headers
+      const originalFetch = window.fetch;
+      window.fetch = async function (input, init) {
+        let url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
 
-        if (baseUrl) localStorage.setItem(BASE_URL_KEY, baseUrl);
+        // Skip interception for the OpenAPI spec itself
+        if (url.endsWith('.openapi.yaml') || url.endsWith('.openapi.json')) {
+          return originalFetch(input, init);
+        }
+
+        // Determine effective target URL
+        const effectiveBaseUrl = savedSource === 'mock'
+          ? `http://127.0.0.1:${MOCK_PORT}`
+          : savedBaseUrl;
+
+        // Rewrite URL if a base URL is configured
+        if (effectiveBaseUrl) {
+          try {
+            const targetUrl = new URL(effectiveBaseUrl);
+            const originalUrl = new URL(url, window.location.href);
+            url = new URL(originalUrl.pathname + originalUrl.search, targetUrl).toString();
+          } catch {
+            // If effectiveBaseUrl is not a valid URL, try prefix matching
+            if (url.startsWith('/')) {
+              url = effectiveBaseUrl.replace(/\/$/, '') + url;
+            }
+          }
+        }
+
+        // Inject auth header if configured
+        if (savedAuthToken) {
+          init = init || {};
+          const headers = new Headers(init.headers || {});
+          if (!headers.has('Authorization')) {
+            const authHeader = savedAuthToken.startsWith('Bearer ') || savedAuthToken.startsWith('Basic ')
+              ? savedAuthToken
+              : `Bearer ${savedAuthToken}`;
+            headers.set('Authorization', authHeader);
+          }
+          init = { ...init, headers };
+        }
+
+        return originalFetch(url, init);
+      };
+
+      applyBtn.addEventListener('click', () => {
+        savedBaseUrl = baseUrlInput.value.trim();
+        savedAuthToken = authTokenInput.value.trim();
+        savedSource = sourceSelect.value;
+
+        if (savedBaseUrl) localStorage.setItem(BASE_URL_KEY, savedBaseUrl);
         else localStorage.removeItem(BASE_URL_KEY);
 
-        if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+        if (savedAuthToken) localStorage.setItem(AUTH_TOKEN_KEY, savedAuthToken);
         else localStorage.removeItem(AUTH_TOKEN_KEY);
 
-        localStorage.setItem(SOURCE_KEY, source);
+        localStorage.setItem(SOURCE_KEY, savedSource);
 
-        const effectiveUrl = source === 'mock'
-          ? (baseUrl || 'http://localhost:8124')
-          : baseUrl;
-
-        statusEl.textContent = source === 'mock'
-          ? 'Mock mode — start mock server: ./dev-explorer/mock-server.sh'
-          : 'Config saved to localStorage (dev only)';
+        const target = savedSource === 'mock' ? 'mock server' : savedBaseUrl || 'OpenAPI default servers';
+        statusEl.textContent = `Requests will target: ${target}`;
         setTimeout(() => { statusEl.textContent = ''; }, 5000);
       });
 
