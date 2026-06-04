@@ -6,6 +6,7 @@ import java.io.File
 import java.io.IOException
 import java.security.KeyStore
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -72,6 +73,10 @@ actual class CredentialStore {
             if (parts.size != 2) null else Pair(parts[0], parts[1])
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            runCatching {
+                dataFile.delete()
+                keystoreFile.delete()
+            }
             null
         }
     }
@@ -99,18 +104,22 @@ actual class CredentialStore {
         }
     }
 
-    private fun readEtcMachineId(): String? = runCatching {
-        File("/etc/machine-id").readText().trim().ifEmpty {
-            File("/var/lib/dbus/machine-id").readText().trim()
-        }
-    }.getOrNull()?.takeIf { it.isNotEmpty() }
+    private fun readEtcMachineId(): String? = listOf("/etc/machine-id", "/var/lib/dbus/machine-id")
+        .map { File(it) }
+        .firstOrNull { it.exists() }
+        ?.runCatching { readText().trim() }
+        ?.getOrNull()
+        ?.takeIf { it.isNotEmpty() }
 
     private fun readMacosUUID(): String? = runCatching {
         val proc = ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
             .redirectErrorStream(true)
             .start()
         val output = proc.inputStream.bufferedReader().use { it.readText() }
-        proc.waitFor()
+        if (!proc.waitFor(5, TimeUnit.SECONDS)) {
+            proc.destroyForcibly()
+            return@runCatching null
+        }
         output.lines()
             .firstOrNull { it.contains("IOPlatformUUID") }
             ?.substringAfter("= \"")
@@ -128,7 +137,10 @@ actual class CredentialStore {
             .redirectErrorStream(true)
             .start()
         val output = proc.inputStream.bufferedReader().use { it.readText() }
-        proc.waitFor()
+        if (!proc.waitFor(5, TimeUnit.SECONDS)) {
+            proc.destroyForcibly()
+            return@runCatching null
+        }
         output.lines()
             .firstOrNull { it.contains("MachineGuid") }
             ?.substringAfter("REG_SZ")
