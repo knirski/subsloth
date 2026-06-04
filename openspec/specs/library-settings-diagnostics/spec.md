@@ -1,7 +1,7 @@
 # library-settings-diagnostics Specification
 
 ## Purpose
-TBD - created by archiving change library-settings-diagnostics. Update Purpose after archive.
+Defines requirements for user-facing management surfaces including Library, central Downloads screen, storage management, settings controls, and view-only local diagnostics.
 ## Requirements
 ### Requirement: Library Rows
 The library SHALL expose Continue Watching, favorites, watch later, Available Offline, and relevant downloaded/offline filters while logged in.
