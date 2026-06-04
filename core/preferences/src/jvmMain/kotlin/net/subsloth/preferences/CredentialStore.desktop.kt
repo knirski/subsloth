@@ -1,119 +1,119 @@
 package net.subsloth.preferences
 
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.security.SecureRandom
-import java.util.Base64
+import java.io.IOException
+import java.security.KeyStore
 import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
 
 actual class CredentialStore {
-    actual fun save(login: String, password: String) {
-        val data = "$login\u0000$password".toByteArray(Charsets.UTF_8)
-        val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        val key = deriveKey(salt)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, key)
-        val iv = cipher.iv
-        val ct = cipher.doFinal(data)
-        val blob = Base64.getEncoder().encodeToString(salt + iv + ct)
-        runBlocking {
-            dataStore.edit { prefs ->
-                prefs[keyCredentials] = blob
-            }
-        }
+    private val dir = File(System.getProperty("user.home"), ".subsloth")
+    private val keystoreFile = File(dir, "credentials.ks")
+    private val dataFile = File(dir, "credentials.dat")
+    private val keyAlias = "credentials_key"
+
+    init {
+        dir.mkdirs()
     }
 
-    actual fun read(): Pair<String, String>? = runBlocking {
-        val prefs = dataStore.data.first()
-        val blob = prefs[keyCredentials] ?: return@runBlocking null
+    private fun getStorePassword(): CharArray = resolveMachineId().getOrThrow().toCharArray()
+
+    private fun getOrCreateKey(): SecretKey {
+        val ks = KeyStore.getInstance("PKCS12")
+        val password = getStorePassword()
         try {
-            val raw = Base64.getDecoder().decode(blob)
-            val salt = raw.copyOfRange(0, 16)
-            val iv = raw.copyOfRange(16, 28)
-            val ct = raw.copyOfRange(28, raw.size)
-            val key = deriveKey(salt)
+            if (keystoreFile.exists()) {
+                keystoreFile.inputStream().use { stream ->
+                    ks.load(stream, password)
+                }
+            } else {
+                ks.load(null, password)
+            }
+        } catch (_: IOException) {
+            keystoreFile.delete()
+            ks.load(null, password)
+        }
+        if (ks.containsAlias(keyAlias)) {
+            return (
+                ks.getEntry(keyAlias, KeyStore.PasswordProtection(password))
+                    as KeyStore.SecretKeyEntry
+                ).secretKey
+        }
+        val keyGen = KeyGenerator.getInstance("AES")
+        keyGen.init(256)
+        val key = keyGen.generateKey()
+        ks.setEntry(keyAlias, KeyStore.SecretKeyEntry(key), KeyStore.PasswordProtection(password))
+        keystoreFile.outputStream().use { stream ->
+            ks.store(stream, password)
+        }
+        return key
+    }
+
+    actual fun save(login: String, password: String) {
+        val key = getOrCreateKey()
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key)
+        val ct = cipher.doFinal("$login\u0000$password".toByteArray(Charsets.UTF_8))
+        dataFile.writeBytes(cipher.iv + ct)
+    }
+
+    actual fun read(): Pair<String, String>? {
+        if (!dataFile.exists()) return null
+        return try {
+            val data = dataFile.readBytes()
+            val iv = data.copyOfRange(0, 12)
+            val ct = data.copyOfRange(12, data.size)
+            val key = getOrCreateKey()
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
             val parts = String(cipher.doFinal(ct), Charsets.UTF_8).split("\u0000", limit = 2)
-            if (parts.size == 2) Pair(parts[0], parts[1]) else null
+            if (parts.size != 2) null else Pair(parts[0], parts[1])
         } catch (_: Exception) {
             null
         }
     }
 
     actual fun clear() {
-        runBlocking {
-            dataStore.edit { prefs ->
-                prefs.remove(keyCredentials)
-            }
-        }
+        dataFile.delete()
+        keystoreFile.delete()
     }
 
-    actual fun exists(): Boolean = runBlocking {
-        dataStore.data.first().contains(keyCredentials)
-    }
+    actual fun exists(): Boolean = dataFile.exists()
 
-    private fun deriveKey(salt: ByteArray): SecretKeySpec {
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(machineId.toCharArray(), salt, 100_000, 256)
-        val tmp = factory.generateSecret(spec)
-        return SecretKeySpec(tmp.encoded, "AES")
-    }
+    private fun resolveMachineId(): Result<String> = runCatching {
+        when {
+            System.getProperty("os.name")?.lowercase()?.contains("linux") == true ->
+                File("/etc/machine-id").readText().trim().ifEmpty {
+                    File("/var/lib/dbus/machine-id").readText().trim()
+                }
 
-    private val keyCredentials = stringPreferencesKey("encrypted_credentials")
+            System.getProperty("os.name")?.lowercase()?.contains("mac") == true ->
+                ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                    .redirectErrorStream(true)
+                    .start()
+                    .inputStream.bufferedReader().readText()
+                    .lines()
+                    .first { it.contains("IOPlatformUUID") }
+                    .substringAfter("= \"")
+                    .substringBeforeLast("\"")
 
-    private companion object {
-        val machineId by lazy { resolveMachineId().getOrThrow() }
-
-        val dataStore by lazy {
-            createDataStorePreferences(
-                name = "credential_store",
-                scope = CoroutineScope(Dispatchers.IO),
-            )
-        }
-
-        fun resolveMachineId(): Result<String> = runCatching {
-            when {
-                System.getProperty("os.name")?.lowercase()?.contains("linux") == true ->
-                    File("/etc/machine-id").readText().trim().ifEmpty {
-                        File("/var/lib/dbus/machine-id").readText().trim()
-                    }
-
-                System.getProperty("os.name")?.lowercase()?.contains("mac") == true ->
-                    ProcessBuilder("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
-                        .redirectErrorStream(true)
-                        .start()
-                        .inputStream.bufferedReader().readText()
-                        .lines()
-                        .first { it.contains("IOPlatformUUID") }
-                        .substringAfter("= \"")
-                        .substringBeforeLast("\"")
-
-                else ->
-                    ProcessBuilder(
-                        "reg",
-                        "query",
-                        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
-                        "/v",
-                        "MachineGuid",
-                    )
-                        .redirectErrorStream(true)
-                        .start()
-                        .inputStream.bufferedReader().readText()
-                        .lines()
-                        .first { it.contains("MachineGuid") }
-                        .substringAfter("REG_SZ")
-                        .trim()
-            }
+            else ->
+                ProcessBuilder(
+                    "reg",
+                    "query",
+                    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
+                    "/v",
+                    "MachineGuid",
+                )
+                    .redirectErrorStream(true)
+                    .start()
+                    .inputStream.bufferedReader().readText()
+                    .lines()
+                    .first { it.contains("MachineGuid") }
+                    .substringAfter("REG_SZ")
+                    .trim()
         }
     }
 }
