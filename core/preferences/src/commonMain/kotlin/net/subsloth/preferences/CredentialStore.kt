@@ -1,11 +1,11 @@
 package net.subsloth.preferences
 
 expect class CredentialStore {
-    fun save(login: String, password: String)
+    suspend fun save(login: String, password: String)
 
-    fun read(): Pair<String, String>?
+    suspend fun read(): Pair<String, String>?
 
-    fun clear()
+    suspend fun clear()
 
-    fun exists(): Boolean
+    suspend fun exists(): Boolean
 }

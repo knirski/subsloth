@@ -51,7 +51,7 @@ actual class CredentialStore {
         return key
     }
 
-    actual fun save(login: String, password: String) {
+    actual suspend fun save(login: String, password: String) {
         val key = getOrCreateKey()
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key)
@@ -59,7 +59,7 @@ actual class CredentialStore {
         dataFile.writeBytes(cipher.iv + ct)
     }
 
-    actual fun read(): Pair<String, String>? {
+    actual suspend fun read(): Pair<String, String>? {
         if (!dataFile.exists()) return null
         return try {
             val data = dataFile.readBytes()
@@ -75,12 +75,12 @@ actual class CredentialStore {
         }
     }
 
-    actual fun clear() {
+    actual suspend fun clear() {
         dataFile.delete()
         keystoreFile.delete()
     }
 
-    actual fun exists(): Boolean = dataFile.exists()
+    actual suspend fun exists(): Boolean = dataFile.exists()
 
     private fun resolveMachineId(): Result<String> = runCatching {
         when {
