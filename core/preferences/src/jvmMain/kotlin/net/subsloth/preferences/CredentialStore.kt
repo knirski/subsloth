@@ -3,7 +3,6 @@ package net.subsloth.preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
 import java.security.KeyStore
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -26,14 +25,9 @@ actual class CredentialStore {
     private fun getOrCreateKey(): SecretKey {
         val ks = KeyStore.getInstance("PKCS12")
         val password = storePassword
-        try {
-            if (keystoreFile.exists()) {
-                keystoreFile.inputStream().use { stream -> ks.load(stream, password) }
-            } else {
-                ks.load(null, password)
-            }
-        } catch (_: IOException) {
-            keystoreFile.delete()
+        if (keystoreFile.exists()) {
+            keystoreFile.inputStream().use { stream -> ks.load(stream, password) }
+        } else {
             ks.load(null, password)
         }
         if (ks.containsAlias(keyAlias)) {
@@ -73,10 +67,6 @@ actual class CredentialStore {
             if (parts.size != 2) null else Pair(parts[0], parts[1])
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            runCatching {
-                dataFile.delete()
-                keystoreFile.delete()
-            }
             null
         }
     }
