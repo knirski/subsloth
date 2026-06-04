@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!-- Library screen -->
+    <string name="library_title">My Library</string>
+    <string name="library_offline_title">Offline Library</string>
+    <string name="library_continue_watching">Continue Watching</string>
+    <string name="library_favorites">Favorites</string>
+    <string name="library_watch_later">Watch Later</string>
+    <string name="library_collections">Collections</string>
+    <string name="library_available_offline">Available Offline</string>
+    <string name="library_empty_logged_in">Your library is empty. Browse the catalog to add items.</string>
+    <string name="library_empty_logged_out">No offline content available. Go online to browse and download.</string>
+
+    <!-- Downloads screen -->
+    <string name="downloads_title">Downloads</string>
+    <string name="downloads_active">Active</string>
+    <string name="downloads_queued_paused">Queued / Paused</string>
+    <string name="downloads_failed_unavailable">Failed / Unavailable</string>
+    <string name="downloads_completed">Completed</string>
+    <string name="downloads_season_queues">Season Queues</string>
+    <string name="downloads_empty">No downloads yet.</string>
+    <string name="downloads_pause">Pause</string>
+    <string name="downloads_resume">Resume</string>
+    <string name="downloads_cancel">Cancel</string>
+    <string name="downloads_retry">Retry</string>
+    <string name="downloads_remove">Remove</string>
+    <string name="downloads_delete">Delete</string>
+    <string name="downloads_delete_watched">Delete watched</string>
+    <string name="downloads_delete_all">Delete all</string>
+    <string name="downloads_unknown_quality">Unknown quality</string>
+    <string name="downloads_reason_ambiguous_quality">Ambiguous quality</string>
+    <string name="downloads_reason_download_failed">Download failed</string>
+    <string name="downloads_reason_insufficient_storage">Insufficient storage</string>
+    <string name="downloads_reason_missing_local_file">Missing local file</string>
+    <string name="downloads_reason_needs_wifi">Wi-Fi required</string>
+    <string name="downloads_reason_subtitle_unavailable">Subtitle unavailable</string>
+    <string name="downloads_reason_unavailable">Unavailable</string>
+
+    <!-- Delete confirmation dialogs -->
+    <string name="downloads_delete_all_title">Delete All Downloads</string>
+    <string name="downloads_delete_all_message">This will delete all downloaded videos and subtitles. Shared offline progress for these media items will also be removed.</string>
+    <string name="downloads_delete_watched_title">Delete Watched Downloads</string>
+    <string name="downloads_delete_watched_message">This will delete watched completed downloads. Shared offline progress for these media items will also be removed.</string>
+    <string name="downloads_delete_confirm">Delete</string>
+    <string name="downloads_delete_cancel">Cancel</string>
+</resources>

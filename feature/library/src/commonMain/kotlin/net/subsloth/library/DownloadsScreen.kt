@@ -36,6 +36,37 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.SeasonQueueItemExecution
 import net.subsloth.core.model.media.Media
+import org.jetbrains.compose.resources.stringResource
+import subsloth.feature.library.generated.resources.Res
+import subsloth.feature.library.generated.resources.downloads_active
+import subsloth.feature.library.generated.resources.downloads_cancel
+import subsloth.feature.library.generated.resources.downloads_completed
+import subsloth.feature.library.generated.resources.downloads_delete
+import subsloth.feature.library.generated.resources.downloads_delete_all
+import subsloth.feature.library.generated.resources.downloads_delete_all_message
+import subsloth.feature.library.generated.resources.downloads_delete_all_title
+import subsloth.feature.library.generated.resources.downloads_delete_cancel
+import subsloth.feature.library.generated.resources.downloads_delete_confirm
+import subsloth.feature.library.generated.resources.downloads_delete_watched
+import subsloth.feature.library.generated.resources.downloads_delete_watched_message
+import subsloth.feature.library.generated.resources.downloads_delete_watched_title
+import subsloth.feature.library.generated.resources.downloads_empty
+import subsloth.feature.library.generated.resources.downloads_failed_unavailable
+import subsloth.feature.library.generated.resources.downloads_pause
+import subsloth.feature.library.generated.resources.downloads_queued_paused
+import subsloth.feature.library.generated.resources.downloads_reason_ambiguous_quality
+import subsloth.feature.library.generated.resources.downloads_reason_download_failed
+import subsloth.feature.library.generated.resources.downloads_reason_insufficient_storage
+import subsloth.feature.library.generated.resources.downloads_reason_missing_local_file
+import subsloth.feature.library.generated.resources.downloads_reason_needs_wifi
+import subsloth.feature.library.generated.resources.downloads_reason_subtitle_unavailable
+import subsloth.feature.library.generated.resources.downloads_reason_unavailable
+import subsloth.feature.library.generated.resources.downloads_remove
+import subsloth.feature.library.generated.resources.downloads_resume
+import subsloth.feature.library.generated.resources.downloads_retry
+import subsloth.feature.library.generated.resources.downloads_season_queues
+import subsloth.feature.library.generated.resources.downloads_title
+import subsloth.feature.library.generated.resources.downloads_unknown_quality
 
 @Composable
 fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier) {
@@ -81,18 +112,17 @@ internal fun DownloadsContent(
 ) {
     var showDeleteConfirmation by remember { mutableStateOf<DeleteConfirmationType?>(null) }
 
-    Box(modifier = modifier) {
-        DownloadsContentBody(
-            state = state,
-            onPause = onPause,
-            onResume = onResume,
-            onCancel = onCancel,
-            onRetry = onRetry,
-            onRemove = onRemove,
-            onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
-            onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
-        )
-    }
+    DownloadsContentBody(
+        state = state,
+        modifier = modifier,
+        onPause = onPause,
+        onResume = onResume,
+        onCancel = onCancel,
+        onRetry = onRetry,
+        onRemove = onRemove,
+        onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
+        onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
+    )
 
     showDeleteConfirmation?.let { type ->
         DeleteConfirmationDialog(
@@ -114,17 +144,12 @@ private enum class DeleteConfirmationType { ALL, WATCHED }
 @Composable
 private fun DeleteConfirmationDialog(type: DeleteConfirmationType, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     val title = when (type) {
-        DeleteConfirmationType.ALL -> "Delete All Downloads"
-        DeleteConfirmationType.WATCHED -> "Delete Watched Downloads"
+        DeleteConfirmationType.ALL -> stringResource(Res.string.downloads_delete_all_title)
+        DeleteConfirmationType.WATCHED -> stringResource(Res.string.downloads_delete_watched_title)
     }
     val message = when (type) {
-        DeleteConfirmationType.ALL ->
-            "This will delete all downloaded videos and subtitles. " +
-                "Shared offline progress for these media items will also be removed."
-
-        DeleteConfirmationType.WATCHED ->
-            "This will delete watched completed downloads. " +
-                "Shared offline progress for these media items will also be removed."
+        DeleteConfirmationType.ALL -> stringResource(Res.string.downloads_delete_all_message)
+        DeleteConfirmationType.WATCHED -> stringResource(Res.string.downloads_delete_watched_message)
     }
 
     AlertDialog(
@@ -138,11 +163,13 @@ private fun DeleteConfirmationDialog(type: DeleteConfirmationType, onConfirm: ()
                     containerColor = MaterialTheme.colorScheme.error,
                 ),
             ) {
-                Text("Delete")
+                Text(stringResource(Res.string.downloads_delete_confirm))
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+            OutlinedButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.downloads_delete_cancel))
+            }
         },
     )
 }
@@ -167,7 +194,7 @@ private fun DownloadsContentBody(
     ) {
         item {
             Text(
-                text = "Downloads",
+                text = stringResource(Res.string.downloads_title),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp),
             )
@@ -175,15 +202,19 @@ private fun DownloadsContentBody(
 
         if (state.active.isNotEmpty()) {
             item(key = "active_header") {
-                SectionHeader("Active")
+                SectionHeader(stringResource(Res.string.downloads_active))
             }
             state.active.forEach { item ->
                 item(key = "active_${item.state.localId.value}") {
                     DownloadRow(
                         download = item,
                         actions = {
-                            TextButton(onClick = { onPause(item.state.localId.value) }) { Text("Pause") }
-                            TextButton(onClick = { onCancel(item.state.localId.value) }) { Text("Cancel") }
+                            TextButton(onClick = { onPause(item.state.localId.value) }) {
+                                Text(stringResource(Res.string.downloads_pause))
+                            }
+                            TextButton(onClick = { onCancel(item.state.localId.value) }) {
+                                Text(stringResource(Res.string.downloads_cancel))
+                            }
                         },
                     )
                 }
@@ -192,7 +223,7 @@ private fun DownloadsContentBody(
 
         if (state.queuedOrPaused.isNotEmpty()) {
             item(key = "queued_paused_header") {
-                SectionHeader("Queued / Paused")
+                SectionHeader(stringResource(Res.string.downloads_queued_paused))
             }
             state.queuedOrPaused.forEach { item ->
                 item(key = "qp_${item.state.localId.value}") {
@@ -201,12 +232,18 @@ private fun DownloadsContentBody(
                         actions = {
                             when (item.state) {
                                 is DownloadState.Paused -> {
-                                    TextButton(onClick = { onResume(item.state.localId.value) }) { Text("Resume") }
-                                    TextButton(onClick = { onCancel(item.state.localId.value) }) { Text("Cancel") }
+                                    TextButton(onClick = { onResume(item.state.localId.value) }) {
+                                        Text(stringResource(Res.string.downloads_resume))
+                                    }
+                                    TextButton(onClick = { onCancel(item.state.localId.value) }) {
+                                        Text(stringResource(Res.string.downloads_cancel))
+                                    }
                                 }
 
                                 is DownloadState.Queued -> {
-                                    TextButton(onClick = { onCancel(item.state.localId.value) }) { Text("Cancel") }
+                                    TextButton(onClick = { onCancel(item.state.localId.value) }) {
+                                        Text(stringResource(Res.string.downloads_cancel))
+                                    }
                                 }
 
                                 else -> {}
@@ -219,15 +256,19 @@ private fun DownloadsContentBody(
 
         if (state.failedOrUnavailable.isNotEmpty()) {
             item(key = "failed_header") {
-                SectionHeader("Failed / Unavailable")
+                SectionHeader(stringResource(Res.string.downloads_failed_unavailable))
             }
             state.failedOrUnavailable.forEach { item ->
                 item(key = "fu_${item.state.localId.value}") {
                     DownloadRow(
                         download = item,
                         actions = {
-                            TextButton(onClick = { onRetry(item.state.localId.value) }) { Text("Retry") }
-                            TextButton(onClick = { onRemove(item.state.localId.value) }) { Text("Remove") }
+                            TextButton(onClick = { onRetry(item.state.localId.value) }) {
+                                Text(stringResource(Res.string.downloads_retry))
+                            }
+                            TextButton(onClick = { onRemove(item.state.localId.value) }) {
+                                Text(stringResource(Res.string.downloads_remove))
+                            }
                         },
                     )
                 }
@@ -240,10 +281,14 @@ private fun DownloadsContentBody(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    SectionHeader("Completed")
+                    SectionHeader(stringResource(Res.string.downloads_completed))
                     Row {
-                        TextButton(onClick = onDeleteWatchedCompleted) { Text("Delete watched") }
-                        TextButton(onClick = onDeleteAllCompleted) { Text("Delete all") }
+                        TextButton(onClick = onDeleteWatchedCompleted) {
+                            Text(stringResource(Res.string.downloads_delete_watched))
+                        }
+                        TextButton(onClick = onDeleteAllCompleted) {
+                            Text(stringResource(Res.string.downloads_delete_all))
+                        }
                     }
                 }
             }
@@ -252,7 +297,9 @@ private fun DownloadsContentBody(
                     DownloadRow(
                         download = item,
                         actions = {
-                            TextButton(onClick = { onRemove(item.state.localId.value) }) { Text("Delete") }
+                            TextButton(onClick = { onRemove(item.state.localId.value) }) {
+                                Text(stringResource(Res.string.downloads_delete))
+                            }
                         },
                     )
                 }
@@ -261,7 +308,7 @@ private fun DownloadsContentBody(
 
         if (state.seasonQueues.isNotEmpty()) {
             item(key = "season_queues_header") {
-                SectionHeader("Season Queues")
+                SectionHeader(stringResource(Res.string.downloads_season_queues))
             }
             state.seasonQueues.forEach { queue ->
                 item(key = "sq_${queue.queueId.value}") {
@@ -280,7 +327,7 @@ private fun DownloadsContentBody(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No downloads yet.",
+                        text = stringResource(Res.string.downloads_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -319,7 +366,8 @@ private fun DownloadRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = download.state.quality.label ?: "Unknown quality",
+                text = download.state.quality.label
+                    ?: stringResource(Res.string.downloads_unknown_quality),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -446,7 +494,7 @@ private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Mod
             }
             if (queue.items.size > 5) {
                 Text(
-                    text = "+${queue.items.size - 5} more...",
+                    text = "+${queue.items.size - 5} more\u2026",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -455,20 +503,22 @@ private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Mod
     }
 }
 
+@Composable
 private fun formatMediaId(id: Media.MediaId): String = when (id) {
     is Media.MediaId.Movie -> "Movie ${id.value.value}"
     is Media.MediaId.Show -> "Show ${id.value.value}"
     is Media.MediaId.Episode -> "Episode ${id.value.value}"
 }
 
+@Composable
 private fun formatFailureReason(reason: DownloadFailureReason): String = when (reason) {
-    is DownloadFailureReason.AmbiguousQuality -> "Ambiguous quality"
-    is DownloadFailureReason.DownloadFailed -> "Download failed"
-    is DownloadFailureReason.InsufficientStorage -> "Insufficient storage"
-    is DownloadFailureReason.MissingLocalFile -> "Missing local file"
-    is DownloadFailureReason.NeedsWifi -> "Wi-Fi required"
-    is DownloadFailureReason.SubtitleUnavailable -> "Subtitle unavailable"
-    is DownloadFailureReason.Unavailable -> "Unavailable"
+    is DownloadFailureReason.AmbiguousQuality -> stringResource(Res.string.downloads_reason_ambiguous_quality)
+    is DownloadFailureReason.DownloadFailed -> stringResource(Res.string.downloads_reason_download_failed)
+    is DownloadFailureReason.InsufficientStorage -> stringResource(Res.string.downloads_reason_insufficient_storage)
+    is DownloadFailureReason.MissingLocalFile -> stringResource(Res.string.downloads_reason_missing_local_file)
+    is DownloadFailureReason.NeedsWifi -> stringResource(Res.string.downloads_reason_needs_wifi)
+    is DownloadFailureReason.SubtitleUnavailable -> stringResource(Res.string.downloads_reason_subtitle_unavailable)
+    is DownloadFailureReason.Unavailable -> stringResource(Res.string.downloads_reason_unavailable)
 }
 
 private fun formatSize(bytes: Long): String {
