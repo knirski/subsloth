@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Subsloth Media API Explorer (Dev Only)</title>
+    <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css" />
+    <style>
+      body { margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+      .dev-banner {
+        background: #f59e0b;
+        color: #000;
+        text-align: center;
+        padding: 4px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .config-bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 8px 16px;
+        background: #f3f4f6;
+        border-bottom: 1px solid #d1d5db;
+        flex-wrap: wrap;
+      }
+      .config-bar label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #374151;
+      }
+      .config-bar input {
+        font-size: 12px;
+        padding: 4px 8px;
+        border: 1px solid #9ca3af;
+        border-radius: 4px;
+        width: 320px;
+      }
+      .config-bar input[type="password"] { width: 280px; }
+      .config-bar select {
+        font-size: 12px;
+        padding: 4px 8px;
+        border: 1px solid #9ca3af;
+        border-radius: 4px;
+      }
+      .config-bar button {
+        font-size: 12px;
+        padding: 4px 12px;
+        border: 1px solid #9ca3af;
+        border-radius: 4px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .config-bar button:hover { background: #e5e7eb; }
+      .config-bar .status {
+        font-size: 11px;
+        color: #6b7280;
+      }
+      .config-bar .source-indicator {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+      .source-live { background: #dcfce7; color: #166534; }
+      .source-mock { background: #fef3c7; color: #92400e; }
+    </style>
+  </head>
+  <body>
+    <div class="dev-banner">DEV ONLY — Media API Explorer — Do not ship to production</div>
+    <div class="config-bar">
+      <label for="sourceSelect">Source</label>
+      <select id="sourceSelect">
+        <option value="live">Live Media API</option>
+        <option value="mock">Local Mock (fixtures)</option>
+      </select>
+      <span class="source-indicator" id="sourceIndicator"></span>
+
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" type="text" placeholder="https://media.example.com" />
+
+      <label for="authToken">Auth Token</label>
+      <input id="authToken" type="password" placeholder="Bearer token or API key" />
+
+      <button id="applyConfig">Apply</button>
+      <span class="status" id="configStatus"></span>
+    </div>
+    <elements-api
+      id="explorer"
+      apiDescriptionUrl="../api/subsloth.openapi.yaml"
+      router="hash"
+      layout="sidebar"
+    />
+    <script>
+      const BASE_URL_KEY = 'subsloth-dev-base-url';
+      const AUTH_TOKEN_KEY = 'subsloth-dev-auth-token';
+      const SOURCE_KEY = 'subsloth-dev-source';
+      const MOCK_PORT = 8124;
+
+      let savedBaseUrl = localStorage.getItem(BASE_URL_KEY) || '';
+      let savedAuthToken = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+      let savedSource = localStorage.getItem(SOURCE_KEY) || 'live';
+
+      const baseUrlInput = document.getElementById('baseUrl');
+      const authTokenInput = document.getElementById('authToken');
+      const sourceSelect = document.getElementById('sourceSelect');
+      const sourceIndicator = document.getElementById('sourceIndicator');
+      const applyBtn = document.getElementById('applyConfig');
+      const statusEl = document.getElementById('configStatus');
+
+      function updateSourceIndicator() {
+        const source = sourceSelect.value;
+        sourceIndicator.textContent = source === 'live' ? 'LIVE' : 'MOCK';
+        sourceIndicator.className = 'source-indicator ' +
+          (source === 'live' ? 'source-live' : 'source-mock');
+      }
+
+      // Restore saved values to inputs
+      baseUrlInput.value = savedBaseUrl;
+      authTokenInput.value = savedAuthToken;
+      sourceSelect.value = savedSource;
+      updateSourceIndicator();
+
+      sourceSelect.addEventListener('change', updateSourceIndicator);
+
+      // Intercept fetch to inject base URL rewrite and auth headers
+      const originalFetch = window.fetch;
+      window.fetch = async function (input, init) {
+        let url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+
+        // Skip interception for the OpenAPI spec itself
+        if (url.endsWith('.openapi.yaml') || url.endsWith('.openapi.json')) {
+          return originalFetch(input, init);
+        }
+
+        // Determine effective target URL
+        const effectiveBaseUrl = savedSource === 'mock'
+          ? `http://127.0.0.1:${MOCK_PORT}`
+          : savedBaseUrl;
+
+        // Rewrite URL if a base URL is configured
+        if (effectiveBaseUrl) {
+          try {
+            const targetUrl = new URL(effectiveBaseUrl);
+            const originalUrl = new URL(url, window.location.href);
+            url = new URL(originalUrl.pathname + originalUrl.search, targetUrl).toString();
+          } catch {
+            // If effectiveBaseUrl is not a valid URL, try prefix matching
+            if (url.startsWith('/')) {
+              url = effectiveBaseUrl.replace(/\/$/, '') + url;
+            }
+          }
+        }
+
+        // Inject auth header if configured
+        if (savedAuthToken) {
+          init = init || {};
+          const headers = new Headers(init.headers || {});
+          if (!headers.has('Authorization')) {
+            const authHeader = savedAuthToken.startsWith('Bearer ') || savedAuthToken.startsWith('Basic ')
+              ? savedAuthToken
+              : `Bearer ${savedAuthToken}`;
+            headers.set('Authorization', authHeader);
+          }
+          init = { ...init, headers };
+        }
+
+        return originalFetch(url, init);
+      };
+
+      applyBtn.addEventListener('click', () => {
+        savedBaseUrl = baseUrlInput.value.trim();
+        savedAuthToken = authTokenInput.value.trim();
+        savedSource = sourceSelect.value;
+
+        if (savedBaseUrl) localStorage.setItem(BASE_URL_KEY, savedBaseUrl);
+        else localStorage.removeItem(BASE_URL_KEY);
+
+        if (savedAuthToken) localStorage.setItem(AUTH_TOKEN_KEY, savedAuthToken);
+        else localStorage.removeItem(AUTH_TOKEN_KEY);
+
+        localStorage.setItem(SOURCE_KEY, savedSource);
+
+        const target = savedSource === 'mock' ? 'mock server' : savedBaseUrl || 'OpenAPI default servers';
+        statusEl.textContent = `Requests will target: ${target}`;
+        setTimeout(() => { statusEl.textContent = ''; }, 5000);
+      });
+
+      authTokenInput.addEventListener('focus', () => {
+        statusEl.textContent = 'Auth token is stored in localStorage — do not commit';
+        setTimeout(() => { statusEl.textContent = ''; }, 4000);
+      });
+    </script>
+  </body>
+</html>
