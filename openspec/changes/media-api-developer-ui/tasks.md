@@ -12,6 +12,6 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Verify the explorer renders the current OpenAPI contract locally.
-- [ ] 3.2 Verify no sensitive artifacts or credentials are committed as part of the explorer.
+- [x] 3.1 Verify the explorer renders the current OpenAPI contract locally.
+- [x] 3.2 Verify no sensitive artifacts or credentials are committed as part of the explorer.
 - [x] 3.3 Run the relevant local validation or preview command for the explorer entrypoint.
