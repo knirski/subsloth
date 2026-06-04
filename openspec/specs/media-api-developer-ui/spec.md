@@ -1,7 +1,7 @@
 # media-api-developer-ui Specification
 
 ## Purpose
-TBD - created by archiving change media-api-developer-ui. Update Purpose after archive.
+This specification defines the requirements and boundaries for the local-only Media API Developer UI, which enables developers to browse endpoints, execute manual requests against the OpenAPI contract using Stoplight Elements, and switch between live and mock data sources safely outside the production application runtime.
 ## Requirements
 ### Requirement: Local Media API Developer UI
 The system SHALL provide a local-only developer UI for browsing Media API endpoints and manually executing requests against the OpenAPI contract.
