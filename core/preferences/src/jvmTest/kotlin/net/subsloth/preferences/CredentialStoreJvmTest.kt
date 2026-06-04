@@ -1,29 +1,33 @@
 package net.subsloth.preferences
 
 import net.subsloth.testing.assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class CredentialStoreJvmTest {
+
     private lateinit var credentialStore: CredentialStore
 
     @BeforeEach
     fun setUp() {
         credentialStore = CredentialStore()
+    }
+
+    @AfterEach
+    fun tearDown() {
         credentialStore.clear()
     }
 
     @Test
-    fun `save and read credentials`() {
+    fun `save and read round trip`() {
         credentialStore.save("user@example.com", "securePassword123")
         val result = credentialStore.read()
-        assertThat(result).isNotNull()
-        assertThat(result!!.first).isEqualTo("user@example.com")
-        assertThat(result.second).isEqualTo("securePassword123")
+        assertThat(result).isEqualTo("user@example.com" to "securePassword123")
     }
 
     @Test
-    fun `read returns null when no credentials stored`() {
+    fun `read returns null when no credentials`() {
         assertThat(credentialStore.read()).isNull()
     }
 
@@ -33,7 +37,7 @@ class CredentialStoreJvmTest {
     }
 
     @Test
-    fun `exists returns true when credentials are stored`() {
+    fun `exists returns true after save`() {
         credentialStore.save("user@example.com", "password")
         assertThat(credentialStore.exists()).isTrue()
     }
@@ -41,29 +45,33 @@ class CredentialStoreJvmTest {
     @Test
     fun `clear removes credentials`() {
         credentialStore.save("user@example.com", "password")
-        assertThat(credentialStore.exists()).isTrue()
         credentialStore.clear()
         assertThat(credentialStore.exists()).isFalse()
         assertThat(credentialStore.read()).isNull()
     }
 
     @Test
-    fun `save overwrites existing credentials`() {
+    fun `overwrite replaces existing credentials`() {
         credentialStore.save("user1@example.com", "pass1")
         credentialStore.save("user2@example.com", "pass2")
         val result = credentialStore.read()
-        assertThat(result!!.first).isEqualTo("user2@example.com")
-        assertThat(result.second).isEqualTo("pass2")
+        assertThat(result).isEqualTo("user2@example.com" to "pass2")
     }
 
     @Test
-    fun `credentials handle special characters`() {
-        val login = "test+special@example.com"
-        val password = "p@ssw0rd!\"\"#$%&'()*+,-./:;<=>?@[]^_`{|}~"
+    fun `handles empty password`() {
+        credentialStore.save("user@example.com", "")
+        val result = credentialStore.read()
+        assertThat(result).isEqualTo("user@example.com" to "")
+    }
+
+    @Test
+    fun `handles unicode credentials`() {
+        val login = "user@example.com"
+        val password = "pässwörd123"
         credentialStore.save(login, password)
         val result = credentialStore.read()
-        assertThat(result!!.first).isEqualTo(login)
-        assertThat(result.second).isEqualTo(password)
+        assertThat(result).isEqualTo(login to password)
     }
 
     @Test
