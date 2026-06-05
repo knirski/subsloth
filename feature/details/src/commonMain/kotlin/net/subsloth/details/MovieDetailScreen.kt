@@ -60,7 +60,7 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
 }
 
 @Composable
-internal fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = Modifier) {
+fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = Modifier) {
     val details = state.details
 
     Column(

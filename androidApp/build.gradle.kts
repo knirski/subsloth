@@ -1,6 +1,7 @@
 plugins {
     id("subsloth.android.application.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    alias(libs.plugins.compose.screenshot)
 }
 
 val appVersionName: String by lazy {
@@ -42,6 +43,8 @@ val appVersionCode: Int by lazy {
 
 android {
     namespace = "net.subsloth"
+
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         applicationId = "net.subsloth"
@@ -111,4 +114,9 @@ dependencies {
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(project(":testing:tv-focus-harness"))
+
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    screenshotTestImplementation(platform(libs.androidx.compose.bom))
+    screenshotTestImplementation(libs.androidx.compose.ui.tooling)
+    screenshotTestImplementation(libs.kotlinx.collections.immutable)
 }
