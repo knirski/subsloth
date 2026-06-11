@@ -82,7 +82,13 @@ fun PlayerScreen(
                     PlayerOverlay(
                         state = s,
                         playerState = playerState,
-                        viewModel = viewModel,
+                        onRetry = { viewModel.retryPlayback() },
+                        onRetryWithRefresh = { viewModel.retryWithRefresh() },
+                        onPlayNextEpisode = { viewModel.playNextEpisode() },
+                        onDismissNextEpisode = { viewModel.dismissNextEpisode() },
+                        onSetPlaybackSpeed = { viewModel.setPlaybackSpeed(it) },
+                        onSelectSubtitle = { viewModel.selectSubtitle(it) },
+                        onSelectQuality = { viewModel.selectQuality(it) },
                         onNavigateBack = onNavigateBack,
                         onNavigateToAuthRepair = onNavigateToAuthRepair,
                     )
@@ -96,7 +102,13 @@ fun PlayerScreen(
 fun PlayerOverlay(
     state: PlayerUiState.Content,
     playerState: VideoPlayerState,
-    viewModel: PlayerViewModel,
+    onRetry: () -> Unit = {},
+    onRetryWithRefresh: () -> Unit = {},
+    onPlayNextEpisode: () -> Unit = {},
+    onDismissNextEpisode: () -> Unit = {},
+    onSetPlaybackSpeed: (Float) -> Unit = {},
+    onSelectSubtitle: (Subtitle?) -> Unit = {},
+    onSelectQuality: (String) -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
 ) {
@@ -113,8 +125,8 @@ fun PlayerOverlay(
             ErrorContent(
                 playbackError = state.playbackError,
                 playbackMode = state.playbackMode,
-                onRetry = viewModel::retryPlayback,
-                onRetryWithRefresh = viewModel::retryWithRefresh,
+                onRetry = onRetry,
+                onRetryWithRefresh = onRetryWithRefresh,
                 onNavigateBack = onNavigateBack,
                 onNavigateToAuthRepair = onNavigateToAuthRepair,
             )
@@ -123,8 +135,8 @@ fun PlayerOverlay(
 
         if (state.showNextEpisodePrompt) {
             NextEpisodePrompt(
-                onPlay = viewModel::playNextEpisode,
-                onDismiss = viewModel::dismissNextEpisode,
+                onPlay = onPlayNextEpisode,
+                onDismiss = onDismissNextEpisode,
             )
             return
         }
@@ -214,7 +226,7 @@ fun PlayerOverlay(
                     currentSpeed = state.playbackSpeed,
                     onSelect = { speed ->
                         playerState.playbackSpeed = speed
-                        viewModel.setPlaybackSpeed(speed)
+                        onSetPlaybackSpeed(speed)
                         showSpeedPicker = false
                     },
                 )
@@ -229,11 +241,11 @@ fun PlayerOverlay(
                             val track = SubtitleMapper.toSubtitleTrack(subtitle)
                             if (track != null) {
                                 playerState.selectSubtitleTrack(track)
-                                viewModel.selectSubtitle(subtitle)
+                                onSelectSubtitle(subtitle)
                             }
                         } else {
                             playerState.disableSubtitles()
-                            viewModel.selectSubtitle(null)
+                            onSelectSubtitle(null)
                         }
                         showSubtitlePicker = false
                     },
@@ -249,7 +261,7 @@ fun PlayerOverlay(
                         qualities = state.availableQualities,
                         selectedLabel = state.selectedQualityLabel,
                         onSelect = { label ->
-                            viewModel.selectQuality(label)
+                            onSelectQuality(label)
                             showQualityPicker = false
                         },
                     )

@@ -28,10 +28,5 @@ private fun PlayerOverlayPreview() {
             subtitleFallbackNotice = null,
         ),
         playerState = PreviewableVideoPlayerState(),
-        viewModel = PlayerViewModel(
-            mediaId = net.subsloth.core.model.media.Media.MediaId.Movie(
-                net.subsloth.core.model.identifier.MovieId(1),
-            ),
-        ),
     )
 }
