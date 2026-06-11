@@ -47,7 +47,7 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, modifier: Modifier = Modi
 }
 
 @Composable
-internal fun DiagnosticsContent(state: DiagnosticsState, modifier: Modifier = Modifier) {
+fun DiagnosticsContent(state: DiagnosticsState, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()

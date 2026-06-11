@@ -100,7 +100,7 @@ fun SettingsScreen(
 }
 
 @Composable
-internal fun SettingsContent(
+fun SettingsContent(
     state: SettingsUiState.Content,
     modifier: Modifier = Modifier,
     onSubtitleEnabledChanged: (Boolean) -> Unit = {},
