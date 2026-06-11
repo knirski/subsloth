@@ -99,7 +99,7 @@ fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier
 }
 
 @Composable
-internal fun DownloadsContent(
+fun DownloadsContent(
     state: DownloadsUiState.Content,
     modifier: Modifier = Modifier,
     onPause: (String) -> Unit = {},

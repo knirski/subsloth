@@ -58,7 +58,7 @@ fun HomeScreen(
 }
 
 @Composable
-internal fun CatalogContent(
+fun CatalogContent(
     state: HomeUiState.Content,
     modifier: Modifier = Modifier,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},

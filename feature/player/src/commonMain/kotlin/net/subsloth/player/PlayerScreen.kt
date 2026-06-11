@@ -93,7 +93,7 @@ fun PlayerScreen(
 }
 
 @Composable
-internal fun PlayerOverlay(
+fun PlayerOverlay(
     state: PlayerUiState.Content,
     playerState: VideoPlayerState,
     viewModel: PlayerViewModel,

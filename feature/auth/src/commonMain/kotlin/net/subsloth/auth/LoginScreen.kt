@@ -146,7 +146,7 @@ fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, o
 }
 
 @Composable
-internal fun LoginFormContent(
+fun LoginFormContent(
     login: String,
     password: String,
     isLoading: Boolean,

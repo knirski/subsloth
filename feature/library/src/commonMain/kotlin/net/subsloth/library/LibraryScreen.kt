@@ -67,7 +67,7 @@ fun LibraryScreen(
 }
 
 @Composable
-internal fun LibraryContent(
+fun LibraryContent(
     state: LibraryUiState.Content,
     modifier: Modifier = Modifier,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},

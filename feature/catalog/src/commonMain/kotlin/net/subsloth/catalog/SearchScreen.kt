@@ -49,6 +49,26 @@ fun SearchScreen(
         }
     }
 
+    SearchContent(
+        state = state,
+        query = query,
+        onQueryChange = onQueryChange,
+        modifier = modifier,
+        onMovieClick = onMovieClick,
+        onShowClick = onShowClick,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchContent(
+    state: SearchUiState,
+    query: String,
+    modifier: Modifier = Modifier,
+    onQueryChange: (String) -> Unit = {},
+    onMovieClick: (Media.MediaId.Movie) -> Unit = {},
+    onShowClick: (Media.MediaId.Show) -> Unit = {},
+) {
     Column(
         modifier = modifier
             .fillMaxSize()

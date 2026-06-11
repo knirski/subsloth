@@ -10,7 +10,7 @@
 - [ ] 2.1 Add Compose tests for login/logout, catalog, details without comments, player controls, offline library, Downloads, storage, settings, and diagnostics, including process-death state restoration for main navigation and remote media key handling where practical.
 - [ ] 2.2 Add TV D-pad focus tests for browse, detail, player, library, Downloads, and dialogs.
 - [ ] 2.3 Add accessibility tests for labels, contrast-critical states, large text, focus visibility, touch targets, and remote-only operation.
-- [x] 2.4 Add Compose Preview Screenshot Testing for movie and series detail on phone, tablet, and TV.
+- [x] 2.4 Add Compose Preview Screenshot Testing for all screens (login, home, search, player, library, downloads, settings, diagnostics, movie detail, series detail) on phone, tablet, and TV.
 
 ## 3. Performance and Acceptance
 
