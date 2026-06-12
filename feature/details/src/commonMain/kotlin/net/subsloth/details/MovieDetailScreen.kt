@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.toDisplayString
@@ -61,6 +63,126 @@ fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modi
 
 @Composable
 fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = Modifier) {
+    val details = state.details
+    val isLandscapeWide = isLandscapeWideScreen()
+
+    if (isLandscapeWide) {
+        MovieDetailWideLayout(state = state, modifier = modifier)
+    } else {
+        MovieDetailCompactLayout(state = state, modifier = modifier)
+    }
+}
+
+@Composable
+private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: Modifier) {
+    val details = state.details
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .width(280.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Text(
+                text = details.title,
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                details.year?.let { year ->
+                    Text(
+                        text = year.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                details.rating?.let { rating ->
+                    Text(
+                        text = "★ $rating",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            if (details.genres.isNotEmpty()) {
+                Text(
+                    text = details.genres.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            details.durationMinutes?.let { duration ->
+                Text(
+                    text = "$duration min",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (details.countries.isNotEmpty()) {
+                Text(
+                    text = details.countries.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 24.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            details.plot?.let { plot ->
+                Text(
+                    text = plot,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            details.description?.let { desc ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (details.subtitles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(
+                        Res.string.subtitles_format,
+                        details.subtitles.joinToString(", ") {
+                            it.languageDisplayName ?: it.language.value
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            if (details.qualities.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Quality: ${
+                        details.qualities.joinToString(", ") {
+                            it.info.label ?: it.info.resolution.toString()
+                        }
+                    }",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier: Modifier) {
     val details = state.details
 
     Column(
@@ -142,7 +264,9 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
             Text(
                 text = stringResource(
                     Res.string.subtitles_format,
-                    details.subtitles.joinToString(", ") { it.languageDisplayName ?: it.language.value },
+                    details.subtitles.joinToString(", ") {
+                        it.languageDisplayName ?: it.language.value
+                    },
                 ),
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -160,4 +284,17 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
             )
         }
     }
+}
+
+/**
+ * Returns true when the screen is in landscape orientation and wide enough
+ * for a two-column layout (≥800dp width in landscape).
+ */
+@Composable
+private fun isLandscapeWideScreen(): Boolean {
+    val density = LocalDensity.current
+    val containerSize = LocalWindowInfo.current.containerSize
+    val widthDp = with(density) { containerSize.width.toDp().value }
+    val heightDp = with(density) { containerSize.height.toDp().value }
+    return widthDp > heightDp && widthDp >= 800f
 }
