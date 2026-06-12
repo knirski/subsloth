@@ -100,7 +100,7 @@ private fun HomeRowSection(
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
             row.items.forEach { media ->
-                item(key = media.id, contentType = media::class) {
+                item(key = media.id.toString(), contentType = media::class) {
                     MediaCard(
                         media = media,
                         onClick = {
