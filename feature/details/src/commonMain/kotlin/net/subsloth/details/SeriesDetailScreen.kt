@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,17 +91,169 @@ fun ShowDetailContent(
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},
 ) {
+    if (isLandscapeWideScreen()) {
+        ShowDetailWideLayout(
+            state = state,
+            onSeasonSelect = onSeasonSelect,
+            modifier = modifier,
+        )
+    } else {
+        ShowDetailCompactLayout(
+            state = state,
+            onSeasonSelect = onSeasonSelect,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun ShowDetailWideLayout(state: ShowDetailUiState.Content, modifier: Modifier, onSeasonSelect: (Int) -> Unit) {
     val details = state.details
+    val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .width(320.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                                MaterialTheme.colorScheme.surface,
+                            ),
+                        ),
+                    )
+                    .semantics { contentDescription = posterContentDescription },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = details.title.take(1),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.3f),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = details.title,
+                style = MaterialTheme.typography.headlineMedium,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                details.year?.let { year ->
+                    Text(text = year.toString(), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                details.rating?.let { rating ->
+                    Text(
+                        text = "★ $rating",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = when (details.status) {
+                        ShowStatus.ONGOING -> stringResource(Res.string.show_ongoing)
+                        ShowStatus.ENDED -> stringResource(Res.string.show_ended)
+                        ShowStatus.UPCOMING -> stringResource(Res.string.show_upcoming)
+                        ShowStatus.UNKNOWN -> ""
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (details.genres.isNotEmpty()) {
+                Text(
+                    text = details.genres.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
+            details.plot?.let { plot ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = plot, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 24.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            ShowDetailActionButtons(
+                isFavorite = state.isFavorite,
+                isWatchLater = state.isWatchLater,
+                isDownloaded = state.isDownloaded,
+                progressFraction = state.progressFraction,
+                onPlayClick = { },
+                onFavoriteClick = { },
+                onWatchLaterClick = { },
+                onDownloadClick = { },
+            )
+
+            if (details.seasons.size > 1) {
+                Spacer(modifier = Modifier.height(16.dp))
+                SeasonSelector(
+                    seasons = details.seasons,
+                    selectedSeason = state.selectedSeason,
+                    onSeasonSelect = onSeasonSelect,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val currentSeason = details.seasons.find { it.seasonNumber == state.selectedSeason }
+            currentSeason?.let { season ->
+                Text(
+                    text = season.title.orEmpty(),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                season.episodes.forEach { episode ->
+                    EpisodeRow(episode = episode)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShowDetailCompactLayout(
+    state: ShowDetailUiState.Content,
+    modifier: Modifier,
+    onSeasonSelect: (Int) -> Unit,
+) {
+    val details = state.details
+    val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = 300.dp)
                 .aspectRatio(16f / 9f)
                 .background(
                     Brush.verticalGradient(
@@ -381,4 +536,13 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun isLandscapeWideScreen(): Boolean {
+    val density = LocalDensity.current
+    val containerSize = LocalWindowInfo.current.containerSize
+    val widthDp = with(density) { containerSize.width.toDp().value }
+    val heightDp = with(density) { containerSize.height.toDp().value }
+    return widthDp > heightDp && widthDp >= 800f
 }
