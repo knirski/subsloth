@@ -31,6 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -93,6 +95,7 @@ fun ShowDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
+        val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,7 +107,8 @@ fun ShowDetailContent(
                             MaterialTheme.colorScheme.surface,
                         ),
                     ),
-                ),
+                )
+                .semantics { contentDescription = posterContentDescription },
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -168,6 +172,10 @@ fun ShowDetailContent(
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
+                onPlayClick = { },
+                onFavoriteClick = { },
+                onWatchLaterClick = { },
+                onDownloadClick = { },
             )
 
             if (details.seasons.size > 1) {
@@ -203,12 +211,16 @@ private fun ShowDetailActionButtons(
     isWatchLater: Boolean,
     isDownloaded: Boolean,
     progressFraction: Double?,
+    onPlayClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onWatchLaterClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         val progressPercent = progressFraction?.let { (it * 100).toInt() }
         Button(
-            onClick = { },
+            onClick = onPlayClick,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
@@ -227,7 +239,7 @@ private fun ShowDetailActionButtons(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilledTonalButton(
-                onClick = { },
+                onClick = onFavoriteClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -242,7 +254,7 @@ private fun ShowDetailActionButtons(
             }
 
             FilledTonalButton(
-                onClick = { },
+                onClick = onWatchLaterClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -257,7 +269,7 @@ private fun ShowDetailActionButtons(
             }
 
             OutlinedButton(
-                onClick = { },
+                onClick = onDownloadClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -344,14 +356,14 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
             Row(modifier = Modifier.padding(top = 4.dp)) {
                 episode.durationSeconds?.let { seconds ->
                     Text(
-                        text = "${seconds / 60} min",
+                        text = stringResource(Res.string.detail_duration_format, seconds / 60),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (episode.subtitles.isNotEmpty()) {
                     Text(
-                        text = " · ${episode.subtitles.size} subtitles",
+                        text = stringResource(Res.string.detail_episode_count_format, episode.subtitles.size),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp),
@@ -362,7 +374,7 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
             if (isUpcoming) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "This episode is not yet available",
+                    text = stringResource(Res.string.detail_episode_not_available),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

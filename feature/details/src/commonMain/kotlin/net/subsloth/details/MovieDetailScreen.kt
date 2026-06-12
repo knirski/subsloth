@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,6 +83,7 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
+        val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,7 +95,8 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
                             MaterialTheme.colorScheme.surface,
                         ),
                     ),
-                ),
+                )
+                .semantics { contentDescription = posterContentDescription },
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -138,7 +142,7 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
 
             details.durationMinutes?.let { duration ->
                 Text(
-                    text = "$duration min",
+                    text = stringResource(Res.string.detail_duration_format, duration),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -161,6 +165,10 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
+                onPlayClick = { },
+                onFavoriteClick = { },
+                onWatchLaterClick = { },
+                onDownloadClick = { },
             )
 
             details.plot?.let { plot ->
@@ -194,11 +202,12 @@ fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = M
             if (details.qualities.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Quality: ${
+                    text = stringResource(
+                        Res.string.detail_quality_format,
                         details.qualities.joinToString(", ") {
                             it.info.label ?: it.info.resolution.toString()
-                        }
-                    }",
+                        },
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -212,12 +221,16 @@ private fun DetailActionButtons(
     isWatchLater: Boolean,
     isDownloaded: Boolean,
     progressFraction: Double?,
+    onPlayClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onWatchLaterClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         val progressPercent = progressFraction?.let { (it * 100).toInt() }
         Button(
-            onClick = { },
+            onClick = onPlayClick,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
@@ -236,7 +249,7 @@ private fun DetailActionButtons(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilledTonalButton(
-                onClick = { },
+                onClick = onFavoriteClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -251,7 +264,7 @@ private fun DetailActionButtons(
             }
 
             FilledTonalButton(
-                onClick = { },
+                onClick = onWatchLaterClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -266,7 +279,7 @@ private fun DetailActionButtons(
             }
 
             OutlinedButton(
-                onClick = { },
+                onClick = onDownloadClick,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
