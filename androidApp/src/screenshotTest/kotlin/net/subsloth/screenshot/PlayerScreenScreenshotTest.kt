@@ -9,7 +9,6 @@ import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.player.PlayerOverlay
 import net.subsloth.player.PlayerUiState
-import net.subsloth.player.PlayerViewModel
 
 @Suppress("ktlint:standard:max-line-length")
 @PreviewTest
@@ -39,14 +38,6 @@ fun PlayerScreenScreenshot() {
                     subtitleFallbackNotice = null,
                 ),
             playerState = PreviewableVideoPlayerState(),
-            viewModel =
-                PlayerViewModel(
-                    mediaId =
-                        net.subsloth.core.model.media.Media.MediaId.Movie(
-                            net.subsloth.core.model.identifier
-                                .MovieId(1),
-                        ),
-                ),
         )
     }
 }
