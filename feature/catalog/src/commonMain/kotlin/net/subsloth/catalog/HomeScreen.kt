@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -99,19 +100,21 @@ private fun HomeRowSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
-            row.items.forEach { media ->
-                item(key = media.id.toString(), contentType = media::class) {
-                    MediaCard(
-                        media = media,
-                        onClick = {
-                            when (val mid = media.id) {
-                                is Media.MediaId.Movie -> onMovieClick(mid)
-                                is Media.MediaId.Show -> onShowClick(mid)
-                                is Media.MediaId.Episode -> {}
-                            }
-                        },
-                    )
-                }
+            items(
+                items = row.items,
+                key = { it.id.toString() },
+                contentType = { it::class },
+            ) { media ->
+                MediaCard(
+                    media = media,
+                    onClick = {
+                        when (val mid = media.id) {
+                            is Media.MediaId.Movie -> onMovieClick(mid)
+                            is Media.MediaId.Show -> onShowClick(mid)
+                            is Media.MediaId.Episode -> {}
+                        }
+                    },
+                )
             }
         }
     }
