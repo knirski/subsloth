@@ -8,6 +8,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDate
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.DomainResultException
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource

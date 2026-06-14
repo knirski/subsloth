@@ -9,6 +9,7 @@ import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 import kotlin.time.Instant
+import net.subsloth.core.model.error.DomainResultException as DomainResultEx
 import net.subsloth.core.network.media.api.model.Episode as DtoEpisode
 import net.subsloth.core.network.media.api.model.Movie as DtoMovie
 import net.subsloth.core.network.media.api.model.MovieSummary as DtoMovieSummary
@@ -133,8 +134,8 @@ class MapperTest {
 
         assertThat(result.isFailure).isTrue()
         val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultException::class.java)
-        val domainError = (error as DomainResultException).domainError
+        assertThat(error).isInstanceOf(DomainResultEx::class.java)
+        val domainError = (error as DomainResultEx).domainError
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("title")
     }
@@ -219,8 +220,8 @@ class MapperTest {
 
         assertThat(result.isFailure).isTrue()
         val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultException::class.java)
-        val domainError = (error as DomainResultException).domainError
+        assertThat(error).isInstanceOf(DomainResultEx::class.java)
+        val domainError = (error as DomainResultEx).domainError
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("title")
     }
@@ -234,8 +235,8 @@ class MapperTest {
 
         assertThat(result.isFailure).isTrue()
         val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultException::class.java)
-        val domainError = (error as DomainResultException).domainError
+        assertThat(error).isInstanceOf(DomainResultEx::class.java)
+        val domainError = (error as DomainResultEx).domainError
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("show_id")
     }

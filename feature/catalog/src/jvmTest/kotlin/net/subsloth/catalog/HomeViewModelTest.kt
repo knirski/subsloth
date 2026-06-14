@@ -2,13 +2,17 @@ package net.subsloth.catalog
 
 import app.cash.turbine.test
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
@@ -35,6 +39,18 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun catalogItemsFor(media: List<Media>) = { type: String ->
+        flowOf(
+            media.filter {
+                when (type) {
+                    "movie" -> it is MovieSummary
+                    "show" -> it is ShowSummary
+                    else -> false
+                }
+            },
+        )
+    }
+
     @Test
     fun `loads catalog and emits content with rows`() = runTest(testDispatcher) {
         val movies = listOf(
@@ -53,7 +69,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -79,7 +95,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -107,7 +123,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(shows) },
+            catalogItems = catalogItemsFor(shows),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -134,7 +150,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -164,7 +180,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(shows) },
+            catalogItems = catalogItemsFor(shows),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -192,7 +208,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -204,7 +220,7 @@ class HomeViewModelTest {
     @Test
     fun `restores selected tab from saved state after process death`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(emptyList()) },
+            catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "SHOWS", "searchQuery" to ""),
         )
         viewModel.uiState.test {
@@ -216,7 +232,7 @@ class HomeViewModelTest {
     @Test
     fun `defaults to movies tab when no saved state tab`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(emptyList()) },
+            catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "", "searchQuery" to ""),
         )
         viewModel.uiState.test {
@@ -243,7 +259,7 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
             isOnline = { false },
         )
         viewModel.uiState.test {
@@ -270,12 +286,62 @@ class HomeViewModelTest {
             ),
         )
         val viewModel = HomeViewModel(
-            listCatalog = { Result.success(movies) },
+            catalogItems = catalogItemsFor(movies),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
             val allLabels = content.rows.mapNotNull { it.label }
             assertThat(allLabels.none { it.contains("comment", ignoreCase = true) }).isTrue()
         }
+    }
+
+    @Test
+    fun `emits sync error on manual sync failure`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = { Result.failure(IllegalStateException("boom")) },
+            isCatalogStale = { false },
+        )
+        viewModel.syncErrors.test {
+            viewModel.sync()
+            val error = awaitItem()
+            assertThat(error).isInstanceOf(SyncError.Unknown::class.java)
+        }
+    }
+
+    @Test
+    fun `isSyncing transitions true during sync then false after`() = runTest(testDispatcher) {
+        val syncGate = CompletableDeferred<Unit>(parent = coroutineContext[Job])
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = suspend {
+                syncGate.await()
+                Result.success(Unit)
+            },
+            isCatalogStale = { false },
+        )
+        viewModel.isSyncing.test {
+            assertThat(awaitItem()).isFalse()
+            viewModel.sync()
+            assertThat(awaitItem()).isTrue()
+            syncGate.complete(Unit)
+            assertThat(awaitItem()).isFalse()
+        }
+    }
+
+    @Test
+    fun `retrySync calls sync`() = runTest(testDispatcher) {
+        var syncCalled = false
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = suspend {
+                syncCalled = true
+                Result.success(Unit)
+            },
+            isCatalogStale = { false },
+        )
+        viewModel.retrySync()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(syncCalled).isTrue()
     }
 }

@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.map
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 /**
- * Account-scoped user preferences backed by DataStore.
+ * User preferences backed by DataStore.
  *
- * Each preference key is namespaced under the active [AccountProfileKey]
- * so that different accounts have independent preferences.
+ * Most preference keys are namespaced under the active [AccountProfileKey]
+ * so that different accounts have independent preferences. A few keys
+ * (e.g. global catalog cache timestamp) are account-agnostic.
  */
 @Suppress("TooManyFunctions")
 class UserPreferences(private val dataStore: DataStore<Preferences>) {
@@ -116,6 +117,20 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
     suspend fun setCatalogCacheTimestamp(profileKey: AccountProfileKey, timestamp: Long) {
         dataStore.edit { prefs ->
             prefs[catalogCacheTimestampKey(profileKey)] = timestamp
+        }
+    }
+
+    // ── Global (non-profile-scoped) ─────────────────────────────────────
+
+    private val globalCatalogCacheTimestampKey = longPreferencesKey("global_catalog_cache_timestamp")
+
+    fun globalCatalogCacheTimestamp(): Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[globalCatalogCacheTimestampKey]
+    }
+
+    suspend fun setGlobalCatalogCacheTimestamp(timestamp: Long) {
+        dataStore.edit { prefs ->
+            prefs[globalCatalogCacheTimestampKey] = timestamp
         }
     }
 

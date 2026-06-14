@@ -7,11 +7,19 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.error.DomainResultException
+import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
@@ -67,6 +75,9 @@ class HomeViewModel(
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
     },
+    private val catalogItems: (String) -> Flow<List<Media>> = { flowOf(emptyList()) },
+    private val syncCatalog: suspend () -> Result<Unit> = { Result.success(Unit) },
+    private val isCatalogStale: suspend () -> Boolean = { true },
     private val isOnline: () -> Boolean = { true },
     private val isMetered: () -> Boolean = { false },
     private val now: () -> Instant = { Instant.fromEpochSeconds(0L) },
@@ -79,70 +90,109 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _syncErrors = MutableSharedFlow<SyncError>(replay = 1)
+    val syncErrors: Flow<SyncError> = _syncErrors
+
+    private var syncJob: Job? = null
+
+    private val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
+
     init {
-        loadCatalog()
-    }
-
-    private fun loadCatalog() {
         viewModelScope.launch {
-            log.d { "Loading catalog..." }
-            _uiState.value = HomeUiState.Loading
-
-            val catalogResult = listCatalog()
-            val catalog = catalogResult.getOrDefault(emptyList())
-
-            catalogResult.onFailure { error ->
-                log.e(error) { "Catalog load failed: ${error.message}" }
+            catalogItems("movie").combine(catalogItems("show")) { movies, shows ->
+                buildHomeContent(movies, shows, selectedTab = restoredTab)
+            }.collect { content ->
+                _uiState.value = content
             }
-
-            val movies = catalog.filterIsInstance<MovieSummary>()
-            val shows = catalog.filterIsInstance<ShowSummary>()
-
-            val recencyRows = buildRecencyRows(movies, shows)
-
-            val rows = buildList {
-                buildContinueWatchingItems(catalog).takeIf { it.isNotEmpty() }
-                    ?.let { add(HomeRow.ContinueWatching(it.toImmutableList())) }
-                buildOfflineItems(catalog).takeIf { it.isNotEmpty() }
-                    ?.let { add(HomeRow.AvailableOffline(it.toImmutableList())) }
-                addAll(recencyRows)
-                movies.takeIf { it.isNotEmpty() }
-                    ?.let { add(HomeRow.Movies(it.toImmutableList())) }
-                shows.takeIf { it.isNotEmpty() }
-                    ?.let { add(HomeRow.Shows(it.toImmutableList())) }
-            }.toImmutableList()
-
-            val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
-            log.d { "Catalog loaded: ${rows.size} rows, ${movies.size} movies, ${shows.size} shows" }
-            _uiState.value = HomeUiState.Content(
-                rows = rows,
-                selectedTab = restoredTab,
-            )
+        }
+        viewModelScope.launch {
+            if (isCatalogStale()) {
+                syncInternal(silent = true)
+            }
         }
     }
 
-    @Suppress("UnusedParameter")
-    private fun buildContinueWatchingItems(catalog: List<Media>): List<Media> = emptyList()
-
-    @Suppress("UnusedParameter")
-    private fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
-
-    private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {
-        fun List<Media>.toRecencyRow(label: String): HomeRow.Recency? =
-            takeIf { it.isNotEmpty() }?.let { HomeRow.Recency(items = it.toImmutableList(), label = label) }
-
-        return listOfNotNull(
-            movies.filter { it.updatedAtEpochSeconds != null }.toRecencyRow("Recently Added"),
-            shows.filter { it.newestVideoEpochSeconds != null }.toRecencyRow("Shows with recent episodes"),
-            movies.filter { it.year != null && it.updatedAtEpochSeconds == null }
-                .toRecencyRow("Recent by release date"),
-        ).toImmutableList()
+    fun sync() {
+        syncInternal(silent = false)
     }
 
-    private fun parseSavedTab(tab: String): HomeTab = when (tab.uppercase()) {
-        "MOVIES" -> HomeTab.MOVIES
-        "SHOWS" -> HomeTab.SHOWS
-        "SEARCH" -> HomeTab.SEARCH
-        else -> HomeTab.MOVIES
+    private fun syncInternal(silent: Boolean) {
+        syncJob?.cancel()
+        syncJob = viewModelScope.launch {
+            val thisJob = coroutineContext[Job]
+            _isSyncing.value = true
+            try {
+                syncCatalog()
+                    .onFailure { error ->
+                        log.e(error) { "Sync failed" }
+                        if (!silent) {
+                            val syncError = (error as? DomainResultException)?.domainError as? SyncError
+                                ?: SyncError.Unknown
+                            _syncErrors.emit(syncError)
+                        }
+                    }
+            } finally {
+                if (thisJob === syncJob) {
+                    _isSyncing.value = false
+                }
+            }
+        }
     }
+
+    fun retrySync() {
+        viewModelScope.launch { sync() }
+    }
+}
+
+@Suppress("UnusedParameter")
+internal fun buildContinueWatchingItems(catalog: List<Media>): List<Media> = emptyList()
+
+@Suppress("UnusedParameter")
+internal fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
+
+internal fun buildHomeContent(
+    movies: List<Media>,
+    shows: List<Media>,
+    selectedTab: HomeTab = HomeTab.MOVIES,
+): HomeUiState.Content {
+    val movieItems = movies.filterIsInstance<MovieSummary>()
+    val showItems = shows.filterIsInstance<ShowSummary>()
+
+    val recencyRows = buildRecencyRows(movieItems, showItems)
+
+    val rows = buildList {
+        buildContinueWatchingItems(movies + shows).takeIf { it.isNotEmpty() }
+            ?.let { add(HomeRow.ContinueWatching(it.toImmutableList())) }
+        buildOfflineItems(movies + shows).takeIf { it.isNotEmpty() }
+            ?.let { add(HomeRow.AvailableOffline(it.toImmutableList())) }
+        addAll(recencyRows)
+        movieItems.takeIf { it.isNotEmpty() }
+            ?.let { add(HomeRow.Movies(it.toImmutableList())) }
+        showItems.takeIf { it.isNotEmpty() }
+            ?.let { add(HomeRow.Shows(it.toImmutableList())) }
+    }.toImmutableList()
+
+    return HomeUiState.Content(rows = rows, selectedTab = selectedTab)
+}
+
+private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {
+    fun List<Media>.toRecencyRow(label: String): HomeRow.Recency? =
+        takeIf { it.isNotEmpty() }?.let { HomeRow.Recency(items = it.toImmutableList(), label = label) }
+
+    return listOfNotNull(
+        movies.filter { it.updatedAtEpochSeconds != null }.toRecencyRow("Recently Added"),
+        shows.filter { it.newestVideoEpochSeconds != null }.toRecencyRow("Shows with recent episodes"),
+        movies.filter { it.year != null && it.updatedAtEpochSeconds == null }
+            .toRecencyRow("Recent by release date"),
+    ).toImmutableList()
+}
+
+private fun parseSavedTab(tab: String): HomeTab = when (tab.uppercase()) {
+    "MOVIES" -> HomeTab.MOVIES
+    "SHOWS" -> HomeTab.SHOWS
+    "SEARCH" -> HomeTab.SEARCH
+    else -> HomeTab.MOVIES
 }

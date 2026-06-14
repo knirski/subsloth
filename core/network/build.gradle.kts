@@ -7,9 +7,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            implementation(project(":core:database"))
+            implementation(project(":core:preferences"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.kermit)
 
             // Ktor
             implementation(libs.ktor.client.core)

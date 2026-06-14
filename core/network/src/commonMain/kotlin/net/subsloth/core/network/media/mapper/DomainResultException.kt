@@ -1,10 +1,9 @@
 package net.subsloth.core.network.media.mapper
 
-import net.subsloth.core.model.error.DomainError
+import net.subsloth.core.model.error.DomainResultException
 
-/**
- * Wraps a [DomainError] as a [Throwable] so it can be used with
- * [kotlin.Result.failure] across module boundaries where domain errors
- * are not themselves Throwable subtypes.
- */
-class DomainResultException(val domainError: DomainError) : Exception(domainError.toString())
+@Deprecated(
+    "Use net.subsloth.core.model.error.DomainResultException directly",
+    replaceWith = ReplaceWith("DomainResultException", "net.subsloth.core.model.error.DomainResultException"),
+)
+typealias DomainResultException = net.subsloth.core.model.error.DomainResultException

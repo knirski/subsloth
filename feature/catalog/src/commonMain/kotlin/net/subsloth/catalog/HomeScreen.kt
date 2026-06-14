@@ -8,26 +8,38 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -36,24 +48,71 @@ fun HomeScreen(
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    when (val s = state) {
-        is HomeUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
+    LaunchedEffect(Unit) {
+        viewModel.syncErrors.collect { error ->
+            val message = when (error) {
+                is SyncError.NoConnectivity -> "No internet connection"
+                is SyncError.Timeout -> "Request timed out"
+                is SyncError.ServerError -> "Server error (${error.code})"
+                is SyncError.Unknown -> "Sync failed"
+            }
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = "Retry",
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.retrySync()
             }
         }
+    }
 
-        is HomeUiState.Content -> {
-            CatalogContent(
-                state = s,
-                modifier = modifier,
-                onMovieClick = onMovieClick,
-                onShowClick = onShowClick,
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("SubSloth") },
+                actions = {
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        IconButton(
+                            onClick = { viewModel.sync() },
+                            enabled = !isSyncing,
+                        ) {
+                            Text("⟳", style = MaterialTheme.typography.titleLarge)
+                        }
+                    }
+                },
             )
+        },
+    ) { padding ->
+        when (val s = state) {
+            is HomeUiState.Loading -> {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is HomeUiState.Content -> {
+                CatalogContent(
+                    state = s,
+                    modifier = modifier.padding(padding),
+                    onMovieClick = onMovieClick,
+                    onShowClick = onShowClick,
+                )
+            }
         }
     }
 }
@@ -100,21 +159,19 @@ private fun HomeRowSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
-            items(
-                items = row.items,
-                key = { it.id.toString() },
-                contentType = { it::class },
-            ) { media ->
-                MediaCard(
-                    media = media,
-                    onClick = {
-                        when (val mid = media.id) {
-                            is Media.MediaId.Movie -> onMovieClick(mid)
-                            is Media.MediaId.Show -> onShowClick(mid)
-                            is Media.MediaId.Episode -> {}
-                        }
-                    },
-                )
+            row.items.forEach { media ->
+                item(key = media.id, contentType = media::class) {
+                    MediaCard(
+                        media = media,
+                        onClick = {
+                            when (val mid = media.id) {
+                                is Media.MediaId.Movie -> onMovieClick(mid)
+                                is Media.MediaId.Show -> onShowClick(mid)
+                                is Media.MediaId.Episode -> {}
+                            }
+                        },
+                    )
+                }
             }
         }
     }

@@ -7,30 +7,6 @@ import androidx.room3.PrimaryKey
 // ── Account-Scoped Entities ────────────────────────────────────────────────
 
 /**
- * Cached online metadata for a movie or show.
- * Scoped by account profile key for isolation.
- */
-@Entity(
-    tableName = "cached_online_metadata",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
-)
-data class CachedOnlineMetadataEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileKey: String,
-    val contentId: String,
-    val contentType: String, // "movie" or "show"
-    val title: String,
-    val overview: String?,
-    val posterUrl: String?,
-    val backdropUrl: String?,
-    val year: Int?,
-    val genres: String?, // JSON-encoded list
-    val runtime: Int?,
-    val rating: Double?,
-    val cachedAtEpochSeconds: Long,
-)
-
-/**
  * Streamed/online playback progress, scoped by account.
  */
 @Entity(

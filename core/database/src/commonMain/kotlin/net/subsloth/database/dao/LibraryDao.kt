@@ -7,7 +7,6 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
 import net.subsloth.database.entity.AccountPlaybackProgressEntity
-import net.subsloth.database.entity.CachedOnlineMetadataEntity
 import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
@@ -19,24 +18,6 @@ import net.subsloth.database.entity.WatchLaterEntity
 import net.subsloth.database.entity.WatchedStateEntity
 
 // ── Account-Scoped DAOs ────────────────────────────────────────────────────
-
-@Dao
-interface CachedOnlineMetadataDao {
-    @Query("SELECT * FROM cached_online_metadata WHERE profileKey = :profileKey AND contentType = :contentType")
-    fun getByProfileAndType(profileKey: String, contentType: String): Flow<List<CachedOnlineMetadataEntity>>
-
-    @Query("SELECT * FROM cached_online_metadata WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): CachedOnlineMetadataEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(entity: CachedOnlineMetadataEntity)
-
-    @Query("DELETE FROM cached_online_metadata WHERE profileKey = :profileKey")
-    suspend fun deleteAllForProfile(profileKey: String)
-
-    @Query("SELECT COUNT(*) FROM cached_online_metadata WHERE profileKey = :profileKey")
-    suspend fun countForProfile(profileKey: String): Int
-}
 
 @Dao
 interface AccountPlaybackProgressDao {

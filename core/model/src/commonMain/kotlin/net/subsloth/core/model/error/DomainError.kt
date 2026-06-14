@@ -122,6 +122,23 @@ sealed interface NetworkError : DomainError {
     data class RateLimited(val retryAfterSeconds: Int?) : NetworkError
 }
 
+// ── Catalog Sync ───────────────────────────────────────────────────────────
+
+/** Errors during catalog synchronization. */
+sealed interface SyncError : DomainError {
+    /** No network connectivity is available. */
+    data object NoConnectivity : SyncError
+
+    /** The request timed out. */
+    data object Timeout : SyncError
+
+    /** Server returned an HTTP error. */
+    data class ServerError(val code: Int) : SyncError
+
+    /** An unknown or unexpected error occurred. */
+    data object Unknown : SyncError
+}
+
 // ── Library ─────────────────────────────────────────────────────────────────
 
 /** Errors related to library operations. */

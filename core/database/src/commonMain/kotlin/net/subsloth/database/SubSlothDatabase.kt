@@ -4,7 +4,7 @@ import androidx.room3.ConstructedBy
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import net.subsloth.database.dao.AccountPlaybackProgressDao
-import net.subsloth.database.dao.CachedOnlineMetadataDao
+import net.subsloth.database.dao.CachedCatalogDao
 import net.subsloth.database.dao.DownloadedMediaDao
 import net.subsloth.database.dao.DownloadedSubtitleDao
 import net.subsloth.database.dao.FavoriteDao
@@ -16,7 +16,9 @@ import net.subsloth.database.dao.SubscriptionDao
 import net.subsloth.database.dao.WatchLaterDao
 import net.subsloth.database.dao.WatchedStateDao
 import net.subsloth.database.entity.AccountPlaybackProgressEntity
-import net.subsloth.database.entity.CachedOnlineMetadataEntity
+import net.subsloth.database.entity.CachedCatalogCountryEntity
+import net.subsloth.database.entity.CachedCatalogGenreEntity
+import net.subsloth.database.entity.CachedCatalogItemEntity
 import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
@@ -32,7 +34,9 @@ import net.subsloth.database.entity.WatchedStateEntity
 @ConstructedBy(SubSlothDatabaseCtor::class)
 @Database(
     entities = [
-        CachedOnlineMetadataEntity::class,
+        CachedCatalogItemEntity::class,
+        CachedCatalogGenreEntity::class,
+        CachedCatalogCountryEntity::class,
         AccountPlaybackProgressEntity::class,
         FavoriteEntity::class,
         WatchLaterEntity::class,
@@ -46,11 +50,11 @@ import net.subsloth.database.entity.WatchedStateEntity
         SeasonQueueEntity::class,
         QueueItemEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class SubSlothDatabase : RoomDatabase() {
-    abstract fun cachedOnlineMetadataDao(): CachedOnlineMetadataDao
+    abstract fun cachedCatalogDao(): CachedCatalogDao
 
     abstract fun accountPlaybackProgressDao(): AccountPlaybackProgressDao
 
