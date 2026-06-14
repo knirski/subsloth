@@ -32,8 +32,8 @@ This catches problems that unit-level fixture tests miss:
 
 | Scenario | What breaks | How it's tested |
 |---|---|---|
-| **Non-matching path (404)** | The Retrofit client, interceptors, and error-handling code must not crash on a 404 response. | A bare `WireMockServer` (no stubs) returns WireMock's default 404. The client receives an `HttpException(404)`. |
-| **Connection refused** | Network reachability, retry logic, or error-reporting code may assume the server is always up. | Point the client at `localhost:1` (no server). Retrofit throws `IOException`. |
+| **Non-matching path (404)** | The Ktor client, interceptors, and error-handling code must not crash on a 404 response. | A bare `WireMockServer` (no stubs) returns WireMock's default 404. The client receives an `HttpException(404)`. |
+| **Connection refused** | Network reachability, retry logic, or error-reporting code may assume the server is always up. | Point the client at `localhost:1` (no server). Ktor throws `IOException`. |
 | **Malformed response body** | `kotlinx.serialization` may produce a cryptic exception. The error-reporting layer must handle it. | A WireMock stub returns `{invalid json` — the client receives a `SerializationException`. |
 | **Query parameters** | The server (or stub) must not reject requests with extra query params. | Call `listMovies(page = 2, perPage = 50)`. WireMock's `urlPathMatching` ignores query strings, so the fixture is returned as-is. |
 

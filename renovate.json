@@ -38,12 +38,6 @@
       "groupName": "gradle-wrapper"
     },
     {
-      "description": "Alpha/beta/rc libraries — no automerge",
-      "matchCategories": ["kotlin", "java"],
-      "matchCurrentValue": "/-(alpha|beta|rc)(\\.?\\d+)?$/",
-      "automerge": false
-    },
-    {
       "description": "Testing libs — all auto-merge",
       "matchPackagePrefixes": [
         "org.junit",
@@ -52,6 +46,12 @@
         "org.wiremock"
       ],
       "automerge": true
+    },
+    {
+      "description": "Alpha/beta/rc libraries — no automerge",
+      "matchCategories": ["kotlin", "java"],
+      "matchCurrentValue": "/-(alpha|beta|rc)(\\.?\\d+)?$/",
+      "automerge": false
     }
   ],
   "vulnerabilityAlerts": {
