@@ -42,7 +42,6 @@
       "matchPackagePrefixes": [
         "org.junit",
         "app.cash.turbine",
-        "io.github.takahirom.roborazzi",
         "org.wiremock"
       ],
       "automerge": true

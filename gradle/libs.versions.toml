@@ -23,7 +23,7 @@ kotlinxSerialization = "1.11.0"
 work = "2.11.2"
 coroutines = "1.11.0"
 turbine = "1.2.1"
-roborazzi = "1.63.0"
+
 benchmark = "1.4.1"
 jsonSchemaValidator = "3.0.3"
 junit = "6.1.0"
@@ -158,11 +158,6 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "jsonSchemaValidator" }
 wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
 
-# Roborazzi (screenshot tests)
-roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
-roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
-roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
-
 # Detekt
 detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
 detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
@@ -198,7 +193,6 @@ compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultplatf
 
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
-roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
