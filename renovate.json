@@ -1,0 +1,60 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":automergeMinor",
+    ":separateMajorMinor",
+    "group:allNonMajor"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["before 9am on Monday"],
+  "timezone": "Europe/Warsaw",
+  "prConcurrentLimit": 5,
+  "dependencyDashboard": true,
+  "packageRules": [
+    {
+      "description": "Kotlin, KMP, Compose, KSP — major/minor in one PR, manually reviewed",
+      "matchPackageNames": [
+        "org.jetbrains.kotlin:kotlin-gradle-plugin",
+        "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin",
+        "org.jetbrains.kotlin:compose-compiler-gradle-plugin",
+        "com.google.devtools.ksp"
+      ],
+      "matchUpdateTypes": ["major", "minor"],
+      "automerge": false,
+      "groupName": "kotlin-core",
+      "labels": ["kotlin"]
+    },
+    {
+      "description": "AGP — manual only",
+      "matchPackageNames": ["com.android.tools.build:gradle"],
+      "automerge": false,
+      "groupName": "agp"
+    },
+    {
+      "description": "Gradle wrapper — manual only",
+      "matchPackagePrefixes": ["gradle"],
+      "automerge": false,
+      "groupName": "gradle-wrapper"
+    },
+    {
+      "description": "Alpha/beta/rc libraries — no automerge",
+      "matchCategories": ["kotlin", "java"],
+      "matchCurrentValue": "/-(alpha|beta|rc)\\.?\\d/",
+      "automerge": false
+    },
+    {
+      "description": "Testing libs — all auto-merge",
+      "matchPackagePrefixes": [
+        "org.junit",
+        "app.cash.turbine",
+        "io.github.takahirom.roborazzi",
+        "org.wiremock"
+      ],
+      "automerge": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
+}

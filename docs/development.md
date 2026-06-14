@@ -75,7 +75,7 @@ Live drift tests validate that the committed OpenAPI contract and typed DTOs sti
 - **Credentials**: Set `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD` environment variables.
 - **Skip behavior**: If either variable is missing, the tests are skipped (not failed).
 - **No CI workflow**: There is no GitHub Actions live-drift workflow in v1. Live drift verification is a manual developer responsibility.
-- **Complementary safeguards**: Fixture-based `FixtureTest` and WireMock-based `WireMockIntegrationTest` cover the offline contract without credentials.
+- **Complementary safeguards**: `FixtureTest` (Ktor MockEngine) replays captured fixtures offline. The `testing:api-contract` module validates fixture generation and WireMock mapping replay.
 
 #### Invariant Checks
 The repository includes automated invariant checks that run in CI:
