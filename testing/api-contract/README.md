@@ -7,18 +7,18 @@ This module holds the **sanitized Media fixtures**, the **programmatic WireMock 
 | Layer                    | What it validates                                                              | Where                           | Credentials needed? |
 |--------------------------|--------------------------------------------------------------------------------|---------------------------------|---------------------|
 | **Unit / fixture**       | Each fixture JSON decodes into the typed DTO without data loss                 | `FixtureTest` (in `:core:network`) | no                  |
-| **Contract / mock**      | The real Retrofit client makes real HTTP calls against WireMock stubs and gets back typed DTOs | `WireMockIntegrationTest` (in `:core:network`) | no |
-| **Drift / live**         | The real Retrofit client against the actual Media API — catches schema changes | `ApiLiveDriftTest`         | yes (`SUBSLOTH_LOGIN` / `SUBSLOTH_PASSWORD`) |
+| **Contract / mock**      | WireMock stubs serve fixture payloads; replay mapping is verified deterministically | `MockMappingVerificationTest` (in `:testing:api-contract`) | no |
+| **Drift / live**         | The real Ktor client against the actual Media API — catches schema changes | `ApiLiveDriftTest`         | yes (`SUBSLOTH_LOGIN` / `SUBSLOTH_PASSWORD`) |
 
 ## Why mock-server contract tests?
 
 The `FixtureTest` already proves that a JSON string can be deserialized into a Kotlin data class. But that tests only the **parser** — not the full **transport**: HTTP headers, status codes, interceptors, or query-parameter encoding.
 
-The integration tests in this suite:
+The tests in this suite verify:
 
-1. **Start a real HTTP server** (`WireMockServerFactory`) that serves the same sanitized fixture files that live in this module.
-2. **Create the real Retrofit client** (`ClientFactory`) pointing at that server. The client carries the same interceptors (Kodi User-Agent, Basic auth) that the production app uses — they just run against fake credentials.
-3. **Exercise every native API endpoint** — list movies, list shows, movie detail, show detail, episode detail — and assert the returned DTO fields match the fixture content.
+1. **WireMock stub replay correctness** — `WireMockServerFactory` registers stubs for every known endpoint, and `MockMappingVerificationTest` verifies the generated mappings are deterministic.
+2. **Fixture loading** — `FixtureLoader` loads sanitized fixture files and validates their structure.
+3. **HAR processing determinism** — `HarProcessorDeterminismTest` ensures HAR-to-fixture conversion is idempotent.
 
 This catches problems that unit-level fixture tests miss:
 
@@ -26,14 +26,14 @@ This catches problems that unit-level fixture tests miss:
 - Query-parameter encoding (`page=2&per_page=50`)
 - HTTP header handling (`Content-Type` must be `application/json`)
 - Interceptor execution (does the auth header break the request?)
-- Retrofit / kotlinx.serialization integration (the converter factory)
+- Ktor / kotlinx.serialization integration (the content negotiation plugin)
 
 ## Edge-case coverage
 
 | Scenario | What breaks | How it's tested |
 |---|---|---|
-| **Non-matching path (404)** | The Retrofit client, interceptors, and error-handling code must not crash on a 404 response. | A bare `WireMockServer` (no stubs) returns WireMock's default 404. The client receives an `HttpException(404)`. |
-| **Connection refused** | Network reachability, retry logic, or error-reporting code may assume the server is always up. | Point the client at `localhost:1` (no server). Retrofit throws `IOException`. |
+| **Non-matching path (404)** | The Ktor client, interceptors, and error-handling code must not crash on a 404 response. | A bare `WireMockServer` (no stubs) returns WireMock's default 404. The client receives an `HttpException(404)`. |
+| **Connection refused** | Network reachability, retry logic, or error-reporting code may assume the server is always up. | Point the client at `localhost:1` (no server). Ktor throws `IOException`. |
 | **Malformed response body** | `kotlinx.serialization` may produce a cryptic exception. The error-reporting layer must handle it. | A WireMock stub returns `{invalid json` — the client receives a `SerializationException`. |
 | **Query parameters** | The server (or stub) must not reject requests with extra query params. | Call `listMovies(page = 2, perPage = 50)`. WireMock's `urlPathMatching` ignores query strings, so the fixture is returned as-is. |
 
