@@ -119,6 +119,20 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    // ── Global (non-profile-scoped) ─────────────────────────────────────
+
+    private val globalCatalogCacheTimestampKey = longPreferencesKey("global_catalog_cache_timestamp")
+
+    fun globalCatalogCacheTimestamp(): Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[globalCatalogCacheTimestampKey]
+    }
+
+    suspend fun setGlobalCatalogCacheTimestamp(timestamp: Long) {
+        dataStore.edit { prefs ->
+            prefs[globalCatalogCacheTimestampKey] = timestamp
+        }
+    }
+
     fun detailCacheTimestamp(profileKey: AccountProfileKey): Flow<Long?> = dataStore.data.map { prefs ->
         prefs[detailCacheTimestampKey(profileKey)]
     }

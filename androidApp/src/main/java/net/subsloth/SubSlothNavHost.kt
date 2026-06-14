@@ -26,6 +26,8 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.catalog.HomeScreen
+import net.subsloth.catalog.HomeViewModel
 import net.subsloth.library.DownloadsScreen
 import net.subsloth.library.DownloadsViewModel
 import net.subsloth.library.LibraryScreen
@@ -69,7 +71,21 @@ fun SubSlothNavHost(
             }
 
             entry<CatalogKey> {
-                // Catalog home — wired in catalog-details
+                @Suppress("ViewModelInjection")
+                val viewModel: HomeViewModel = viewModel(
+                    key = "catalog_home",
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            HomeViewModel() as T
+                    },
+                )
+                HomeScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
 
             entry<MovieDetailKey> { key ->
