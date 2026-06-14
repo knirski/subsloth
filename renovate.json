@@ -33,14 +33,14 @@
     },
     {
       "description": "Gradle wrapper — manual only",
-      "matchPackagePrefixes": ["gradle"],
+      "matchPackageNames": ["gradle"],
       "automerge": false,
       "groupName": "gradle-wrapper"
     },
     {
       "description": "Alpha/beta/rc libraries — no automerge",
       "matchCategories": ["kotlin", "java"],
-      "matchCurrentValue": "/-(alpha|beta|rc)\\.?\\d/",
+      "matchCurrentValue": "/-(alpha|beta|rc)(\\.?\\d+)?$/",
       "automerge": false
     },
     {
