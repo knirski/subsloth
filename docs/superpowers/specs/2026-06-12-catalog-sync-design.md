@@ -644,9 +644,9 @@ For startup sync: error is logged silently.
 ## Error Handling
 
 - **Network failure during sync:** Log the error, keep showing cached data. Send `SyncError` subtype to channel. Snackbar shows with "Retry" action button, auto-dismisses after ~5 seconds.
-- **Retry tapped:** ViewModel checks connectivity first. If still offline, shows "No internet connection" snackbar again. If online, re-triggers `sync()`.
+- **Retry tapped:** ViewModel re-triggers `sync()` without a connectivity pre-check. The sync will fail with a typed `SyncError` if the device is still offline.
 - **Empty catalog from API:** Replace cache with empty list. UI shows empty state. No error event (sync succeeded).
-- **Partial failure (movies OK, shows fail):** Upsert movies, keep shows from previous cache. Log the shows error. Send `SyncError` to channel.
+- **All-or-nothing failure:** If any API call fails (movies, shows, or pagination), the entire sync fails. The atomic `replaceAll()` transaction is never called, so the cache retains its previous state. No partial updates occur.
 - **Automatic startup syncs:** Silent — no snackbar on failure or success. Errors are logged only.
 
 ## Testing

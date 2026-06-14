@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.map
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 /**
- * Account-scoped user preferences backed by DataStore.
+ * User preferences backed by DataStore.
  *
- * Each preference key is namespaced under the active [AccountProfileKey]
- * so that different accounts have independent preferences.
+ * Most preference keys are namespaced under the active [AccountProfileKey]
+ * so that different accounts have independent preferences. A few keys
+ * (e.g. global catalog cache timestamp) are account-agnostic.
  */
 @Suppress("TooManyFunctions")
 class UserPreferences(private val dataStore: DataStore<Preferences>) {

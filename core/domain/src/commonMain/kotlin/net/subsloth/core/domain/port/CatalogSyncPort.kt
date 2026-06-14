@@ -11,7 +11,8 @@ import net.subsloth.core.model.error.SyncError
 interface CatalogSyncPort {
     /**
      * Fetches fresh catalog from the API and updates the local cache.
-     * Returns [Result.success] on success, or [Result.failure] with a [SyncError] on failure.
+     * Returns [Result.success] on success, or [Result.failure] with a
+     * [SyncError] wrapped in a DomainResultException on failure.
      */
     suspend fun sync(): Result<Unit>
 

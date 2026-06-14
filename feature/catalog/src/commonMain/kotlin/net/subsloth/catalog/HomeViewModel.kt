@@ -98,10 +98,12 @@ class HomeViewModel(
 
     private var syncJob: Job? = null
 
+    private val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
+
     init {
         viewModelScope.launch {
             catalogItems("movie").combine(catalogItems("show")) { movies, shows ->
-                buildHomeContent(movies, shows)
+                buildHomeContent(movies, shows, selectedTab = restoredTab)
             }.collect { content ->
                 _uiState.value = content
             }
@@ -120,6 +122,7 @@ class HomeViewModel(
     private fun syncInternal(silent: Boolean) {
         syncJob?.cancel()
         syncJob = viewModelScope.launch {
+            val thisJob = coroutineContext[Job]
             _isSyncing.value = true
             try {
                 syncCatalog()
@@ -132,7 +135,9 @@ class HomeViewModel(
                         }
                     }
             } finally {
-                _isSyncing.value = false
+                if (thisJob === syncJob) {
+                    _isSyncing.value = false
+                }
             }
         }
     }
@@ -148,7 +153,11 @@ internal fun buildContinueWatchingItems(catalog: List<Media>): List<Media> = emp
 @Suppress("UnusedParameter")
 internal fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
 
-internal fun buildHomeContent(movies: List<Media>, shows: List<Media>): HomeUiState.Content {
+internal fun buildHomeContent(
+    movies: List<Media>,
+    shows: List<Media>,
+    selectedTab: HomeTab = HomeTab.MOVIES,
+): HomeUiState.Content {
     val movieItems = movies.filterIsInstance<MovieSummary>()
     val showItems = shows.filterIsInstance<ShowSummary>()
 
@@ -166,7 +175,7 @@ internal fun buildHomeContent(movies: List<Media>, shows: List<Media>): HomeUiSt
             ?.let { add(HomeRow.Shows(it.toImmutableList())) }
     }.toImmutableList()
 
-    return HomeUiState.Content(rows = rows, selectedTab = HomeTab.MOVIES)
+    return HomeUiState.Content(rows = rows, selectedTab = selectedTab)
 }
 
 private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {

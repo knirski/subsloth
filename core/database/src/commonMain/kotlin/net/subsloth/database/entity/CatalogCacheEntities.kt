@@ -12,7 +12,7 @@ import androidx.room3.PrimaryKey
  */
 @Entity(
     tableName = "cached_catalog",
-    indices = [Index(value = ["contentId"], unique = true)],
+    indices = [Index(value = ["contentType", "contentId"], unique = true)],
 )
 data class CachedCatalogItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -35,27 +35,35 @@ data class CachedCatalogItemEntity(
 
 /**
  * Genre join table for cached catalog items.
+ *
+ * Uses [contentId] as the join key (the business key from [CachedCatalogItemEntity])
+ * rather than the auto-generated [CachedCatalogItemEntity.id] to avoid the
+ * auto-gen-ID-propagation problem during atomic [replaceAll] transactions.
+ * Referential integrity is enforced by the DAO's @Transaction atomicity.
  */
 @Entity(
     tableName = "cached_catalog_genre",
-    indices = [Index(value = ["catalogItemId", "genre"], unique = true)],
+    indices = [Index(value = ["contentId", "genre"], unique = true)],
 )
 data class CachedCatalogGenreEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val catalogItemId: Long,
+    val contentId: String,
     val genre: String,
 )
 
 /**
  * Country join table for cached catalog items.
+ *
+ * See [CachedCatalogGenreEntity] for the rationale for using [contentId]
+ * as the join key instead of the auto-generated ID.
  */
 @Entity(
     tableName = "cached_catalog_country",
-    indices = [Index(value = ["catalogItemId", "country"], unique = true)],
+    indices = [Index(value = ["contentId", "country"], unique = true)],
 )
 data class CachedCatalogCountryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val catalogItemId: Long,
+    val contentId: String,
     val country: String,
 )
 

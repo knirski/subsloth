@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "49b72573882345f8db2f70f0528e9d3f",
+    "identityHash": "92205db1720b83171baeb5627b110faa",
     "entities": [
       {
         "tableName": "cached_catalog",
@@ -101,19 +101,20 @@
         },
         "indices": [
           {
-            "name": "index_cached_catalog_contentId",
+            "name": "index_cached_catalog_contentType_contentId",
             "unique": true,
             "columnNames": [
+              "contentType",
               "contentId"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_contentId` ON `${TABLE_NAME}` (`contentId`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_contentType_contentId` ON `${TABLE_NAME}` (`contentType`, `contentId`)"
           }
         ]
       },
       {
         "tableName": "cached_catalog_genre",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogItemId` INTEGER NOT NULL, `genre` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `contentId` TEXT NOT NULL, `genre` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -122,9 +123,9 @@
             "notNull": true
           },
           {
-            "fieldPath": "catalogItemId",
-            "columnName": "catalogItemId",
-            "affinity": "INTEGER",
+            "fieldPath": "contentId",
+            "columnName": "contentId",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -142,20 +143,20 @@
         },
         "indices": [
           {
-            "name": "index_cached_catalog_genre_catalogItemId_genre",
+            "name": "index_cached_catalog_genre_contentId_genre",
             "unique": true,
             "columnNames": [
-              "catalogItemId",
+              "contentId",
               "genre"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_genre_catalogItemId_genre` ON `${TABLE_NAME}` (`catalogItemId`, `genre`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_genre_contentId_genre` ON `${TABLE_NAME}` (`contentId`, `genre`)"
           }
         ]
       },
       {
         "tableName": "cached_catalog_country",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalogItemId` INTEGER NOT NULL, `country` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `contentId` TEXT NOT NULL, `country` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -164,9 +165,9 @@
             "notNull": true
           },
           {
-            "fieldPath": "catalogItemId",
-            "columnName": "catalogItemId",
-            "affinity": "INTEGER",
+            "fieldPath": "contentId",
+            "columnName": "contentId",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -184,14 +185,14 @@
         },
         "indices": [
           {
-            "name": "index_cached_catalog_country_catalogItemId_country",
+            "name": "index_cached_catalog_country_contentId_country",
             "unique": true,
             "columnNames": [
-              "catalogItemId",
+              "contentId",
               "country"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_country_catalogItemId_country` ON `${TABLE_NAME}` (`catalogItemId`, `country`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_catalog_country_contentId_country` ON `${TABLE_NAME}` (`contentId`, `country`)"
           }
         ]
       },
@@ -929,7 +930,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '49b72573882345f8db2f70f0528e9d3f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '92205db1720b83171baeb5627b110faa')"
     ]
   }
 }

@@ -51,12 +51,12 @@ interface CachedCatalogDao {
         upsertAll(items.map { it.item })
         upsertAllGenres(
             items.flatMap { item ->
-                item.genres.map { genre -> genre.copy(catalogItemId = item.item.id) }
+                item.genres.map { genre -> genre.copy(contentId = item.item.contentId) }
             },
         )
         upsertAllCountries(
             items.flatMap { item ->
-                item.countries.map { country -> country.copy(catalogItemId = item.item.id) }
+                item.countries.map { country -> country.copy(contentId = item.item.contentId) }
             },
         )
     }

@@ -1,7 +1,9 @@
 package net.subsloth.core.network.media
 
 import co.touchlab.kermit.Logger
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -59,13 +61,13 @@ class CatalogRepository(
             genres: List<CachedCatalogGenreEntity>,
             countries: List<CachedCatalogCountryEntity>,
         ->
-        val genresByItem = genres.groupBy { it.catalogItemId }
-        val countriesByItem = countries.groupBy { it.catalogItemId }
+        val genresByItem = genres.groupBy { it.contentId }
+        val countriesByItem = countries.groupBy { it.contentId }
         items.map { item ->
             CachedCatalogItemWithMetadata(
                 item = item,
-                genres = genresByItem[item.id].orEmpty(),
-                countries = countriesByItem[item.id].orEmpty(),
+                genres = genresByItem[item.contentId].orEmpty(),
+                countries = countriesByItem[item.contentId].orEmpty(),
             ).toDomainMedia()
         }
     }
@@ -92,6 +94,7 @@ class CatalogRepository(
         log.d { "Catalog sync complete: ${movieItems.size} movies, ${showItems.size} shows" }
         Result.success(Unit)
     } catch (e: Exception) {
+        if (e is CancellationException) throw e
         log.e(e) { "Catalog sync failed" }
         val error = when (e) {
             is DomainResultException -> when (val domainError = e.domainError) {
@@ -242,10 +245,10 @@ class CatalogRepository(
             newestVideoEpochSeconds = newestVideoEpochSeconds,
         )
         val genreEntities = genres.map { genre ->
-            CachedCatalogGenreEntity(catalogItemId = 0, genre = genre)
+            CachedCatalogGenreEntity(contentId = contentId, genre = genre)
         }
         val countryEntities = countries.map { country ->
-            CachedCatalogCountryEntity(catalogItemId = 0, country = country)
+            CachedCatalogCountryEntity(contentId = contentId, country = country)
         }
         return CachedCatalogItemWithMetadata(
             item = entity,
@@ -264,9 +267,17 @@ class CatalogRepository(
     }
 
     private fun mapExceptionToSyncError(e: Exception): SyncError = when {
-        e is java.net.UnknownHostException -> SyncError.NoConnectivity
-        e is java.net.SocketTimeoutException -> SyncError.Timeout
-        e is java.io.IOException -> SyncError.Unknown
+        isIoError(e) -> SyncError.NoConnectivity
+        e is HttpRequestTimeoutException -> SyncError.Timeout
         else -> SyncError.Unknown
+    }
+
+    private fun isIoError(error: Throwable): Boolean {
+        val msg = error.message?.lowercase() ?: ""
+        return msg.contains("unreachable") ||
+            msg.contains("connection refused") ||
+            msg.contains("network unreachable") ||
+            msg.contains("no route to host") ||
+            error.toString().contains("UnknownHostException", ignoreCase = true)
     }
 }
