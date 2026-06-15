@@ -32,6 +32,6 @@ These docs cover architecture and technology-specific conventions. Load the matc
 | `kotlin-coroutines.md` | `kotlin-coroutines` | Writing async code — scopes, dispatchers, `StateFlow`, cancellation, testing |
 | `agp-migration.md` | `agp-migration` | Upgrading AGP, Gradle, or Kotlin — convention plugins, version catalog, toolchain |
 | `fc-is-data-layer.md` | `fc-is-data-layer` | Writing data access — Room, Ktor, DataStore, DTO mapping, offline-first |
-| `ktor-networking.md` | `retrofit-networking` | Writing network code — Ktor plugins, Kodi identity, rate limiting, request coalescing |
+| `ktor-networking.md` | `ktor-networking` | Writing network code — Ktor plugins, Kodi identity, rate limiting, request coalescing |
 
 Agent-specific skill files (`.codex/skills/`, `.opencode/skills/`, `.agents/skills/`) should stay thin and point back here instead of duplicating policy text.
