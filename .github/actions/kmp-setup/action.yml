@@ -12,7 +12,7 @@ runs:
     # Kotlin/Native compiler cache — slow to download on every run (~5 min).
     # Shared across OS-specific runners via separate cache keys (runner.os prefix).
     - name: Cache Kotlin/Native compiler
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.konan
