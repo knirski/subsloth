@@ -58,16 +58,17 @@ sealed interface PlayerUiState {
         val playbackMode: PlaybackMode,
         val qualityFallbackNotice: Notice?,
         val subtitleFallbackNotice: Notice?,
-        val streamRefreshUsed: Boolean = false,
         val qualityFallbackUsed: Boolean = false,
         val mediaId: Media.MediaId? = null,
+        val session: PlayerSession? = null,
+        val snapshotCountSinceSave: Int = 0,
     ) : PlayerUiState
 
     @Immutable
     data class Notice(val message: String = "", val resKey: String? = null, val formatArg: String? = null)
 }
 
-private data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean = false)
+data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean = false)
 
 @Suppress("TooManyFunctions")
 class PlayerViewModel(
@@ -98,9 +99,6 @@ class PlayerViewModel(
 
     private val _playCommands = Channel<PlayCommand>(Channel.UNLIMITED)
     val playCommands: Flow<PlayCommand> = _playCommands.receiveAsFlow()
-
-    private var session: PlayerSession? = null
-    private var snapshotCountSinceSave: Int = 0
 
     init {
         loadContent()
@@ -139,7 +137,6 @@ class PlayerViewModel(
         log.d {
             "Starting playback: mode=${source.playbackMode}, pos=${positionSeconds}s, url=${source.streamUrl.take(80)}"
         }
-        session = PlayerSession(source = source)
 
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
@@ -170,6 +167,8 @@ class PlayerViewModel(
 
         val currentSpeed = (uiState.value as? PlayerUiState.Content)?.playbackSpeed
         val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
+        val previous = uiState.value as? PlayerUiState.Content
+        val previousRefreshUsed = previous?.session?.streamRefreshUsed == true
 
         _uiState.value = PlayerUiState.Content(
             title = source.mediaId.toString(),
@@ -186,9 +185,11 @@ class PlayerViewModel(
             showNextEpisodePrompt = false,
             playbackError = null,
             playbackMode = source.playbackMode,
-            qualityFallbackNotice = (uiState.value as? PlayerUiState.Content)?.qualityFallbackNotice,
+            qualityFallbackNotice = previous?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
             mediaId = mediaId,
+            session = PlayerSession(source = source, streamRefreshUsed = previousRefreshUsed),
+            snapshotCountSinceSave = 0,
         )
 
         populateNextEpisode(source)
@@ -196,24 +197,31 @@ class PlayerViewModel(
 
     fun onPlayerSnapshot(snapshot: PlayerSnapshot) {
         val dur = snapshot.durationSeconds
-        val state = _uiState.value as? PlayerUiState.Content ?: return
+        val stateBefore = _uiState.value as? PlayerUiState.Content ?: return
+        val mediaId = stateBefore.mediaId
 
+        // The counter increment is computed inside `update` so the new
+        // value is based on the latest snapshot, not a possibly-stale
+        // pre-update read.
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(
                 positionSeconds = snapshot.positionSeconds,
                 durationSeconds = dur,
                 isPlaying = snapshot.isPlaying,
+                snapshotCountSinceSave = current.snapshotCountSinceSave + 1,
             ) ?: current
         }
+        val nextCount = (_uiState.value as? PlayerUiState.Content)?.snapshotCountSinceSave ?: 0
 
-        if (snapshotCountSinceSave++ % 60 == 0) {
-            state.mediaId?.let { id ->
-                viewModelScope.launch { saveProgress(id, snapshot.positionSeconds, dur) }
-            }
+        if (nextCount % 60 == 0 && mediaId != null) {
+            viewModelScope.launch { saveProgress(mediaId, snapshot.positionSeconds, dur) }
         }
 
-        if (dur > 0L && CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) && !state.showNextEpisodePrompt) {
-            showNextEpisodePrompt(state)
+        if (dur > 0L &&
+            CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) &&
+            !stateBefore.showNextEpisodePrompt
+        ) {
+            showNextEpisodePrompt(stateBefore)
         }
     }
 
@@ -288,7 +296,7 @@ class PlayerViewModel(
 
     fun selectQuality(qualityLabel: String) {
         val state = _uiState.value as? PlayerUiState.Content ?: return
-        val currentSession = session ?: return
+        val currentSession = state.session ?: return
         val quality = currentSession.source.availableQualities.find {
             it.info.label == qualityLabel || it.info.resolution.label == qualityLabel
         } ?: run {
@@ -321,7 +329,7 @@ class PlayerViewModel(
 
     fun retryWithRefresh() {
         val state = _uiState.value as? PlayerUiState.Content ?: return
-        val currentSession = session ?: return
+        val currentSession = state.session ?: return
         if (state.playbackMode == PlaybackMode.OFFLINE) return
         if (!StreamRefreshPolicy.canRefresh(currentSession.streamRefreshUsed, isOfflinePlayback = false)) return
 
@@ -338,9 +346,9 @@ class PlayerViewModel(
                         positionSeconds =
                         (_uiState.value as? PlayerUiState.Content)?.positionSeconds ?: 0L,
                     )
-                    session = currentSession.copy(streamRefreshUsed = true)
                     _uiState.update { current ->
-                        (current as? PlayerUiState.Content)?.copy(streamRefreshUsed = true) ?: current
+                        (current as? PlayerUiState.Content)
+                            ?.copy(session = currentSession.copy(streamRefreshUsed = true)) ?: current
                     }
                 },
                 onFailure = { error ->

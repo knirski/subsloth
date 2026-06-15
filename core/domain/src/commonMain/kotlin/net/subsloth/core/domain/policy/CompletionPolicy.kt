@@ -15,6 +15,14 @@ object CompletionPolicy {
     private const val COMPLETION_THRESHOLD: Double = 0.95
 
     /**
+     * Fraction threshold for treating a partially-played item as "watched"
+     * for the purpose of library or download completion grouping.
+     * Distinct from [COMPLETION_THRESHOLD] so a "continue watching" cut-off
+     * can differ from a "fully completed" cut-off.
+     */
+    const val WATCHED_THRESHOLD: Double = 0.9
+
+    /**
      * Returns `true` when the playback position has reached or exceeded
      * the completion threshold of the known duration.
      *

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.library.LibraryCollection
@@ -145,7 +146,7 @@ class LibraryViewModel(
         progress: List<PlaybackProgress>,
         catalog: Map<Media.MediaId, Media>,
     ): List<Media> = progress
-        .filter { it.fraction in 0.05..0.9 }
+        .filter { it.fraction in 0.05..CompletionPolicy.WATCHED_THRESHOLD }
         .mapNotNull { catalog[it.mediaId] }
 
     fun deleteDownload(localId: String) {

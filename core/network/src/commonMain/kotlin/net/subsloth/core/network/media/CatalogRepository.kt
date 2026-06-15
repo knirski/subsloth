@@ -1,7 +1,6 @@
 package net.subsloth.core.network.media
 
 import co.touchlab.kermit.Logger
-import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +23,7 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.network.error.NetworkErrorClassifier
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.mapper.Mapper
 import net.subsloth.database.dao.CachedCatalogDao
@@ -266,18 +266,5 @@ class CatalogRepository(
         else -> ShowStatus.UNKNOWN
     }
 
-    private fun mapExceptionToSyncError(e: Exception): SyncError = when {
-        isIoError(e) -> SyncError.NoConnectivity
-        e is HttpRequestTimeoutException -> SyncError.Timeout
-        else -> SyncError.Unknown
-    }
-
-    private fun isIoError(error: Throwable): Boolean {
-        val msg = error.message?.lowercase() ?: ""
-        return msg.contains("unreachable") ||
-            msg.contains("connection refused") ||
-            msg.contains("network unreachable") ||
-            msg.contains("no route to host") ||
-            error.toString().contains("UnknownHostException", ignoreCase = true)
-    }
+    private fun mapExceptionToSyncError(e: Exception): SyncError = NetworkErrorClassifier.classifyToSync(e)
 }
