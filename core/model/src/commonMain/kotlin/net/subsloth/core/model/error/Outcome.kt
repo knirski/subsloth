@@ -114,6 +114,24 @@ val Outcome<*>.isSuccess: Boolean get() = this is Outcome.Success
 /** Returns `true` if this is a [Outcome.Failure]. */
 val Outcome<*>.isFailure: Boolean get() = this is Outcome.Failure
 
+/**
+ * Execute [action] if this is a success. Returns the receiver so calls
+ * can be chained. The [action] lambda's return value is discarded.
+ */
+inline fun <T> Outcome<T>.onSuccess(action: (T) -> Unit): Outcome<T> {
+    if (this is Outcome.Success) action(value)
+    return this
+}
+
+/**
+ * Execute [action] if this is a failure. Returns the receiver so calls
+ * can be chained. The [action] lambda's return value is discarded.
+ */
+inline fun <T> Outcome<T>.onFailure(action: (DomainError) -> Unit): Outcome<T> {
+    if (this is Outcome.Failure) action(error)
+    return this
+}
+
 // ── Result interop ─────────────────────────────────────────────────────────
 
 /**

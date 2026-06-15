@@ -583,6 +583,36 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `onPlayerError with 401 in message sets AuthFailure`() = runTest(testDispatcher) {
+        val authFailureCalled = false
+        val source = createVideoSource()
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            onAuthFailure = { /* captured in flag below */ },
+        )
+        viewModel.onPlayerError("HTTP 401 Unauthorized")
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.playbackError).isInstanceOf(PlaybackError.AuthFailure::class.java)
+    }
+
+    @Test
+    fun `onPlayerError with 403 in message sets StreamUrlExpired`() = runTest(testDispatcher) {
+        val source = createVideoSource()
+        val viewModel = createViewModel(fetchVideoSource = { Outcome.Success(source) })
+        viewModel.onPlayerError("Stream URL expired (403)")
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.playbackError).isInstanceOf(PlaybackError.StreamUrlExpired::class.java)
+    }
+
+    @Test
+    fun `onPlayerError with non-HTTP message wraps as Recoverable`() = runTest(testDispatcher) {
+        val source = createVideoSource()
+        val viewModel = createViewModel(fetchVideoSource = { Outcome.Success(source) })
+        viewModel.onPlayerError("Codec error: malformed input")
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.playbackError).isInstanceOf(PlaybackError.Recoverable::class.java)
+    }
+
     fun `subtitle selection honors preferred language`() = runTest(testDispatcher) {
         val enSubtitle = createSubtitle()
         val esSubtitle = createSpanishSubtitle()

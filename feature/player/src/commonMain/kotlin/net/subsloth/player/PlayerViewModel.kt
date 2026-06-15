@@ -229,7 +229,7 @@ class PlayerViewModel(
     }
 
     fun onPlayerError(message: String) {
-        val playbackError = categorizePlaybackError(RuntimeException(message))
+        val playbackError = categorizePlaybackError(message)
         val isAuth = playbackError is PlaybackError.AuthFailure
         if (isAuth) {
             saveProgressAndRouteToAuthRepair()
@@ -386,23 +386,23 @@ class PlayerViewModel(
         onAuthFailure()
     }
 
-    private fun categorizePlaybackError(error: Throwable): PlaybackError {
-        val domainError = error.toDomainError()
+    private fun categorizePlaybackError(message: String): PlaybackError {
+        // The player bridge reports errors as opaque strings. Parse the
+        // HTTP status code if present so the typed classifier can
+        // dispatch 401 to AuthFailure and 403 to StreamUrlExpired.
+        val code = HTTP_STATUS_REGEX.find(message)?.value?.toIntOrNull()
+        val domainError = if (code != null && code in 400..599) {
+            net.subsloth.core.model.error.NetworkError.HttpError(code, message)
+        } else {
+            net.subsloth.core.model.error.DecodeError.SerializationFailed
+        }
         return PlaybackErrorClassifier.classify(domainError)
     }
 
-    /**
-     * Translate an opaque I/O [Throwable] into a typed [DomainError] at
-     * the player boundary. We do not have access to Ktor's typed
-     * exceptions from this module; the I/O shell is expected to map
-     * engine exceptions to typed [DomainError]s at the port boundary
-     * (see `core:network`'s `NetworkErrorClassifier`).
-     *
-     * For the opaque fall-through case (a non-classified [Throwable]),
-     * we wrap as a generic [DecodeError.SerializationFailed]. The
-     * classifier still routes this to a `Recoverable(cause)` so the UI
-     * sees a consistent shape.
-     */
-    private fun Throwable.toDomainError(): net.subsloth.core.model.error.DomainError =
-        net.subsloth.core.model.error.DecodeError.SerializationFailed
+    private companion object {
+        // Matches "401", "403", etc. inside an arbitrary player error
+        // message. The player bridge is not coupled to the network
+        // shell so we recover the status code from the message.
+        val HTTP_STATUS_REGEX = Regex("""\b(40[0-9]|41[0-9]|42[0-9]|43[0-9]|44[0-9]|45[0-9])\b""")
+    }
 }
