@@ -35,7 +35,6 @@ sealed interface Outcome<out T> {
              * call site. Use as `Outcome.Success(42)` or
              * `Outcome.Success(Unit)`.
              */
-            @JvmStatic
             fun <T> of(value: T): Success<T> = Success(value)
         }
     }
@@ -47,7 +46,6 @@ sealed interface Outcome<out T> {
     data class Failure(val error: DomainError) : Outcome<Nothing> {
         companion object {
             /** Convenience factory. Use as `Outcome.Failure(SyncError.Timeout)`. */
-            @JvmStatic
             operator fun invoke(error: DomainError): Failure = Failure(error)
         }
     }
