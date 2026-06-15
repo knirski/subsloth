@@ -6,7 +6,39 @@ package net.subsloth.core.model.error
  * All domain and application failures use [Result] with these typed errors
  * instead of unchecked exceptions or nullable sentinels.
  */
-sealed interface DomainError
+sealed interface DomainError {
+    /**
+     * Direct `data object` markers, one per error category. Their sole
+     * purpose is to make `when (e: DomainError)` exhaustive at the root
+     * type, so a new error category cannot be silently added without
+     * updating every classifier.
+     */
+    data object AuthKind : DomainError
+
+    /** Marker for payment / free-tier limit errors. */
+    data object PaymentLimitKind : DomainError
+
+    /** Marker for media availability errors. */
+    data object MediaKind : DomainError
+
+    /** Marker for download-related errors. */
+    data object DownloadKind : DomainError
+
+    /** Marker for unsupported or unavailable quality errors. */
+    data object QualityKind : DomainError
+
+    /** Marker for response decoding / data parsing errors. */
+    data object DecodeKind : DomainError
+
+    /** Marker for network or transport errors. */
+    data object NetworkKind : DomainError
+
+    /** Marker for catalog synchronization errors. */
+    data object SyncKind : DomainError
+
+    /** Marker for library operation errors. */
+    data object LibraryKind : DomainError
+}
 
 // ── Authentication ──────────────────────────────────────────────────────────
 

@@ -1,39 +1,26 @@
 package net.subsloth.core.network.error
 
-import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.plugins.ResponseException
+import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.network.media.client.ResponseValidationException
 
 fun Throwable.toUiError(): UiError {
     val message = this.message.orEmpty()
-    return when {
-        this is HttpRequestTimeoutException -> UiError.Offline(message)
+    if (this is ResponseValidationException) return UiError.ServiceError(message)
+    return when (val networkError = NetworkErrorClassifier.classifyToNetwork(this)) {
+        is NetworkError.Timeout -> UiError.Offline(message)
 
-        this is ResponseException ->
-            when (response.status.value) {
-                401 -> UiError.AuthRequired(message)
-                404 -> UiError.NotFound(message)
-                in 500..599 -> UiError.ServiceError(message)
-                else -> UiError.Unknown(message)
-            }
+        is NetworkError.NoConnectivity -> UiError.Offline(message)
 
-        this is ResponseValidationException -> UiError.ServiceError(message)
+        is NetworkError.HttpError -> when (networkError.code) {
+            401 -> UiError.AuthRequired(message)
+            404 -> UiError.NotFound(message)
+            in 500..599 -> UiError.ServiceError(message)
+            else -> UiError.Unknown(message)
+        }
 
-        isIoError(this) -> UiError.Offline(message)
+        is NetworkError.RateLimited -> UiError.ServiceError(message)
 
-        else -> UiError.Unknown(message)
+        is NetworkError.UnexpectedResponse -> UiError.Unknown(message)
     }
-}
-
-/**
- * Platform-agnostic check for IO/network exceptions.
- */
-private fun isIoError(error: Throwable): Boolean {
-    val msg = error.message?.lowercase() ?: ""
-    return msg.contains("timeout") ||
-        msg.contains("unreachable") ||
-        msg.contains("reset") ||
-        msg.contains("connection refused") ||
-        error.toString().contains("IOException", ignoreCase = true)
 }

@@ -7,7 +7,8 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.DomainResultException
@@ -64,6 +68,9 @@ sealed interface HomeRow {
 
 enum class HomeTab { MOVIES, SHOWS, SEARCH }
 
+private data class SyncRequest(val silent: Boolean)
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
     private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
@@ -96,7 +103,7 @@ class HomeViewModel(
     private val _syncErrors = MutableSharedFlow<SyncError>(replay = 1)
     val syncErrors: Flow<SyncError> = _syncErrors
 
-    private var syncJob: Job? = null
+    private val syncChannel = Channel<SyncRequest>(Channel.CONFLATED)
 
     private val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
 
@@ -109,37 +116,37 @@ class HomeViewModel(
             }
         }
         viewModelScope.launch {
+            syncChannel.receiveAsFlow()
+                .flatMapLatest { request -> performSync(request) }
+                .collect { /* result consumed via shared flow */ }
+        }
+        viewModelScope.launch {
             if (isCatalogStale()) {
-                syncInternal(silent = true)
+                syncChannel.trySend(SyncRequest(silent = true))
             }
         }
     }
 
     fun sync() {
-        syncInternal(silent = false)
+        syncChannel.trySend(SyncRequest(silent = false))
     }
 
-    private fun syncInternal(silent: Boolean) {
-        syncJob?.cancel()
-        syncJob = viewModelScope.launch {
-            val thisJob = coroutineContext[Job]
-            _isSyncing.value = true
-            try {
-                syncCatalog()
-                    .onFailure { error ->
-                        log.e(error) { "Sync failed" }
-                        if (!silent) {
-                            val syncError = (error as? DomainResultException)?.domainError as? SyncError
-                                ?: SyncError.Unknown
-                            _syncErrors.emit(syncError)
-                        }
+    private fun performSync(request: SyncRequest): Flow<Unit> = flow {
+        _isSyncing.value = true
+        try {
+            syncCatalog()
+                .onFailure { error ->
+                    log.e(error) { "Sync failed" }
+                    if (!request.silent) {
+                        val syncError = (error as? DomainResultException)?.domainError as? SyncError
+                            ?: SyncError.Unknown
+                        _syncErrors.emit(syncError)
                     }
-            } finally {
-                if (thisJob === syncJob) {
-                    _isSyncing.value = false
                 }
-            }
+        } finally {
+            _isSyncing.value = false
         }
+        emit(Unit)
     }
 
     fun retrySync() {

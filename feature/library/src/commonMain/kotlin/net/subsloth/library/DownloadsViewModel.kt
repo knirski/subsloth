@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
@@ -76,7 +77,7 @@ class DownloadsViewModel(
                 .getOrDefault(emptyList())
 
             val watchedIds = progress
-                .filter { it.fraction > 0.9 }
+                .filter { it.fraction > CompletionPolicy.WATCHED_THRESHOLD }
                 .map { it.mediaId }
                 .toSet()
 
@@ -161,7 +162,7 @@ class DownloadsViewModel(
                     .onFailure { log.e(it) { "listProgress failed" } }
                     .getOrDefault(emptyList())
                 val watchedIds = progress
-                    .filter { it.fraction > 0.9 }
+                    .filter { it.fraction > CompletionPolicy.WATCHED_THRESHOLD }
                     .map { it.mediaId }
                     .toSet()
 
