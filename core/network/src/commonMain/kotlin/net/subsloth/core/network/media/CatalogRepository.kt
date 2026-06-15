@@ -11,7 +11,7 @@ import net.subsloth.core.domain.policy.CatalogSyncPolicy
 import net.subsloth.core.domain.port.CachedCatalogItem
 import net.subsloth.core.domain.port.CatalogCachePort
 import net.subsloth.core.domain.port.CatalogSyncPort
-import net.subsloth.core.domain.port.ClockPort
+import net.subsloth.core.domain.port.CurrentTimePort
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
@@ -44,7 +44,7 @@ class CatalogRepository(
     private val api: Api,
     private val catalogDao: CachedCatalogDao,
     private val userPreferences: UserPreferences,
-    private val clock: ClockPort,
+    private val clock: CurrentTimePort,
 ) : CatalogCachePort,
     CatalogSyncPort {
 
