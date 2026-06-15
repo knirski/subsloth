@@ -2,7 +2,6 @@ package net.subsloth.core.network.error
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.plugins.ServerResponseException
 import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.network.media.client.ResponseValidationException
@@ -21,25 +20,31 @@ import net.subsloth.core.network.media.client.ResponseValidationException
  * superclass caught at the request boundary. The catch-all branch
  * treats them as connectivity loss, which matches the conservative
  * behaviour of the previous string matcher.
+ *
+ * Note: Ktor's [io.ktor.client.plugins.ServerResponseException] is a
+ * subclass of [ResponseException], so it is matched by the
+ * [ResponseException] branch and is not handled separately.
  */
 object NetworkErrorClassifier {
     /**
      * Classifies a [Throwable] from a read or write call into a typed
      * [NetworkError] suitable for surfacing to the UI.
+     *
+     * The status code is preserved on [NetworkError.HttpError] for all
+     * 4xx and 5xx codes so that downstream classifiers (e.g.
+     * `toUiError`) can map 401 → `AuthRequired` and 404 → `NotFound`.
      */
     fun classifyToNetwork(throwable: Throwable): NetworkError = when (throwable) {
         is HttpRequestTimeoutException -> NetworkError.Timeout
 
-        is ResponseException -> when (val code = throwable.response.status.value) {
-            429 -> NetworkError.RateLimited(retryAfterSeconds = parseRetryAfter(throwable))
-            in 500..599 -> NetworkError.HttpError(code = code, message = throwable.message.orEmpty())
-            else -> NetworkError.UnexpectedResponse
+        is ResponseException -> {
+            val code = throwable.response.status.value
+            when (code) {
+                429 -> NetworkError.RateLimited(retryAfterSeconds = parseRetryAfter(throwable))
+                in 400..599 -> NetworkError.HttpError(code = code, message = throwable.message.orEmpty())
+                else -> NetworkError.UnexpectedResponse
+            }
         }
-
-        is ServerResponseException -> NetworkError.HttpError(
-            code = throwable.response.status.value,
-            message = throwable.message.orEmpty(),
-        )
 
         is ResponseValidationException -> NetworkError.UnexpectedResponse
 
@@ -54,7 +59,6 @@ object NetworkErrorClassifier {
     fun classifyToSync(throwable: Throwable): SyncError = when (throwable) {
         is HttpRequestTimeoutException -> SyncError.Timeout
         is ResponseException -> SyncError.ServerError(code = throwable.response.status.value)
-        is ServerResponseException -> SyncError.ServerError(code = throwable.response.status.value)
         is ResponseValidationException -> SyncError.Unknown
         else -> SyncError.NoConnectivity
     }

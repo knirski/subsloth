@@ -53,9 +53,19 @@ class NetworkErrorClassifierTest {
     }
 
     @Test
-    fun response_404_maps_to_UnexpectedResponse() = runBlocking {
+    fun response_404_maps_to_HttpError_preserving_code() = runBlocking {
         val ex = responseExceptionForStatus(HttpStatusCode.NotFound)
-        assertEquals(NetworkError.UnexpectedResponse, NetworkErrorClassifier.classifyToNetwork(ex))
+        val classified = NetworkErrorClassifier.classifyToNetwork(ex)
+        assertIs<NetworkError.HttpError>(classified)
+        assertEquals(404, classified.code)
+    }
+
+    @Test
+    fun response_401_maps_to_HttpError_preserving_code() = runBlocking {
+        val ex = responseExceptionForStatus(HttpStatusCode.Unauthorized)
+        val classified = NetworkErrorClassifier.classifyToNetwork(ex)
+        assertIs<NetworkError.HttpError>(classified)
+        assertEquals(401, classified.code)
     }
 
     @Test

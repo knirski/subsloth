@@ -7,17 +7,15 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -70,7 +68,6 @@ enum class HomeTab { MOVIES, SHOWS, SEARCH }
 
 private data class SyncRequest(val silent: Boolean)
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
     private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
@@ -116,9 +113,22 @@ class HomeViewModel(
             }
         }
         viewModelScope.launch {
-            syncChannel.receiveAsFlow()
-                .flatMapLatest { request -> performSync(request) }
-                .collect { /* result consumed via shared flow */ }
+            syncChannel.receiveAsFlow().collectLatest { request ->
+                _isSyncing.value = true
+                try {
+                    syncCatalog()
+                        .onFailure { error ->
+                            log.e(error) { "Sync failed" }
+                            if (!request.silent) {
+                                val syncError = (error as? DomainResultException)?.domainError as? SyncError
+                                    ?: SyncError.Unknown
+                                _syncErrors.emit(syncError)
+                            }
+                        }
+                } finally {
+                    _isSyncing.value = false
+                }
+            }
         }
         viewModelScope.launch {
             if (isCatalogStale()) {
@@ -129,24 +139,6 @@ class HomeViewModel(
 
     fun sync() {
         syncChannel.trySend(SyncRequest(silent = false))
-    }
-
-    private fun performSync(request: SyncRequest): Flow<Unit> = flow {
-        _isSyncing.value = true
-        try {
-            syncCatalog()
-                .onFailure { error ->
-                    log.e(error) { "Sync failed" }
-                    if (!request.silent) {
-                        val syncError = (error as? DomainResultException)?.domainError as? SyncError
-                            ?: SyncError.Unknown
-                        _syncErrors.emit(syncError)
-                    }
-                }
-        } finally {
-            _isSyncing.value = false
-        }
-        emit(Unit)
     }
 
     fun retrySync() {

@@ -197,26 +197,31 @@ class PlayerViewModel(
 
     fun onPlayerSnapshot(snapshot: PlayerSnapshot) {
         val dur = snapshot.durationSeconds
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        val nextCount = state.snapshotCountSinceSave + 1
+        val stateBefore = _uiState.value as? PlayerUiState.Content ?: return
+        val mediaId = stateBefore.mediaId
 
+        // The counter increment is computed inside `update` so the new
+        // value is based on the latest snapshot, not a possibly-stale
+        // pre-update read.
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(
                 positionSeconds = snapshot.positionSeconds,
                 durationSeconds = dur,
                 isPlaying = snapshot.isPlaying,
-                snapshotCountSinceSave = nextCount,
+                snapshotCountSinceSave = current.snapshotCountSinceSave + 1,
             ) ?: current
         }
+        val nextCount = (_uiState.value as? PlayerUiState.Content)?.snapshotCountSinceSave ?: 0
 
-        if (nextCount % 60 == 0) {
-            state.mediaId?.let { id ->
-                viewModelScope.launch { saveProgress(id, snapshot.positionSeconds, dur) }
-            }
+        if (nextCount % 60 == 0 && mediaId != null) {
+            viewModelScope.launch { saveProgress(mediaId, snapshot.positionSeconds, dur) }
         }
 
-        if (dur > 0L && CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) && !state.showNextEpisodePrompt) {
-            showNextEpisodePrompt(state)
+        if (dur > 0L &&
+            CompletionPolicy.isCompleted(snapshot.positionSeconds, dur) &&
+            !stateBefore.showNextEpisodePrompt
+        ) {
+            showNextEpisodePrompt(stateBefore)
         }
     }
 
