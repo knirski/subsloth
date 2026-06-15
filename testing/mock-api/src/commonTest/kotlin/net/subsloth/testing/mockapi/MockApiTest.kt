@@ -117,12 +117,8 @@ class MockApiTest {
 
     @Test
     fun login_rejects_blank_credentials() {
-        try {
-            MockApi.login(email = "", password = "pw")
-            error("expected IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            // expected
-        }
+        val result = MockApi.login(email = "", password = "pw")
+        assertEquals(Outcome.Failure(AuthError.InvalidCredentials), result)
     }
 
     @Test

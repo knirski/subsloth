@@ -67,10 +67,10 @@ object MockApi {
     private val seedShows: List<ShowSummary> by lazy { buildSeedShows() }
     private val seedEpisodes: Map<ShowId, List<Episode>> by lazy { buildSeedEpisodes() }
 
-    private val library: MutableMap<Media.MediaId, LibraryCollection> = mutableMapOf(
-        Media.MediaId.Movie(MovieId(1)) to LibraryCollection.FAVORITES,
-        Media.MediaId.Movie(MovieId(2)) to LibraryCollection.HISTORY,
-        Media.MediaId.Movie(MovieId(3)) to LibraryCollection.CUSTOM,
+    private val library: MutableMap<Media.MediaId, LibraryItem> = mutableMapOf(
+        Media.MediaId.Movie(MovieId(1)) to libraryItem(Media.MediaId.Movie(MovieId(1)), LibraryCollection.FAVORITES, 0),
+        Media.MediaId.Movie(MovieId(2)) to libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.HISTORY, 1),
+        Media.MediaId.Movie(MovieId(3)) to libraryItem(Media.MediaId.Movie(MovieId(3)), LibraryCollection.CUSTOM, 2),
     )
 
     private val downloads: MutableMap<String, DownloadState> = mutableMapOf(
@@ -98,11 +98,19 @@ object MockApi {
     @Volatile
     private var sessionExpired: Boolean = false
 
+    private fun libraryItem(mediaId: Media.MediaId, collection: LibraryCollection, sortOrder: Int): LibraryItem =
+        LibraryItem(
+            mediaId = mediaId,
+            collection = collection,
+            addedAtEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L + sortOrder.toLong()),
+            sortOrder = sortOrder,
+        )
+
     // ── Lifecycle ──────────────────────────────────────────────────────────
 
     fun login(email: String, password: String): Outcome<Unit> {
-        require(email.isNotBlank() && password.isNotBlank()) {
-            "MockApi.login requires a non-blank email and password"
+        if (email.isBlank() || password.isBlank()) {
+            return Outcome.Failure(AuthError.InvalidCredentials)
         }
         sessionExpired = false
         return Outcome.Success(Unit)
@@ -120,9 +128,12 @@ object MockApi {
     /** Reset all mutable state to the seed values. Use between tests. */
     fun reset() {
         library.clear()
-        library[Media.MediaId.Movie(MovieId(1))] = LibraryCollection.FAVORITES
-        library[Media.MediaId.Movie(MovieId(2))] = LibraryCollection.HISTORY
-        library[Media.MediaId.Movie(MovieId(3))] = LibraryCollection.CUSTOM
+        library[Media.MediaId.Movie(MovieId(1))] =
+            libraryItem(Media.MediaId.Movie(MovieId(1)), LibraryCollection.FAVORITES, 0)
+        library[Media.MediaId.Movie(MovieId(2))] =
+            libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.HISTORY, 1)
+        library[Media.MediaId.Movie(MovieId(3))] =
+            libraryItem(Media.MediaId.Movie(MovieId(3)), LibraryCollection.CUSTOM, 2)
         downloads.clear()
         downloads["dl-movie-1"] = buildCompletedDownload(Media.MediaId.Movie(MovieId(1)), Resolution.FULL_HD)
         downloads["dl-movie-2"] = buildActiveDownload(Media.MediaId.Movie(MovieId(2)), Resolution.HD_720, 0.35)
@@ -165,27 +176,15 @@ object MockApi {
     // ── LibraryPort ────────────────────────────────────────────────────────
 
     fun listLibrary(): Outcome<List<LibraryItem>> = guard {
-        library.entries.mapIndexed { index, (mediaId, collection) ->
-            LibraryItem(
-                mediaId = mediaId,
-                collection = collection,
-                addedAtEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L + index.toLong()),
-                sortOrder = index,
-            )
-        }
+        library.values.toList()
     }
 
     fun addToLibrary(mediaId: Media.MediaId, collection: LibraryCollection): Outcome<Unit> = addToLibrary(
-        LibraryItem(
-            mediaId = mediaId,
-            collection = collection,
-            addedAtEpochSeconds = Instant.fromEpochSeconds(1_700_000_000L),
-            sortOrder = library.size,
-        ),
+        libraryItem(mediaId, collection, library.size),
     )
 
     fun addToLibrary(item: LibraryItem): Outcome<Unit> = guard {
-        library[item.mediaId] = item.collection
+        library[item.mediaId] = item
     }
 
     fun removeFromLibrary(mediaId: Media.MediaId): Outcome<Unit> = guard {
@@ -226,7 +225,7 @@ object MockApi {
                 imdbId = movie.imdbId?.value,
                 tmdbId = null,
                 status = null,
-                updatedAtEpochSeconds = movie.updatedAtEpochSeconds?.toEpochMilliseconds(),
+                updatedAtEpochSeconds = movie.updatedAtEpochSeconds?.epochSeconds,
                 newestVideoEpochSeconds = null,
                 genres = movie.genres.toList(),
                 countries = emptyList(),
