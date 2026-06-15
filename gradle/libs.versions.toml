@@ -5,20 +5,22 @@ kotlin = "2.4.0"
 ksp = "2.3.9"
 savedstate = "1.5.0"
 composeBom = "2026.05.01"
-material3Adaptive = "1.3.0-beta01"
+material3Adaptive = "1.3.0-beta02"
 androidxCore = "1.19.0"
 activityCompose = "1.13.0"
-lifecycle = "2.11.0-beta01"
+lifecycle = "2.11.0-rc01"
+lifecycleKmp = "2.11.0-beta01"
 androidxNavigation3 = "1.1.2"
 tvFoundation = "1.0.0"
 tvMaterial = "1.1.0"
-room3 = "3.0.0-alpha05"
+room3 = "3.0.0-alpha06"
 datastore = "1.3.0-alpha09"
 okio = "3.17.0"
-sqliteKmp = "2.7.0-alpha05"
+sqliteKmp = "2.7.0-alpha06"
 detekt = "2.0.0-alpha.3"
+detektGradle = "2.0.0-alpha.4"
 media3 = "1.10.1"
-coil = "3.4.0"
+coil = "3.5.0"
 kotlinxSerialization = "1.11.0"
 coroutines = "1.11.0"
 turbine = "1.2.1"
@@ -26,11 +28,11 @@ junit = "6.1.0"
 junitPlatform = "6.1.0"
 spotless = "8.6.0"
 wiremock = "3.13.2"
-composeRules = "0.6.0"
+composeRules = "0.6.1"
 ktlint = "1.8.0"
 composeMultplatformRuntime = "1.12.0-alpha01"
 composeMultplatformPlugin = "1.12.0-alpha01"
-kotlinxCollectionsImmutable = "0.5.0-beta01"
+kotlinxCollectionsImmutable = "0.5.0"
 kotlinxDatetime = "0.8.0"
 kotlinxBrowser = "0.5.0"
 kotlinxSchema = "0.5.0"
@@ -82,9 +84,9 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidxNavigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "androidxNavigation3" }
 # KMP multiplatform variants (for native targets: iOS, macOS, desktop)
-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
-lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleKmp" }
+lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleKmp" }
+lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleKmp" }
 # KMP Navigation3 UI (used by Desktop, Web, and core:ui — distinct from the AndroidX variant)
 navigation3-ui-kmp = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version = "1.1.1" }
 
@@ -163,7 +165,7 @@ compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:org.jetb
 compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
-detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detektGradle" }
 kotlin-power-assert-gradlePlugin = { module = "org.jetbrains.kotlin.plugin.power-assert:org.jetbrains.kotlin.plugin.power-assert.gradle.plugin", version.ref = "kotlin" }
 
 [plugins]
@@ -180,5 +182,5 @@ compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultplatf
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
-detekt = { id = "dev.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detektGradle" }
 room3 = { id = "androidx.room3", version.ref = "room3" }

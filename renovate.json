@@ -51,6 +51,35 @@
       "matchCategories": ["kotlin", "java"],
       "matchCurrentValue": "/-(alpha|beta|rc)(\\.?\\d+)?$/",
       "automerge": false
+    },
+    {
+      "description": "Compose Multiplatform — block SNAPSHOT/dev versions",
+      "matchPackageNames": ["org.jetbrains.compose:org.jetbrains.compose.gradle.plugin"],
+      "matchPackagePrefixes": [
+        "org.jetbrains.compose.runtime",
+        "org.jetbrains.compose.foundation",
+        "org.jetbrains.compose.material3",
+        "org.jetbrains.compose.ui",
+        "org.jetbrains.compose.components"
+      ],
+      "allowedVersions": "!/SNAPSHOT/",
+      "automerge": false,
+      "groupName": "compose-multiplatform"
+    },
+    {
+      "description": "kotlinx-datetime — block compat variants",
+      "matchPackageNames": ["org.jetbrains.kotlinx:kotlinx-datetime"],
+      "allowedVersions": "!/compat/",
+      "automerge": true
+    },
+    {
+      "description": "JetBrains KMP lifecycle — separate from AndroidX lifecycle (lags behind)",
+      "matchPackagePrefixes": [
+        "org.jetbrains.androidx.lifecycle"
+      ],
+      "separateMinorPatch": true,
+      "automerge": false,
+      "groupName": "lifecycle-kmp"
     }
   ],
   "vulnerabilityAlerts": {
