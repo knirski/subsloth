@@ -2,6 +2,9 @@ package net.subsloth.core.network.media.mapper
 
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.DomainError
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.getOrNull
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.ShowStatus
@@ -9,7 +12,6 @@ import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 import kotlin.time.Instant
-import net.subsloth.core.model.error.DomainResultException as DomainResultEx
 import net.subsloth.core.network.media.api.model.Episode as DtoEpisode
 import net.subsloth.core.network.media.api.model.Movie as DtoMovie
 import net.subsloth.core.network.media.api.model.MovieSummary as DtoMovieSummary
@@ -112,8 +114,7 @@ class MapperTest {
 
         val result = Mapper.mapMovieDetails(dto)
 
-        assertThat(result.isSuccess).isTrue()
-        val details = result.getOrThrow()
+        val details = result.getOrNull()!!
         assertThat(details.id).isEqualTo(
             Media.MediaId.Movie(
                 MovieId(1),
@@ -132,10 +133,7 @@ class MapperTest {
         val dto = DtoMovie(id = 1)
         val result = Mapper.mapMovieDetails(dto)
 
-        assertThat(result.isFailure).isTrue()
-        val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultEx::class.java)
-        val domainError = (error as DomainResultEx).domainError
+        val domainError = (result as Outcome.Failure).error
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("title")
     }
@@ -203,8 +201,7 @@ class MapperTest {
 
         val result = Mapper.mapShowDetails(dto)
 
-        assertThat(result.isSuccess).isTrue()
-        val details = result.getOrThrow()
+        val details = result.getOrNull()!!
         assertThat(details.title).isEqualTo("Test Show Detail")
         assertThat(details.seasons).hasSize(2)
         assertThat(details.seasons[0].seasonNumber).isEqualTo(1)
@@ -218,10 +215,7 @@ class MapperTest {
         val dto = DtoShow(id = 20)
         val result = Mapper.mapShowDetails(dto)
 
-        assertThat(result.isFailure).isTrue()
-        val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultEx::class.java)
-        val domainError = (error as DomainResultEx).domainError
+        val domainError = (result as Outcome.Failure).error
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("title")
     }
@@ -233,10 +227,7 @@ class MapperTest {
         val dto = DtoEpisode(id = 101, title = "Orphan Episode", available = true)
         val result = Mapper.mapEpisode(dto)
 
-        assertThat(result.isFailure).isTrue()
-        val error = result.exceptionOrNull()
-        assertThat(error).isInstanceOf(DomainResultEx::class.java)
-        val domainError = (error as DomainResultEx).domainError
+        val domainError = (result as Outcome.Failure).error
         assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
         assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("show_id")
     }
@@ -263,9 +254,8 @@ class MapperTest {
             )
 
         val result = Mapper.mapEpisode(dto)
-        val episode = result.getOrThrow()
+        val episode = result.getOrNull()!!
 
-        assertThat(result.isSuccess).isTrue()
         assertThat(episode.title).isEqualTo("Episode 3")
         assertThat(episode.seasonNumber).isEqualTo(1)
         assertThat(episode.episodeNumber).isEqualTo(3)
@@ -282,8 +272,8 @@ class MapperTest {
         val dto = DtoEpisode(id = 101, showId = 20, number = 5, title = "Ep 5", available = true)
         val result = Mapper.mapEpisode(dto)
 
-        assertThat(result.isSuccess).isTrue()
-        assertThat(result.getOrThrow().episodeNumber).isEqualTo(5)
+        val resultVal = result.getOrNull()!!
+        assertThat(resultVal.episodeNumber).isEqualTo(5)
     }
 
     @Test
@@ -291,8 +281,8 @@ class MapperTest {
         val dto = DtoEpisode(id = 101, showId = 20, season = 1, episode = 1, title = "Upcoming", available = false)
         val result = Mapper.mapEpisode(dto)
 
-        assertThat(result.isSuccess).isTrue()
-        assertThat(result.getOrThrow().availability).isInstanceOf(Availability.Upcoming.UnknownDate::class.java)
+        val resultVal = result.getOrNull()!!
+        assertThat(resultVal.availability).isInstanceOf(Availability.Upcoming.UnknownDate::class.java)
     }
 
     @Test
@@ -301,8 +291,8 @@ class MapperTest {
 
         val result = Mapper.mapEpisode(dto)
 
-        assertThat(result.isSuccess).isTrue()
-        assertThat(result.getOrThrow().availability).isInstanceOf(Availability.Expired::class.java)
+        val resultVal = result.getOrNull()!!
+        assertThat(resultVal.availability).isInstanceOf(Availability.Expired::class.java)
     }
 
     // ── Subtitle Tracks ──────────────────────────────────────────────────

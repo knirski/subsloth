@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.error.DomainResultException
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -120,8 +119,7 @@ class HomeViewModel(
                         .onFailure { error ->
                             log.e(error) { "Sync failed" }
                             if (!request.silent) {
-                                val syncError = (error as? DomainResultException)?.domainError as? SyncError
-                                    ?: SyncError.Unknown
+                                val syncError = error as? SyncError ?: SyncError.Unknown
                                 _syncErrors.emit(syncError)
                             }
                         }

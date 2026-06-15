@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.subsloth.core.domain.policy.CompletionPolicy
+import net.subsloth.core.domain.policy.PlaybackErrorClassifier
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.domain.policy.QualityFallbackPolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
@@ -26,6 +27,8 @@ import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.PlayCommand
 import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.media.SubtitleMapper
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.ShowId
@@ -73,8 +76,8 @@ data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean
 @Suppress("TooManyFunctions")
 class PlayerViewModel(
     val mediaId: Media.MediaId,
-    private val fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val fetchVideoSource: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
     private val fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
         Result.success(emptyList())
@@ -82,8 +85,8 @@ class PlayerViewModel(
     private val saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
     private val onAuthFailure: () -> Unit = {},
     private val onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
-    private val refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
     private val savePlaybackSpeed: suspend (Float) -> Unit = {},
     private val loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
@@ -110,8 +113,8 @@ class PlayerViewModel(
             fetchVideoSource(mediaId).fold(
                 onSuccess = { source -> startPlayback(source) },
                 onFailure = { error ->
-                    log.e(error) { "Failed to fetch video source" }
-                    val playbackError = categorizePlaybackError(error)
+                    log.e { "Failed to fetch video source: $error" }
+                    val playbackError = PlaybackErrorClassifier.classify(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
@@ -352,7 +355,8 @@ class PlayerViewModel(
                     }
                 },
                 onFailure = { error ->
-                    val playbackError = categorizePlaybackError(error)
+                    log.e { "Stream refresh failed: $error" }
+                    val playbackError = PlaybackErrorClassifier.classify(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
@@ -383,18 +387,22 @@ class PlayerViewModel(
     }
 
     private fun categorizePlaybackError(error: Throwable): PlaybackError {
-        val message = error.message.orEmpty()
-
-        return when {
-            isLikelyAuthError(message) -> PlaybackError.AuthFailure
-            isLikelyStreamExpired(message) -> PlaybackError.StreamUrlExpired
-            else -> PlaybackError.Recoverable()
-        }
+        val domainError = error.toDomainError()
+        return PlaybackErrorClassifier.classify(domainError)
     }
 
-    private fun isLikelyAuthError(message: String): Boolean =
-        message.contains("401") || message.contains("auth", ignoreCase = true)
-
-    private fun isLikelyStreamExpired(message: String): Boolean =
-        message.contains("403") || message.contains("expired", ignoreCase = true)
+    /**
+     * Translate an opaque I/O [Throwable] into a typed [DomainError] at
+     * the player boundary. We do not have access to Ktor's typed
+     * exceptions from this module; the I/O shell is expected to map
+     * engine exceptions to typed [DomainError]s at the port boundary
+     * (see `core:network`'s `NetworkErrorClassifier`).
+     *
+     * For the opaque fall-through case (a non-classified [Throwable]),
+     * we wrap as a generic [DecodeError.SerializationFailed]. The
+     * classifier still routes this to a `Recoverable(cause)` so the UI
+     * sees a consistent shape.
+     */
+    private fun Throwable.toDomainError(): net.subsloth.core.model.error.DomainError =
+        net.subsloth.core.model.error.DecodeError.SerializationFailed
 }

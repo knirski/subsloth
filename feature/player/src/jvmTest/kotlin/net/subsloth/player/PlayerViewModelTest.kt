@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
@@ -59,7 +60,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value
@@ -73,7 +74,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.failure(Exception("Network error")) },
+                fetchVideoSource = { Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -87,7 +88,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         viewModel.dismissNextEpisode()
@@ -104,7 +105,7 @@ class PlayerViewModelTest {
 
                 fetchVideoSource = {
                     callCount++
-                    Result.success(createVideoSource())
+                    Outcome.Success(createVideoSource())
                 },
             )
 
@@ -121,7 +122,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         viewModel.selectSubtitle(subtitle)
@@ -134,7 +135,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         viewModel.setPlaybackSpeed(1.5f)
@@ -147,7 +148,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         viewModel.selectQuality("720p")
@@ -159,7 +160,7 @@ class PlayerViewModelTest {
         createViewModel(
 
             fetchVideoSource = {
-                Result.failure(Exception("401 auth failed"))
+                Outcome.Failure(net.subsloth.core.model.error.NetworkError.HttpError(401, "Unauthorized"))
             },
             onAuthFailure = { authFailureCalled = true },
         )
@@ -172,7 +173,7 @@ class PlayerViewModelTest {
         var authFailureCalled = false
         createViewModel(
 
-            fetchVideoSource = { Result.failure(Exception("Network timeout")) },
+            fetchVideoSource = { Outcome.Failure(net.subsloth.core.model.error.NetworkError.Timeout) },
             onAuthFailure = { authFailureCalled = true },
         )
 
@@ -185,7 +186,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -200,7 +201,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -213,7 +214,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -229,7 +230,7 @@ class PlayerViewModelTest {
         createViewModel(
 
             fetchVideoSource = {
-                Result.failure(Exception("401 auth failed"))
+                Outcome.Failure(net.subsloth.core.model.error.NetworkError.HttpError(401, "Unauthorized"))
             },
             saveProgress = { id, pos, dur ->
                 savedProgress = Triple(id, pos, dur)
@@ -249,7 +250,7 @@ class PlayerViewModelTest {
             createViewModel(
 
                 fetchVideoSource = {
-                    Result.failure(Exception("401 Unauthorized"))
+                    Outcome.Failure(net.subsloth.core.model.error.NetworkError.HttpError(401, "Unauthorized"))
                 },
             )
 
@@ -265,7 +266,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -281,10 +282,10 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
                 refreshStreamUrl = {
                     refreshCallCount++
-                    Result.failure(UnsupportedOperationException("Not implemented"))
+                    Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
                 },
             )
 
@@ -299,10 +300,10 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(createVideoSource()) },
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
                 refreshStreamUrl = {
                     refreshCallCount++
-                    Result.success(createVideoSource())
+                    Outcome.Success(createVideoSource())
                 },
             )
 
@@ -321,7 +322,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
                 savePlaybackSpeed = { savedSpeeds.add(it) },
             )
 
@@ -337,7 +338,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
                 savePlaybackSpeed = { savePlaybackSpeedCalled = true },
             )
 
@@ -356,7 +357,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -371,7 +372,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -386,7 +387,7 @@ class PlayerViewModelTest {
         val viewModel =
             createViewModel(
 
-                fetchVideoSource = { Result.success(source) },
+                fetchVideoSource = { Outcome.Success(source) },
             )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -405,7 +406,7 @@ class PlayerViewModelTest {
         var fetchedShowId: ShowId? = null
         val viewModel = createViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
             fetchEpisodes = { showId ->
                 fetchedShowId = showId.value
                 Result.success(listOf(episode1, episode2))
@@ -426,7 +427,7 @@ class PlayerViewModelTest {
         )
         val viewModel = createViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
             fetchEpisodes = {
                 Result.success(listOf(episode1, episode2))
             },
@@ -443,7 +444,7 @@ class PlayerViewModelTest {
         )
         val viewModel = createViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
             fetchEpisodes = { Result.success(emptyList()) },
         )
 
@@ -455,7 +456,7 @@ class PlayerViewModelTest {
     fun `next episode is null for movie content`() = runTest(testDispatcher) {
         val viewModel = createViewModel(
 
-            fetchVideoSource = { Result.success(createVideoSource()) },
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
         )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -483,7 +484,7 @@ class PlayerViewModelTest {
         )
         val viewModel = createViewModel(
 
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
         )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -519,7 +520,7 @@ class PlayerViewModelTest {
         )
         val viewModel = createViewModel(
 
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
         )
 
         viewModel.selectQuality("720p")
@@ -535,7 +536,7 @@ class PlayerViewModelTest {
         var loadCalled = false
         val viewModel = createViewModel(
 
-            fetchVideoSource = { Result.success(createVideoSource()) },
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
             loadPlaybackSpeed = {
                 loadCalled = true
                 1.5f
@@ -551,7 +552,7 @@ class PlayerViewModelTest {
     fun `loadPlaybackSpeed defaults to 1x when not provided`() = runTest(testDispatcher) {
         val viewModel = createViewModel(
 
-            fetchVideoSource = { Result.success(createVideoSource()) },
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
         )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -567,7 +568,7 @@ class PlayerViewModelTest {
             ),
         )
         val viewModel = createViewModel(
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
             loadPlaybackSpeed = { 1.5f },
         )
 
@@ -588,7 +589,7 @@ class PlayerViewModelTest {
         val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
 
         val viewModel = createViewModel(
-            fetchVideoSource = { Result.success(source) },
+            fetchVideoSource = { Outcome.Success(source) },
             loadPreferredLanguage = { LanguageCode("es") },
         )
 
@@ -600,16 +601,16 @@ class PlayerViewModelTest {
 
     private fun createViewModel(
         mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
-        fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
-            Result.success(createVideoSource())
+        fetchVideoSource: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+            Outcome.Success(createVideoSource())
         },
         fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
             Result.success(emptyList())
         },
         onAuthFailure: () -> Unit = {},
         saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
-        refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
-            Result.failure(UnsupportedOperationException("Not implemented"))
+        refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+            Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
         },
         savePlaybackSpeed: suspend (Float) -> Unit = {},
         loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },

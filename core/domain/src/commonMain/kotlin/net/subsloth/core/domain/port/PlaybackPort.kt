@@ -1,5 +1,6 @@
 package net.subsloth.core.domain.port
 
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.playback.VideoSource
 
@@ -13,17 +14,20 @@ import net.subsloth.core.model.playback.VideoSource
 interface PlaybackPort {
     /**
      * Prepares a [VideoSource] for playback of the given media item.
+     * Returns a typed [Outcome.Failure] (typically a
+     * [net.subsloth.core.model.error.NetworkError.Technical]) on
+     * failure.
      */
-    suspend fun prepareSource(mediaId: Media.MediaId): Result<VideoSource>
+    suspend fun prepareSource(mediaId: Media.MediaId): Outcome<VideoSource>
 
     /** Starts playback of the prepared video source. */
-    suspend fun play(source: VideoSource, positionSeconds: Long): Result<Unit>
+    suspend fun play(source: VideoSource, positionSeconds: Long): Outcome<Unit>
 
     /** Pauses the current playback. */
-    suspend fun pause(): Result<Unit>
+    suspend fun pause(): Outcome<Unit>
 
     /** Seeks to the given position in the current playback. */
-    suspend fun seek(positionSeconds: Long): Result<Unit>
+    suspend fun seek(positionSeconds: Long): Outcome<Unit>
 
     /**
      * Refreshes the stream URL for the current media item.
@@ -32,5 +36,5 @@ interface PlaybackPort {
      * refreshed [VideoSource] on success. Offline playback must never
      * call this method.
      */
-    suspend fun refreshStreamUrl(mediaId: Media.MediaId): Result<VideoSource>
+    suspend fun refreshStreamUrl(mediaId: Media.MediaId): Outcome<VideoSource>
 }
