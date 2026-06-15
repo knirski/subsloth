@@ -13,7 +13,7 @@ import net.subsloth.core.domain.port.CatalogCachePort
 import net.subsloth.core.domain.port.CatalogSyncPort
 import net.subsloth.core.domain.port.ClockPort
 import net.subsloth.core.model.Availability
-import net.subsloth.core.model.error.DomainResultException
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource
@@ -79,7 +79,7 @@ class CatalogRepository(
 
     // ── CatalogSyncPort ──────────────────────────────────────────────────
 
-    override suspend fun sync(): Result<Unit> = try {
+    override suspend fun sync(): Outcome<Unit> = try {
         log.d { "Starting catalog sync..." }
         val allMovies = paginate { page -> api.listMovies(page = page, perPage = 100).movies }
         val allShows = paginate { page -> api.listShows(page = page, perPage = 100).shows }
@@ -92,19 +92,15 @@ class CatalogRepository(
 
         userPreferences.setGlobalCatalogCacheTimestamp(clock.now().epochSeconds * 1000)
         log.d { "Catalog sync complete: ${movieItems.size} movies, ${showItems.size} shows" }
-        Result.success(Unit)
+        Outcome.Success(Unit)
     } catch (e: Exception) {
         if (e is CancellationException) throw e
         log.e(e) { "Catalog sync failed" }
         val error = when (e) {
-            is DomainResultException -> when (val domainError = e.domainError) {
-                is SyncError -> domainError
-                else -> SyncError.Unknown
-            }
-
+            is SyncError -> e
             else -> mapExceptionToSyncError(e)
         }
-        Result.failure(DomainResultException(error))
+        Outcome.Failure(error)
     }
 
     override suspend fun isStale(): Boolean {

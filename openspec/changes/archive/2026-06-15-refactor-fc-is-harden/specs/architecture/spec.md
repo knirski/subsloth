@@ -3,15 +3,17 @@
 ## MODIFIED Requirements
 
 ### Requirement: Typed Error Composition
-Recoverable domain and application failures SHALL use Kotlin `Result<T>` with sealed typed error models. The `DomainError` root sealed interface SHALL declare a direct `data object` per error category so `when (e: DomainError)` is exhaustive at the root.
-
-#### Scenario: Error category is added
-- **WHEN** a new error category is introduced (for example, a new transport or storage failure)
-- **THEN** the compiler forces every existing exhaustive `when (e: DomainError)` site to add a branch for the new direct variant
+Recoverable domain and application failures SHALL use Kotlin `Result<T>` with sealed typed error models. The `when` expression over a `DomainError` sub-hierarchy SHALL be exhaustive, with the compiler enforcing coverage of all variants.
 
 #### Scenario: Classifier maps a transport failure
 - **WHEN** a Ktor or IO throwable reaches a port or adapter boundary
 - **THEN** the network layer routes it through a single `NetworkErrorClassifier` and returns a typed `DomainError` (no string matching on exception messages)
+
+#### Scenario: HTTP status code is preserved
+- **WHEN** a `ResponseException` carries a 4xx or 5xx status code
+- **THEN** the classifier preserves the code in `NetworkError.HttpError(code, message)` so downstream classifiers can dispatch 401 to `AuthRequired` and 404 to `NotFound`
+
+## ADDED Requirements
 
 ### Requirement: ViewModel State Discipline
 Session-scoped flags and per-playback counters SHALL be fields of the UI state data class, not standalone `var` properties on a ViewModel.
@@ -20,9 +22,13 @@ Session-scoped flags and per-playback counters SHALL be fields of the UI state d
 - **WHEN** a `PlayerViewModel` mutates its session-scoped `session` or `snapshotCountSinceSave`
 - **THEN** the change is observable through the published `StateFlow<PlayerUiState>` and the ViewModel holds no standalone mutable state for these fields
 
+#### Scenario: Counter increment is race-free
+- **WHEN** `PlayerViewModel.onPlayerSnapshot` increments `snapshotCountSinceSave`
+- **THEN** the increment is computed inside the `_uiState.update` lambda so the new value is based on the latest snapshot, not a stale pre-update read
+
 #### Scenario: Sync is cancelled by a new call
 - **WHEN** a user invokes `HomeViewModel.sync()` while a previous sync is in flight
-- **THEN** the previous in-flight sync is cancelled automatically through `Channel<Unit>(CONFLATED) + flatMapLatest` and no manual `Job.cancel()` is required
+- **THEN** the previous in-flight sync is cancelled automatically through `Channel<SyncRequest>(CONFLATED) + collectLatest` and no manual `Job.cancel()` is required
 
 ### Requirement: Threshold Constants
 The domain layer SHALL expose named constants for completion and watch thresholds so ViewModels never inline numeric magic values.

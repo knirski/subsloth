@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.subsloth.core.domain.policy.CompletionPolicy
+import net.subsloth.core.domain.policy.PlaybackErrorClassifier
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.domain.policy.QualityFallbackPolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
@@ -26,6 +27,8 @@ import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.PlayCommand
 import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.media.SubtitleMapper
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.ShowId
@@ -73,8 +76,8 @@ data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean
 @Suppress("TooManyFunctions")
 class PlayerViewModel(
     val mediaId: Media.MediaId,
-    private val fetchVideoSource: suspend (Media.MediaId) -> Result<VideoSource> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val fetchVideoSource: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
     private val fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
         Result.success(emptyList())
@@ -82,8 +85,8 @@ class PlayerViewModel(
     private val saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
     private val onAuthFailure: () -> Unit = {},
     private val onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
-    private val refreshStreamUrl: suspend (Media.MediaId) -> Result<VideoSource> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
+        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
     private val savePlaybackSpeed: suspend (Float) -> Unit = {},
     private val loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
@@ -110,8 +113,8 @@ class PlayerViewModel(
             fetchVideoSource(mediaId).fold(
                 onSuccess = { source -> startPlayback(source) },
                 onFailure = { error ->
-                    log.e(error) { "Failed to fetch video source" }
-                    val playbackError = categorizePlaybackError(error)
+                    log.e { "Failed to fetch video source: $error" }
+                    val playbackError = PlaybackErrorClassifier.classify(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
@@ -226,7 +229,7 @@ class PlayerViewModel(
     }
 
     fun onPlayerError(message: String) {
-        val playbackError = categorizePlaybackError(RuntimeException(message))
+        val playbackError = categorizePlaybackError(message)
         val isAuth = playbackError is PlaybackError.AuthFailure
         if (isAuth) {
             saveProgressAndRouteToAuthRepair()
@@ -352,7 +355,8 @@ class PlayerViewModel(
                     }
                 },
                 onFailure = { error ->
-                    val playbackError = categorizePlaybackError(error)
+                    log.e { "Stream refresh failed: $error" }
+                    val playbackError = PlaybackErrorClassifier.classify(error)
                     val isAuth = playbackError is PlaybackError.AuthFailure
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
@@ -382,19 +386,23 @@ class PlayerViewModel(
         onAuthFailure()
     }
 
-    private fun categorizePlaybackError(error: Throwable): PlaybackError {
-        val message = error.message.orEmpty()
-
-        return when {
-            isLikelyAuthError(message) -> PlaybackError.AuthFailure
-            isLikelyStreamExpired(message) -> PlaybackError.StreamUrlExpired
-            else -> PlaybackError.Recoverable()
+    private fun categorizePlaybackError(message: String): PlaybackError {
+        // The player bridge reports errors as opaque strings. Parse the
+        // HTTP status code if present so the typed classifier can
+        // dispatch 401 to AuthFailure and 403 to StreamUrlExpired.
+        val code = HTTP_STATUS_REGEX.find(message)?.value?.toIntOrNull()
+        val domainError = if (code != null && code in 400..599) {
+            net.subsloth.core.model.error.NetworkError.HttpError(code, message)
+        } else {
+            net.subsloth.core.model.error.DecodeError.SerializationFailed
         }
+        return PlaybackErrorClassifier.classify(domainError)
     }
 
-    private fun isLikelyAuthError(message: String): Boolean =
-        message.contains("401") || message.contains("auth", ignoreCase = true)
-
-    private fun isLikelyStreamExpired(message: String): Boolean =
-        message.contains("403") || message.contains("expired", ignoreCase = true)
+    private companion object {
+        // Matches "401", "403", etc. inside an arbitrary player error
+        // message. The player bridge is not coupled to the network
+        // shell so we recover the status code from the message.
+        val HTTP_STATUS_REGEX = Regex("""\b(40[0-9]|41[0-9]|42[0-9]|43[0-9]|44[0-9]|45[0-9])\b""")
+    }
 }

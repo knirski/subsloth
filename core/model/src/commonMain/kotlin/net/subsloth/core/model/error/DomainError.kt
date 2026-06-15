@@ -1,17 +1,47 @@
 package net.subsloth.core.model.error
 
 /**
- * Root sealed interface for all recoverable domain errors.
+ * Root sealed hierarchy for all recoverable domain errors.
  *
- * All domain and application failures use [Result] with these typed errors
- * instead of unchecked exceptions or nullable sentinels.
+ * Every recoverable failure in the project is a [DomainError] value.
+ * Domain errors are *values*, not [Throwable]s: the project uses the
+ * [Outcome] wrapper type to thread them through fallible APIs, and the
+ * I/O shell translates engine exceptions into typed [DomainError]s at
+ * the port boundary.
+ *
+ * The hierarchy is split into two super-categories so consumers can
+ * dispatch on the failure class at the type level:
+ *
+ * - [Technical] — failures from infrastructure (network, decode, sync).
+ *   The user cannot fix these directly; the appropriate response is
+ *   "try again" with a backoff and a diagnostic log.
+ * - [Business] — failures from the user's context or business rules
+ *   (auth, payment, media availability, download, quality, library).
+ *   The appropriate response is a specific, actionable message
+ *   ("Sign in again", "Subscribe to watch this", "Free up storage").
+ *
+ * Domain code is expected to handle the super-category exhaustively
+ * (e.g. `when (e: DomainError.Technical) { ... }`) and let the
+ * compiler catch any new variant.
  */
-sealed interface DomainError
+sealed interface DomainError {
+    /**
+     * Failures from infrastructure (network, decode, sync). The user
+     * cannot act on these directly.
+     */
+    sealed interface Technical : DomainError
+
+    /**
+     * Failures from the user's context or business rules. The user can
+     * act on these (re-authenticate, change subscription, free storage).
+     */
+    sealed interface Business : DomainError
+}
 
 // ── Authentication ──────────────────────────────────────────────────────────
 
 /** Errors related to authentication and session state. */
-sealed interface AuthError : DomainError {
+sealed interface AuthError : DomainError.Business {
     /** Provided credentials are invalid or rejected by the server. */
     data object InvalidCredentials : AuthError
 
@@ -25,7 +55,7 @@ sealed interface AuthError : DomainError {
 // ── Payment / Free-tier limits ──────────────────────────────────────────────
 
 /** Errors related to payment or free-tier usage limits. */
-sealed interface PaymentLimitError : DomainError {
+sealed interface PaymentLimitError : DomainError.Business {
     /** The user's free-tier concurrent stream limit has been reached. */
     data object ConcurrentStreamLimit : PaymentLimitError
 
@@ -36,7 +66,7 @@ sealed interface PaymentLimitError : DomainError {
 // ── Media availability ──────────────────────────────────────────────────────
 
 /** Errors indicating the requested media cannot be served. */
-sealed interface MediaError : DomainError {
+sealed interface MediaError : DomainError.Business {
     /** Media is not currently available (geo-restricted, removed, etc.). */
     data object Unavailable : MediaError
 
@@ -56,7 +86,7 @@ sealed interface MediaError : DomainError {
 // ── Download ────────────────────────────────────────────────────────────────
 
 /** Errors related to offline downloading and local storage. */
-sealed interface DownloadError : DomainError {
+sealed interface DownloadError : DomainError.Business {
     /** Device storage is too low to complete the download. */
     data object InsufficientStorage : DownloadError
 
@@ -79,7 +109,7 @@ sealed interface DownloadError : DomainError {
 // ── Quality / Decode ────────────────────────────────────────────────────────
 
 /** Errors related to unsupported or unavailable video/audio qualities. */
-sealed interface QualityError : DomainError {
+sealed interface QualityError : DomainError.Business {
     /** The requested quality is not available for this media. */
     data object Unsupported : QualityError
 
@@ -91,7 +121,7 @@ sealed interface QualityError : DomainError {
 }
 
 /** Errors during response decoding or data parsing. */
-sealed interface DecodeError : DomainError {
+sealed interface DecodeError : DomainError.Technical {
     /** Server returned an unexpected or malformed response body. */
     data object InvalidResponseFormat : DecodeError
 
@@ -105,7 +135,7 @@ sealed interface DecodeError : DomainError {
 // ── Network ─────────────────────────────────────────────────────────────────
 
 /** Errors from the network or transport layer. */
-sealed interface NetworkError : DomainError {
+sealed interface NetworkError : DomainError.Technical {
     /** The request timed out. */
     data object Timeout : NetworkError
 
@@ -125,7 +155,7 @@ sealed interface NetworkError : DomainError {
 // ── Catalog Sync ───────────────────────────────────────────────────────────
 
 /** Errors during catalog synchronization. */
-sealed interface SyncError : DomainError {
+sealed interface SyncError : DomainError.Technical {
     /** No network connectivity is available. */
     data object NoConnectivity : SyncError
 
@@ -142,7 +172,7 @@ sealed interface SyncError : DomainError {
 // ── Library ─────────────────────────────────────────────────────────────────
 
 /** Errors related to library operations. */
-sealed interface LibraryError : DomainError {
+sealed interface LibraryError : DomainError.Business {
     /** The requested library operation is not supported server-side. */
     data object NotSupported : LibraryError
 

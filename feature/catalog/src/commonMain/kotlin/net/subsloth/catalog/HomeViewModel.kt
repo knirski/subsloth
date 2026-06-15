@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.error.DomainResultException
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -120,9 +119,12 @@ class HomeViewModel(
                         .onFailure { error ->
                             log.e(error) { "Sync failed" }
                             if (!request.silent) {
-                                val syncError = (error as? DomainResultException)?.domainError as? SyncError
-                                    ?: SyncError.Unknown
-                                _syncErrors.emit(syncError)
+                                // `syncCatalog` is the `Result<Unit>` test seam; in production
+                                // it wraps the `CatalogSyncPort.sync(): Outcome<Unit>` port.
+                                // Since we no longer use the `DomainResultException` wrapper,
+                                // every non-success is an opaque `Throwable` and we surface
+                                // it as `SyncError.Unknown` for the UI.
+                                _syncErrors.emit(SyncError.Unknown)
                             }
                         }
                 } finally {

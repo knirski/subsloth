@@ -8,7 +8,8 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDate
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.DecodeError
-import net.subsloth.core.model.error.DomainResultException
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.getOrNull
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource
@@ -66,11 +67,11 @@ object Mapper {
 
     // ── Movie Detail → Domain MovieDetails ───────────────────────────────
 
-    fun mapMovieDetails(dto: DtoMovie): Result<MovieDetails> {
+    fun mapMovieDetails(dto: DtoMovie): Outcome<MovieDetails> {
         val title =
             dto.title ?: dto.name
-                ?: return Result.failure(DomainResultException(DecodeError.MissingFields(listOf("title"))))
-        return Result.success(
+                ?: return Outcome.Failure(DecodeError.MissingFields(listOf("title")))
+        return Outcome.Success(
             MovieDetails(
                 id = Media.MediaId.Movie(MovieId(dto.id)),
                 title = title,
@@ -122,18 +123,18 @@ object Mapper {
 
     // ── Show Detail → Domain ShowDetails ─────────────────────────────────
 
-    fun mapShowDetails(dto: DtoShow): Result<ShowDetails> {
+    fun mapShowDetails(dto: DtoShow): Outcome<ShowDetails> {
         val title =
             dto.title ?: dto.name
-                ?: return Result.failure(DomainResultException(DecodeError.MissingFields(listOf("title"))))
+                ?: return Outcome.Failure(DecodeError.MissingFields(listOf("title")))
 
-        val episodes =
+        val episodes: List<DomainEpisode> =
             dto.episodes
                 ?.mapNotNull { mapEpisode(it).getOrNull() }
                 .orEmpty()
         val seasons = groupEpisodesBySeason(episodes)
 
-        return Result.success(
+        return Outcome.Success(
             ShowDetails(
                 id = Media.MediaId.Show(ShowId(dto.id)),
                 title = title,
@@ -161,11 +162,11 @@ object Mapper {
 
     // ── Episode → Domain Episode ─────────────────────────────────────────
 
-    fun mapEpisode(dto: DtoEpisode): Result<DomainEpisode> {
+    fun mapEpisode(dto: DtoEpisode): Outcome<DomainEpisode> {
         val showId =
             dto.showId
-                ?: return Result.failure(DomainResultException(DecodeError.MissingFields(listOf("show_id"))))
-        return Result.success(
+                ?: return Outcome.Failure(DecodeError.MissingFields(listOf("show_id")))
+        return Outcome.Success(
             DomainEpisode(
                 id = EpisodeId(dto.id),
                 showId = ShowId(showId),
