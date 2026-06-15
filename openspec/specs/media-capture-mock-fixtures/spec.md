@@ -1,7 +1,7 @@
 # media-capture-mock-fixtures Specification
 
 ## Purpose
-TBD - created by archiving change media-capture-mock-fixtures. Update Purpose after archive.
+Browser traffic capture pipeline for authenticated Media API traffic, sanitized fixture export with sensitive data removal, native/web fixture separation, programmatic fixture replay for local development, and developer-only scope ensuring capture tooling stays outside production builds.
 ## Requirements
 ### Requirement: Browser Traffic Capture Pipeline
 The system SHALL provide a local-only workflow for capturing authenticated Media browser traffic and exporting sanitized request/response fixtures.

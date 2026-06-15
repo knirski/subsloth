@@ -10,11 +10,11 @@ Run `./gradlew` from inside the repo. The Nix dev shell is loaded automatically 
 | Compile toolchain (`kotlin { jvmToolchain(17) }`) | JDK 17 | flake → `JAVA17_HOME` |
 | Bytecode emitted | Java 17 | convention plugins |
 
-The daemon JDK and the toolchain JDK are independent. The daemon runs Gradle / AGP / Kotlin / Metro plugin code; the toolchain is the JDK used to compile sources. Bytecode level follows the toolchain.
+The daemon JDK and the toolchain JDK are independent. The daemon runs Gradle / AGP / Kotlin plugin code; the toolchain is the JDK used to compile sources. Bytecode level follows the toolchain.
 
 ## Why these versions
 
-- **JDK 25** for the daemon — Metro requires at least 21.
+- **JDK 25** for the daemon — latest LTS.
 - **JDK 17** for the toolchain — what AGP 9.x and Kotlin 2.3.x officially target on Android. Anything newer would force desugaring without buying anything for `compileSdk 36` / `minSdk 26`.
 
 ## How it's wired
@@ -58,4 +58,3 @@ The daemon JDK and the toolchain JDK are independent. The daemon runs Gradle / A
 ## Reference
 
 - [Gradle: toolchains](https://docs.gradle.org/current/userguide/toolchains.html)
-- [Metro compatibility](https://zacsweers.github.io/metro/latest/compatibility/)

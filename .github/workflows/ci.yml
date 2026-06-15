@@ -104,6 +104,7 @@ jobs:
               :feature:auth:jvmTest :feature:catalog:jvmTest
               :feature:details:jvmTest :feature:player:jvmTest
               :feature:library:jvmTest :feature:settings:jvmTest
+              :core:media:jvmTest
 
           - display: 🖥️ Desktop / Linux
             os: ubuntu-latest

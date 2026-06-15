@@ -1,7 +1,7 @@
 # android-ui Specification
 
 ## Purpose
-TBD - created by archiving change android-ui-foundation. Update Purpose after archive.
+Cross-cutting Android UI requirements: phone, tablet, and TV layout adaptation, focus management for D-pad navigation, detail adaptation across form factors, accessibility, edge-to-edge system UI handling, navigation state restoration, and predictive back support.
 ## Requirements
 ### Requirement: Phone Layout
 Phone UI SHALL use single-pane flows, bottom navigation where appropriate, sticky primary actions where useful, and adaptive/resizable behavior on Android phone 16.
