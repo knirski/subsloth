@@ -3,7 +3,7 @@
   "extends": [
     "config:recommended",
     ":automergeMinor",
-    ":separateMajorMinor",
+    ":separateMajorReleases",
     "group:allNonMajor"
   ],
   "labels": ["dependencies"],
