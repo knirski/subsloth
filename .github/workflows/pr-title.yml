@@ -9,9 +9,9 @@ on:
       - reopened
       - ready_for_review
 
-# Cancel redundant runs when pushing new commits to the same branch.
+# Cancel redundant runs when pushing new commits to the same PR.
 concurrency:
-  group: pr-title-${{ github.ref }}
+  group: pr-title-${{ github.event.pull_request.id }}
   cancel-in-progress: true
 
 jobs:
