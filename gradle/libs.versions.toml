@@ -20,12 +20,8 @@ detekt = "2.0.0-alpha.3"
 media3 = "1.10.1"
 coil = "3.4.0"
 kotlinxSerialization = "1.11.0"
-work = "2.11.2"
 coroutines = "1.11.0"
 turbine = "1.2.1"
-
-benchmark = "1.4.1"
-jsonSchemaValidator = "3.0.3"
 junit = "6.1.0"
 junitPlatform = "6.1.0"
 spotless = "8.6.0"
@@ -54,7 +50,6 @@ androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = 
 # Compose Multiplatform runtime (provides @Stable, @Immutable for KMP targets)
 # Short name for `:core:model` that only needs the runtime annotation types.
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
-compose-multiplatform-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
 savedstate = { module = "androidx.savedstate:savedstate", version.ref = "savedstate" }
 savedstate-compose = { module = "androidx.savedstate:savedstate-compose", version.ref = "savedstate" }
 compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultplatformRuntime" }
@@ -90,6 +85,7 @@ androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", vers
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+# KMP Navigation3 UI (used by Desktop, Web, and core:ui — distinct from the AndroidX variant)
 navigation3-ui-kmp = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version = "1.1.1" }
 
 # Room 3.0 KMP (alpha)
@@ -141,10 +137,6 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
-# WorkManager
-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
-
 # Compose Preview Screenshot Testing (Google official)
 screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot" }
 
@@ -155,16 +147,12 @@ junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "jsonSchemaValidator" }
 wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
 
 # Detekt
 detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
 detekt-test = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
-
-# Benchmark
-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 
 # Gradle plugins on classpath of build-logic (so .gradle.kts convention scripts can import them)
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -182,7 +170,6 @@ kotlin-power-assert-gradlePlugin = { module = "org.jetbrains.kotlin.plugin.power
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -190,10 +177,8 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultplatformPlugin" }
 
-
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
-androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 room3 = { id = "androidx.room3", version.ref = "room3" }

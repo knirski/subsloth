@@ -1,7 +1,7 @@
 # offline-downloads Specification
 
 ## Purpose
-TBD - created by archiving change offline-downloads. Update Purpose after archive.
+Offline download and playback: offline home and library access, app-private download storage, shared offline metadata retention, shared offline asset management (video and subtitles), download state robustness with typed states, low-storage safety with reserve checks, metered-network safety, single-active-video-download concurrency, confirmed season queue with fallback policies, queue persistence across process death, logout queue safety, and operational notifications for playback and downloads.
 ## Requirements
 ### Requirement: Offline Home Mode
 When offline, the app SHALL surface downloaded library content before failed online catalog states.

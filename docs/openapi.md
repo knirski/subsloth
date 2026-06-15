@@ -4,7 +4,7 @@ The project's API contract lives at `api/subsloth.openapi.yaml`. Validation is d
 
 ## Why vacuum instead of `org.openapi.generator`?
 
-The project uses **handwritten Retrofit DTOs**, not generated ones. The `openApiValidate` Gradle task from `org.openapi.generator` was used solely as a spec validation gate — it never ran code generation.
+The project uses **handwritten `@Serializable` DTOs**, not generated ones. The `openApiValidate` Gradle task from `org.openapi.generator` was used solely as a spec validation gate — it never ran code generation.
 
 Vacuum replaces it because:
 

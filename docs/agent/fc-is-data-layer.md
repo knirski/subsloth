@@ -1,6 +1,6 @@
 # FC/IS Data Layer
 
-Data access conventions — Room database, Retrofit 3.0.0, DataStore preferences, DTO-to-domain mapper boundary, offline-first caching, account-scoped isolation. The data layer IS the Imperative Shell.
+Data access conventions — Room database, Ktor HTTP client, DataStore preferences, DTO-to-domain mapper boundary, offline-first caching, account-scoped isolation. The data layer IS the Imperative Shell.
 
 ## Module Structure
 
@@ -9,7 +9,7 @@ Data access conventions — Room database, Retrofit 3.0.0, DataStore preferences
 | `:core:model` | Domain types, value classes, sealed ADTs (no deps) |
 | `:core:domain` | Port interfaces, policy objects (depends on `:core:model`) |
 | `:core:database` | Room entities, DAOs, `SubSlothDatabase` |
-| `:core:network` | Retrofit API interfaces, DTOs, mapper functions |
+| `:core:network` | Ktor `Api` class, DTOs, mapper functions, `ClientFactory` |
 | `:core:preferences` | DataStore preferences, account profile store, credential store |
 
 Dependencies flow inward. No data layer module leaks Android framework into domain code.
@@ -20,9 +20,9 @@ Dependencies flow inward. No data layer module leaks Android framework into doma
 
 DAO pattern: `interface` with `@Dao`. Methods return `Flow<List<T>>` for reactive reads. Write methods are `suspend`. Upsert uses `@Insert(onConflict = OnConflictStrategy.REPLACE)`.
 
-## Retrofit 3.0.0
+## Ktor HTTP Client
 
-`Api` interface at `core/network/src/main/kotlin/net/subsloth/core/network/media/api/Api.kt`. All methods are `suspend` returning DTO types (no `Call<T>` or `Response<T>`). DTOs use `@Serializable` + `@SerialName` for snake_case mapping. Singleton Retrofit instance with kotlinx.serialization converter.
+`Api` class at `core/network/src/commonMain/kotlin/net/subsloth/core/network/media/api/Api.kt`. All methods are `suspend` returning DTO types. DTOs use `@Serializable` + `@SerialName` for snake_case mapping. HttpClient singleton via `ClientFactory.create()`. Uses Ktor's built-in plugins: `ContentNegotiation` (kotlinx.serialization), `Auth` (basic), `HttpTimeout`, `HttpRequestRetry`, `Logging`, plus a custom `ResponseValidationPlugin`.
 
 ## DataStore Preferences
 
@@ -72,5 +72,6 @@ Room entities carry `profileKey` column. DAOs filter by `profileKey`. DataStore 
 
 - `docs/codestyle.md`: FC/IS rules, sealed types, pure functions, error handling
 - `docs/agent/fc-is-architecture.md`: architecture overview, port/adapter, module deps
+- `docs/agent/ktor-networking.md`: Ktor plugin stack and HTTP client details
 - Core database/network/preferences modules for entity/DAO/API patterns
 - `core/domain/src/main/kotlin/net/subsloth/core/domain/port/`: port interfaces

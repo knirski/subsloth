@@ -43,10 +43,10 @@ The following libraries represent deliberate choices replacing previously common
 
 | Layer | Chosen | Superseded |
 |---|---|---|
-| DI | Metro 1.0 (`dev.zacsweers.metro`) | Hilt |
+| DI | Manual constructor injection (no DI framework) | Hilt, Metro, Dagger |
 | Navigation | Navigation3 1.1 (`androidx.navigation3`) | Navigation Compose |
 | JSON serialization | kotlinx.serialization | Moshi, Gson |
-| HTTP | Retrofit 3.0 (`com.squareup.retrofit2:retrofit:3.0.0`) | — |
+| HTTP | Ktor 3.5 (`io.ktor:ktor-client-core`) | Retrofit, OkHttp |
 | FP / error modelling | Kotlin `Result<T>`, `sealed interface` | Arrow |
 | Testing assertions | Kotlin Power-Assert (`org.jetbrains.kotlin.plugin.power-assert`) | Truth, Kotest |
 | Test runner | JUnit 5 | Kotest Engine |

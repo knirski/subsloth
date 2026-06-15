@@ -1,7 +1,7 @@
 # auth-security Specification
 
 ## Purpose
-TBD - created by archiving change auth-persistence-shell. Update Purpose after archive.
+Authentication flow, credential storage protection, account profile key derivation, persistence scope separation between account-scoped and shared offline data, logout cleanup, auth failure repair, offline library from login, input safety, and sensitive screen policy.
 ## Requirements
 ### Requirement: Login Gate
 The app SHALL require login before authenticated catalog access when no encrypted credentials exist.

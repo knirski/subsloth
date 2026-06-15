@@ -11,7 +11,7 @@ Learn languages by watching. Native Android streaming client with dual subtitles
 Functional Core / Imperative Shell, with typed domain models, sealed errors, and strict mapper boundaries between the API layer and app decisions.
 
 - **UI:** Jetpack Compose with adaptive layouts, TV focus, and accessibility
-- **Networking:** Metro HTTP client with single-flight, bounded retry, and rate-limit handling
+- **Networking:** Ktor HTTP client with bounded retry and rate-limit handling
 - **Storage:** Room (SQLite), DataStore (preferences), Android Keystore (credentials)
 - **Build:** Gradle with Kotlin DSL and version catalogs
 - **Dev environment:** Nix flake with pinned JDK 25/17, Android SDK 36, and bundled Android Studio

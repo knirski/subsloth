@@ -43,12 +43,10 @@ Archive each change with `openspec archive <change-id>` after implementation and
 
 ## Spec Lifecycle
 
-`openspec/specs/` is intentionally empty until changes are implemented and archived. Requirements currently live inside the active changes as `## ADDED Requirements` deltas. Once a change is archived, its requirements become part of the canonical baseline in `openspec/specs/`.
-
-To read all current v1 requirements before any change is archived, look across the active changes:
+`openspec/specs/` is the canonical baseline of accepted requirements. Specs are promoted here via `openspec archive <change-id>` after implementation and verification. To read all current v1 requirements:
 
 ```bash
-find openspec/changes/*/specs -name 'spec.md' | sort
+find openspec/specs -name 'spec.md' | sort
 ```
 
 ## Execution Detail
