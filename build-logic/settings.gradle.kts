@@ -11,6 +11,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven("https://repo.gradle.org/gradle/libs-releases/")
     }
     versionCatalogs {
         create("libs") {
