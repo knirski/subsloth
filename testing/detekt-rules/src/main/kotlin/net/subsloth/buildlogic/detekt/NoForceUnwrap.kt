@@ -20,7 +20,8 @@ import org.jetbrains.kotlin.psi.KtPostfixExpression
 public class NoForceUnwrap(config: Config) :
     Rule(
         config,
-        description = "Force-unwrap (!!) is forbidden in production code; use requireNotNull/checkNotNull or model the null case explicitly.",
+        description = "Force-unwrap (!!) is forbidden in production code; " +
+            "use requireNotNull/checkNotNull or model the null case explicitly.",
     ) {
 
     override fun visitPostfixExpression(expression: KtPostfixExpression) {
