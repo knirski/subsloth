@@ -8,6 +8,17 @@
 subsloth:
   NoFullyQualifiedNames:
     active: true
+  NoForceUnwrap:
+    active: true
+    excludes:
+      - '**/test/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidTest/**'
+      - '**/iosTest/**'
+      - '**/wasmJsTest/**'
+      - '**/desktopTest/**'
+      - '**/nativeTest/**'
 
 # ── Compose rules (io.nlopez.compose.rules:detekt) ───────────────────────
 Compose:

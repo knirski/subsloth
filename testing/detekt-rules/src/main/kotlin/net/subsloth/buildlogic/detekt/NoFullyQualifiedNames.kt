@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
  * package-like prefix (e.g. `com.example.Foo`) outside of import/package
  * directives.
  */
+@Suppress("TooManyFunctions", "ComplexCondition", "ReturnCount")
 public class NoFullyQualifiedNames(config: Config) :
     Rule(
         config,

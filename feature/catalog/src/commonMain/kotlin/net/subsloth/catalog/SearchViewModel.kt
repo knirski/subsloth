@@ -105,7 +105,7 @@ class SearchViewModel(
                 listCatalog().getOrDefault(emptyList())
             }
         }
-        val catalog = catalogDeferred!!.await()
+        val catalog = checkNotNull(catalogDeferred) { "catalogDeferred was just initialized" }.await()
         if (catalog.isEmpty()) {
             catalogDeferred = null
         }

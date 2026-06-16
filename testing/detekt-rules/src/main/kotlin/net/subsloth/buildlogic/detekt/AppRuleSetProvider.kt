@@ -14,6 +14,7 @@ public class AppRuleSetProvider : RuleSetProvider {
             id = ruleSetId,
             rules = mapOf(
                 RuleName("NoFullyQualifiedNames") to ::NoFullyQualifiedNames,
+                RuleName("NoForceUnwrap") to ::NoForceUnwrap,
             ),
         )
 }
