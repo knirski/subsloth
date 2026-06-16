@@ -48,7 +48,7 @@ fun HomeScreen(
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val isSyncing = (state as? HomeUiState.Content)?.isSyncing == true
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {

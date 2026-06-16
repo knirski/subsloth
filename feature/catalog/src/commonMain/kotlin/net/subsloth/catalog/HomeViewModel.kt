@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.SyncError
@@ -33,7 +34,8 @@ sealed interface HomeUiState {
     data object Loading : HomeUiState
 
     @Immutable
-    data class Content(val rows: ImmutableList<HomeRow>, val selectedTab: HomeTab) : HomeUiState
+    data class Content(val rows: ImmutableList<HomeRow>, val selectedTab: HomeTab, val isSyncing: Boolean = false) :
+        HomeUiState
 }
 
 @Stable
@@ -93,10 +95,7 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
-
-    private val _syncErrors = MutableSharedFlow<SyncError>(replay = 1)
+    private val _syncErrors = MutableSharedFlow<SyncError>(extraBufferCapacity = 1)
     val syncErrors: Flow<SyncError> = _syncErrors
 
     private val syncChannel = Channel<SyncRequest>(Channel.CONFLATED)
@@ -106,14 +105,14 @@ class HomeViewModel(
     init {
         viewModelScope.launch {
             catalogItems("movie").combine(catalogItems("show")) { movies, shows ->
-                buildHomeContent(movies, shows, selectedTab = restoredTab)
+                buildHomeContent(movies, shows, selectedTab = restoredTab, isSyncing = false)
             }.collect { content ->
                 _uiState.value = content
             }
         }
         viewModelScope.launch {
             syncChannel.receiveAsFlow().collectLatest { request ->
-                _isSyncing.value = true
+                updateContent { it.copy(isSyncing = true) }
                 try {
                     syncCatalog()
                         .onFailure { error ->
@@ -128,7 +127,7 @@ class HomeViewModel(
                             }
                         }
                 } finally {
-                    _isSyncing.value = false
+                    updateContent { it.copy(isSyncing = false) }
                 }
             }
         }
@@ -136,6 +135,12 @@ class HomeViewModel(
             if (isCatalogStale()) {
                 syncChannel.trySend(SyncRequest(silent = true))
             }
+        }
+    }
+
+    private fun updateContent(transform: (HomeUiState.Content) -> HomeUiState.Content) {
+        _uiState.update { current ->
+            if (current is HomeUiState.Content) transform(current) else current
         }
     }
 
@@ -158,6 +163,7 @@ internal fun buildHomeContent(
     movies: List<Media>,
     shows: List<Media>,
     selectedTab: HomeTab = HomeTab.MOVIES,
+    isSyncing: Boolean = false,
 ): HomeUiState.Content {
     val movieItems = movies.filterIsInstance<MovieSummary>()
     val showItems = shows.filterIsInstance<ShowSummary>()
@@ -176,7 +182,7 @@ internal fun buildHomeContent(
             ?.let { add(HomeRow.Shows(it.toImmutableList())) }
     }.toImmutableList()
 
-    return HomeUiState.Content(rows = rows, selectedTab = selectedTab)
+    return HomeUiState.Content(rows = rows, selectedTab = selectedTab, isSyncing = isSyncing)
 }
 
 private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {
