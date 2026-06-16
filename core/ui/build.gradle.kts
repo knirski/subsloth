@@ -2,6 +2,7 @@ plugins {
     id("subsloth.kmp.library")
     id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.compose.gradle)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -14,6 +15,8 @@ kotlin {
             implementation(libs.compose.multiplatform.material3)
             implementation(libs.compose.multiplatform.ui)
             implementation(libs.compose.components.resources)
+            api(libs.kotlinx.serialization)
+            api(libs.savedstate)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.androidx.navigation3.runtime)

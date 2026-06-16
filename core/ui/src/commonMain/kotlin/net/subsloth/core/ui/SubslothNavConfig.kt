@@ -1,4 +1,4 @@
-package net.subsloth.navigation
+package net.subsloth.core.ui
 
 import androidx.navigation3.runtime.NavKey
 import androidx.savedstate.serialization.SavedStateConfiguration
@@ -6,7 +6,15 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
-val subslothNavConfig = SavedStateConfiguration {
+/**
+ * SavedStateConfiguration for the app's Navigation3 graph.
+ *
+ * Registers every [AppNavKey] subtype as a polymorphic [NavKey] subtype
+ * so that [rememberNavBackStack] can serialize and deserialize the
+ * back stack. Required on non-Android targets — without it
+ * [rememberNavBackStack] throws.
+ */
+val subslothNavConfig: SavedStateConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
             subclass(LoginKey::class, LoginKey.serializer())
