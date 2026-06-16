@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.SyncError
@@ -33,7 +34,8 @@ sealed interface HomeUiState {
     data object Loading : HomeUiState
 
     @Immutable
-    data class Content(val rows: ImmutableList<HomeRow>, val selectedTab: HomeTab) : HomeUiState
+    data class Content(val rows: ImmutableList<HomeRow>, val selectedTab: HomeTab, val isSyncing: Boolean = false) :
+        HomeUiState
 }
 
 @Stable
@@ -93,10 +95,17 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    /**
+     * Private tracking of the in-progress sync flag. Held outside
+     * the state because the state is built lazily by the combine
+     * flow — we need the flag to survive across multiple emissions
+     * of `catalogItems` (each emission rebuilds the Content rows).
+     * The public state contract is "uiState.isSyncing is the truth
+     * at every emission"; this field exists to enforce that.
+     */
+    private var isSyncingActive: Boolean = false
 
-    private val _syncErrors = MutableSharedFlow<SyncError>(replay = 1)
+    private val _syncErrors = MutableSharedFlow<SyncError>(extraBufferCapacity = 1)
     val syncErrors: Flow<SyncError> = _syncErrors
 
     private val syncChannel = Channel<SyncRequest>(Channel.CONFLATED)
@@ -106,14 +115,19 @@ class HomeViewModel(
     init {
         viewModelScope.launch {
             catalogItems("movie").combine(catalogItems("show")) { movies, shows ->
-                buildHomeContent(movies, shows, selectedTab = restoredTab)
+                buildHomeContent(
+                    movies = movies,
+                    shows = shows,
+                    selectedTab = restoredTab,
+                    isSyncing = isSyncingActive,
+                )
             }.collect { content ->
                 _uiState.value = content
             }
         }
         viewModelScope.launch {
             syncChannel.receiveAsFlow().collectLatest { request ->
-                _isSyncing.value = true
+                setSyncing(true)
                 try {
                     syncCatalog()
                         .onFailure { error ->
@@ -124,11 +138,11 @@ class HomeViewModel(
                                 // Since we no longer use the `DomainResultException` wrapper,
                                 // every non-success is an opaque `Throwable` and we surface
                                 // it as `SyncError.Unknown` for the UI.
-                                _syncErrors.emit(SyncError.Unknown)
+                                _syncErrors.tryEmit(SyncError.Unknown)
                             }
                         }
                 } finally {
-                    _isSyncing.value = false
+                    setSyncing(false)
                 }
             }
         }
@@ -136,6 +150,19 @@ class HomeViewModel(
             if (isCatalogStale()) {
                 syncChannel.trySend(SyncRequest(silent = true))
             }
+        }
+    }
+
+    /**
+     * Flips the syncing flag and rebuilds the current state so the
+     * UI sees the change atomically. If the state has not yet
+     * transitioned to Content, the next `catalogItems` emission
+     * will pick up the new value.
+     */
+    private fun setSyncing(value: Boolean) {
+        isSyncingActive = value
+        _uiState.update { current ->
+            if (current is HomeUiState.Content) current.copy(isSyncing = value) else current
         }
     }
 
@@ -158,6 +185,7 @@ internal fun buildHomeContent(
     movies: List<Media>,
     shows: List<Media>,
     selectedTab: HomeTab = HomeTab.MOVIES,
+    isSyncing: Boolean = false,
 ): HomeUiState.Content {
     val movieItems = movies.filterIsInstance<MovieSummary>()
     val showItems = shows.filterIsInstance<ShowSummary>()
@@ -176,7 +204,7 @@ internal fun buildHomeContent(
             ?.let { add(HomeRow.Shows(it.toImmutableList())) }
     }.toImmutableList()
 
-    return HomeUiState.Content(rows = rows, selectedTab = selectedTab)
+    return HomeUiState.Content(rows = rows, selectedTab = selectedTab, isSyncing = isSyncing)
 }
 
 private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {

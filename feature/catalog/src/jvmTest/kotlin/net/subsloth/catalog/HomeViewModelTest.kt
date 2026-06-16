@@ -320,12 +320,19 @@ class HomeViewModelTest {
             },
             isCatalogStale = { false },
         )
-        viewModel.isSyncing.test {
-            assertThat(awaitItem()).isFalse()
+        viewModel.uiState.test {
+            // Loading is the initial state; skip it and read Content directly.
+            var current = awaitItem()
+            while (current !is HomeUiState.Content) current = awaitItem()
+            assertThat(current.isSyncing).isFalse()
             viewModel.sync()
-            assertThat(awaitItem()).isTrue()
+            current = awaitItem()
+            while (current !is HomeUiState.Content) current = awaitItem()
+            assertThat(current.isSyncing).isTrue()
             syncGate.complete(Unit)
-            assertThat(awaitItem()).isFalse()
+            current = awaitItem()
+            while (current !is HomeUiState.Content) current = awaitItem()
+            assertThat(current.isSyncing).isFalse()
         }
     }
 
