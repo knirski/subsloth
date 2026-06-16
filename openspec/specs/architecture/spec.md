@@ -160,3 +160,12 @@ The root composable of every app (`androidApp`, `desktopApp`, `webApp`) SHALL wr
 - **WHEN** the user triggers logout and `SessionPort.close()` is called
 - **THEN** `SessionPort.state` emits `Session.Anonymous` and the gate switches to render the login screen
 
+### Requirement: prefer `enum class` for data-only variant sets
+The system MUST express variant sets with no per-variant state (e.g. `Queued`, `Applied`, `WifiOnly`) as `enum class`, not as `sealed interface` with `data object` branches. Rationale: `enum class` exposes `entries` and `values()` for iteration and exhaustiveness checks; the compiler enforces the variant set; it removes the detekt-flagged `'is' over enum entry` antipattern; and it is uniform with `QualityDescriptor` and other existing enums in the project.
+
+#### Scenario: data-only sealed type is expressed as `enum class`
+- **WHEN** a variant set with no per-variant state is added to `:core:model` or `:core:domain`
+- **THEN** it SHALL be declared as `enum class`
+- **AND** SHALL use `Foo.Bar` reference syntax at call sites
+- **AND** exhaustive `when` SHALL match without `is` keywords
+
