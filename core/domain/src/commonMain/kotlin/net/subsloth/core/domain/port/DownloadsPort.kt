@@ -43,19 +43,19 @@ interface DownloadsPort {
 }
 
 /** Outcome of a download command (pause, resume, cancel, remove). */
-sealed interface DownloadCommandOutcome {
+enum class DownloadCommandOutcome {
     /** The command was successfully applied. */
-    data object Applied : DownloadCommandOutcome
+    Applied,
 
     /** The command was a no-op (e.g. pausing an already-paused download). */
-    data object NoOp : DownloadCommandOutcome
+    NoOp,
 }
 
 /** Outcome of requesting a subtitle track download. */
-sealed interface SubtitleEnqueueOutcome {
+enum class SubtitleEnqueueOutcome {
     /** Subtitle download was queued. */
-    data object Queued : SubtitleEnqueueOutcome
+    Queued,
 
     /** Subtitle is already available locally. */
-    data object AlreadyAvailable : SubtitleEnqueueOutcome
+    AlreadyAvailable,
 }

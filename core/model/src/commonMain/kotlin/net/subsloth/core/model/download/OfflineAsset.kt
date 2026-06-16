@@ -64,10 +64,9 @@ internal fun normalizePure(path: String): String {
 }
 
 /** Whether a download transfer may use a metered network connection. */
-sealed interface TransferPreference {
-    data object WifiOnly : TransferPreference
-
-    data object MeteredAllowed : TransferPreference
+enum class TransferPreference {
+    WifiOnly,
+    MeteredAllowed,
 }
 
 /** Estimated size of a download or set of downloads. */
