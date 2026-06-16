@@ -2,7 +2,6 @@ package net.subsloth.core.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,4 +49,4 @@ fun SessionGate(sessionPort: SessionPort, login: @Composable () -> Unit, authent
  */
 @Composable
 fun rememberSession(sessionPort: SessionPort): State<Session> =
-    remember(sessionPort) { sessionPort.state }.collectAsState()
+    remember(sessionPort) { sessionPort.state }.collectAsStateWithLifecycle()

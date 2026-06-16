@@ -3,7 +3,6 @@ package net.subsloth.desktop
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -13,8 +12,7 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
-import net.subsloth.core.domain.port.InMemorySessionState
-import net.subsloth.core.domain.port.SessionPort
+import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 
 fun main() = application {
@@ -27,7 +25,8 @@ fun main() = application {
     ) {
         MaterialTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                val sessionPort: SessionPort = remember { InMemorySessionState() }
+                val root: RootContainerViewModel = viewModel()
+                val sessionPort = root.sessionPort
                 SessionGate(
                     sessionPort = sessionPort,
                     login = {

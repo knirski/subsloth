@@ -92,7 +92,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `login shows loading indicator`() = runTest(testDispatcher) {
+    fun `login transitions to LoggedIn on success`() = runTest(testDispatcher) {
         val session = FakeSessionPort(startAuthenticated = false)
         val viewModel = LoginViewModel(sessionPort = session)
         viewModel.login("user@test.com", "password")
