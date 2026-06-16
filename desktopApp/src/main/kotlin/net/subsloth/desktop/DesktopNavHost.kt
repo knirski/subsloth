@@ -28,7 +28,7 @@ import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
-import net.subsloth.navigation.subslothNavConfig
+import net.subsloth.core.ui.subslothNavConfig
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
 
