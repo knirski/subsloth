@@ -199,3 +199,26 @@ consumers derive boolean flags from the state class.
   so that a late subscriber does not see an event from before
   their subscription
 
+### Requirement: forbid force-unwrap in production code
+Production code SHALL NOT use the Kotlin force-unwrap operator
+`!!`. Every nullable expression SHALL be handled at the type level
+— by modelling the null case as a sealed variant, by lifting the
+call into a typed `Outcome<T>` / `Result<T>` / sealed `DomainError`,
+or by an explicit `requireNotNull(x) { "..." }` / `checkNotNull(x) { "..." }`
+with a descriptive message.
+
+Test source sets (any path matching `**/src/<X>Test/`) MAY use `!!`
+to assert preconditions.
+
+#### Scenario: detekt reports !! in production
+- **WHEN** a `!!` postfix expression appears in `src/main/`,
+  `src/commonMain/`, `src/jvmMain/`, `src/androidMain/`, or any
+  other production source set
+- **THEN** detekt reports it under the `subsloth.NoForceUnwrap` rule
+- **AND** CI fails on the finding
+
+#### Scenario: detekt does not report !! in tests
+- **WHEN** a `!!` postfix expression appears in any `*Test`
+  source set
+- **THEN** detekt does not report it
+
