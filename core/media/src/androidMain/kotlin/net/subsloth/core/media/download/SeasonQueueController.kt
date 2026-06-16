@@ -133,9 +133,9 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
         return result.fold(
             onSuccess = { outcome ->
                 when (outcome) {
-                    is EnqueueOutcome.Queued -> SeasonQueueExecution.Running(mediaId)
+                    EnqueueOutcome.Queued -> SeasonQueueExecution.Running(mediaId)
 
-                    is EnqueueOutcome.AlreadyAvailableHigherQuality -> {
+                    EnqueueOutcome.AlreadyAvailableHigherQuality -> {
                         seasonQueueDao.upsertItem(nextPending.copy(status = "completed"))
                         executeNext(queueId)
                     }

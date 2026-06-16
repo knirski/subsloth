@@ -513,13 +513,13 @@ private fun formatMediaId(id: Media.MediaId): String = when (id) {
 
 @Composable
 private fun formatFailureReason(reason: DownloadFailureReason): String = when (reason) {
-    is DownloadFailureReason.AmbiguousQuality -> stringResource(Res.string.downloads_reason_ambiguous_quality)
-    is DownloadFailureReason.DownloadFailed -> stringResource(Res.string.downloads_reason_download_failed)
-    is DownloadFailureReason.InsufficientStorage -> stringResource(Res.string.downloads_reason_insufficient_storage)
-    is DownloadFailureReason.MissingLocalFile -> stringResource(Res.string.downloads_reason_missing_local_file)
-    is DownloadFailureReason.NeedsWifi -> stringResource(Res.string.downloads_reason_needs_wifi)
-    is DownloadFailureReason.SubtitleUnavailable -> stringResource(Res.string.downloads_reason_subtitle_unavailable)
-    is DownloadFailureReason.Unavailable -> stringResource(Res.string.downloads_reason_unavailable)
+    DownloadFailureReason.AmbiguousQuality -> stringResource(Res.string.downloads_reason_ambiguous_quality)
+    DownloadFailureReason.DownloadFailed -> stringResource(Res.string.downloads_reason_download_failed)
+    DownloadFailureReason.InsufficientStorage -> stringResource(Res.string.downloads_reason_insufficient_storage)
+    DownloadFailureReason.MissingLocalFile -> stringResource(Res.string.downloads_reason_missing_local_file)
+    DownloadFailureReason.NeedsWifi -> stringResource(Res.string.downloads_reason_needs_wifi)
+    DownloadFailureReason.SubtitleUnavailable -> stringResource(Res.string.downloads_reason_subtitle_unavailable)
+    DownloadFailureReason.Unavailable -> stringResource(Res.string.downloads_reason_unavailable)
 }
 
 private fun formatSize(bytes: Long): String {
