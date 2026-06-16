@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":feature:details"))
     implementation(project(":feature:player"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:auth"))
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)

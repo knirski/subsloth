@@ -9,8 +9,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.port.Credentials
+import net.subsloth.core.domain.port.Session
+import net.subsloth.core.domain.port.SessionPort
+import net.subsloth.core.model.error.AuthError
+import net.subsloth.core.model.error.DomainError
+import net.subsloth.core.model.error.NetworkError
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
-import net.subsloth.core.network.error.toUiError
 
 /**
  * UI state for the login screen.
@@ -38,16 +44,13 @@ sealed interface LoginUiState {
 /**
  * ViewModel for the login screen.
  *
- * Handles credential validation, offline library availability,
- * and auth repair routing.
+ * The session itself is owned by [SessionPort]; the VM only mirrors the
+ * session's auth state into the UI and exposes the `login` and
+ * `logout` actions that delegate to the port.
  */
 class LoginViewModel(
-    private val hasStoredCredentials: () -> Boolean = { false },
+    private val sessionPort: SessionPort,
     private val hasPlayableDownloads: () -> Boolean = { false },
-    private val onLoginSuccess: () -> Unit = {},
-    private val validateCredentials: suspend (String, String) -> Result<Unit> = { _, _ ->
-        Result.success(Unit)
-    },
     private val onLogout: () -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("LoginViewModel")
@@ -60,15 +63,13 @@ class LoginViewModel(
 
     private fun checkInitialState() {
         log.d { "Checking initial auth state" }
-        viewModelScope.launch {
-            val hasCredentials = hasStoredCredentials()
-            val hasOffline = hasPlayableDownloads()
-
-            log.d { "Stored credentials: $hasCredentials, offline items: $hasOffline" }
-            if (hasCredentials) {
+        val hasOffline = hasPlayableDownloads()
+        when (sessionPort.current()) {
+            is Session.Authenticated -> {
                 _uiState.value = LoginUiState.LoggedIn
-                onLoginSuccess()
-            } else {
+            }
+
+            is Session.Anonymous -> {
                 _uiState.value = LoginUiState.LoginForm(hasOfflineLibrary = hasOffline)
             }
         }
@@ -78,28 +79,27 @@ class LoginViewModel(
         log.d { "Login attempt" }
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
-
-            val result = validateCredentials(login.trim(), password)
-
-            result.fold(
-                onSuccess = {
+            when (val result = sessionPort.open(Credentials(login = login.trim(), password = password))) {
+                is Outcome.Success -> {
                     log.d { "Login successful" }
                     _uiState.value = LoginUiState.LoggedIn
-                    onLoginSuccess()
-                },
-                onFailure = { error ->
-                    log.e(error) { "Login failed: ${error.message}" }
+                }
+
+                is Outcome.Failure -> {
+                    val error = result.error
+                    log.e { "Login failed: $error" }
                     _uiState.value = LoginUiState.LoginForm(
                         hasOfflineLibrary = hasPlayableDownloads(),
                         error = error.toUiError(),
                     )
-                },
-            )
+                }
+            }
         }
     }
 
     fun logout() {
         onLogout()
+        sessionPort.close()
         _uiState.value = LoginUiState.LoginForm(
             hasOfflineLibrary = hasPlayableDownloads(),
         )
@@ -118,4 +118,27 @@ class LoginViewModel(
             hasOfflineLibrary = authRepair?.hasOfflineLibrary ?: hasPlayableDownloads(),
         )
     }
+}
+
+private fun DomainError.toUiError(): UiError = when (this) {
+    is AuthError.InvalidCredentials -> UiError.AuthRequired()
+
+    is AuthError.SessionExpired -> UiError.AuthRequired()
+
+    is NetworkError.NoConnectivity -> UiError.Offline()
+
+    is NetworkError.Timeout -> UiError.Offline()
+
+    is NetworkError.HttpError -> when (code) {
+        401 -> UiError.AuthRequired()
+        404 -> UiError.NotFound()
+        in 500..599 -> UiError.ServiceError()
+        else -> UiError.Unknown()
+    }
+
+    is NetworkError.RateLimited -> UiError.ServiceError()
+
+    is NetworkError.UnexpectedResponse -> UiError.Unknown()
+
+    is DomainError -> UiError.Unknown()
 }
