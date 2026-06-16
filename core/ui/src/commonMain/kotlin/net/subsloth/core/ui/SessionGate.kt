@@ -9,6 +9,18 @@ import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
 
 /**
+ * Pure routing decision: maps a [Session] value to a [Route].
+ * Exposed for testing — the composable's `when` is trivially derived
+ * from this exhaustive mapping.
+ */
+internal fun routeFor(state: Session): Route = when (state) {
+    is Session.Anonymous -> Route.Login
+    is Session.Authenticated -> Route.Authenticated
+}
+
+internal enum class Route { Login, Authenticated }
+
+/**
  * The root navigation gate.
  *
  * Observes [SessionPort.state] and renders either the [login] composable
@@ -36,9 +48,9 @@ fun SessionGate(sessionPort: SessionPort, login: @Composable () -> Unit, authent
     val state by remember(sessionPort) {
         sessionPort.state
     }.collectAsStateWithLifecycle()
-    when (state) {
-        is Session.Anonymous -> login()
-        is Session.Authenticated -> authenticated()
+    when (routeFor(state)) {
+        Route.Login -> login()
+        Route.Authenticated -> authenticated()
     }
 }
 

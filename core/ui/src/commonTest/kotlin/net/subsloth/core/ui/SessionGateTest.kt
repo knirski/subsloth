@@ -11,6 +11,22 @@ import kotlin.test.assertEquals
 
 class SessionGateTest {
     @Test
+    fun routeFor_Anonymous_routes_to_Login() {
+        val state: Session = Session.Anonymous
+        assertEquals("Login", routeFor(state).name)
+    }
+
+    @Test
+    fun routeFor_Authenticated_routes_to_Authenticated() {
+        val state: Session = Session.Authenticated(
+            userId = "alice",
+            openedAtEpochSeconds = 1_700_000_000L,
+            credentials = Credentials("alice@x.com", "pw"),
+        )
+        assertEquals("Authenticated", routeFor(state).name)
+    }
+
+    @Test
     fun sessionPort_state_reflects_open_and_invalidate() {
         val fake = FakeSessionPort()
         val state: StateFlow<Session> = fake.state
