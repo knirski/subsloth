@@ -30,7 +30,7 @@ public class NoForceUnwrap(config: Config) :
                 Finding(
                     entity = Entity.from(expression),
                     message = "Force-unwrap (!!) is forbidden in production code; " +
-                        "use requireNotNull(checkNotNull(...)) { \"...\" }, " +
+                        "use requireNotNull or checkNotNull with a message, " +
                         "fold the call into a typed error, or handle null at the type level.",
                 ),
             )
