@@ -40,7 +40,13 @@ fun SearchScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var query by rememberSaveable {
-        mutableStateOf((viewModel.uiState.value as? SearchUiState.Results)?.query ?: "")
+        val restored = viewModel.uiState.value
+        val initial = when (restored) {
+            is SearchUiState.Idle -> ""
+            is SearchUiState.Loading -> restored.query
+            is SearchUiState.Results -> restored.query
+        }
+        mutableStateOf(initial)
     }
     val onQueryChange = remember(viewModel) {
         { value: String ->
@@ -96,15 +102,17 @@ fun SearchContent(
                 }
             }
 
+            is SearchUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
             is SearchUiState.Results -> {
-                if (s.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (s.items.isEmpty() && s.query.isNotBlank()) {
+                if (s.items.isEmpty() && s.query.isNotBlank()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
