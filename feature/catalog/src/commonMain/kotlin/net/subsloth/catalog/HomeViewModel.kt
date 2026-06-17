@@ -96,14 +96,14 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     /**
-     * Private tracking of the in-progress sync flag. Held outside
-     * the state because the state is built lazily by the combine
-     * flow — we need the flag to survive across multiple emissions
-     * of `catalogItems` (each emission rebuilds the Content rows).
-     * The public state contract is "uiState.isSyncing is the truth
-     * at every emission"; this field exists to enforce that.
+     * The in-progress sync flag. Held as a [MutableStateFlow] so
+     * changes propagate to the `combine` below — flipping it
+     * re-emits a fresh [HomeUiState.Content] with the new flag,
+     * with no need for a private mutable or a separate `_uiState.update`
+     * codepath that re-copies the Content from a possibly-stale
+     * snapshot.
      */
-    private var isSyncingActive: Boolean = false
+    private val isSyncing = MutableStateFlow(false)
 
     private val _syncErrors = MutableSharedFlow<SyncError>(extraBufferCapacity = 1)
     val syncErrors: Flow<SyncError> = _syncErrors
@@ -114,12 +114,16 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            catalogItems("movie").combine(catalogItems("show")) { movies, shows ->
+            combine(
+                catalogItems("movie"),
+                catalogItems("show"),
+                isSyncing,
+            ) { movies, shows, syncing ->
                 buildHomeContent(
                     movies = movies,
                     shows = shows,
                     selectedTab = restoredTab,
-                    isSyncing = isSyncingActive,
+                    isSyncing = syncing,
                 )
             }.collect { content ->
                 _uiState.value = content
@@ -127,7 +131,7 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             syncChannel.receiveAsFlow().collectLatest { request ->
-                setSyncing(true)
+                isSyncing.value = true
                 try {
                     syncCatalog()
                         .onFailure { error ->
@@ -142,7 +146,7 @@ class HomeViewModel(
                             }
                         }
                 } finally {
-                    setSyncing(false)
+                    isSyncing.value = false
                 }
             }
         }
@@ -150,19 +154,6 @@ class HomeViewModel(
             if (isCatalogStale()) {
                 syncChannel.trySend(SyncRequest(silent = true))
             }
-        }
-    }
-
-    /**
-     * Flips the syncing flag and rebuilds the current state so the
-     * UI sees the change atomically. If the state has not yet
-     * transitioned to Content, the next `catalogItems` emission
-     * will pick up the new value.
-     */
-    private fun setSyncing(value: Boolean) {
-        isSyncingActive = value
-        _uiState.update { current ->
-            if (current is HomeUiState.Content) current.copy(isSyncing = value) else current
         }
     }
 
