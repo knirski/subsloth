@@ -44,18 +44,6 @@ sealed interface HomeRow {
     val items: ImmutableList<Media>
 
     @Immutable
-    data class ContinueWatching(
-        override val items: ImmutableList<Media>,
-        override val label: String? = "Continue Watching",
-    ) : HomeRow
-
-    @Immutable
-    data class AvailableOffline(
-        override val items: ImmutableList<Media>,
-        override val label: String? = "Available Offline",
-    ) : HomeRow
-
-    @Immutable
     data class Movies(override val items: ImmutableList<Media>, override val label: String? = "Movies") : HomeRow
 
     @Immutable
@@ -166,12 +154,6 @@ class HomeViewModel(
     }
 }
 
-@Suppress("UnusedParameter")
-internal fun buildContinueWatchingItems(catalog: List<Media>): List<Media> = emptyList()
-
-@Suppress("UnusedParameter")
-internal fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
-
 internal fun buildHomeContent(
     movies: List<Media>,
     shows: List<Media>,
@@ -184,10 +166,6 @@ internal fun buildHomeContent(
     val recencyRows = buildRecencyRows(movieItems, showItems)
 
     val rows = buildList {
-        buildContinueWatchingItems(movies + shows).takeIf { it.isNotEmpty() }
-            ?.let { add(HomeRow.ContinueWatching(it.toImmutableList())) }
-        buildOfflineItems(movies + shows).takeIf { it.isNotEmpty() }
-            ?.let { add(HomeRow.AvailableOffline(it.toImmutableList())) }
         addAll(recencyRows)
         movieItems.takeIf { it.isNotEmpty() }
             ?.let { add(HomeRow.Movies(it.toImmutableList())) }
