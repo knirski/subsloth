@@ -61,7 +61,6 @@ sealed interface PlayerUiState {
         val playbackMode: PlaybackMode,
         val qualityFallbackNotice: Notice?,
         val subtitleFallbackNotice: Notice?,
-        val qualityFallbackUsed: Boolean = false,
         val mediaId: Media.MediaId? = null,
         val session: PlayerSession? = null,
         val snapshotCountSinceSave: Int = 0,
