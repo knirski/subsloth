@@ -68,7 +68,13 @@ sealed interface PlayerUiState {
     ) : PlayerUiState
 
     @Immutable
-    data class Notice(val message: String = "", val resKey: String? = null, val formatArg: String? = null)
+    sealed interface Notice {
+        /** Notice is bound to a string resource, with one optional format argument. */
+        data class Localized(val resKey: String, val formatArg: String? = null) : Notice
+
+        /** Notice is an already-resolved raw string (no resource lookup). */
+        data class Raw(val message: String) : Notice
+    }
 }
 
 data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean = false)
@@ -155,12 +161,12 @@ class PlayerViewModel(
 
         val subtitleNotice: PlayerUiState.Notice? = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice(resKey = "no_subtitles")
+                PlayerUiState.Notice.Localized(resKey = "no_subtitles")
 
             initialSubtitle != null &&
                 initialSubtitle.language != preferred &&
                 source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice(
+                PlayerUiState.Notice.Localized(
                     resKey = "subtitle_in",
                     formatArg = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
                 )
