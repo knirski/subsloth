@@ -265,3 +265,21 @@ matched in a `when` at the consumer site, is forbidden.
 - **THEN** it is `Notice.Raw(message)` and the message is
   non-empty
 
+### Requirement: ViewModel session flags live in a StateFlow, not a private mutable
+The system MUST model internal ViewModel session flags
+(`isSyncing`, `isLoading`, `isRefreshing`) as a
+`MutableStateFlow<Boolean>` that participates in the same
+flow combinator that produces the public UI state. A
+`private var Boolean` plus a parallel `_uiState.update`
+codepath that mirrors the var to the public state is
+forbidden — the two-track design has to be kept in sync
+manually and is the kind of subtle bug that the StateFlow
+machinery is meant to eliminate.
+
+#### Scenario: a flag-only change re-emits the public state
+- **WHEN** an internal session flag is flipped
+- **THEN** the public `StateFlow<UiState>` re-emits a fresh
+  state value that reflects the new flag
+- **AND** no `_uiState.update { ... copy(...) }` call is
+  needed in the flip site
+
