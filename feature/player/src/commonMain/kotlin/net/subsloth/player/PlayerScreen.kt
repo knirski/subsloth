@@ -44,11 +44,11 @@ import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
 
 @Composable
-private fun PlayerUiState.Notice.resolve(): String = when (resKey) {
-    "subtitle_in" -> stringResource(Res.string.player_subtitle_in, formatArg.orEmpty())
-    "no_subtitles" -> stringResource(Res.string.player_no_subtitles)
-    "quality_reduced" -> stringResource(Res.string.player_quality_reduced, formatArg.orEmpty())
-    else -> message
+private fun PlayerUiState.Notice.resolve(): String = when (this) {
+    is PlayerUiState.Notice.Localized.NoSubtitles -> stringResource(Res.string.player_no_subtitles)
+    is PlayerUiState.Notice.Localized.SubtitleIn -> stringResource(Res.string.player_subtitle_in, language)
+    is PlayerUiState.Notice.Localized.QualityReduced -> stringResource(Res.string.player_quality_reduced, quality)
+    is PlayerUiState.Notice.Raw -> message
 }
 
 @Composable

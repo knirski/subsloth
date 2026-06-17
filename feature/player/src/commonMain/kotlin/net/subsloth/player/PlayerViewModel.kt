@@ -68,7 +68,27 @@ sealed interface PlayerUiState {
     ) : PlayerUiState
 
     @Immutable
-    data class Notice(val message: String = "", val resKey: String? = null, val formatArg: String? = null)
+    sealed interface Notice {
+        /**
+         * Resource-bound notices. The compiler enforces exhaustive
+         * handling in [PlayerScreen.resolve] — adding a new variant
+         * here is a compile error in the screen until a matching
+         * `is` branch is added.
+         */
+        sealed interface Localized : Notice {
+            /** The preferred subtitle is unavailable; the catalog has no subtitles at all. */
+            data object NoSubtitles : Localized
+
+            /** A subtitle is selected, but it is not the user's preferred language. */
+            data class SubtitleIn(val language: String) : Localized
+
+            /** Stream quality was reduced from the preferred quality. */
+            data class QualityReduced(val quality: String) : Localized
+        }
+
+        /** Notice is an already-resolved raw string (no resource lookup). */
+        data class Raw(val message: String) : Notice
+    }
 }
 
 data class PlayerSession(val source: VideoSource, val streamRefreshUsed: Boolean = false)
@@ -155,14 +175,13 @@ class PlayerViewModel(
 
         val subtitleNotice: PlayerUiState.Notice? = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice(resKey = "no_subtitles")
+                PlayerUiState.Notice.Localized.NoSubtitles
 
             initialSubtitle != null &&
                 initialSubtitle.language != preferred &&
                 source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice(
-                    resKey = "subtitle_in",
-                    formatArg = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
+                PlayerUiState.Notice.Localized.SubtitleIn(
+                    language = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
                 )
 
             else -> null
