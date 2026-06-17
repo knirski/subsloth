@@ -14,7 +14,6 @@ fun LibraryScreenPreview() {
             watchLater = persistentListOf(),
             availableOffline = persistentListOf(),
             custom = persistentListOf(),
-            showCatalogLink = true,
         ),
     )
 }
