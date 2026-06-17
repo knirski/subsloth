@@ -154,12 +154,6 @@ class HomeViewModel(
     }
 }
 
-@Suppress("UnusedParameter")
-internal fun buildContinueWatchingItems(catalog: List<Media>): List<Media> = emptyList()
-
-@Suppress("UnusedParameter")
-internal fun buildOfflineItems(catalog: List<Media>): List<Media> = emptyList()
-
 internal fun buildHomeContent(
     movies: List<Media>,
     shows: List<Media>,
