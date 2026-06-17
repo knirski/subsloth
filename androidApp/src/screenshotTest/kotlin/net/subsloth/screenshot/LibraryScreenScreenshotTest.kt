@@ -64,7 +64,6 @@ fun LibraryScreenScreenshot() {
                     watchLater = persistentListOf(),
                     availableOffline = persistentListOf(),
                     custom = persistentListOf(),
-                    showCatalogLink = true,
                 ),
         )
     }

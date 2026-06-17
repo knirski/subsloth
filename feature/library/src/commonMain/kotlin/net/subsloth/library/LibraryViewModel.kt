@@ -34,7 +34,6 @@ sealed interface LibraryUiState {
         val watchLater: ImmutableList<Media>,
         val availableOffline: ImmutableList<Media>,
         val custom: ImmutableList<Media>,
-        val showCatalogLink: Boolean,
     ) : LibraryUiState
 }
 
@@ -126,7 +125,6 @@ class LibraryViewModel(
                     watchLater = watchLater.toImmutableList(),
                     availableOffline = availableOffline.toImmutableList(),
                     custom = custom.toImmutableList(),
-                    showCatalogLink = true,
                 )
             } else {
                 _uiState.value = LibraryUiState.Content(
@@ -136,7 +134,6 @@ class LibraryViewModel(
                     watchLater = persistentListOf(),
                     availableOffline = availableOffline.toImmutableList(),
                     custom = persistentListOf(),
-                    showCatalogLink = false,
                 )
             }
         }

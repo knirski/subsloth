@@ -224,7 +224,6 @@ class LibraryViewModelTest {
         viewModel.uiState.test {
             val content = awaitItem() as LibraryUiState.Content
             assertThat(content.isLoggedIn).isFalse()
-            assertThat(content.showCatalogLink).isFalse()
         }
     }
 
