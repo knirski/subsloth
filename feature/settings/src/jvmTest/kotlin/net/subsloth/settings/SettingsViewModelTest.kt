@@ -129,22 +129,6 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `no new-episode notification settings in v1`() = runTest(testDispatcher) {
-        val viewModel = SettingsViewModel(
-            profileKey = { AccountProfileKey("profile1") },
-            readSubtitleEnabled = { flowOf(true) },
-            readSubtitleLanguage = { flowOf("en") },
-            readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
-            readDownloadsWifiOnly = { flowOf(true) },
-        )
-        viewModel.uiState.test {
-            val content = awaitItem() as SettingsUiState.Content
-            assertThat(content.showNewEpisodeNotifications).isFalse()
-        }
-    }
-
-    @Test
     fun `shows content state on init`() = runTest(testDispatcher) {
         val viewModel = SettingsViewModel(
             profileKey = { AccountProfileKey("profile1") },

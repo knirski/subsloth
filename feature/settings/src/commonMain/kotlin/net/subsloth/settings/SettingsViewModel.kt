@@ -27,7 +27,6 @@ sealed interface SettingsUiState {
         val quality: String?,
         val playbackSpeed: Float,
         val downloadsWifiOnly: Boolean,
-        val showNewEpisodeNotifications: Boolean = false,
         val showLogoutCleanup: Boolean = false,
         val diagnostics: DiagnosticsState,
     ) : SettingsUiState
