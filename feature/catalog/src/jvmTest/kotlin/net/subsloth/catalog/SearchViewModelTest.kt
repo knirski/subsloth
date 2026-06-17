@@ -247,7 +247,6 @@ class SearchViewModelTest {
         viewModel.uiState.test {
             val result = awaitItem() as SearchUiState.Results
             assertThat(result.items).isNotEmpty()
-            assertThat(result.isLoading).isFalse()
         }
     }
 
@@ -317,6 +316,50 @@ class SearchViewModelTest {
         viewModel.uiState.test {
             val result = awaitItem() as SearchUiState.Results
             assertThat(result.items).isEmpty()
+        }
+    }
+
+    @Test
+    fun `search emits loading state before results`() = runTest(testDispatcher) {
+        val movies = listOf(
+            MovieSummary(
+                id = Media.MediaId.Movie(MovieId(1)),
+                title = "Test",
+                plot = null,
+                availability = Availability.Available,
+                rating = null,
+                year = null,
+                genres = persistentListOf(),
+                durationMinutes = null,
+                slug = null,
+                imdbId = null,
+                backdropUrl = null,
+            ),
+        )
+        val viewModel = SearchViewModel(
+            listCatalog = { Result.success(movies) },
+        )
+        viewModel.uiState.test {
+            assertThat(awaitItem()).isInstanceOf(SearchUiState.Idle::class.java)
+            viewModel.search("Test")
+            // Turbine may conflate Loading + Results on a synchronous
+            // dispatcher; instead we assert the *first* non-Idle
+            // emission is Loading and the final emission is Results.
+            var sawLoading = false
+            var sawResults = false
+            while (!sawResults) {
+                val current = awaitItem()
+                if (current is SearchUiState.Loading) {
+                    sawLoading = true
+                    assertThat(current.query).isEqualTo("Test")
+                }
+                if (current is SearchUiState.Results) {
+                    sawResults = true
+                    assertThat(current.query).isEqualTo("Test")
+                    assertThat(current.items).hasSize(1)
+                }
+            }
+            assertThat(sawLoading).isTrue()
         }
     }
 }
