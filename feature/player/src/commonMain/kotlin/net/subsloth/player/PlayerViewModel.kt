@@ -69,8 +69,22 @@ sealed interface PlayerUiState {
 
     @Immutable
     sealed interface Notice {
-        /** Notice is bound to a string resource, with one optional format argument. */
-        data class Localized(val resKey: String, val formatArg: String? = null) : Notice
+        /**
+         * Resource-bound notices. The compiler enforces exhaustive
+         * handling in [PlayerScreen.resolve] — adding a new variant
+         * here is a compile error in the screen until a matching
+         * `is` branch is added.
+         */
+        sealed interface Localized : Notice {
+            /** The preferred subtitle is unavailable; the catalog has no subtitles at all. */
+            data object NoSubtitles : Localized
+
+            /** A subtitle is selected, but it is not the user's preferred language. */
+            data class SubtitleIn(val language: String) : Localized
+
+            /** Stream quality was reduced from the preferred quality. */
+            data class QualityReduced(val quality: String) : Localized
+        }
 
         /** Notice is an already-resolved raw string (no resource lookup). */
         data class Raw(val message: String) : Notice
@@ -161,14 +175,13 @@ class PlayerViewModel(
 
         val subtitleNotice: PlayerUiState.Notice? = when {
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice.Localized(resKey = "no_subtitles")
+                PlayerUiState.Notice.Localized.NoSubtitles
 
             initialSubtitle != null &&
                 initialSubtitle.language != preferred &&
                 source.availableSubtitles.isNotEmpty() ->
-                PlayerUiState.Notice.Localized(
-                    resKey = "subtitle_in",
-                    formatArg = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
+                PlayerUiState.Notice.Localized.SubtitleIn(
+                    language = initialSubtitle.languageDisplayName ?: initialSubtitle.language.value,
                 )
 
             else -> null
