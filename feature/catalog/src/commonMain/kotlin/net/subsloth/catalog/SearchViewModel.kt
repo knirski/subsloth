@@ -116,12 +116,19 @@ class SearchViewModel(
     }
 
     private fun searchInternal(query: String): Flow<SearchUiState> = flow {
-        emit(SearchUiState.Loading(query = query))
-        // Yield so the StateFlow emits the Loading variant before
-        // the search completes; without this, fast synchronous
-        // searches conflate Loading + Results into a single emission
-        // and the UI never sees the spinner.
-        yield()
+        // Guard the loading transition so the UI does not flash a
+        // spinner over already-displayed results (filter changes,
+        // subsequent keystrokes). The first search (when state is
+        // Idle) and the restored-query case still emit Loading so
+        // the spinner is shown.
+        if (_uiState.value !is SearchUiState.Results) {
+            emit(SearchUiState.Loading(query = query))
+            // Yield so the StateFlow emits the Loading variant
+            // before the search completes; without this, fast
+            // synchronous searches conflate Loading + Results into
+            // a single emission and the UI never sees the spinner.
+            yield()
+        }
 
         val catalog = ensureCatalogLoaded()
         val filtered = applyFilters(catalog)
@@ -131,7 +138,11 @@ class SearchViewModel(
 
     fun updateFilters(newFilters: SearchFilters) {
         _filters.value = newFilters
-        val currentQuery = (_uiState.value as? SearchUiState.Results)?.query ?: return
+        val currentQuery = when (val state = _uiState.value) {
+            is SearchUiState.Results -> state.query
+            is SearchUiState.Loading -> state.query
+            SearchUiState.Idle -> return
+        }
         search(currentQuery)
     }
 
