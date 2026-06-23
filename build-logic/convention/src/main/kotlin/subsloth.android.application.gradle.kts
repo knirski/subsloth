@@ -81,7 +81,7 @@ detekt {
 }
 
 dependencies {
-    detektPlugins(project(":testing:detekt-rules"))
+    detektPlugins(this.project(":testing:detekt-rules"))
     detektPlugins(libs.findLibrary("compose-rules-detekt").get())
     testImplementation(kotlin("test"))
     androidTestImplementation(kotlin("test"))
