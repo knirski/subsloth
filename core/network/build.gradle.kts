@@ -35,10 +35,9 @@ kotlin {
         //     implementation(libs.ktor.client.cio)
         // }
 
-        val wasmJsMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.mock)
-            }
+        val wasmJsMain = sourceSets.getByName("wasmJsMain")
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.mock)
         }
 
         commonTest.dependencies {
