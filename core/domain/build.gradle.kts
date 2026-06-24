@@ -11,6 +11,7 @@ kotlin {
         jvmTest.dependencies {
             implementation(project(":testing:assertions"))
             implementation(libs.coroutines.test)
+            implementation(libs.junit.jupiter.params)
         }
     }
 }
