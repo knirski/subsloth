@@ -10,7 +10,7 @@ import kotlin.time.Instant
  *
  * The port exposes two methods: [now] returns a typed [Instant] for
  * time arithmetic (durations, comparisons, `kotlin.time` operators);
- * [millisNow] returns a `Long` for second-resolution use cases (cache
+ * [millisNow] returns a `Long` for millisecond-precision epoch timestamps (cache
  * ages, retry-after timers, last-updated timestamps stored as
  * `Long` epoch values). Most consumers want one or the other, not
  * both — pick the one that matches the stored value's type.

@@ -40,7 +40,7 @@ Use cases SHALL depend on focused `suspend` capability ports for effectful depen
 - **THEN** it calls an abstract port that can be interpreted by tests or by the Android/network shell
 
 ### Requirement: Pure Time Abstraction
-Domain code that needs the current time SHALL depend on the `CurrentTimePort` abstraction (formerly `ClockPort`). The port SHALL provide both `now(): Instant` for type-safe time arithmetic and `millisNow(): Long` for second-precision timestamps (cache ages, token expiries, retry-after). Implementations live in the platform shell; the Android impl uses `System.currentTimeMillis()` and `kotlin.time.Clock.System.now()`.
+Domain code that needs the current time SHALL depend on the `CurrentTimePort` abstraction (formerly `ClockPort`). The port SHALL provide both `now(): Instant` for type-safe time arithmetic and `millisNow(): Long` for millisecond-precision epoch timestamps (cache ages, token expiries, retry-after). Implementations live in the platform shell; the Android impl uses `System.currentTimeMillis()` and `kotlin.time.Clock.System.now()`.
 
 #### Scenario: ViewModel reads the current epoch milliseconds
 - **WHEN** a ViewModel needs to know "how many milliseconds since the cache was last refreshed"
