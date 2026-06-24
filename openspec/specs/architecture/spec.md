@@ -44,7 +44,7 @@ Domain code that needs the current time SHALL depend on the `CurrentTimePort` ab
 
 #### Scenario: ViewModel reads the current epoch milliseconds
 - **WHEN** a ViewModel needs to know "how many milliseconds since the cache was last refreshed"
-- **THEN** it calls `currentTimePort.millisNow()` and the result is a `Long` suitable for arithmetic against stored `Long` epoch values
+- **THEN** it calls `currentTimePort.millisNow()` and the result is a `Long` suitable for arithmetic against stored `Long` epoch-millisecond values
 
 #### Scenario: Test substitutes a fixed clock
 - **WHEN** a unit test needs a deterministic time
