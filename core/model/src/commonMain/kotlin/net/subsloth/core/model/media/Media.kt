@@ -76,6 +76,7 @@ data class MovieSummary(
     val slug: String?,
     val imdbId: ExternalId?,
     val backdropUrl: String?,
+    val posterUrl: String? = null,
     val updatedAtEpochSeconds: Instant? = null,
 ) : Media
 
@@ -95,6 +96,7 @@ data class ShowSummary(
     val slug: String?,
     val imdbId: ExternalId?,
     val backdropUrl: String?,
+    val posterUrl: String? = null,
     val status: ShowStatus,
     val countries: ImmutableList<String>,
     val newestVideoEpochSeconds: Instant? = null,

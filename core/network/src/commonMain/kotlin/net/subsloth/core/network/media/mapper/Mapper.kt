@@ -61,6 +61,7 @@ object Mapper {
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
             backdropUrl = dto.backdropUrl ?: dto.backdrop,
+            posterUrl = dto.posterUrl ?: dto.poster,
             updatedAtEpochSeconds = dto.updatedAt?.let { Instant.fromEpochSeconds(it) },
         )
     }
@@ -115,6 +116,7 @@ object Mapper {
             slug = dto.slug,
             imdbId = dto.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
             backdropUrl = dto.backdropUrl ?: dto.backdrop ?: dto.fanart,
+            posterUrl = dto.posterUrl ?: dto.poster,
             status = mapShowStatus(dto.status, dto.ended),
             countries = fallbackList(dto.arrayCountries, dto.countries),
             newestVideoEpochSeconds = dto.newestVideo?.let { Instant.fromEpochSeconds(it) },
