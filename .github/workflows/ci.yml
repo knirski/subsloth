@@ -24,6 +24,10 @@ jobs:
       pull-requests: read
     outputs:
       source: ${{ steps.filter.outputs.source }}
+      shared: ${{ steps.filter.outputs.shared }}
+      android: ${{ steps.filter.outputs.android }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -45,6 +49,21 @@ jobs:
               - 'gradle/**'
               - 'api/**'
               - '.github/**'
+              - 'build-logic/**'
+            shared:
+              - 'core/**'
+              - 'feature/**'
+              - 'testing/**'
+              - 'build-logic/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle/**'
+            android:
+              - 'androidApp/**'
+            desktop:
+              - 'desktopApp/**'
+            web:
+              - 'webApp/**'
 
   # ─── Pre-checks (fast, gated by path filter) ───────────────────────────
   pre-checks:
@@ -77,62 +96,56 @@ jobs:
       - name: Invariant checks
         run: .github/scripts/check-invariants.sh
 
-  # ─── Platform build matrix ─────────────────────────────────────────────
-  # Each platform target runs in parallel with its required OS runner.
-  # Fail-fast is disabled so one platform failure doesn't cancel others.
-  build:
-    name: ${{ matrix.display }}
-    needs: pre-checks
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - display: 🟢 Android
-            os: ubuntu-latest
-            tasks: lintDebug testDebugUnitTest assembleDebug
+  # ─── Platform builds ──────────────────────────────────────────────────
+  # Each platform runs as a separate job with path-conditional execution.
+  # Jobs are independent (no fail-fast) so one failure doesn't cancel others.
+  # Shared code (core/, feature/, testing/, build-logic/, gradle/) triggers
+  # all platforms. App-only changes only trigger their own platform.
 
-          # jvmTest runs on all KMP modules. There's no aggregating root
-          # `test` task for KMP — modules use subsloth.kmp.library
-          # convention which doesn't apply java-base.
-          # When adding a new KMP module, add its :module:jvmTest here.
-          - display: ☕ JVM / KMP
-            os: ubuntu-latest
-            tasks: >
-              :core:model:jvmTest :core:domain:jvmTest
-              :core:network:jvmTest :core:database:jvmTest
-              :core:preferences:jvmTest :core:ui:jvmTest
-              :feature:auth:jvmTest :feature:catalog:jvmTest
-              :feature:details:jvmTest :feature:player:jvmTest
-              :feature:library:jvmTest :feature:settings:jvmTest
-              :core:media:jvmTest
-
-          - display: 🖥️ Desktop / Linux
-            os: ubuntu-latest
-            tasks: :desktopApp:compileKotlin
-
-          - display: 🌐 Web / wasmJs
-            os: ubuntu-latest
-            tasks: :webApp:compileKotlinWasmJs
-
-          # - display: 📱 iOS / Simulator
-          #   os: macos-latest
-          #   tasks: >
-          #     :core:model:iosSimulatorArm64Test
-          #     :core:domain:iosSimulatorArm64Test
-          #     :core:ui:compileKotlinIosArm64
-
-          # - display: 🍏 macOS / Native
-          #   os: macos-latest
-          #   tasks: >
-          #     :core:model:compileKotlinMacosArm64
-          #     :core:domain:compileKotlinMacosArm64
-          #     :core:ui:compileKotlinMacosArm64
-
-    runs-on: ${{ matrix.os }}
+  build-android:
+    name: 🟢 Android
+    needs: [changes, pre-checks]
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: ./.github/actions/kmp-setup
-      - name: Gradle ${{ matrix.display }}
-        run: ./gradlew ${{ matrix.tasks }}
+      - run: ./gradlew lintDebug testDebugUnitTest assembleDebug
+
+  build-jvm:
+    name: ☕ JVM / KMP
+    needs: [changes, pre-checks]
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/kmp-setup
+      - run: ./gradlew jvmTest
+
+  build-desktop:
+    name: 🖥️ Desktop / Linux
+    needs: [changes, pre-checks]
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/kmp-setup
+      - run: ./gradlew :desktopApp:compileKotlin
+
+  build-web:
+    name: 🌐 Web / wasmJs
+    needs: [changes, pre-checks]
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/kmp-setup
+      - run: ./gradlew :webApp:compileKotlinWasmJs
