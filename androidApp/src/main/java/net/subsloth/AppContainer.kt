@@ -20,7 +20,6 @@ import net.subsloth.catalog.HomeViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import java.io.File
-import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
@@ -35,8 +34,8 @@ import kotlin.time.Instant
 class AppContainer(context: Context) {
     /** System clock implementation. */
     val clock: CurrentTimePort = object : CurrentTimePort {
-        override fun now(): Instant = Clock.System.now()
-        override fun millisNow(): Long = Clock.System.now().toEpochMilliseconds()
+        override fun now(): Instant = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+        override fun millisNow(): Long = System.currentTimeMillis()
     }
 
     /** DataStore for user preferences. */
@@ -64,13 +63,13 @@ class AppContainer(context: Context) {
     /**
      * Media API client.
      *
-     * Created with default/empty credentials. When the user logs in
-     * via [SessionPort], a follow-up change should recreate or update
-     * this client with the authenticated credentials so API calls
-     * succeed.
+     * Created without credentials — no BasicAuth is configured. After the
+     * user authenticates via [SessionPort], a follow-up change should
+     * create a new authenticated client and swap it in so catalog sync
+     * succeeds.
      */
     val api: Api by lazy {
-        Api(ClientFactory.create(login = "", password = ""))
+        Api(ClientFactory.create())
     }
 
     /** Catalog repository combining API sync with Room caching. */

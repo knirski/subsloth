@@ -22,7 +22,7 @@ object ClientFactory {
     /**
      * Creates an [HttpClient] configured with:
      * - Kodi-compatible request identity (User-Agent, Accept headers)
-     * - Basic authentication via login/password
+     * - Basic authentication via login/password (only when both are non-null)
      * - Response validation for unexpected redirect/HTML detection
      * - Bounded retry on 429/5xx responses
      * - Optional HTTP logging (headers only, with redacted auth headers)
@@ -30,8 +30,8 @@ object ClientFactory {
      * When [ClientConfig.useMock] is `true`, returns a mock client (wasmJs only).
      */
     fun create(
-        login: String,
-        password: String,
+        login: String? = null,
+        password: String? = null,
         baseUrl: String = DEFAULT_BASE_URL,
         enableHttpLogging: Boolean = false,
     ): HttpClient {
@@ -42,8 +42,8 @@ object ClientFactory {
     }
 
     private fun createRealClient(
-        login: String,
-        password: String,
+        login: String?,
+        password: String?,
         baseUrl: String,
         enableHttpLogging: Boolean,
     ): HttpClient = HttpClient {
@@ -64,12 +64,14 @@ object ClientFactory {
 
         install(ResponseValidationPlugin)
 
-        install(Auth) {
-            basic {
-                credentials {
-                    BasicAuthCredentials(login, password)
+        if (login != null && password != null) {
+            install(Auth) {
+                basic {
+                    credentials {
+                        BasicAuthCredentials(login, password)
+                    }
+                    sendWithoutRequest { true }
                 }
-                sendWithoutRequest { true }
             }
         }
 
