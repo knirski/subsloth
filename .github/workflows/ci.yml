@@ -45,6 +45,10 @@ jobs:
               - '**/*.java'
               - '**/*.xml'
               - '**/*.pro'
+              - '**/*.json'
+              - '**/*.md'
+              - 'gradle.properties'
+              - 'docs/**'
               - 'config/**'
               - 'gradle/**'
               - 'api/**'
@@ -57,6 +61,7 @@ jobs:
               - 'build-logic/**'
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
+              - 'gradle.properties'
               - 'gradle/**'
             android:
               - 'androidApp/**'
@@ -68,7 +73,12 @@ jobs:
   # ─── Pre-checks (fast, gated by path filter) ───────────────────────────
   pre-checks:
     needs: changes
-    if: needs.changes.outputs.source == 'true'
+    if: |
+      needs.changes.outputs.source == 'true' ||
+      needs.changes.outputs.shared == 'true' ||
+      needs.changes.outputs.android == 'true' ||
+      needs.changes.outputs.desktop == 'true' ||
+      needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

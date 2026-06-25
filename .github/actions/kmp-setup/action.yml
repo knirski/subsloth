@@ -16,8 +16,13 @@ runs:
       id: kotlin-version
       shell: bash
       run: |
-        KOTLIN_VER=$(grep '^kotlin =' gradle/libs.versions.toml | sed 's/.*"\(.*\)"/\1/')
-        echo "version=$KOTLIN_VER" >> "$GITHUB_OUTPUT"
+        set -euo pipefail
+        KOTLIN_VER=$(awk -F'"' '/^[[:space:]]*kotlin[[:space:]]*=[[:space:]]*"/ {print $2; exit}' gradle/libs.versions.toml)
+        if [[ -z "${KOTLIN_VER}" ]]; then
+          echo "Failed to parse Kotlin version from gradle/libs.versions.toml" >&2
+          exit 1
+        fi
+        echo "version=${KOTLIN_VER}" >> "$GITHUB_OUTPUT"
 
     - name: Cache Kotlin/Native compiler
       uses: actions/cache@v5
