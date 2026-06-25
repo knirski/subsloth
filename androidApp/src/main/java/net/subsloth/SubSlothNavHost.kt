@@ -27,7 +27,6 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
-import net.subsloth.core.model.error.Outcome
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.library.DownloadsScreen
@@ -75,24 +74,9 @@ fun SubSlothNavHost(
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
-                val repo = container.catalogRepository
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
-                    factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            HomeViewModel(
-                                catalogItems = { contentType -> repo.catalogItems(contentType) },
-                                syncCatalog = {
-                                    when (val outcome = repo.sync()) {
-                                        is Outcome.Success -> Result.success(Unit)
-                                        is Outcome.Failure ->
-                                            Result.failure(DomainErrorException(outcome.error))
-                                    }
-                                },
-                                isCatalogStale = { repo.isStale() },
-                            ) as T
-                    },
+                    factory = HomeViewModelFactory(container.catalogRepository),
                 )
                 HomeScreen(
                     viewModel = viewModel,
@@ -114,12 +98,15 @@ fun SubSlothNavHost(
                 val viewModel: PlayerViewModel = viewModel(
                     key = "player_${key.contentId}",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            PlayerViewModel(
-                                mediaId = parseMediaId(key.contentId, key.contentType)
-                                    ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
-                            ) as T
+                            requireNotNull(
+                                modelClass.cast(
+                                    PlayerViewModel(
+                                        mediaId = parseMediaId(key.contentId, key.contentType)
+                                            ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
+                                    ),
+                                ),
+                            )
                     },
                 )
                 PlayerScreen(
@@ -134,9 +121,8 @@ fun SubSlothNavHost(
                 val viewModel: LibraryViewModel = viewModel(
                     key = "library",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            LibraryViewModel() as T
+                            requireNotNull(modelClass.cast(LibraryViewModel()))
                     },
                 )
                 LibraryScreen(
@@ -151,9 +137,8 @@ fun SubSlothNavHost(
                 val viewModel: DownloadsViewModel = viewModel(
                     key = "downloads",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            DownloadsViewModel() as T
+                            requireNotNull(modelClass.cast(DownloadsViewModel()))
                     },
                 )
                 DownloadsScreen(
@@ -166,9 +151,8 @@ fun SubSlothNavHost(
                 val viewModel: SettingsViewModel = viewModel(
                     key = "settings",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            SettingsViewModel() as T
+                            requireNotNull(modelClass.cast(SettingsViewModel()))
                     },
                 )
                 SettingsScreen(
@@ -182,9 +166,8 @@ fun SubSlothNavHost(
                 val viewModel: DiagnosticsViewModel = viewModel(
                     key = "diagnostics",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            DiagnosticsViewModel() as T
+                            requireNotNull(modelClass.cast(DiagnosticsViewModel()))
                     },
                 )
                 DiagnosticsScreen(
@@ -201,9 +184,8 @@ fun SubSlothNavHost(
                 val viewModel: LibraryViewModel = viewModel(
                     key = "offline_library",
                     factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            LibraryViewModel(isLoggedIn = { false }) as T
+                            requireNotNull(modelClass.cast(LibraryViewModel(isLoggedIn = { false })))
                     },
                 )
                 LibraryScreen(

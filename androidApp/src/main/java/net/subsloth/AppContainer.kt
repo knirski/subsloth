@@ -16,6 +16,9 @@ import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.database.SubSlothDatabase
 import net.subsloth.database.createSubSlothDatabase
 import net.subsloth.preferences.UserPreferences
+import net.subsloth.catalog.HomeViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import java.io.File
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -99,3 +102,28 @@ internal fun <T> Outcome<T>.toResult(): Result<T> = when (this) {
  */
 internal class DomainErrorException(val error: DomainError) :
     RuntimeException(error.toString())
+
+/**
+ * [ViewModelProvider.Factory] for [HomeViewModel] that receives its
+ * [CatalogRepository] dependency explicitly rather than capturing it
+ * from the composable scope.
+ */
+internal class HomeViewModelFactory(
+    private val catalogRepository: CatalogRepository,
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        requireNotNull(
+            modelClass.cast(
+                HomeViewModel(
+                    catalogItems = { contentType -> catalogRepository.catalogItems(contentType) },
+                    syncCatalog = {
+                        when (val outcome = catalogRepository.sync()) {
+                            is Outcome.Success -> Result.success(Unit)
+                            is Outcome.Failure -> Result.failure(DomainErrorException(outcome.error))
+                        }
+                    },
+                    isCatalogStale = { catalogRepository.isStale() },
+                ),
+            ),
+        )
+}
