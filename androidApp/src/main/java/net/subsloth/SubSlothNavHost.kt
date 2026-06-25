@@ -75,25 +75,22 @@ fun SubSlothNavHost(
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val repo = container.catalogRepository
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
                             HomeViewModel(
-                                catalogItems = { contentType ->
-                                    container.catalogRepository.catalogItems(contentType)
-                                },
+                                catalogItems = { contentType -> repo.catalogItems(contentType) },
                                 syncCatalog = {
-                                    when (val outcome = container.catalogRepository.sync()) {
+                                    when (val outcome = repo.sync()) {
                                         is Outcome.Success -> Result.success(Unit)
                                         is Outcome.Failure ->
-                                            Result.failure(
-                                                DomainErrorException(outcome.error),
-                                            )
+                                            Result.failure(DomainErrorException(outcome.error))
                                     }
                                 },
-                                isCatalogStale = { container.catalogRepository.isStale() },
+                                isCatalogStale = { repo.isStale() },
                             ) as T
                     },
                 )

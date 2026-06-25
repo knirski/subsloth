@@ -38,9 +38,10 @@ class AppContainer(context: Context) {
 
     /** DataStore for user preferences. */
     val dataStore: DataStore<Preferences> by lazy {
+        val appContext = context.applicationContext
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-            produceFile = { File(context.filesDir, "subsloth.preferences_pb") },
+            produceFile = { File(appContext.filesDir, "subsloth.preferences_pb") },
         )
     }
 
