@@ -27,6 +27,7 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.library.DownloadsScreen
@@ -72,8 +73,8 @@ fun SubSlothNavHost(
             }
 
             entry<CatalogKey> {
-                val app = LocalContext.current.applicationContext as SubSlothApplication
-                val repo = app.container.catalogRepository
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 @Suppress("ViewModelInjection")
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
@@ -82,10 +83,18 @@ fun SubSlothNavHost(
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
                             HomeViewModel(
                                 catalogItems = { contentType ->
-                                    repo.catalogItems(contentType)
+                                    container.catalogRepository.catalogItems(contentType)
                                 },
-                                syncCatalog = { repo.sync().toResult() },
-                                isCatalogStale = { repo.isStale() },
+                                syncCatalog = {
+                                    when (val outcome = container.catalogRepository.sync()) {
+                                        is Outcome.Success -> Result.success(Unit)
+                                        is Outcome.Failure ->
+                                            Result.failure(
+                                                DomainErrorException(outcome.error),
+                                            )
+                                    }
+                                },
+                                isCatalogStale = { container.catalogRepository.isStale() },
                             ) as T
                     },
                 )

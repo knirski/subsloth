@@ -8,8 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import net.subsloth.core.domain.port.CurrentTimePort
+import net.subsloth.core.model.error.DomainError
 import net.subsloth.core.model.error.Outcome
-import net.subsloth.core.model.error.fold
 import net.subsloth.core.network.media.CatalogRepository
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
@@ -83,8 +83,18 @@ class AppContainer(context: Context) {
 /**
  * Converts an [Outcome] to a [Result], bridging the domain error type
  * to the [Throwable]-based [Result] shape used by [HomeViewModel].
+ *
+ * The [DomainError] is preserved on [DomainErrorException.error] so
+ * downstream callers can still dispatch on the typed error if needed.
  */
-internal fun <T> Outcome<T>.toResult(): Result<T> = fold(
-    onSuccess = { Result.success(it) },
-    onFailure = { error -> Result.failure(IllegalStateException(error.toString())) },
-)
+internal fun <T> Outcome<T>.toResult(): Result<T> = when (this) {
+    is Outcome.Success -> Result.success(value)
+    is Outcome.Failure -> Result.failure(DomainErrorException(error))
+}
+
+/**
+ * Wraps a typed [DomainError] as a [Throwable] so it can cross the
+ * `Result` boundary without losing the domain type.
+ */
+internal class DomainErrorException(val error: DomainError) :
+    RuntimeException(error.toString())
