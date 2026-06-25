@@ -11,7 +11,6 @@ import net.subsloth.core.domain.policy.CatalogSyncPolicy
 import net.subsloth.core.domain.port.CachedCatalogItem
 import net.subsloth.core.domain.port.CatalogCachePort
 import net.subsloth.core.domain.port.CatalogSyncPort
-import net.subsloth.core.domain.port.CurrentTimePort
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
@@ -32,6 +31,7 @@ import net.subsloth.database.entity.CachedCatalogGenreEntity
 import net.subsloth.database.entity.CachedCatalogItemEntity
 import net.subsloth.database.entity.CachedCatalogItemWithMetadata
 import net.subsloth.preferences.UserPreferences
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
@@ -44,7 +44,7 @@ class CatalogRepository(
     private val api: Api,
     private val catalogDao: CachedCatalogDao,
     private val userPreferences: UserPreferences,
-    private val clock: CurrentTimePort,
+    private val clock: Clock,
 ) : CatalogCachePort,
     CatalogSyncPort {
 
@@ -90,7 +90,7 @@ class CatalogRepository(
         val cacheItems = movieItems.map { it.toCacheItem() } + showItems.map { it.toCacheItem() }
         catalogDao.replaceAll(cacheItems.map { it.toEntity() })
 
-        userPreferences.setGlobalCatalogCacheTimestamp(clock.now().epochSeconds * 1000)
+        userPreferences.setGlobalCatalogCacheTimestamp(clock.now().toEpochMilliseconds())
         log.d { "Catalog sync complete: ${movieItems.size} movies, ${showItems.size} shows" }
         Outcome.Success(Unit)
     } catch (e: Exception) {
@@ -105,7 +105,7 @@ class CatalogRepository(
 
     override suspend fun isStale(): Boolean {
         val timestamp = userPreferences.globalCatalogCacheTimestamp().first()
-        return CatalogSyncPolicy.isStale(timestamp, clock.now().epochSeconds * 1000)
+        return CatalogSyncPolicy.isStale(timestamp, clock.now().toEpochMilliseconds())
     }
 
     // ── Pagination ───────────────────────────────────────────────────────

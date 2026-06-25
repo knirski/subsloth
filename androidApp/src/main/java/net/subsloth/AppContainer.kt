@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import net.subsloth.core.domain.port.CurrentTimePort
 import net.subsloth.core.model.error.DomainError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.network.media.CatalogRepository
@@ -20,7 +19,7 @@ import net.subsloth.catalog.HomeViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import java.io.File
-import kotlin.time.Instant
+import kotlin.time.Clock
 
 /**
  * Application-level dependency container.
@@ -33,10 +32,7 @@ import kotlin.time.Instant
  */
 class AppContainer(context: Context) {
     /** System clock implementation. */
-    val clock: CurrentTimePort = object : CurrentTimePort {
-        override fun now(): Instant = Instant.fromEpochMilliseconds(System.currentTimeMillis())
-        override fun millisNow(): Long = System.currentTimeMillis()
-    }
+    val clock: Clock = Clock.System
 
     /** DataStore for user preferences. */
     val dataStore: DataStore<Preferences> by lazy {
