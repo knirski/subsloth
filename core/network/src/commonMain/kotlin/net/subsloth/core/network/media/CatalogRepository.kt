@@ -128,7 +128,7 @@ class CatalogRepository(
         contentType = "movie",
         title = title,
         plot = plot,
-        posterUrl = null,
+        posterUrl = posterUrl,
         backdropUrl = backdropUrl,
         year = year,
         rating = rating,
@@ -148,7 +148,7 @@ class CatalogRepository(
         contentType = "show",
         title = title,
         plot = plot,
-        posterUrl = null,
+        posterUrl = posterUrl,
         backdropUrl = backdropUrl,
         year = year,
         rating = rating,
@@ -188,6 +188,7 @@ class CatalogRepository(
                     slug = entity.slug,
                     imdbId = entity.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                     backdropUrl = entity.backdropUrl,
+                    posterUrl = entity.posterUrl,
                     updatedAtEpochSeconds = updatedAt?.let { Instant.fromEpochSeconds(it) },
                 )
             }
@@ -210,6 +211,7 @@ class CatalogRepository(
                     slug = entity.slug,
                     imdbId = entity.imdbId?.let { ExternalId(it, ExternalIdSource.IMDb) },
                     backdropUrl = entity.backdropUrl,
+                    posterUrl = entity.posterUrl,
                     status = parseShowStatus(entity.status),
                     countries = countryStrings,
                     newestVideoEpochSeconds = newestVideo?.let { Instant.fromEpochSeconds(it) },
