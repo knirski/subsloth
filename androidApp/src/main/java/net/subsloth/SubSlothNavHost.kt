@@ -75,7 +75,6 @@ fun SubSlothNavHost(
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
-                @Suppress("ViewModelInjection")
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
                     factory = object : ViewModelProvider.Factory {
@@ -115,7 +114,6 @@ fun SubSlothNavHost(
             }
 
             entry<PlayerKey> { key ->
-                @Suppress("ViewModelInjection")
                 val viewModel: PlayerViewModel = viewModel(
                     key = "player_${key.contentId}",
                     factory = object : ViewModelProvider.Factory {
@@ -136,7 +134,6 @@ fun SubSlothNavHost(
             }
 
             entry<LibraryKey> {
-                @Suppress("ViewModelInjection")
                 val viewModel: LibraryViewModel = viewModel(
                     key = "library",
                     factory = object : ViewModelProvider.Factory {
@@ -154,7 +151,6 @@ fun SubSlothNavHost(
             }
 
             entry<DownloadsKey> {
-                @Suppress("ViewModelInjection")
                 val viewModel: DownloadsViewModel = viewModel(
                     key = "downloads",
                     factory = object : ViewModelProvider.Factory {
@@ -170,7 +166,6 @@ fun SubSlothNavHost(
             }
 
             entry<SettingsKey> {
-                @Suppress("ViewModelInjection")
                 val viewModel: SettingsViewModel = viewModel(
                     key = "settings",
                     factory = object : ViewModelProvider.Factory {
@@ -187,7 +182,6 @@ fun SubSlothNavHost(
             }
 
             entry<DiagnosticsKey> {
-                @Suppress("ViewModelInjection")
                 val viewModel: DiagnosticsViewModel = viewModel(
                     key = "diagnostics",
                     factory = object : ViewModelProvider.Factory {
@@ -207,7 +201,6 @@ fun SubSlothNavHost(
             }
 
             entry<OfflineLibraryKey> {
-                @Suppress("ViewModelInjection")
                 val viewModel: LibraryViewModel = viewModel(
                     key = "offline_library",
                     factory = object : ViewModelProvider.Factory {

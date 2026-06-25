@@ -83,7 +83,11 @@ Compose:
   ViewModelForwarding:
     active: true
   ViewModelInjection:
-    active: true
+    active: false
+    comment: >
+      Disabled because Navigation3 entryProvider pattern requires
+      viewModel() calls inside entry lambdas. All ViewModels follow
+      the same convention.
 
 # ── Complexity ────────────────────────────────────────────────────────────
 complexity:
