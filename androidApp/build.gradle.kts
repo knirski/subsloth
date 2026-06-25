@@ -82,6 +82,14 @@ dependencies {
     implementation(project(":core:preferences"))
     implementation(project(":core:media"))
 
+    // Room and SQLite — needed for SubSlothDatabase access
+    implementation(libs.room3.runtime)
+    implementation(libs.sqlite.bundled)
+
+    // Ktor — needed for ClientFactory and Api access
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+
     implementation(project(":feature:auth"))
     implementation(project(":feature:catalog"))
     implementation(project(":feature:details"))
@@ -103,6 +111,8 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+    implementation(libs.datastore.preferences)
 
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)

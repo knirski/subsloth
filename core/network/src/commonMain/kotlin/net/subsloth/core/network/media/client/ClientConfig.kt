@@ -16,4 +16,9 @@ object ClientConfig {
  * implementation using Ktor MockEngine. JVM/iOS targets throw — they are never
  * expected to run with `useMock = true`.
  */
-expect fun createMockClient(login: String, password: String, baseUrl: String, enableHttpLogging: Boolean): HttpClient
+expect fun createMockClient(
+    login: String? = null,
+    password: String? = null,
+    baseUrl: String = "",
+    enableHttpLogging: Boolean = false,
+): HttpClient

@@ -115,7 +115,6 @@ fun WebNavHost(modifier: Modifier = Modifier) {
     )
 }
 
-@Suppress("ViewModelInjection")
 @Composable
 private fun PlayerContent(
     contentId: String,

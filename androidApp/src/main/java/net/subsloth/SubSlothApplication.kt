@@ -1,5 +1,23 @@
 package net.subsloth
 
 import android.app.Application
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
-class SubSlothApplication : Application()
+class SubSlothApplication : Application() {
+    lateinit var container: AppContainer
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        container = AppContainer(this)
+        // Pre-warm heavy singletons (Room DB, DataStore) off the main
+        // thread so they aren't lazily initialized during composition.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            container.database
+            container.dataStore
+        }
+    }
+}
