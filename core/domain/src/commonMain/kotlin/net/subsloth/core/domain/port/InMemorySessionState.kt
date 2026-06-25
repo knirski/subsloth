@@ -13,7 +13,7 @@ import net.subsloth.core.model.error.Outcome
  * no-frills reference for tests, the screenshot suite, and the
  * dev/demo build flavour.
  */
-class InMemorySessionState(private val time: CurrentTimePort = SystemTime) : SessionPort {
+class InMemorySessionState(private val clock: kotlin.time.Clock = kotlin.time.Clock.System) : SessionPort {
     private val _state: MutableStateFlow<Session> = MutableStateFlow(Session.Anonymous)
     override val state: StateFlow<Session> = _state.asStateFlow()
 
@@ -29,7 +29,7 @@ class InMemorySessionState(private val time: CurrentTimePort = SystemTime) : Ses
         val userId = credentials.login.substringBefore('@').ifBlank { "user" }
         _state.value = Session.Authenticated(
             userId = userId,
-            openedAtEpochSeconds = time.now().epochSeconds,
+            openedAtEpochSeconds = clock.now().epochSeconds,
             credentials = credentials,
         )
         return Outcome.Success(Unit)
@@ -44,9 +44,4 @@ class InMemorySessionState(private val time: CurrentTimePort = SystemTime) : Ses
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }
-}
-
-private object SystemTime : CurrentTimePort {
-    override fun now() = kotlin.time.Clock.System.now()
-    override fun millisNow() = kotlin.time.Clock.System.now().toEpochMilliseconds()
 }
