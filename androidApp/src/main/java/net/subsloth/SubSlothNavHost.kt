@@ -3,6 +3,7 @@ package net.subsloth
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -71,13 +72,21 @@ fun SubSlothNavHost(
             }
 
             entry<CatalogKey> {
+                val app = LocalContext.current.applicationContext as SubSlothApplication
+                val repo = app.container.catalogRepository
                 @Suppress("ViewModelInjection")
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
                     factory = object : ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            HomeViewModel() as T
+                            HomeViewModel(
+                                catalogItems = { contentType ->
+                                    repo.catalogItems(contentType)
+                                },
+                                syncCatalog = { repo.sync().toResult() },
+                                isCatalogStale = { repo.isStale() },
+                            ) as T
                     },
                 )
                 HomeScreen(
