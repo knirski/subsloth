@@ -111,6 +111,10 @@ jobs:
   # Jobs are independent (no fail-fast) so one failure doesn't cancel others.
   # Shared code (core/, feature/, testing/, build-logic/, gradle/) triggers
   # all platforms. App-only changes only trigger their own platform.
+  #
+  # KMP modules use target-specific test tasks (jvmTest, wasmJsTest, etc.)
+  # rather than a generic `test` task, because the Kotlin Multiplatform
+  # plugin intentionally doesn't apply java-base/java-library.
 
   build-android:
     name: 🟢 Android
@@ -124,6 +128,10 @@ jobs:
       - uses: ./.github/actions/kmp-setup
       - run: ./gradlew lintDebug testDebugUnitTest assembleDebug
 
+  # JVM tests across all KMP modules. KMP doesn't create a generic `test`
+  # task — it creates target-specific tasks (jvmTest, wasmJsTest, etc.)
+  # instead, because each target has its own test runner. The `test` task
+  # comes from java-base/java-library, which KMP deliberately doesn't apply.
   build-jvm:
     name: ☕ JVM / KMP
     needs: [changes, pre-checks]
