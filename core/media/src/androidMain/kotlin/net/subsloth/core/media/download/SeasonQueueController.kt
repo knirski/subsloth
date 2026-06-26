@@ -24,7 +24,6 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.database.dao.SeasonQueueDao
 import net.subsloth.database.entity.QueueItemEntity
 import net.subsloth.database.entity.SeasonQueueEntity
-import java.util.UUID
 import kotlin.time.Clock
 
 class SeasonQueueController(
@@ -38,6 +37,7 @@ class SeasonQueueController(
     }
 
     suspend fun createQueue(
+        queueId: QueueId,
         showId: ShowId,
         seasonNumber: Int,
         episodes: ImmutableList<Episode>,
@@ -46,7 +46,6 @@ class SeasonQueueController(
         transferPreference: TransferPreference,
         confirmation: SeasonDownloadConfirmation,
     ): SeasonDownloadQueue {
-        val queueId = QueueId(UUID.randomUUID().toString())
         val queueEntity = SeasonQueueEntity(
             id = queueId.value,
             showId = showId.value.toString(),
