@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.subsloth.core.domain.policy.SearchPolicy
+import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
@@ -58,9 +60,9 @@ enum class FilterOption { ANY, YES, NO }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModel(
-    private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
-    private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val listCatalog: suspend () -> Outcome<List<Media>> = { Outcome.Success(emptyList()) },
+    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
+        Outcome.Failure(DecodeError.SerializationFailed)
     },
     private val savedState: Map<String, String> = mapOf("searchQuery" to ""),
 ) : ViewModel() {
@@ -105,7 +107,11 @@ class SearchViewModel(
     private suspend fun ensureCatalogLoaded(): List<Media> {
         if (catalogDeferred == null) {
             catalogDeferred = viewModelScope.async(start = CoroutineStart.LAZY) {
-                listCatalog().getOrDefault(emptyList())
+                val items: List<Media> = when (val outcome = listCatalog()) {
+                    is Outcome.Success -> outcome.value
+                    is Outcome.Failure -> emptyList()
+                }
+                items
             }
         }
         val catalog = checkNotNull(catalogDeferred) { "catalogDeferred was just initialized" }.await()

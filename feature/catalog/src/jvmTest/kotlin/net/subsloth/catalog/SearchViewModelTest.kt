@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
@@ -37,7 +38,7 @@ class SearchViewModelTest {
     @Test
     fun `starts in idle state`() = runTest(testDispatcher) {
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(emptyList()) },
+            listCatalog = { Outcome.Success(emptyList()) },
         )
         assertThat(viewModel.uiState.value).isInstanceOf(SearchUiState.Idle::class.java)
     }
@@ -73,7 +74,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.search("dark")
         viewModel.uiState.test {
@@ -101,7 +102,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.search("nonexistent")
         viewModel.uiState.test {
@@ -143,7 +144,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(items) },
+            listCatalog = { Outcome.Success(items) },
         )
         viewModel.updateFilters(SearchFilters(type = MediaTypeFilter.MOVIES))
         viewModel.search("A")
@@ -172,7 +173,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
             savedState = mapOf("searchQuery" to "Saved"),
         )
         viewModel.uiState.test {
@@ -212,7 +213,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.updateFilters(SearchFilters(genre = "Action"))
         viewModel.search("Movie")
@@ -241,7 +242,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.search("Test")
         viewModel.uiState.test {
@@ -281,7 +282,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(items) },
+            listCatalog = { Outcome.Success(items) },
         )
         viewModel.search("Movie")
         viewModel.updateFilters(SearchFilters(genre = "Action"))
@@ -310,7 +311,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.search("")
         viewModel.uiState.test {
@@ -337,7 +338,7 @@ class SearchViewModelTest {
             ),
         )
         val viewModel = SearchViewModel(
-            listCatalog = { Result.success(movies) },
+            listCatalog = { Outcome.Success(movies) },
         )
         viewModel.uiState.test {
             assertThat(awaitItem()).isInstanceOf(SearchUiState.Idle::class.java)

@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
@@ -58,11 +60,11 @@ sealed interface ShowDetailUiState {
 
 class MovieDetailViewModel(
     private val mediaId: Media.MediaId.Movie,
-    private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
+        Outcome.Failure(DecodeError.SerializationFailed)
     },
-    private val listLibrary: suspend () -> Result<List<LibraryItem>> = {
-        Result.success(emptyList())
+    private val listLibrary: suspend () -> Outcome<List<LibraryItem>> = {
+        Outcome.Success(emptyList())
     },
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
@@ -81,14 +83,15 @@ class MovieDetailViewModel(
     private fun loadDetails() {
         viewModelScope.launch {
             _uiState.value = MovieDetailUiState.Loading
-            val detailsResult = getDetails(mediaId)
-            val libraryResult = listLibrary()
-            val downloadsResult = listDownloads()
-            detailsResult.fold(
-                onSuccess = { details ->
+            when (val detailsResult = getDetails(mediaId)) {
+                is Outcome.Success -> {
+                    val details = detailsResult.value
                     if (details is MovieDetails) {
-                        val library = libraryResult.getOrDefault(emptyList())
-                        val downloads = downloadsResult.getOrDefault(emptyList())
+                        val library = when (val lib = listLibrary()) {
+                            is Outcome.Success -> lib.value
+                            is Outcome.Failure -> emptyList()
+                        }
+                        val downloads = listDownloads().getOrDefault(emptyList())
                         _uiState.value =
                             MovieDetailUiState.Content(
                                 details = details,
@@ -102,22 +105,23 @@ class MovieDetailViewModel(
                     } else {
                         _uiState.value = MovieDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
-                },
-                onFailure = { error ->
-                    _uiState.value = MovieDetailUiState.Error(error.toUiError())
-                },
-            )
+                }
+
+                is Outcome.Failure -> {
+                    _uiState.value = MovieDetailUiState.Error(detailsResult.error.toUiError())
+                }
+            }
         }
     }
 }
 
 class ShowDetailViewModel(
     private val mediaId: Media.MediaId.Show,
-    private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
+        Outcome.Failure(DecodeError.SerializationFailed)
     },
-    private val listLibrary: suspend () -> Result<List<LibraryItem>> = {
-        Result.success(emptyList())
+    private val listLibrary: suspend () -> Outcome<List<LibraryItem>> = {
+        Outcome.Success(emptyList())
     },
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
@@ -137,14 +141,15 @@ class ShowDetailViewModel(
     private fun loadDetails() {
         viewModelScope.launch {
             _uiState.value = ShowDetailUiState.Loading
-            val detailsResult = getDetails(mediaId)
-            val libraryResult = listLibrary()
-            val downloadsResult = listDownloads()
-            detailsResult.fold(
-                onSuccess = { details ->
+            when (val detailsResult = getDetails(mediaId)) {
+                is Outcome.Success -> {
+                    val details = detailsResult.value
                     if (details is ShowDetails) {
-                        val library = libraryResult.getOrDefault(emptyList())
-                        val downloads = downloadsResult.getOrDefault(emptyList())
+                        val library = when (val lib = listLibrary()) {
+                            is Outcome.Success -> lib.value
+                            is Outcome.Failure -> emptyList()
+                        }
+                        val downloads = listDownloads().getOrDefault(emptyList())
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
                             ShowDetailUiState.Content(
@@ -160,11 +165,12 @@ class ShowDetailViewModel(
                     } else {
                         _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
-                },
-                onFailure = { error ->
-                    _uiState.value = ShowDetailUiState.Error(error.toUiError())
-                },
-            )
+                }
+
+                is Outcome.Failure -> {
+                    _uiState.value = ShowDetailUiState.Error(detailsResult.error.toUiError())
+                }
+            }
         }
     }
 

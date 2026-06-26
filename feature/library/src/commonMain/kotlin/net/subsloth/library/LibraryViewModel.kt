@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -38,8 +39,8 @@ sealed interface LibraryUiState {
 }
 
 class LibraryViewModel(
-    private val libraryPort: suspend () -> Result<List<LibraryItem>> = {
-        Result.success(emptyList())
+    private val libraryPort: suspend () -> Outcome<List<LibraryItem>> = {
+        Outcome.Success(emptyList())
     },
     private val downloadsPort: suspend () -> Result<ImmutableList<DownloadState>> = {
         Result.success(persistentListOf())
@@ -80,9 +81,14 @@ class LibraryViewModel(
             val shows = listShows().onFailure { log.e(it) { "listShows failed" } }
                 .getOrDefault(emptyList())
             val library = if (loggedIn) {
-                libraryPort()
-                    .onFailure { log.e(it) { "libraryPort failed" } }
-                    .getOrDefault(emptyList())
+                when (val result = libraryPort()) {
+                    is Outcome.Success -> result.value
+
+                    is Outcome.Failure -> {
+                        log.e(null) { "libraryPort failed: ${result.error}" }
+                        emptyList()
+                    }
+                }
             } else {
                 emptyList()
             }

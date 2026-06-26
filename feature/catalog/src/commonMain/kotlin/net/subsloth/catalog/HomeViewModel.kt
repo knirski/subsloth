@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -58,18 +60,18 @@ enum class HomeTab { MOVIES, SHOWS, SEARCH }
 private data class SyncRequest(val silent: Boolean)
 
 class HomeViewModel(
-    private val listCatalog: suspend () -> Result<List<Media>> = { Result.success(emptyList()) },
-    private val getDetails: suspend (Media.MediaId) -> Result<MediaDetails> = {
-        Result.failure(UnsupportedOperationException("Not implemented"))
+    private val listCatalog: suspend () -> Outcome<List<Media>> = { Outcome.Success(emptyList()) },
+    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
+        Outcome.Failure(DecodeError.SerializationFailed)
     },
-    private val listLibrary: suspend () -> Result<List<LibraryItem>> = {
-        Result.success(emptyList())
+    private val listLibrary: suspend () -> Outcome<List<LibraryItem>> = {
+        Outcome.Success(emptyList())
     },
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
     },
     private val catalogItems: (String) -> Flow<List<Media>> = { flowOf(emptyList()) },
-    private val syncCatalog: suspend () -> Result<Unit> = { Result.success(Unit) },
+    private val syncCatalog: suspend () -> Outcome<Unit> = { Outcome.Success(Unit) },
     private val isCatalogStale: suspend () -> Boolean = { true },
     private val isOnline: () -> Boolean = { true },
     private val isMetered: () -> Boolean = { false },
@@ -121,18 +123,16 @@ class HomeViewModel(
             syncChannel.receiveAsFlow().collectLatest { request ->
                 isSyncing.value = true
                 try {
-                    syncCatalog()
-                        .onFailure { error ->
-                            log.e(error) { "Sync failed" }
+                    when (val outcome = syncCatalog()) {
+                        is Outcome.Failure -> {
+                            log.e(null) { "Sync failed: ${outcome.error}" }
                             if (!request.silent) {
-                                // `syncCatalog` is the `Result<Unit>` test seam; in production
-                                // it wraps the `CatalogSyncPort.sync(): Outcome<Unit>` port.
-                                // Since we no longer use the `DomainResultException` wrapper,
-                                // every non-success is an opaque `Throwable` and we surface
-                                // it as `SyncError.Unknown` for the UI.
                                 _syncErrors.tryEmit(SyncError.Unknown)
                             }
                         }
+
+                        is Outcome.Success -> {}
+                    }
                 } finally {
                     isSyncing.value = false
                 }
