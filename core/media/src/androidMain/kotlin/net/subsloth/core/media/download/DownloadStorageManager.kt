@@ -6,15 +6,19 @@ import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.media.Media
 import java.io.File
 import java.io.InputStream
+import java.util.UUID
 
 class DownloadStorageManager(private val context: Context) {
     private val storageDir: File
         get() = context.noBackupFilesDir.resolve("downloads").also { it.mkdirs() }
 
-    fun allocatePath(contentId: String, extension: String): OfflineRelativePath {
+    fun allocatePath(
+        contentId: String,
+        extension: String,
+        fileName: String = UUID.randomUUID().toString(),
+    ): OfflineRelativePath {
         val dir = storageDir.resolve(contentId).also { it.mkdirs() }
-        val fileName = "${java.util.UUID.randomUUID()}$extension"
-        val relative = "$contentId/$fileName"
+        val relative = "$contentId/$fileName$extension"
         return OfflineRelativePath.safe(relative)
     }
 

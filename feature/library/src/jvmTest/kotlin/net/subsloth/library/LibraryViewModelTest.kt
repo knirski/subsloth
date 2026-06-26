@@ -12,6 +12,7 @@ import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
@@ -81,7 +82,7 @@ class LibraryViewModelTest {
             ),
         )
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(libraryItems) },
+            libraryPort = { Outcome.Success(libraryItems) },
             downloadsPort = { Result.success(persistentListOf()) },
             listMovies = { Result.success(listOf(sampleMovie)) },
         )
@@ -95,7 +96,7 @@ class LibraryViewModelTest {
     @Test
     fun `includes continue watching row when progress exists`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf()) },
             listProgress = {
                 Result.success(
@@ -130,7 +131,7 @@ class LibraryViewModelTest {
             ),
         )
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(libraryItems) },
+            libraryPort = { Outcome.Success(libraryItems) },
             downloadsPort = { Result.success(persistentListOf()) },
             listMovies = { Result.success(listOf(sampleMovie)) },
         )
@@ -151,7 +152,7 @@ class LibraryViewModelTest {
             ),
         )
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(libraryItems) },
+            libraryPort = { Outcome.Success(libraryItems) },
             downloadsPort = { Result.success(persistentListOf()) },
             listMovies = { Result.success(listOf(sampleMovie)) },
         )
@@ -164,7 +165,7 @@ class LibraryViewModelTest {
     @Test
     fun `includes available offline row when downloads are completed`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf(sampleCompleted)) },
             listMovies = { Result.success(listOf(sampleMovie)) },
         )
@@ -177,7 +178,7 @@ class LibraryViewModelTest {
     @Test
     fun `emits offline library when logged out`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf(sampleCompleted)) },
             isLoggedIn = { false },
             listMovies = { Result.success(listOf(sampleMovie)) },
@@ -200,7 +201,7 @@ class LibraryViewModelTest {
             ),
         )
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(libraryItems) },
+            libraryPort = { Outcome.Success(libraryItems) },
             downloadsPort = { Result.success(persistentListOf(sampleCompleted)) },
             isLoggedIn = { false },
             listMovies = { Result.success(listOf(sampleMovie)) },
@@ -216,7 +217,7 @@ class LibraryViewModelTest {
     @Test
     fun `offline library does not allow catalog search actions`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf(sampleCompleted)) },
             isLoggedIn = { false },
             listMovies = { Result.success(listOf(sampleMovie)) },
@@ -238,7 +239,7 @@ class LibraryViewModelTest {
             ),
         )
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(libraryItems) },
+            libraryPort = { Outcome.Success(libraryItems) },
             downloadsPort = { Result.success(persistentListOf()) },
             listMovies = { Result.success(listOf(sampleMovie)) },
         )
@@ -251,7 +252,7 @@ class LibraryViewModelTest {
     @Test
     fun `hides continue watching when no progress`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf()) },
             listProgress = { Result.success(emptyList()) },
         )
@@ -265,7 +266,7 @@ class LibraryViewModelTest {
     fun `delete download action removes download`() = runTest(testDispatcher) {
         var removed = false
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf(sampleCompleted)) },
             removeDownload = {
                 removed = true
@@ -280,7 +281,7 @@ class LibraryViewModelTest {
     @Test
     fun `does not include comments-related data in any row`() = runTest(testDispatcher) {
         val viewModel = LibraryViewModel(
-            libraryPort = { Result.success(emptyList()) },
+            libraryPort = { Outcome.Success(emptyList()) },
             downloadsPort = { Result.success(persistentListOf()) },
         )
         viewModel.uiState.test {

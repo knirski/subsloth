@@ -24,16 +24,20 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.database.dao.SeasonQueueDao
 import net.subsloth.database.entity.QueueItemEntity
 import net.subsloth.database.entity.SeasonQueueEntity
-import java.util.UUID
 import kotlin.time.Clock
 
-class SeasonQueueController(private val downloadsPort: DownloadsPort, private val seasonQueueDao: SeasonQueueDao) {
+class SeasonQueueController(
+    private val downloadsPort: DownloadsPort,
+    private val seasonQueueDao: SeasonQueueDao,
+    private val clock: Clock,
+) {
     suspend fun listQueues(): List<SeasonDownloadQueue> = seasonQueueDao.getAllQueues().first().map { entity ->
         val items = seasonQueueDao.getItemsForQueue(entity.id)
         entity.toDomain(items)
     }
 
     suspend fun createQueue(
+        queueId: QueueId,
         showId: ShowId,
         seasonNumber: Int,
         episodes: ImmutableList<Episode>,
@@ -42,13 +46,12 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
         transferPreference: TransferPreference,
         confirmation: SeasonDownloadConfirmation,
     ): SeasonDownloadQueue {
-        val queueId = QueueId(UUID.randomUUID().toString())
         val queueEntity = SeasonQueueEntity(
             id = queueId.value,
             showId = showId.value.toString(),
             seasonNumber = seasonNumber,
             status = "pending_confirmation",
-            createdAtEpochSeconds = Clock.System.now().epochSeconds,
+            createdAtEpochSeconds = clock.now().epochSeconds,
         )
         seasonQueueDao.upsertQueue(queueEntity)
 

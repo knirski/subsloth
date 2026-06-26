@@ -409,7 +409,7 @@ class PlayerViewModelTest {
             fetchVideoSource = { Outcome.Success(source) },
             fetchEpisodes = { showId ->
                 fetchedShowId = showId.value
-                Result.success(listOf(episode1, episode2))
+                Outcome.Success(listOf(episode1, episode2))
             },
         )
 
@@ -429,7 +429,7 @@ class PlayerViewModelTest {
             mediaId = Media.MediaId.Show(ShowId(1)),
             fetchVideoSource = { Outcome.Success(source) },
             fetchEpisodes = {
-                Result.success(listOf(episode1, episode2))
+                Outcome.Success(listOf(episode1, episode2))
             },
         )
 
@@ -445,7 +445,7 @@ class PlayerViewModelTest {
         val viewModel = createViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
             fetchVideoSource = { Outcome.Success(source) },
-            fetchEpisodes = { Result.success(emptyList()) },
+            fetchEpisodes = { Outcome.Success(emptyList()) },
         )
 
         val state = viewModel.uiState.value as PlayerUiState.Content
@@ -634,8 +634,8 @@ class PlayerViewModelTest {
         fetchVideoSource: suspend (Media.MediaId) -> Outcome<VideoSource> = {
             Outcome.Success(createVideoSource())
         },
-        fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
-            Result.success(emptyList())
+        fetchEpisodes: suspend (Media.MediaId.Show) -> Outcome<List<Episode>> = {
+            Outcome.Success(emptyList())
         },
         onAuthFailure: () -> Unit = {},
         saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },

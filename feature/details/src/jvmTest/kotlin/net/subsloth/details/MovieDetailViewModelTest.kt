@@ -9,6 +9,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
@@ -81,7 +84,7 @@ class MovieDetailViewModelTest {
     fun `loads movie details on init`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -93,11 +96,11 @@ class MovieDetailViewModelTest {
     fun `shows error when details fail to load`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.failure(Exception("Network error")) },
+            getDetails = { Outcome.Failure(DecodeError.SerializationFailed) },
         )
         viewModel.uiState.test {
             val error = awaitItem() as MovieDetailUiState.Error
-            assertThat(error.error.detail).isEqualTo("Network error")
+            assertThat(error.error).isInstanceOf(UiError.ServiceError::class.java)
         }
     }
 
@@ -105,7 +108,7 @@ class MovieDetailViewModelTest {
     fun `displays movie title and plot`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -118,7 +121,7 @@ class MovieDetailViewModelTest {
     fun `displays movie rating year genres and duration`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -133,7 +136,7 @@ class MovieDetailViewModelTest {
     fun `displays subtitle languages`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -146,7 +149,7 @@ class MovieDetailViewModelTest {
     fun `displays available qualities`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -159,7 +162,7 @@ class MovieDetailViewModelTest {
     fun `no comments UI data is present in state`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
-            getDetails = { Result.success(sampleMovieDetails) },
+            getDetails = { Outcome.Success(sampleMovieDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content

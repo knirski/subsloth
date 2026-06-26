@@ -98,8 +98,8 @@ class PlayerViewModel(
     private val fetchVideoSource: suspend (Media.MediaId) -> Outcome<VideoSource> = {
         Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
-    private val fetchEpisodes: suspend (Media.MediaId.Show) -> Result<List<Episode>> = {
-        Result.success(emptyList())
+    private val fetchEpisodes: suspend (Media.MediaId.Show) -> Outcome<List<Episode>> = {
+        Outcome.Success(emptyList())
     },
     private val saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
     private val onAuthFailure: () -> Unit = {},
@@ -281,19 +281,26 @@ class PlayerViewModel(
                 is Media.MediaId.Episode -> resolveShowIdForEpisode(id.value)
                 else -> return@launch
             } ?: return@launch
-            fetchEpisodes(Media.MediaId.Show(showId)).onSuccess { episodes ->
-                val currentEpisodeId = (source.mediaId as? Media.MediaId.Episode)?.value
-                if (currentEpisodeId != null) {
-                    val sorted = episodes.sortedWith(
-                        compareBy({ it.seasonNumber }, { it.episodeNumber }),
-                    )
-                    val currentIndex = sorted.indexOfFirst { it.id == currentEpisodeId }
-                    if (currentIndex >= 0 && currentIndex < sorted.size - 1) {
-                        val next = sorted[currentIndex + 1]
-                        _uiState.update { current ->
-                            (current as? PlayerUiState.Content)?.copy(nextEpisode = next) ?: current
+            when (val episodesResult = fetchEpisodes(Media.MediaId.Show(showId))) {
+                is Outcome.Success -> {
+                    val episodes = episodesResult.value
+                    val currentEpisodeId = (source.mediaId as? Media.MediaId.Episode)?.value
+                    if (currentEpisodeId != null) {
+                        val sorted = episodes.sortedWith(
+                            compareBy({ it.seasonNumber }, { it.episodeNumber }),
+                        )
+                        val currentIndex = sorted.indexOfFirst { it.id == currentEpisodeId }
+                        if (currentIndex >= 0 && currentIndex < sorted.size - 1) {
+                            val next = sorted[currentIndex + 1]
+                            _uiState.update { current ->
+                                (current as? PlayerUiState.Content)?.copy(nextEpisode = next) ?: current
+                            }
                         }
                     }
+                }
+
+                is Outcome.Failure -> {
+                    log.e(null) { "Failed to fetch episodes: ${episodesResult.error}" }
                 }
             }
         }

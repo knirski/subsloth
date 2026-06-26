@@ -12,7 +12,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
+import net.subsloth.core.model.error.asFailure
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
@@ -299,7 +301,7 @@ class HomeViewModelTest {
     fun `emits sync error on manual sync failure`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),
-            syncCatalog = { Result.failure(IllegalStateException("boom")) },
+            syncCatalog = { SyncError.Unknown.asFailure() },
             isCatalogStale = { false },
         )
         viewModel.syncErrors.test {
@@ -316,7 +318,7 @@ class HomeViewModelTest {
             catalogItems = catalogItemsFor(emptyList()),
             syncCatalog = suspend {
                 syncGate.await()
-                Result.success(Unit)
+                Outcome.Success(Unit)
             },
             isCatalogStale = { false },
         )
@@ -343,7 +345,7 @@ class HomeViewModelTest {
             catalogItems = catalogItemsFor(emptyList()),
             syncCatalog = suspend {
                 syncCalled = true
-                Result.success(Unit)
+                Outcome.Success(Unit)
             },
             isCatalogStale = { false },
         )

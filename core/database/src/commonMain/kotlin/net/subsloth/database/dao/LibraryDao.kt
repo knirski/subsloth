@@ -105,8 +105,14 @@ interface LocalLibraryRecordDao {
     @Query("SELECT * FROM local_library_records WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<LocalLibraryRecordEntity>>
 
+    @Query("SELECT * FROM local_library_records WHERE profileKey = :profileKey AND contentId = :contentId")
+    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): LocalLibraryRecordEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LocalLibraryRecordEntity)
+
+    @Delete
+    suspend fun delete(entity: LocalLibraryRecordEntity)
 
     @Query("DELETE FROM local_library_records WHERE profileKey = :profileKey")
     suspend fun deleteAllForProfile(profileKey: String)

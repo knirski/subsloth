@@ -1,5 +1,6 @@
 package net.subsloth.core.domain.port
 
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
 
@@ -12,10 +13,10 @@ interface CatalogPort {
     /**
      * Returns the catalog of available movies and shows.
      */
-    suspend fun listCatalog(): Result<List<Media>>
+    suspend fun listCatalog(): Outcome<List<Media>>
 
     /**
      * Returns full details for a media item.
      */
-    suspend fun getDetails(id: Media.MediaId): Result<MediaDetails>
+    suspend fun getDetails(id: Media.MediaId): Outcome<MediaDetails>
 }

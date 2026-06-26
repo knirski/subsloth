@@ -9,6 +9,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.ShowId
@@ -117,7 +120,7 @@ class SeriesDetailViewModelTest {
     fun `loads show details on init`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
@@ -129,11 +132,11 @@ class SeriesDetailViewModelTest {
     fun `shows error when details fail to load`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.failure(Exception("Network error")) },
+            getDetails = { Outcome.Failure(DecodeError.SerializationFailed) },
         )
         viewModel.uiState.test {
             val error = awaitItem() as ShowDetailUiState.Error
-            assertThat(error.error.detail).isEqualTo("Network error")
+            assertThat(error.error).isInstanceOf(UiError.ServiceError::class.java)
         }
     }
 
@@ -141,7 +144,7 @@ class SeriesDetailViewModelTest {
     fun `displays seasons grouped with episodes`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
@@ -155,7 +158,7 @@ class SeriesDetailViewModelTest {
     fun `selects first season by default`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
@@ -175,7 +178,7 @@ class SeriesDetailViewModelTest {
         val showWithTwoSeasons = sampleShowDetails.copy(seasons = persistentListOf(sampleSeason1, season2))
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(showWithTwoSeasons) },
+            getDetails = { Outcome.Success(showWithTwoSeasons) },
         )
         viewModel.selectSeason(2)
         viewModel.uiState.test {
@@ -188,7 +191,7 @@ class SeriesDetailViewModelTest {
     fun `restores selected season from saved state`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
             savedState = mapOf("selectedSeason" to "1"),
         )
         viewModel.uiState.test {
@@ -201,7 +204,7 @@ class SeriesDetailViewModelTest {
     fun `episodes are sorted by episode number`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
@@ -215,7 +218,7 @@ class SeriesDetailViewModelTest {
     fun `no comments UI data is present in show details`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
@@ -227,7 +230,7 @@ class SeriesDetailViewModelTest {
     fun `episode rows show episode number and title`() = runTest(testDispatcher) {
         val viewModel = ShowDetailViewModel(
             mediaId = Media.MediaId.Show(ShowId(1)),
-            getDetails = { Result.success(sampleShowDetails) },
+            getDetails = { Outcome.Success(sampleShowDetails) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as ShowDetailUiState.Content
