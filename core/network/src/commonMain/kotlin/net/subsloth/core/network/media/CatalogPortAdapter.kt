@@ -1,6 +1,7 @@
 package net.subsloth.core.network.media
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.domain.port.CatalogCachePort
 import net.subsloth.core.domain.port.CatalogPort
@@ -20,9 +21,15 @@ import net.subsloth.core.network.media.mapper.Mapper
 class CatalogPortAdapter(private val catalogCache: CatalogCachePort, private val api: Api) : CatalogPort {
 
     override suspend fun listCatalog(): Outcome<List<Media>> = try {
-        val movies = catalogCache.catalogItems("movie").first()
-        val shows = catalogCache.catalogItems("show").first()
-        Outcome.Success(movies + shows)
+        val items = catalogCache.catalogItems("movie")
+            .combine(catalogCache.catalogItems("show")) { movies, shows ->
+                buildList {
+                    addAll(movies)
+                    addAll(shows)
+                }
+            }
+            .first()
+        Outcome.Success(items)
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

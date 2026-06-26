@@ -107,11 +107,10 @@ class SearchViewModel(
     private suspend fun ensureCatalogLoaded(): List<Media> {
         if (catalogDeferred == null) {
             catalogDeferred = viewModelScope.async(start = CoroutineStart.LAZY) {
-                val items: List<Media> = when (val outcome = listCatalog()) {
+                when (val outcome = listCatalog()) {
                     is Outcome.Success -> outcome.value
                     is Outcome.Failure -> emptyList()
                 }
-                items
             }
         }
         val catalog = checkNotNull(catalogDeferred) { "catalogDeferred was just initialized" }.await()

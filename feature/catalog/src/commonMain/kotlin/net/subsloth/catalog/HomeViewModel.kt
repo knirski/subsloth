@@ -127,7 +127,8 @@ class HomeViewModel(
                         is Outcome.Failure -> {
                             log.e(null) { "Sync failed: ${outcome.error}" }
                             if (!request.silent) {
-                                _syncErrors.tryEmit(SyncError.Unknown)
+                                val syncError = outcome.error as? SyncError ?: SyncError.Unknown
+                                _syncErrors.tryEmit(syncError)
                             }
                         }
 
