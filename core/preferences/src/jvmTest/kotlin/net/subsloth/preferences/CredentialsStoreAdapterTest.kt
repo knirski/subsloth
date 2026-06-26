@@ -34,6 +34,7 @@ class CredentialsStoreAdapterTest {
                 assertThat(result.value!!.login).isEqualTo("alice")
                 assertThat(result.value!!.password).isEqualTo("secret")
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got ${result.error}")
         }
     }
@@ -56,6 +57,7 @@ class CredentialsStoreAdapterTest {
             is Outcome.Success -> {
                 assertThat(result.value!!.login).isEqualTo("new")
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got ${result.error}")
         }
     }
@@ -80,6 +82,7 @@ class CredentialsStoreAdapterTest {
                 assertThat(result.value!!.login).isEqualTo("multiline")
                 assertThat(result.value!!.password).isEqualTo("pass with spaces and !@#\$%^")
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got ${result.error}")
         }
     }

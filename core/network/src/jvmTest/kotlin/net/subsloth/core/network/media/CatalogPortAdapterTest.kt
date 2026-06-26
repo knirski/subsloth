@@ -96,6 +96,7 @@ class CatalogPortAdapterTest {
                 assertThat(result.value).hasSize(2)
                 assertThat(result.value.map { it.title }).containsExactly("Test Movie", "Test Show")
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got failure: ${result.error}")
         }
     }
@@ -120,6 +121,7 @@ class CatalogPortAdapterTest {
                             status = HttpStatusCode.OK,
                             headers = headersOf(HttpHeaders.ContentType, "application/json"),
                         )
+
                         else -> respond(content = ByteReadChannel(""), status = HttpStatusCode.NotFound)
                     }
                 }
@@ -133,6 +135,7 @@ class CatalogPortAdapterTest {
                 assertThat(details.title).isEqualTo("Test Movie")
                 assertThat(details).isInstanceOf(MovieDetails::class.java)
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got failure: ${result.error}")
         }
     }
@@ -160,6 +163,7 @@ class CatalogPortAdapterTest {
                             status = HttpStatusCode.OK,
                             headers = headersOf(HttpHeaders.ContentType, "application/json"),
                         )
+
                         else -> respond(content = ByteReadChannel(""), status = HttpStatusCode.NotFound)
                     }
                 }
@@ -173,6 +177,7 @@ class CatalogPortAdapterTest {
                 assertThat(details.title).isEqualTo("Test Show")
                 assertThat(details).isInstanceOf(ShowDetails::class.java)
             }
+
             is Outcome.Failure -> throw AssertionError("Expected success but got failure: ${result.error}")
         }
     }
