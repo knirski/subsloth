@@ -27,7 +27,11 @@ import net.subsloth.database.entity.SeasonQueueEntity
 import java.util.UUID
 import kotlin.time.Clock
 
-class SeasonQueueController(private val downloadsPort: DownloadsPort, private val seasonQueueDao: SeasonQueueDao) {
+class SeasonQueueController(
+    private val downloadsPort: DownloadsPort,
+    private val seasonQueueDao: SeasonQueueDao,
+    private val clock: Clock,
+) {
     suspend fun listQueues(): List<SeasonDownloadQueue> = seasonQueueDao.getAllQueues().first().map { entity ->
         val items = seasonQueueDao.getItemsForQueue(entity.id)
         entity.toDomain(items)
@@ -48,7 +52,7 @@ class SeasonQueueController(private val downloadsPort: DownloadsPort, private va
             showId = showId.value.toString(),
             seasonNumber = seasonNumber,
             status = "pending_confirmation",
-            createdAtEpochSeconds = Clock.System.now().epochSeconds,
+            createdAtEpochSeconds = clock.now().epochSeconds,
         )
         seasonQueueDao.upsertQueue(queueEntity)
 
