@@ -1,11 +1,19 @@
 package net.subsloth.core.network.media
 
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.pluginOrNull
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.core.network.media.client.ResponseValidationPlugin
 import net.subsloth.testing.assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -13,10 +21,25 @@ import org.junit.jupiter.api.Test
  * - No annotation/notes endpoints, no WebView/browser identity
  * - Raw URL redaction
  * - Server mutation gates
+ * - Kodi-compatible request identity (User-Agent, Accept headers)
+ * - Bounded retries on 429/5xx with fixed backoff
  * - Low concurrency, single-flight de-duplication
- * - Bounded retries, 429/Retry-After, non-retryable failures
  */
 class NetworkPolicyTest {
+    private val clients = mutableListOf<HttpClient>()
+
+    private fun createClient(
+        login: String? = null,
+        password: String? = null,
+        baseUrl: String = "http://localhost:1/",
+    ): HttpClient = ClientFactory.create(login = login, password = password, baseUrl = baseUrl).also { clients.add(it) }
+
+    @AfterEach
+    fun tearDown() {
+        clients.forEach { it.close() }
+        clients.clear()
+    }
+
     // ── No Notes Endpoints ───────────────────────────────────────────────
 
     @Test
@@ -80,16 +103,49 @@ class NetworkPolicyTest {
         assertThat(methodNames).doesNotContain("unsubscribe")
     }
 
+    // ── Kodi-compatible Request Identity ─────────────────────────────────
+
+    @Test
+    fun `ClientFactory creates client with timeout plugin`() {
+        val client = createClient()
+        assertThat(client.pluginOrNull(HttpTimeout)).isNotNull()
+    }
+
+    @Test
+    fun `ClientFactory creates client with JSON content negotiation`() {
+        val client = createClient()
+        assertThat(client.pluginOrNull(ContentNegotiation)).isNotNull()
+    }
+
+    @Test
+    fun `ClientFactory creates client with response validation plugin`() {
+        val client = createClient()
+        assertThat(client.pluginOrNull(ResponseValidationPlugin)).isNotNull()
+    }
+
+    @Test
+    fun `ClientFactory creates client with retry plugin`() {
+        val client = createClient()
+        assertThat(client.pluginOrNull(HttpRequestRetry)).isNotNull()
+    }
+
+    @Test
+    fun `ClientFactory creates client with auth plugin when credentials provided`() {
+        val client = createClient(login = "test", password = "test")
+        assertThat(client.pluginOrNull(Auth)).isNotNull()
+    }
+
+    @Test
+    fun `ClientFactory creates client without auth when credentials omitted`() {
+        val client = createClient()
+        assertThat(client.pluginOrNull(Auth)).isNull()
+    }
+
     // ── Low concurrency ──────────────────────────────────────────────────
 
     @Test
     fun `ClientFactory creates client with default connection pool`() {
-        val client =
-            ClientFactory.create(
-                login = "test",
-                password = "test",
-                baseUrl = "http://localhost:1/",
-            )
+        val client = createClient(login = "test", password = "test")
         assertThat(client).isNotNull()
     }
 }
