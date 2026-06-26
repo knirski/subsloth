@@ -31,6 +31,24 @@ runs:
           ~/.konan
         key: ${{ runner.os }}-konan-${{ steps.kotlin-version.outputs.version }}
 
+    # Node.js distribution + npm package cache for KMP wasmJs targets.
+    # Kotlin's wasmJs plugin downloads Node.js to ~/.gradle/nodejs/ and runs
+    # npm install for dependencies declared with `npm(...)`. Without this
+    # cache both steps are re-done from scratch on every CI run.
+    # Key includes runner.arch (Node binary is arch-specific), Kotlin version
+    # (Node version bundled with the plugin), and a hash of Gradle build
+    # files (npm dependencies are declared in build.gradle.kts). Restore-keys
+    # fallback preserves the Node.js distribution across dependency changes.
+    - name: Cache Node.js and npm for wasmJs
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.gradle/nodejs
+          ~/.npm
+        key: ${{ runner.os }}-${{ runner.arch }}-wasm-${{ steps.kotlin-version.outputs.version }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-wasm-${{ steps.kotlin-version.outputs.version }}-
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
       with:
