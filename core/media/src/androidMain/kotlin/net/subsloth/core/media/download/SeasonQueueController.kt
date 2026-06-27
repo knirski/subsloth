@@ -145,16 +145,21 @@ class SeasonQueueController(
                     }
                 }
             },
-            onFailure = {
-                seasonQueueDao.upsertItem(nextPending.copy(status = "failed"))
-                SeasonQueueExecution.Failed(DownloadFailureReason.DownloadFailed)
+            onFailure = { error ->
+                val reason = parseFailureReason(error)
+                seasonQueueDao.upsertItem(nextPending.copy(status = "failed", failureReason = reason.name))
+                val queueEntity = seasonQueueDao.getQueue(queueId.value)
+                if (queueEntity != null) {
+                    seasonQueueDao.upsertQueue(queueEntity.copy(status = "failed", failureReason = reason.name))
+                }
+                SeasonQueueExecution.Failed(reason)
             },
         )
     }
 
-    suspend fun pauseQueue(queueId: QueueId) {
+    suspend fun pauseQueue(queueId: QueueId, reason: DownloadFailureReason = DownloadFailureReason.NeedsWifi) {
         val entity = seasonQueueDao.getQueue(queueId.value) ?: return
-        seasonQueueDao.upsertQueue(entity.copy(status = "paused"))
+        seasonQueueDao.upsertQueue(entity.copy(status = "paused", failureReason = reason.name))
     }
 
     suspend fun resumeQueue(queueId: QueueId) {
@@ -178,10 +183,17 @@ class SeasonQueueController(
                 subtitleSelection = SubtitleSelection.None,
                 execution = when (item.status) {
                     "pending" -> SeasonQueueItemExecution.Pending
+
                     "downloading" -> SeasonQueueItemExecution.Downloading(0)
+
                     "completed" -> SeasonQueueItemExecution.Completed
-                    "failed" -> SeasonQueueItemExecution.Failed(DownloadFailureReason.DownloadFailed)
+
+                    "failed" -> SeasonQueueItemExecution.Failed(
+                        domFailureReason(item.failureReason),
+                    )
+
                     "cancelled" -> SeasonQueueItemExecution.Cancelled
+
                     else -> SeasonQueueItemExecution.Pending
                 },
             )
@@ -204,11 +216,11 @@ class SeasonQueueController(
                     ),
                 )
 
-                "paused" -> SeasonQueueExecution.Paused(DownloadFailureReason.NeedsWifi)
+                "paused" -> SeasonQueueExecution.Paused(domFailureReason(failureReason))
 
                 "completed" -> SeasonQueueExecution.Completed
 
-                "failed" -> SeasonQueueExecution.Failed(DownloadFailureReason.DownloadFailed)
+                "failed" -> SeasonQueueExecution.Failed(domFailureReason(failureReason))
 
                 else -> SeasonQueueExecution.PendingConfirmation
             },
@@ -221,4 +233,28 @@ private fun Media.MediaId.toEpisodeIdString(): String = when (this) {
     is Media.MediaId.Episode -> value.value.toString()
     is Media.MediaId.Movie -> value.value.toString()
     is Media.MediaId.Show -> value.value.toString()
+}
+
+private fun domFailureReason(raw: String?): DownloadFailureReason =
+    raw?.let { parseDownloadFailureReason(it) } ?: DownloadFailureReason.DownloadFailed
+
+private fun parseFailureReason(error: Throwable): DownloadFailureReason {
+    val message = error.message ?: ""
+    return when {
+        message.contains("Wi-Fi", ignoreCase = true) -> DownloadFailureReason.NeedsWifi
+        message.contains("storage", ignoreCase = true) -> DownloadFailureReason.InsufficientStorage
+        message.contains("already", ignoreCase = true) -> DownloadFailureReason.DownloadFailed
+        else -> DownloadFailureReason.DownloadFailed
+    }
+}
+
+private fun parseDownloadFailureReason(value: String): DownloadFailureReason = when (value) {
+    "NeedsWifi" -> DownloadFailureReason.NeedsWifi
+    "InsufficientStorage" -> DownloadFailureReason.InsufficientStorage
+    "MissingLocalFile" -> DownloadFailureReason.MissingLocalFile
+    "SubtitleUnavailable" -> DownloadFailureReason.SubtitleUnavailable
+    "AmbiguousQuality" -> DownloadFailureReason.AmbiguousQuality
+    "DownloadFailed" -> DownloadFailureReason.DownloadFailed
+    "Unavailable" -> DownloadFailureReason.Unavailable
+    else -> DownloadFailureReason.DownloadFailed
 }
