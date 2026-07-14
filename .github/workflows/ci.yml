@@ -90,7 +90,7 @@ jobs:
 
       - name: Validate OpenAPI spec
         run: |
-          curl -fsSL https://github.com/daveshanley/vacuum/releases/download/v0.26.5/vacuum_0.26.5_linux_x86_64.tar.gz \
+          curl -fsSL https://github.com/daveshanley/vacuum/releases/download/v0.29.9/vacuum_0.29.9_linux_x86_64.tar.gz \
             -o /tmp/vacuum.tar.gz
           tar xzf /tmp/vacuum.tar.gz -C /usr/local/bin vacuum
           vacuum lint api/subsloth.openapi.yaml --ruleset config/vacuum.yaml --fail-severity error

@@ -25,7 +25,7 @@ runs:
         echo "version=${KOTLIN_VER}" >> "$GITHUB_OUTPUT"
 
     - name: Cache Kotlin/Native compiler
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.konan
@@ -40,7 +40,7 @@ runs:
     # files (npm dependencies are declared in build.gradle.kts). Restore-keys
     # fallback preserves the Node.js distribution across dependency changes.
     - name: Cache Node.js and npm for wasmJs
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.gradle/nodejs

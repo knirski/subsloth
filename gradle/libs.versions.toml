@@ -2,21 +2,21 @@
 agp = "9.2.1"
 screenshot = "0.0.1-alpha15"
 kotlin = "2.4.0"
-ksp = "2.3.9"
+ksp = "2.3.10"
 savedstate = "1.5.0"
-composeBom = "2026.06.00"
+composeBom = "2026.06.01"
 material3Adaptive = "1.3.0-rc01"
 androidxCore = "1.19.0"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
-lifecycleKmp = "2.11.0-beta01"
+lifecycleKmp = "2.11.0-rc01"
 androidxNavigation3 = "1.1.3"
 tvFoundation = "1.0.0"
 tvMaterial = "1.1.0"
-room3 = "3.0.0-rc01"
+room3 = "3.0.0"
 datastore = "1.3.0-alpha09"
 okio = "3.17.0"
-sqliteKmp = "2.7.0-rc01"
+sqliteKmp = "2.7.0"
 detekt = "2.0.0-alpha.5"
 detektGradle = "2.0.0-alpha.5"
 media3 = "1.10.1"
@@ -24,22 +24,23 @@ coil = "3.5.0"
 kotlinxSerialization = "1.11.0"
 coroutines = "1.11.0"
 turbine = "1.2.1"
-junit = "6.1.0"
-junitPlatform = "6.1.0"
-spotless = "8.7.0"
+junit = "6.1.2"
+junitPlatform = "6.1.2"
+spotless = "8.8.0"
 wiremock = "3.13.2"
 composeRules = "0.6.2"
 ktlint = "1.8.0"
-composeMultplatformRuntime = "1.12.0-alpha01"
-composeMultplatformPlugin = "1.12.0-alpha01"
-kotlinxCollectionsImmutable = "0.5.0"
+composeMultiplatformRuntime = "1.12.0-beta01"
+composeMultiplatformMaterial3 = "1.12.0-alpha03"
+composeMultiplatformPlugin = "1.12.0-beta01"
+kotlinxCollectionsImmutable = "0.5.1"
 kotlinxDatetime = "0.8.0"
 kotlinxBrowser = "0.5.0"
-kotlinxSchema = "0.5.0"
-ktor = "3.5.0"
+kotlinxSchema = "0.6.0"
+ktor = "3.5.1"
 androidxAnnotation = "1.10.0"
 kermit = "2.1.0"
-composeMediaPlayer = "0.10.0"
+composeMediaPlayer = "0.11.1"
 
 
 [libraries]
@@ -51,14 +52,14 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 # Compose Multiplatform runtime (provides @Stable, @Immutable for KMP targets)
 # Short name for `:core:model` that only needs the runtime annotation types.
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultplatformRuntime" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatformRuntime" }
 savedstate = { module = "androidx.savedstate:savedstate", version.ref = "savedstate" }
 savedstate-compose = { module = "androidx.savedstate:savedstate-compose", version.ref = "savedstate" }
-compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultplatformRuntime" }
-compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultplatformRuntime" }
-compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultplatformRuntime" }
-compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultplatformRuntime" }
-compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultplatformRuntime" }
+compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatformRuntime" }
+compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatformMaterial3" }
+compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatformRuntime" }
+compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatformRuntime" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatformRuntime" }
 
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
@@ -163,7 +164,7 @@ android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref 
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-multiplatform-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
-compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "composeMultplatformPlugin" }
+compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "composeMultiplatformPlugin" }
 compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
@@ -179,7 +180,7 @@ kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultplatformPlugin" }
+compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultiplatformPlugin" }
 
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
