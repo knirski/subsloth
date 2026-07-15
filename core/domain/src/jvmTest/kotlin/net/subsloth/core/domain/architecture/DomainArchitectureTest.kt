@@ -103,6 +103,16 @@ class DomainArchitectureTest {
         assertThat(violations).isEmpty()
     }
 
+    @Test
+    fun `domain module has no notification imports`() {
+        val violations =
+            findImportsInDomainSource(
+                "android.app.Notification",
+                "androidx.core.app.Notification",
+            )
+        assertThat(violations).isEmpty()
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     /**
