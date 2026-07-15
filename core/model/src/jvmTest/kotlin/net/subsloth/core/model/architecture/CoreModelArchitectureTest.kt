@@ -89,6 +89,17 @@ class CoreModelArchitectureTest {
         assertThat(violations).isEmpty()
     }
 
+    @Test
+    fun `model module has no notification imports`() {
+        val violations =
+            findForbiddenImports(
+                "android.app.Notification",
+                "androidx.core.app.Notification",
+                "androidx.media.app.Notification",
+            )
+        assertThat(violations).isEmpty()
+    }
+
     private val allModelImports: List<String> by lazy {
         val baseDir =
             System.getProperty("user.dir")
