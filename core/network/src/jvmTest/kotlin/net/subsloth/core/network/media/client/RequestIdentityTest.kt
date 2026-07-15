@@ -3,28 +3,22 @@ package net.subsloth.core.network.media.client
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
-import io.ktor.client.plugins.auth.providers.basic
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import java.util.Base64
 
 /**
  * Tests that outgoing requests carry the correct Kodi-compatible identity
  * headers as configured by [ClientFactory].
+ *
+ * Uses the production [ClientFactory.create] with an injected [MockEngine]
+ * so the assertions verify the real client configuration.
  */
 class RequestIdentityTest {
     private val clients = mutableListOf<HttpClient>()
@@ -36,37 +30,13 @@ class RequestIdentityTest {
     }
 
     private fun createClient(login: String? = null, password: String? = null, engine: MockEngine): HttpClient =
-        HttpClient(engine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 30_000
-                connectTimeoutMillis = 10_000
-                socketTimeoutMillis = 30_000
-            }
-            install(ResponseValidationPlugin)
-            if (login != null && password != null) {
-                install(Auth) {
-                    basic {
-                        credentials { BasicAuthCredentials(login, password) }
-                        sendWithoutRequest { true }
-                    }
-                }
-            }
-            install(HttpRequestRetry) {
-                maxRetries = 2
-                retryOnException(retryOnTimeout = true)
-                retryIf { _, response -> response.status.value == 429 || response.status.value in 500..599 }
-                delayMillis { attempt -> (attempt + 1) * 500L }
-            }
-            defaultRequest {
-                url("http://localhost:1/")
-                header(HttpHeaders.UserAgent, "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
-                header(HttpHeaders.Accept, "application/json, */*")
-                header(HttpHeaders.AcceptLanguage, "en-US,en;q=0.5")
-            }
-        }.also { clients.add(it) }
+        ClientFactory
+            .create(
+                login = login,
+                password = password,
+                baseUrl = "http://localhost:1/",
+                engine = engine,
+            ).also { clients.add(it) }
 
     @Test
     fun `User-Agent header matches Kodi identity`() = runTest {
@@ -126,7 +96,7 @@ class RequestIdentityTest {
     }
 
     @Test
-    fun `Authorization header present when credentials provided`() = runTest {
+    fun `Authorization header present with exact Basic value when credentials provided`() = runTest {
         val captured = mutableListOf<String>()
         val engine =
             MockEngine { request ->
@@ -141,7 +111,8 @@ class RequestIdentityTest {
 
         client.get("/test")
 
-        assertThat(captured.single()).isNotEmpty()
+        val expected = "Basic " + Base64.getEncoder().encodeToString("user:pass".toByteArray())
+        assertThat(captured.single()).isEqualTo(expected)
     }
 
     @Test
@@ -157,6 +128,44 @@ class RequestIdentityTest {
                 )
             }
         val client = createClient(engine = engine)
+
+        client.get("/test")
+
+        assertThat(captured.single()).isEmpty()
+    }
+
+    @Test
+    fun `Authorization header absent when only login provided`() = runTest {
+        val captured = mutableListOf<String>()
+        val engine =
+            MockEngine { request ->
+                captured.add(request.headers[HttpHeaders.Authorization] ?: "")
+                respond(
+                    content = "{}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        val client = createClient(login = "user", engine = engine)
+
+        client.get("/test")
+
+        assertThat(captured.single()).isEmpty()
+    }
+
+    @Test
+    fun `Authorization header absent when only password provided`() = runTest {
+        val captured = mutableListOf<String>()
+        val engine =
+            MockEngine { request ->
+                captured.add(request.headers[HttpHeaders.Authorization] ?: "")
+                respond(
+                    content = "{}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        val client = createClient(password = "pass", engine = engine)
 
         client.get("/test")
 

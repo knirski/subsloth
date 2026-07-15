@@ -39,13 +39,14 @@ class NoCommentsInvariantTest {
                 DtoEpisode::class.java,
             )
 
-        for (dtoClass in dtoClasses) {
-            val offending =
+        val offending =
+            dtoClasses.flatMap { dtoClass ->
                 dtoClass.declaredFields
                     .map { it.name }
                     .filter { it.contains("comment", ignoreCase = true) }
-            assertThat(offending).isEmpty()
-        }
+                    .map { "${dtoClass.simpleName}.$it" }
+            }
+        assertThat(offending).isEmpty()
     }
 
     // ── Domain model field names ─────────────────────────────────────────
@@ -63,21 +64,21 @@ class NoCommentsInvariantTest {
                 Episode::class.java,
             )
 
-        for (domainClass in domainClasses) {
-            val offending =
+        val offending =
+            domainClasses.flatMap { domainClass ->
                 domainClass.declaredFields
                     .map { it.name }
                     .filter { it.contains("comment", ignoreCase = true) }
-            assertThat(offending).isEmpty()
-        }
+                    .map { "${domainClass.simpleName}.$it" }
+            }
+        assertThat(offending).isEmpty()
     }
 
     // ── Mapper function names ────────────────────────────────────────────
 
     @Test
     fun `Mapper has no comment or note-related functions`() {
-        val mapperMethods = Mapper::class.java.declaredMethods
-        val methodNames = mapperMethods.map { it.name }
+        val methodNames = Mapper::class.java.declaredMethods.map { it.name }
 
         val offending =
             methodNames.filter { it.contains("comment", ignoreCase = true) || it.contains("note", ignoreCase = true) }
@@ -88,14 +89,9 @@ class NoCommentsInvariantTest {
 
     @Test
     fun `Api class has no comment-related methods`() {
-        val methods = Api::class.java.declaredMethods
-        val methodNames = methods.map { it.name }
+        val methodNames = Api::class.java.declaredMethods.map { it.name }
 
-        assertThat(methodNames).doesNotContain("listComments")
-        assertThat(methodNames).doesNotContain("getComments")
-        assertThat(methodNames).doesNotContain("postComment")
-        assertThat(methodNames).doesNotContain("deleteComment")
-        val commentMethods = methodNames.filter { it.contains("comment", ignoreCase = true) }
-        assertThat(commentMethods).isEmpty()
+        val offending = methodNames.filter { it.contains("comment", ignoreCase = true) }
+        assertThat(offending).isEmpty()
     }
 }

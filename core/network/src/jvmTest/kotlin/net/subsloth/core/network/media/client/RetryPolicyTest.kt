@@ -3,7 +3,6 @@ package net.subsloth.core.network.media.client
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.request.get
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -16,6 +15,9 @@ import org.junit.jupiter.api.Test
  * Behaviour tests for the [HttpRequestRetry] policy matching
  * [ClientFactory]'s configuration.
  *
+ * Uses the production [ClientFactory.create] with an injected [MockEngine]
+ * so the assertions verify the real client configuration.
+ *
  * Verifies:
  * - maxRetries = 2
  * - Retries on 429 (rate limit) and 5xx (server error)
@@ -23,16 +25,10 @@ import org.junit.jupiter.api.Test
  * - Exhaustion after 2 retries
  */
 class RetryPolicyTest {
-    private fun createClient(engine: MockEngine): HttpClient = HttpClient(engine) {
-        install(HttpRequestRetry) {
-            maxRetries = 2
-            retryOnException(retryOnTimeout = true)
-            retryIf { _, response ->
-                response.status.value == 429 || response.status.value in 500..599
-            }
-            delayMillis { attempt -> (attempt + 1) * 500L }
-        }
-    }
+    private fun createClient(engine: MockEngine): HttpClient = ClientFactory.create(
+        baseUrl = "http://localhost:1/",
+        engine = engine,
+    )
 
     @Test
     fun `retries on server error 500 then succeeds`() = runTest {
