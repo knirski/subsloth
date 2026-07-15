@@ -4,7 +4,7 @@
 
 | Component | Version |
 |---|---|
-| AGP | 9.2.1 |
+| AGP | 9.3.0 |
 | Gradle | 9.5.1 |
 | Kotlin | 2.4.0 |
 | KSP | 2.3.9 |

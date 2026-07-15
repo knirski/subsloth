@@ -1,7 +1,7 @@
 ## 1. Architecture and Unit Tests
 
 - [x] 1.1 Add core architecture boundary tests verifying `:core:model` and `:core:domain` are Android-free.
-- [ ] 1.2 Add cross-module domain, mapper, request identity, retry, no-comments, and unexpected-response tests.
+- [x] 1.2 Add cross-module domain, mapper, request identity, retry, no-comments, and unexpected-response tests.
 - [ ] 1.3 Add cross-module Room, DataStore, credential, backup-exclusion, logout, and ViewModel tests.
 - [ ] 1.4 Add cross-module media, playback, offline, download, storage, and process-restoration tests.
 
