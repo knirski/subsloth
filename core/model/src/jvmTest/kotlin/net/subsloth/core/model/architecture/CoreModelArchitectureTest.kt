@@ -95,6 +95,7 @@ class CoreModelArchitectureTest {
             findForbiddenImports(
                 "android.app.Notification",
                 "androidx.core.app.Notification",
+                "androidx.media.app.Notification",
             )
         assertThat(violations).isEmpty()
     }

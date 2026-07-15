@@ -109,6 +109,7 @@ class DomainArchitectureTest {
             findImportsInDomainSource(
                 "android.app.Notification",
                 "androidx.core.app.Notification",
+                "androidx.media.app.Notification",
             )
         assertThat(violations).isEmpty()
     }
