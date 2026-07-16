@@ -2,11 +2,7 @@ package net.subsloth.database
 
 import kotlinx.coroutines.test.runTest
 import net.subsloth.database.entity.AccountPlaybackProgressEntity
-import net.subsloth.database.entity.CachedCatalogCountryEntity
-import net.subsloth.database.entity.CachedCatalogGenreEntity
-import net.subsloth.database.entity.CachedCatalogItemEntity
 import net.subsloth.database.entity.DownloadedMediaEntity
-import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
 import net.subsloth.database.entity.OfflineDisplayMetadataEntity
@@ -14,7 +10,6 @@ import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.SubscriptionEntity
 import net.subsloth.database.entity.WatchLaterEntity
 import net.subsloth.database.entity.WatchedStateEntity
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test

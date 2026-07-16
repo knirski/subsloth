@@ -5,7 +5,19 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 class BackupExclusionRulesTest {
-    private val moduleDir = File("src/main/res/xml")
+    /**
+     * Resolves the XML resource directory relative to the module root.
+     * Falls back to a Gradle-safe path when the working directory isn't
+     * the module root (e.g. IDE execution).
+     */
+    private fun resolveXmlDir(): File {
+        val candidates = listOf(
+            File("src/main/res/xml"),
+            File("androidApp/src/main/res/xml"),
+        )
+        return candidates.firstOrNull { it.exists() && it.isDirectory }
+            ?: error("Cannot find res/xml directory. Tried: ${candidates.joinToString(", ")}")
+    }
 
     @Test
     fun `backup rules XML exists and excludes credential shared preferences`() {
@@ -76,7 +88,8 @@ class BackupExclusionRulesTest {
     }
 
     private fun readXmlFile(fileName: String): String {
-        val file = File(moduleDir, fileName)
+        val dir = resolveXmlDir()
+        val file = File(dir, fileName)
         assertTrue(file.exists(), "XML file $fileName should exist at ${file.absolutePath}")
         return file.readText()
     }
