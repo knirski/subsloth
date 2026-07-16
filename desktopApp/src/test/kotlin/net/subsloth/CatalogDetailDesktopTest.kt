@@ -12,7 +12,9 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
@@ -47,7 +49,7 @@ class CatalogDetailDesktopTest {
     )
 
     private val sampleShow = ShowSummary(
-        id = Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(1)),
+        id = Media.MediaId.Show(ShowId(1)),
         title = "The Last Kingdom",
         plot = "A tale of warriors and kingdoms.",
         availability = Availability.Available,
@@ -62,7 +64,7 @@ class CatalogDetailDesktopTest {
         countries = persistentListOf("US"),
     )
 
-    private val movieDetails = net.subsloth.core.model.media.MovieDetails(
+    private val movieDetails = MovieDetails(
         id = Media.MediaId.Movie(MovieId(1)),
         title = "The Grand Adventure",
         plot = "An epic journey across uncharted lands.",

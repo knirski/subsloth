@@ -10,10 +10,12 @@ import androidx.compose.ui.test.onNodeWithText
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.auth.LoginFormContent
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
@@ -28,7 +30,7 @@ class AccessibilityDesktopTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val movieDetails = net.subsloth.core.model.media.MovieDetails(
+    private val movieDetails = MovieDetails(
         id = Media.MediaId.Movie(MovieId(1)),
         title = "The Grand Adventure",
         plot = "An epic journey across uncharted lands.",
@@ -117,7 +119,7 @@ class AccessibilityDesktopTest {
                     login = "user",
                     password = "pass",
                     isLoading = false,
-                    error = net.subsloth.core.model.error.UiError.AuthRequired(),
+                    error = UiError.AuthRequired(),
                     hasOfflineLibrary = false,
                 )
             }
@@ -134,7 +136,7 @@ class AccessibilityDesktopTest {
                     login = "user",
                     password = "pass",
                     isLoading = false,
-                    error = net.subsloth.core.model.error.UiError.NotFound(),
+                    error = UiError.NotFound(),
                     hasOfflineLibrary = false,
                 )
             }
