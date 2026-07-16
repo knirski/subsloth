@@ -14,6 +14,7 @@ data class SeasonQueueEntity(
     val showId: String,
     val seasonNumber: Int,
     val status: String,
+    val failureReason: String? = null,
     val createdAtEpochSeconds: Long,
 )
 
@@ -38,4 +39,5 @@ data class QueueItemEntity(
     val subtitleLanguages: String?,
     val sizeBytes: Long?,
     val status: String,
+    val failureReason: String? = null,
 )
