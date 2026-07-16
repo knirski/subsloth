@@ -59,6 +59,7 @@ compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:
 compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatformMaterial3" }
 compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatformRuntime" }
 compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatformRuntime" }
+compose-multiplatform-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "composeMultiplatformRuntime" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatformRuntime" }
 
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
@@ -146,6 +147,7 @@ screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-
 
 # Testing (JUnit 5 + Turbine + AndroidX Test)
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }

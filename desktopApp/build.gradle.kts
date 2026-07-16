@@ -15,6 +15,10 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.multiplatform.material3)
@@ -30,6 +34,7 @@ dependencies {
     implementation(project(":feature:player"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:auth"))
+    implementation(project(":feature:library"))
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
@@ -39,6 +44,14 @@ dependencies {
     implementation(libs.navigation3.ui.kmp)
     implementation(libs.lifecycle.viewmodel.navigation3)
     implementation(libs.savedstate)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.compose.multiplatform.ui.test.junit4)
+    testImplementation(libs.kotlinx.collections.immutable)
 }
 
 // Forward LD_LIBRARY_PATH from the shell to the forked desktop app JVM.
