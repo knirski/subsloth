@@ -43,6 +43,8 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
+            implementation(project(":core:database"))
+            implementation(libs.kotlinx.collections.immutable)
             api(libs.compose.media.player)
             implementation(libs.compose.multiplatform.foundation)
             implementation(libs.compose.multiplatform.ui)
@@ -67,6 +69,9 @@ kotlin {
             runtimeOnly(libs.junit.jupiter.engine)
             runtimeOnly("org.junit.platform:junit-platform-launcher:${libs.versions.junitPlatform.get()}")
             implementation(project(":testing:assertions"))
+            implementation(project(":core:database"))
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
         }
     }
 }

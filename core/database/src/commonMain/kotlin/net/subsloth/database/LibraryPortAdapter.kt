@@ -131,9 +131,9 @@ class LibraryPortAdapter(
     )
 
     private fun parseMediaId(contentId: String, contentType: String): Media.MediaId = when (contentType) {
-        "movie" -> Media.MediaId.Movie(MovieId(contentId.toIntOrNull() ?: 0))
-        "show" -> Media.MediaId.Show(ShowId(contentId.toIntOrNull() ?: 0))
-        "episode" -> Media.MediaId.Episode(EpisodeId(contentId.toIntOrNull() ?: 0))
-        else -> error("Unknown content type: $contentType")
+        "movie" -> Media.MediaId.Movie(MovieId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
+        "show" -> Media.MediaId.Show(ShowId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
+        "episode" -> Media.MediaId.Episode(EpisodeId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
+        else -> throw IllegalArgumentException("Unknown content type: $contentType")
     }
 }

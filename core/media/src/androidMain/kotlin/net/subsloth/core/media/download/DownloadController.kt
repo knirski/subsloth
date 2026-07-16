@@ -39,7 +39,7 @@ class DownloadController(
 
     override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> = runCatching {
         downloadedMediaDao.getAll().first().map { it.toDownloadState() }.toImmutableList()
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>> = runCatching {
         downloadedMediaDao.getCompleted().first().map { entity ->
@@ -58,7 +58,7 @@ class DownloadController(
                 isPlayable = entity.localFilePath.isNotBlank(),
             )
         }.toImmutableList()
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun enqueue(
         mediaId: Media.MediaId,
@@ -66,12 +66,17 @@ class DownloadController(
         requiredBytes: Long?,
         transferPreference: TransferPreference,
     ): Result<EnqueueOutcome> = runCatching {
-        val existing = downloadedMediaDao.getAll().first().map { it.toDownloadState() }
-        if (DownloadPolicy.isDuplicate(existing, mediaId, requestedResolution = requested)) {
-            return@runCatching EnqueueOutcome.AlreadyAvailableHigherQuality
-        }
-        if (!DownloadPolicy.canStartNewDownload(existing, mediaId)) {
-            error("A download for this media is already active or queued")
+        val contentId = mediaId.toContentId()
+        val mediaType = mediaId.toMediaType()
+        val existingForMedia = downloadedMediaDao.getByContent(contentId, mediaType)
+        if (existingForMedia != null) {
+            val existingState = existingForMedia.toDownloadState()
+            if (DownloadPolicy.isDuplicate(listOf(existingState), mediaId, requested)) {
+                return@runCatching EnqueueOutcome.AlreadyAvailableHigherQuality
+            }
+            if (existingState is DownloadState.Active || existingState is DownloadState.Queued) {
+                error("A download for this media is already active or queued")
+            }
         }
         if (!DownloadPolicy.canTransferOnNetwork(
                 isMetered = connectivityChecker.isMetered(),
@@ -100,15 +105,15 @@ class DownloadController(
         )
         downloadedMediaDao.upsert(entity)
         EnqueueOutcome.Queued
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun enqueueSubtitle(
         localId: LocalMediaIdentifier,
         language: LanguageCode,
     ): Result<SubtitleEnqueueOutcome> = runCatching {
-        val all = downloadedMediaDao.getAll().first()
-        val downloadId = all.firstOrNull { "${it.contentId}/${it.id}" == localId.value }?.id
-            ?: error("No download found for $localId")
+        val downloadId = requireNotNull(parseLocalIdDownloadId(localId)) {
+            "No download found for $localId"
+        }
         val existing = downloadedSubtitleDao.getForDownload(downloadId).first()
         if (existing.any { it.language == language.value }) {
             return@runCatching SubtitleEnqueueOutcome.AlreadyAvailable
@@ -123,17 +128,17 @@ class DownloadController(
             ),
         )
         SubtitleEnqueueOutcome.Queued
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         updateStatus(localId, DownloadStatus.PAUSED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun resume(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         updateStatus(localId, DownloadStatus.QUEUED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun cancel(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         val entity = findByLocalId(localId) ?: error("Download not found: ${localId.value}")
@@ -143,7 +148,7 @@ class DownloadController(
         }
         updateStatus(localId, DownloadStatus.REMOVED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun remove(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         val entity = findByLocalId(localId) ?: error("Download not found: ${localId.value}")
@@ -158,7 +163,7 @@ class DownloadController(
             if (metadata != null) offlineDisplayMetadataDao.delete(metadata)
         }
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     private suspend fun updateStatus(localId: LocalMediaIdentifier, status: DownloadStatus) {
         val entity = findByLocalId(localId) ?: return
@@ -166,11 +171,11 @@ class DownloadController(
     }
 
     private suspend fun findByLocalId(localId: LocalMediaIdentifier): DownloadedMediaEntity? {
-        val all = downloadedMediaDao.getAll().first()
-        return all.firstOrNull { "${it.contentId}/${it.id}" == localId.value }
+        val downloadId = parseLocalIdDownloadId(localId) ?: return null
+        return downloadedMediaDao.getById(downloadId)
     }
 
-    private fun DownloadedMediaEntity.toDownloadState(): DownloadState {
+    internal fun DownloadedMediaEntity.toDownloadState(): DownloadState {
         val mediaId = parseMediaId(contentId, mediaType)
         val quality = QualityDescriptor(
             resolution = parseResolution(selectedQuality),
@@ -245,15 +250,6 @@ internal enum class DownloadStatus {
     REMOVED,
 }
 
-internal fun parseResolution(label: String?): Resolution = when {
-    label == null -> Resolution.HD_720
-    label.contains("4K") || label.contains("2160") || label.contains("UHD") -> Resolution.UHD_4K
-    label.contains("1440") || label.contains("QHD") -> Resolution.QHD
-    label.contains("1080") || label.contains("FHD") || label.contains("full", ignoreCase = true) -> Resolution.FULL_HD
-    label.contains("720") || label.contains("HD") -> Resolution.HD_720
-    else -> Resolution.HD_720
-}
-
 private fun Media.MediaId.toContentId(): String = when (this) {
     is Media.MediaId.Movie -> value.value.toString()
     is Media.MediaId.Show -> value.value.toString()
@@ -267,8 +263,17 @@ private fun Media.MediaId.toMediaType(): String = when (this) {
 }
 
 private fun parseMediaId(contentId: String, mediaType: String): Media.MediaId = when (mediaType) {
-    "movie" -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(contentId.toIntOrNull() ?: 0))
-    "episode" -> Media.MediaId.Episode(net.subsloth.core.model.identifier.EpisodeId(contentId.toIntOrNull() ?: 0))
-    "show" -> Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(contentId.toIntOrNull() ?: 0))
-    else -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(0))
+    "movie" -> Media.MediaId.Movie(
+        net.subsloth.core.model.identifier.MovieId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    "episode" -> Media.MediaId.Episode(
+        net.subsloth.core.model.identifier.EpisodeId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    "show" -> Media.MediaId.Show(
+        net.subsloth.core.model.identifier.ShowId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    else -> throw IllegalArgumentException("Unknown media type: $mediaType")
 }

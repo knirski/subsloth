@@ -114,7 +114,10 @@ class SeasonQueueController(
         }
 
         val mediaId = Media.MediaId.Episode(
-            net.subsloth.core.model.identifier.EpisodeId(nextPending.episodeId.toIntOrNull() ?: 0),
+            net.subsloth.core.model.identifier.EpisodeId(
+                nextPending.episodeId.toIntOrNull()
+                    ?: error("Invalid episodeId: ${nextPending.episodeId}"),
+            ),
         )
         val result = downloadsPort.enqueue(
             mediaId = mediaId,
@@ -208,7 +211,10 @@ class SeasonQueueController(
         val domainItems = items.map { item ->
             SeasonDownloadQueueItem(
                 mediaId = Media.MediaId.Episode(
-                    net.subsloth.core.model.identifier.EpisodeId(item.episodeId.toIntOrNull() ?: 0),
+                    net.subsloth.core.model.identifier.EpisodeId(
+                        item.episodeId.toIntOrNull()
+                            ?: error("Invalid episodeId: ${item.episodeId}"),
+                    ),
                 ),
                 selectedQuality = parseResolution(item.qualityLabel),
                 preferredSubtitleLanguage = LanguageCode(item.subtitleLanguages ?: "en"),
@@ -232,7 +238,7 @@ class SeasonQueueController(
         }
         return SeasonDownloadQueue(
             queueId = queueId,
-            showId = ShowId(showId.toIntOrNull() ?: 0),
+            showId = ShowId(showId.toIntOrNull() ?: error("Invalid showId: $showId")),
             seasonNumber = seasonNumber,
             items = domainItems.toImmutableList(),
             execution = when (status) {

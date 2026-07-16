@@ -125,6 +125,9 @@ interface DownloadedMediaDao {
     @Query("SELECT * FROM downloaded_media")
     fun getAll(): Flow<List<DownloadedMediaEntity>>
 
+    @Query("SELECT * FROM downloaded_media WHERE id = :id")
+    suspend fun getById(id: Long): DownloadedMediaEntity?
+
     @Query("SELECT * FROM downloaded_media WHERE status = 'completed'")
     fun getCompleted(): Flow<List<DownloadedMediaEntity>>
 

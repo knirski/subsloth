@@ -105,7 +105,10 @@ data class LocalLibraryRecordEntity(
  */
 @Entity(
     tableName = "downloaded_media",
-    indices = [Index(value = ["contentId", "mediaType"], unique = true)],
+    indices = [
+        Index(value = ["contentId", "mediaType"], unique = true),
+        Index(value = ["status"]),
+    ],
 )
 data class DownloadedMediaEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

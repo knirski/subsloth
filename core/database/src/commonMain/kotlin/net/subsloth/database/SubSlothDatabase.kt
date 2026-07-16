@@ -50,7 +50,7 @@ import net.subsloth.database.entity.WatchedStateEntity
         SeasonQueueEntity::class,
         QueueItemEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class SubSlothDatabase : RoomDatabase() {
