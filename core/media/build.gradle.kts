@@ -67,6 +67,9 @@ kotlin {
             runtimeOnly(libs.junit.jupiter.engine)
             runtimeOnly("org.junit.platform:junit-platform-launcher:${libs.versions.junitPlatform.get()}")
             implementation(project(":testing:assertions"))
+            implementation(project(":core:database"))
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
         }
     }
 }
