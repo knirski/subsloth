@@ -183,6 +183,20 @@ class SearchViewModelTest {
     }
 
     @Test
+    fun `restores query from saved state even with empty catalog`() = runTest(testDispatcher) {
+        val viewModel = SearchViewModel(
+            listCatalog = { Outcome.Success(emptyList()) },
+            savedState = mapOf("searchQuery" to "test movie"),
+        )
+        val state = viewModel.uiState.value
+        when (state) {
+            is SearchUiState.Loading -> assertThat(state.query).isEqualTo("test movie")
+            is SearchUiState.Results -> assertThat(state.query).isEqualTo("test movie")
+            is SearchUiState.Idle -> throw AssertionError("Expected Loading or Results but got Idle")
+        }
+    }
+
+    @Test
     fun `filters movies by genre`() = runTest(testDispatcher) {
         val movies = listOf(
             MovieSummary(
@@ -343,9 +357,6 @@ class SearchViewModelTest {
         viewModel.uiState.test {
             assertThat(awaitItem()).isInstanceOf(SearchUiState.Idle::class.java)
             viewModel.search("Test")
-            // Turbine may conflate Loading + Results on a synchronous
-            // dispatcher; instead we assert the *first* non-Idle
-            // emission is Loading and the final emission is Results.
             var sawLoading = false
             var sawResults = false
             while (!sawResults) {

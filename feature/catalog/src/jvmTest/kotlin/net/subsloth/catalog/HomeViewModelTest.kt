@@ -227,7 +227,7 @@ class HomeViewModelTest {
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
-            assertThat(content.selectedTab.name).isEqualTo("SHOWS")
+            assertThat(content.selectedTab).isEqualTo(HomeTab.SHOWS)
         }
     }
 
@@ -236,6 +236,42 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "", "searchQuery" to ""),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.selectedTab).isEqualTo(HomeTab.MOVIES)
+        }
+    }
+
+    @Test
+    fun `saved MOVIES tab is restored`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            savedState = mapOf("selectedTab" to "MOVIES"),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.selectedTab).isEqualTo(HomeTab.MOVIES)
+        }
+    }
+
+    @Test
+    fun `saved SEARCH tab is restored`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            savedState = mapOf("selectedTab" to "SEARCH"),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.selectedTab).isEqualTo(HomeTab.SEARCH)
+        }
+    }
+
+    @Test
+    fun `invalid saved tab defaults to MOVIES`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            savedState = mapOf("selectedTab" to "INVALID"),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
@@ -323,7 +359,6 @@ class HomeViewModelTest {
             isCatalogStale = { false },
         )
         viewModel.uiState.test {
-            // Loading is the initial state; skip it and read Content directly.
             var current = awaitItem()
             while (current !is HomeUiState.Content) current = awaitItem()
             assertThat(current.isSyncing).isFalse()
