@@ -140,7 +140,7 @@ class CatalogDetailDesktopTest {
         }
 
         composeRule.onNodeWithText("The Grand Adventure").performClick()
-        assert(clicked) { "onClick should have been called" }
+        kotlin.test.assertTrue(clicked, "onClick should have been called")
     }
 
     @Test

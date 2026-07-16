@@ -120,7 +120,7 @@ class LoginFormDesktopTest {
         }
 
         composeRule.onNodeWithText("Sign In").performClick()
-        assert(clicked) { "onSignIn should have been called" }
+        kotlin.test.assertTrue(clicked, "onSignIn should have been called")
     }
 
     @Test
