@@ -467,7 +467,7 @@ class RoomDaoTest {
         dao.upsert(progress())
         val result = dao.getByProfileAndContentId("user1", "100")
         assertEquals("movie", result?.contentType)
-        assertEquals(300, result?.positionSeconds)
+        assertEquals(300L, result?.positionSeconds)
         db.close()
     }
 
@@ -478,7 +478,7 @@ class RoomDaoTest {
         dao.upsert(progress(positionSeconds = 300))
         dao.upsert(progress(positionSeconds = 600, updatedAtEpochSeconds = 2000))
         val result = dao.getByProfileAndContentId("user1", "100")
-        assertEquals(600, result?.positionSeconds)
+        assertEquals(600L, result?.positionSeconds)
         db.close()
     }
 
@@ -609,7 +609,7 @@ class RoomDaoTest {
         dao.upsert(watchedState())
         val result = dao.getByProfileAndContentId("user1", "100")
         assertEquals(true, result?.isWatched)
-        assertEquals(1000, result?.watchedAtEpochSeconds)
+        assertEquals(1000L, result?.watchedAtEpochSeconds)
         db.close()
     }
 
@@ -619,7 +619,7 @@ class RoomDaoTest {
         val dao = db.watchedStateDao()
         dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 1000))
         dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 2000))
-        assertEquals(2000, dao.getByProfileAndContentId("user1", "100")?.watchedAtEpochSeconds)
+        assertEquals(2000L, dao.getByProfileAndContentId("user1", "100")?.watchedAtEpochSeconds)
         db.close()
     }
 
@@ -670,7 +670,7 @@ class RoomDaoTest {
         dao.upsert(subscription())
         val result = dao.getByProfileAndContentId("user1", "100")
         assertEquals("movie", result?.contentType)
-        assertEquals(5000, result?.subscribedAtEpochSeconds)
+        assertEquals(5000L, result?.subscribedAtEpochSeconds)
         db.close()
     }
 
@@ -680,7 +680,7 @@ class RoomDaoTest {
         val dao = db.subscriptionDao()
         dao.upsert(subscription(subscribedAtEpochSeconds = 5000))
         dao.upsert(subscription(subscribedAtEpochSeconds = 6000))
-        assertEquals(6000, dao.getByProfileAndContentId("user1", "100")?.subscribedAtEpochSeconds)
+        assertEquals(6000L, dao.getByProfileAndContentId("user1", "100")?.subscribedAtEpochSeconds)
         db.close()
     }
 
@@ -731,7 +731,7 @@ class RoomDaoTest {
         dao.upsert(libraryRecord())
         val result = dao.getByProfileAndContentId("user1", "100")
         assertEquals("show", result?.contentType)
-        assertEquals(8000, result?.addedAtEpochSeconds)
+        assertEquals(8000L, result?.addedAtEpochSeconds)
         db.close()
     }
 
@@ -947,7 +947,7 @@ class RoomDaoTest {
         val dao = db.offlinePlaybackProgressDao()
         dao.upsert(offlineProgress())
         val result = dao.getByContentId("100")
-        assertEquals(600, result?.positionSeconds)
+        assertEquals(600L, result?.positionSeconds)
         db.close()
     }
 
@@ -957,7 +957,7 @@ class RoomDaoTest {
         val dao = db.offlinePlaybackProgressDao()
         dao.upsert(offlineProgress(positionSeconds = 600))
         dao.upsert(offlineProgress(positionSeconds = 1200, updatedAtEpochSeconds = 3000))
-        assertEquals(1200, dao.getByContentId("100")?.positionSeconds)
+        assertEquals(1200L, dao.getByContentId("100")?.positionSeconds)
         db.close()
     }
 

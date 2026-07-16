@@ -62,9 +62,7 @@ class BackupExclusionRulesTest {
     @Test
     fun `data extraction rules excludes credential shared preferences from backup and transfer`() {
         val xml = readXmlFile("data_extraction_rules.xml")
-        val sharedprefCount = xml.windowed("subsloth_encrypted_credentials.xml".length).count {
-            it == "subsloth_encrypted_credentials.xml"
-        }
+        val sharedprefCount = xml.split("subsloth_encrypted_credentials.xml").size - 1
         assertTrue(sharedprefCount >= 2, "Should exclude credentials from both cloud-backup and device-transfer")
         assertTrue(
             xml.contains("""domain="sharedpref""""),
@@ -75,8 +73,8 @@ class BackupExclusionRulesTest {
     @Test
     fun `data extraction rules excludes datastore and downloads`() {
         val xml = readXmlFile("data_extraction_rules.xml")
-        val datastoreCount = xml.windowed("datastore/".length).count { it == "datastore/" }
-        val downloadsCount = xml.windowed("downloads/".length).count { it == "downloads/" }
+        val datastoreCount = xml.split("datastore/").size - 1
+        val downloadsCount = xml.split("downloads/").size - 1
         assertTrue(
             datastoreCount >= 2,
             "Should exclude datastore from both cloud-backup and device-transfer",
