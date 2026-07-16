@@ -174,7 +174,7 @@ class DownloadController(
         return downloadedMediaDao.getById(downloadId)
     }
 
-    private fun DownloadedMediaEntity.toDownloadState(): DownloadState {
+    internal fun DownloadedMediaEntity.toDownloadState(): DownloadState {
         val mediaId = parseMediaId(contentId, mediaType)
         val quality = QualityDescriptor(
             resolution = parseResolution(selectedQuality),
@@ -249,15 +249,6 @@ internal enum class DownloadStatus {
     REMOVED,
 }
 
-internal fun parseResolution(label: String?): Resolution = when {
-    label == null -> Resolution.HD_720
-    label.contains("4K") || label.contains("2160") || label.contains("UHD") -> Resolution.UHD_4K
-    label.contains("1440") || label.contains("QHD") -> Resolution.QHD
-    label.contains("1080") || label.contains("FHD") || label.contains("full", ignoreCase = true) -> Resolution.FULL_HD
-    label.contains("720") || label.contains("HD") -> Resolution.HD_720
-    else -> Resolution.HD_720
-}
-
 private fun Media.MediaId.toContentId(): String = when (this) {
     is Media.MediaId.Movie -> value.value.toString()
     is Media.MediaId.Show -> value.value.toString()
@@ -275,9 +266,4 @@ private fun parseMediaId(contentId: String, mediaType: String): Media.MediaId = 
     "episode" -> Media.MediaId.Episode(net.subsloth.core.model.identifier.EpisodeId(contentId.toInt()))
     "show" -> Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(contentId.toInt()))
     else -> error("Unknown media type: $mediaType")
-}
-
-private fun parseLocalIdDownloadId(localId: LocalMediaIdentifier): Long? {
-    val parts = localId.value.split("/")
-    return parts.lastOrNull()?.toLongOrNull()
 }

@@ -43,6 +43,8 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
+            implementation(project(":core:database"))
+            implementation(libs.kotlinx.collections.immutable)
             api(libs.compose.media.player)
             implementation(libs.compose.multiplatform.foundation)
             implementation(libs.compose.multiplatform.ui)
