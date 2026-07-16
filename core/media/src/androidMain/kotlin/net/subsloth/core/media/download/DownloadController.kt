@@ -66,12 +66,17 @@ class DownloadController(
         requiredBytes: Long?,
         transferPreference: TransferPreference,
     ): Result<EnqueueOutcome> = runCatching {
-        val existing = downloadedMediaDao.getAll().first().map { it.toDownloadState() }
-        if (DownloadPolicy.isDuplicate(existing, mediaId, requestedResolution = requested)) {
-            return@runCatching EnqueueOutcome.AlreadyAvailableHigherQuality
-        }
-        if (!DownloadPolicy.canStartNewDownload(existing, mediaId)) {
-            error("A download for this media is already active or queued")
+        val contentId = mediaId.toContentId()
+        val mediaType = mediaId.toMediaType()
+        val existingForMedia = downloadedMediaDao.getByContent(contentId, mediaType)
+        if (existingForMedia != null) {
+            val existingState = existingForMedia.toDownloadState()
+            if (DownloadPolicy.isDuplicate(listOf(existingState), mediaId, requested)) {
+                return@runCatching EnqueueOutcome.AlreadyAvailableHigherQuality
+            }
+            if (existingState is DownloadState.Active || existingState is DownloadState.Queued) {
+                error("A download for this media is already active or queued")
+            }
         }
         if (!DownloadPolicy.canTransferOnNetwork(
                 isMetered = connectivityChecker.isMetered(),
@@ -106,8 +111,7 @@ class DownloadController(
         localId: LocalMediaIdentifier,
         language: LanguageCode,
     ): Result<SubtitleEnqueueOutcome> = runCatching {
-        val all = downloadedMediaDao.getAll().first()
-        val downloadId = all.firstOrNull { "${it.contentId}/${it.id}" == localId.value }?.id
+        val downloadId = parseLocalIdDownloadId(localId)
             ?: error("No download found for $localId")
         val existing = downloadedSubtitleDao.getForDownload(downloadId).first()
         if (existing.any { it.language == language.value }) {
@@ -166,8 +170,8 @@ class DownloadController(
     }
 
     private suspend fun findByLocalId(localId: LocalMediaIdentifier): DownloadedMediaEntity? {
-        val all = downloadedMediaDao.getAll().first()
-        return all.firstOrNull { "${it.contentId}/${it.id}" == localId.value }
+        val downloadId = parseLocalIdDownloadId(localId) ?: return null
+        return downloadedMediaDao.getById(downloadId)
     }
 
     private fun DownloadedMediaEntity.toDownloadState(): DownloadState {
@@ -267,8 +271,13 @@ private fun Media.MediaId.toMediaType(): String = when (this) {
 }
 
 private fun parseMediaId(contentId: String, mediaType: String): Media.MediaId = when (mediaType) {
-    "movie" -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(contentId.toIntOrNull() ?: 0))
-    "episode" -> Media.MediaId.Episode(net.subsloth.core.model.identifier.EpisodeId(contentId.toIntOrNull() ?: 0))
-    "show" -> Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(contentId.toIntOrNull() ?: 0))
-    else -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(0))
+    "movie" -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(contentId.toInt()))
+    "episode" -> Media.MediaId.Episode(net.subsloth.core.model.identifier.EpisodeId(contentId.toInt()))
+    "show" -> Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(contentId.toInt()))
+    else -> error("Unknown media type: $mediaType")
+}
+
+private fun parseLocalIdDownloadId(localId: LocalMediaIdentifier): Long? {
+    val parts = localId.value.split("/")
+    return parts.lastOrNull()?.toLongOrNull()
 }

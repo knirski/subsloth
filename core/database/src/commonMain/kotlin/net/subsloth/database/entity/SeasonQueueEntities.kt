@@ -7,7 +7,10 @@ import androidx.room3.PrimaryKey
 
 @Entity(
     tableName = "season_queues",
-    indices = [Index(value = ["showId", "seasonNumber"], unique = true)],
+    indices = [
+        Index(value = ["showId", "seasonNumber"], unique = true),
+        Index(value = ["status", "createdAtEpochSeconds"]),
+    ],
 )
 data class SeasonQueueEntity(
     @PrimaryKey val id: String,

@@ -35,6 +35,8 @@ kotlin {
 
         jvmTest.dependencies {
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
         }
     }
 }
