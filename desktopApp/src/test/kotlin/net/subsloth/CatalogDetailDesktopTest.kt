@@ -28,6 +28,7 @@ import net.subsloth.settings.DiagnosticsContent
 import net.subsloth.settings.DiagnosticsState
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertTrue
 
 class CatalogDetailDesktopTest {
 
@@ -140,7 +141,7 @@ class CatalogDetailDesktopTest {
         }
 
         composeRule.onNodeWithText("The Grand Adventure").performClick()
-        kotlin.test.assertTrue(clicked, "onClick should have been called")
+        assertTrue(clicked, "onClick should have been called")
     }
 
     @Test

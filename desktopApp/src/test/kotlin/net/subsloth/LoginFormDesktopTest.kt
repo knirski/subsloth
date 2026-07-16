@@ -11,6 +11,7 @@ import net.subsloth.auth.LoginFormContent
 import net.subsloth.core.model.error.UiError
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertTrue
 
 class LoginFormDesktopTest {
 
@@ -120,7 +121,7 @@ class LoginFormDesktopTest {
         }
 
         composeRule.onNodeWithText("Sign In").performClick()
-        kotlin.test.assertTrue(clicked, "onSignIn should have been called")
+        assertTrue(clicked, "onSignIn should have been called")
     }
 
     @Test
