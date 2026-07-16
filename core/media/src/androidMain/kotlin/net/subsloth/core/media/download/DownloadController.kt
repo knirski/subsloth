@@ -39,7 +39,7 @@ class DownloadController(
 
     override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> = runCatching {
         downloadedMediaDao.getAll().first().map { it.toDownloadState() }.toImmutableList()
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>> = runCatching {
         downloadedMediaDao.getCompleted().first().map { entity ->
@@ -58,7 +58,7 @@ class DownloadController(
                 isPlayable = entity.localFilePath.isNotBlank(),
             )
         }.toImmutableList()
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun enqueue(
         mediaId: Media.MediaId,
@@ -111,8 +111,9 @@ class DownloadController(
         localId: LocalMediaIdentifier,
         language: LanguageCode,
     ): Result<SubtitleEnqueueOutcome> = runCatching {
-        val downloadId = parseLocalIdDownloadId(localId)
-            ?: error("No download found for $localId")
+        val downloadId = requireNotNull(parseLocalIdDownloadId(localId)) {
+            "No download found for $localId"
+        }
         val existing = downloadedSubtitleDao.getForDownload(downloadId).first()
         if (existing.any { it.language == language.value }) {
             return@runCatching SubtitleEnqueueOutcome.AlreadyAvailable
@@ -132,12 +133,12 @@ class DownloadController(
     override suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         updateStatus(localId, DownloadStatus.PAUSED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun resume(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         updateStatus(localId, DownloadStatus.QUEUED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun cancel(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         val entity = findByLocalId(localId) ?: error("Download not found: ${localId.value}")
@@ -147,7 +148,7 @@ class DownloadController(
         }
         updateStatus(localId, DownloadStatus.REMOVED)
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun remove(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         val entity = findByLocalId(localId) ?: error("Download not found: ${localId.value}")
@@ -162,7 +163,7 @@ class DownloadController(
             if (metadata != null) offlineDisplayMetadataDao.delete(metadata)
         }
         DownloadCommandOutcome.Applied
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     private suspend fun updateStatus(localId: LocalMediaIdentifier, status: DownloadStatus) {
         val entity = findByLocalId(localId) ?: return
@@ -262,8 +263,17 @@ private fun Media.MediaId.toMediaType(): String = when (this) {
 }
 
 private fun parseMediaId(contentId: String, mediaType: String): Media.MediaId = when (mediaType) {
-    "movie" -> Media.MediaId.Movie(net.subsloth.core.model.identifier.MovieId(contentId.toInt()))
-    "episode" -> Media.MediaId.Episode(net.subsloth.core.model.identifier.EpisodeId(contentId.toInt()))
-    "show" -> Media.MediaId.Show(net.subsloth.core.model.identifier.ShowId(contentId.toInt()))
-    else -> error("Unknown media type: $mediaType")
+    "movie" -> Media.MediaId.Movie(
+        net.subsloth.core.model.identifier.MovieId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    "episode" -> Media.MediaId.Episode(
+        net.subsloth.core.model.identifier.EpisodeId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    "show" -> Media.MediaId.Show(
+        net.subsloth.core.model.identifier.ShowId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    )
+
+    else -> throw IllegalArgumentException("Unknown media type: $mediaType")
 }
