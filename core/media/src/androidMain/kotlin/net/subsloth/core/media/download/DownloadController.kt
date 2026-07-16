@@ -105,7 +105,7 @@ class DownloadController(
         )
         downloadedMediaDao.upsert(entity)
         EnqueueOutcome.Queued
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun enqueueSubtitle(
         localId: LocalMediaIdentifier,
@@ -127,7 +127,7 @@ class DownloadController(
             ),
         )
         SubtitleEnqueueOutcome.Queued
-    }
+    }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
     override suspend fun pause(localId: LocalMediaIdentifier): Result<DownloadCommandOutcome> = runCatching {
         updateStatus(localId, DownloadStatus.PAUSED)
