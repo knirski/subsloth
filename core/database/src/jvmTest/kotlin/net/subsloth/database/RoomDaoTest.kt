@@ -2,14 +2,22 @@ package net.subsloth.database
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
+import net.subsloth.database.entity.AccountPlaybackProgressEntity
 import net.subsloth.database.entity.CachedCatalogCountryEntity
 import net.subsloth.database.entity.CachedCatalogGenreEntity
 import net.subsloth.database.entity.CachedCatalogItemEntity
 import net.subsloth.database.entity.CachedCatalogItemWithMetadata
 import net.subsloth.database.entity.DownloadedMediaEntity
+import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
+import net.subsloth.database.entity.LocalLibraryRecordEntity
+import net.subsloth.database.entity.OfflineDisplayMetadataEntity
+import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.QueueItemEntity
 import net.subsloth.database.entity.SeasonQueueEntity
+import net.subsloth.database.entity.SubscriptionEntity
+import net.subsloth.database.entity.WatchLaterEntity
+import net.subsloth.database.entity.WatchedStateEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -431,6 +439,550 @@ class RoomDaoTest {
             dao.upsertQueue(queue("q1"))
             assertEquals(1, awaitItem().size)
         }
+        db.close()
+    }
+
+    // ── AccountPlaybackProgress DAO tests ────────────────────────────
+
+    private fun progress(
+        profileKey: String = "user1",
+        contentId: String = "100",
+        contentType: String = "movie",
+        positionSeconds: Long = 300,
+        durationSeconds: Long = 3600,
+        updatedAtEpochSeconds: Long = 1000,
+    ) = AccountPlaybackProgressEntity(
+        profileKey = profileKey,
+        contentId = contentId,
+        contentType = contentType,
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        updatedAtEpochSeconds = updatedAtEpochSeconds,
+    )
+
+    @Test
+    fun `accountPlaybackProgress upsert and getByProfileAndContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.accountPlaybackProgressDao()
+        dao.upsert(progress())
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals("movie", result?.contentType)
+        assertEquals(300, result?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `accountPlaybackProgress upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.accountPlaybackProgressDao()
+        dao.upsert(progress(positionSeconds = 300))
+        dao.upsert(progress(positionSeconds = 600, updatedAtEpochSeconds = 2000))
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals(600, result?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `accountPlaybackProgress getAllForProfile returns only matching profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.accountPlaybackProgressDao()
+        dao.upsert(progress(profileKey = "user1", contentId = "100"))
+        dao.upsert(progress(profileKey = "user2", contentId = "200"))
+        dao.getAllForProfile("user1").test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("100", list.first().contentId)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `accountPlaybackProgress deleteAllForProfile isolates`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.accountPlaybackProgressDao()
+        dao.upsert(progress(profileKey = "user1", contentId = "100"))
+        dao.upsert(progress(profileKey = "user2", contentId = "200"))
+        dao.deleteAllForProfile("user1")
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertEquals(300L, dao.getByProfileAndContentId("user2", "200")?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `accountPlaybackProgress getAllForProfile Flow emits updates`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.accountPlaybackProgressDao()
+        dao.getAllForProfile("user1").test {
+            assertEquals(0, awaitItem().size)
+            dao.upsert(progress())
+            assertEquals(1, awaitItem().size)
+        }
+        db.close()
+    }
+
+    // ── WatchLater DAO tests ──────────────────────────────────────────
+
+    private fun watchLater(profileKey: String = "user1", contentId: String = "100", contentType: String = "movie") =
+        WatchLaterEntity(
+            profileKey = profileKey,
+            contentId = contentId,
+            contentType = contentType,
+        )
+
+    @Test
+    fun `watchLater upsert and getByProfileAndContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchLaterDao()
+        dao.upsert(watchLater())
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals("movie", result?.contentType)
+        db.close()
+    }
+
+    @Test
+    fun `watchLater upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchLaterDao()
+        dao.upsert(watchLater(contentType = "movie"))
+        dao.upsert(watchLater(contentType = "show"))
+        assertEquals("show", dao.getByProfileAndContentId("user1", "100")?.contentType)
+        db.close()
+    }
+
+    @Test
+    fun `watchLater getAllForProfile returns only matching profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchLaterDao()
+        dao.upsert(watchLater(profileKey = "user1", contentId = "100"))
+        dao.upsert(watchLater(profileKey = "user2", contentId = "200"))
+        dao.getAllForProfile("user1").test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("100", list.first().contentId)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `watchLater delete removes entity`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchLaterDao()
+        dao.upsert(watchLater())
+        val inserted = dao.getByProfileAndContentId("user1", "100")!!
+        dao.delete(inserted)
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        db.close()
+    }
+
+    @Test
+    fun `watchLater deleteAllForProfile clears only that profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchLaterDao()
+        dao.upsert(watchLater(profileKey = "user1", contentId = "100"))
+        dao.upsert(watchLater(profileKey = "user2", contentId = "200"))
+        dao.deleteAllForProfile("user1")
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertEquals("200", dao.getByProfileAndContentId("user2", "200")?.contentId)
+        db.close()
+    }
+
+    // ── WatchedState DAO tests ────────────────────────────────────────
+
+    private fun watchedState(
+        profileKey: String = "user1",
+        contentId: String = "100",
+        contentType: String = "movie",
+        isWatched: Boolean = true,
+        watchedAtEpochSeconds: Long? = 1000,
+    ) = WatchedStateEntity(
+        profileKey = profileKey,
+        contentId = contentId,
+        contentType = contentType,
+        isWatched = isWatched,
+        watchedAtEpochSeconds = watchedAtEpochSeconds,
+    )
+
+    @Test
+    fun `watchedState upsert and getByProfileAndContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchedStateDao()
+        dao.upsert(watchedState())
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals(true, result?.isWatched)
+        assertEquals(1000, result?.watchedAtEpochSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `watchedState upsert updates existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchedStateDao()
+        dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 1000))
+        dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 2000))
+        assertEquals(2000, dao.getByProfileAndContentId("user1", "100")?.watchedAtEpochSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `watchedState getAllForProfile returns only matching profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchedStateDao()
+        dao.upsert(watchedState(profileKey = "user1", contentId = "100"))
+        dao.upsert(watchedState(profileKey = "user2", contentId = "200"))
+        dao.getAllForProfile("user1").test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("100", list.first().contentId)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `watchedState deleteAllForProfile isolates`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.watchedStateDao()
+        dao.upsert(watchedState(profileKey = "user1", contentId = "100"))
+        dao.upsert(watchedState(profileKey = "user2", contentId = "200"))
+        dao.deleteAllForProfile("user1")
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertTrue(dao.getByProfileAndContentId("user2", "200")?.isWatched == true)
+        db.close()
+    }
+
+    // ── Subscription DAO tests ────────────────────────────────────────
+
+    private fun subscription(
+        profileKey: String = "user1",
+        contentId: String = "100",
+        contentType: String = "movie",
+        subscribedAtEpochSeconds: Long = 5000,
+    ) = SubscriptionEntity(
+        profileKey = profileKey,
+        contentId = contentId,
+        contentType = contentType,
+        subscribedAtEpochSeconds = subscribedAtEpochSeconds,
+    )
+
+    @Test
+    fun `subscription upsert and getByProfileAndContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.subscriptionDao()
+        dao.upsert(subscription())
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals("movie", result?.contentType)
+        assertEquals(5000, result?.subscribedAtEpochSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `subscription upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.subscriptionDao()
+        dao.upsert(subscription(subscribedAtEpochSeconds = 5000))
+        dao.upsert(subscription(subscribedAtEpochSeconds = 6000))
+        assertEquals(6000, dao.getByProfileAndContentId("user1", "100")?.subscribedAtEpochSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `subscription getAllForProfile returns only matching profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.subscriptionDao()
+        dao.upsert(subscription(profileKey = "user1", contentId = "100"))
+        dao.upsert(subscription(profileKey = "user2", contentId = "200"))
+        dao.getAllForProfile("user1").test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("100", list.first().contentId)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `subscription deleteAllForProfile isolates`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.subscriptionDao()
+        dao.upsert(subscription(profileKey = "user1", contentId = "100"))
+        dao.upsert(subscription(profileKey = "user2", contentId = "200"))
+        dao.deleteAllForProfile("user1")
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertEquals(5000L, dao.getByProfileAndContentId("user2", "200")?.subscribedAtEpochSeconds)
+        db.close()
+    }
+
+    // ── LocalLibraryRecord DAO tests ──────────────────────────────────
+
+    private fun libraryRecord(
+        profileKey: String = "user1",
+        contentId: String = "100",
+        contentType: String = "show",
+        addedAtEpochSeconds: Long = 8000,
+    ) = LocalLibraryRecordEntity(
+        profileKey = profileKey,
+        contentId = contentId,
+        contentType = contentType,
+        addedAtEpochSeconds = addedAtEpochSeconds,
+    )
+
+    @Test
+    fun `localLibraryRecord upsert and getByProfileAndContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.localLibraryRecordDao()
+        dao.upsert(libraryRecord())
+        val result = dao.getByProfileAndContentId("user1", "100")
+        assertEquals("show", result?.contentType)
+        assertEquals(8000, result?.addedAtEpochSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `localLibraryRecord upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.localLibraryRecordDao()
+        dao.upsert(libraryRecord(contentType = "show"))
+        dao.upsert(libraryRecord(contentType = "movie"))
+        assertEquals("movie", dao.getByProfileAndContentId("user1", "100")?.contentType)
+        db.close()
+    }
+
+    @Test
+    fun `localLibraryRecord getAllForProfile returns only matching profile`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.localLibraryRecordDao()
+        dao.upsert(libraryRecord(profileKey = "user1", contentId = "100"))
+        dao.upsert(libraryRecord(profileKey = "user2", contentId = "200"))
+        dao.getAllForProfile("user1").test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("100", list.first().contentId)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `localLibraryRecord delete removes entity`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.localLibraryRecordDao()
+        dao.upsert(libraryRecord())
+        val inserted = dao.getByProfileAndContentId("user1", "100")!!
+        dao.delete(inserted)
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        db.close()
+    }
+
+    @Test
+    fun `localLibraryRecord deleteAllForProfile isolates`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.localLibraryRecordDao()
+        dao.upsert(libraryRecord(profileKey = "user1", contentId = "100"))
+        dao.upsert(libraryRecord(profileKey = "user2", contentId = "200"))
+        dao.deleteAllForProfile("user1")
+        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertEquals("200", dao.getByProfileAndContentId("user2", "200")?.contentId)
+        db.close()
+    }
+
+    // ── DownloadedSubtitle DAO tests ──────────────────────────────────
+
+    private fun subtitle(
+        downloadId: Long = 1,
+        language: String = "en",
+        source: String? = "opensubtitles",
+        format: String? = "srt",
+        localFilePath: String = "/data/1/en.srt",
+    ) = DownloadedSubtitleEntity(
+        downloadId = downloadId,
+        language = language,
+        source = source,
+        format = format,
+        localFilePath = localFilePath,
+    )
+
+    @Test
+    fun `downloadedSubtitle upsert and getForDownload`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.downloadedSubtitleDao()
+        dao.upsert(subtitle())
+        dao.getForDownload(1).test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("en", list.first().language)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `downloadedSubtitle returns subtitles for specific download`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.downloadedSubtitleDao()
+        dao.upsert(subtitle(downloadId = 1, language = "en"))
+        dao.upsert(subtitle(downloadId = 2, language = "pl"))
+        dao.getForDownload(1).test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("en", list.first().language)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `downloadedSubtitle delete removes entity`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.downloadedSubtitleDao()
+        dao.upsert(subtitle())
+        dao.getForDownload(1).test {
+            val list = awaitItem()
+            val entity = list.first()
+            dao.delete(entity)
+        }
+        dao.getForDownload(1).test {
+            assertTrue(awaitItem().isEmpty())
+        }
+        db.close()
+    }
+
+    @Test
+    fun `downloadedSubtitle deleteForDownload removes all for download`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.downloadedSubtitleDao()
+        dao.upsert(subtitle(downloadId = 1, language = "en"))
+        dao.upsert(subtitle(downloadId = 1, language = "pl"))
+        dao.deleteForDownload(1)
+        dao.getForDownload(1).test {
+            assertTrue(awaitItem().isEmpty())
+        }
+        db.close()
+    }
+
+    // ── OfflineDisplayMetadata DAO tests ──────────────────────────────
+
+    private fun displayMetadata(
+        contentId: String = "100",
+        title: String = "Test Movie",
+        posterCacheKey: String? = null,
+        durationSeconds: Long? = 3600,
+    ) = OfflineDisplayMetadataEntity(
+        contentId = contentId,
+        title = title,
+        posterCacheKey = posterCacheKey,
+        backdropCacheKey = null,
+        episodeTitle = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        effectiveQuality = null,
+        subtitleLanguages = null,
+        durationSeconds = durationSeconds,
+        localProgressSeconds = null,
+    )
+
+    @Test
+    fun `offlineDisplayMetadata upsert and getByContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata())
+        val result = dao.getByContentId("100")
+        assertEquals("Test Movie", result?.title)
+        db.close()
+    }
+
+    @Test
+    fun `offlineDisplayMetadata upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata(title = "Original"))
+        dao.upsert(displayMetadata(title = "Updated"))
+        assertEquals("Updated", dao.getByContentId("100")?.title)
+        db.close()
+    }
+
+    @Test
+    fun `offlineDisplayMetadata getAll returns all`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata(contentId = "100", title = "Movie 1"))
+        dao.upsert(displayMetadata(contentId = "200", title = "Movie 2"))
+        dao.getAll().test {
+            assertEquals(2, awaitItem().size)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `offlineDisplayMetadata deleteAll clears all`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata())
+        dao.deleteAll()
+        dao.getAll().test {
+            assertTrue(awaitItem().isEmpty())
+        }
+        db.close()
+    }
+
+    @Test
+    fun `offlineDisplayMetadata delete removes single`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata())
+        val entity = dao.getByContentId("100")!!
+        dao.delete(entity)
+        assertNull(dao.getByContentId("100"))
+        db.close()
+    }
+
+    // ── OfflinePlaybackProgress DAO tests ─────────────────────────────
+
+    private fun offlineProgress(
+        contentId: String = "100",
+        positionSeconds: Long = 600,
+        durationSeconds: Long = 3600,
+        updatedAtEpochSeconds: Long = 2000,
+    ) = OfflinePlaybackProgressEntity(
+        contentId = contentId,
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        updatedAtEpochSeconds = updatedAtEpochSeconds,
+    )
+
+    @Test
+    fun `offlinePlaybackProgress upsert and getByContentId`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlinePlaybackProgressDao()
+        dao.upsert(offlineProgress())
+        val result = dao.getByContentId("100")
+        assertEquals(600, result?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `offlinePlaybackProgress upsert replaces existing`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlinePlaybackProgressDao()
+        dao.upsert(offlineProgress(positionSeconds = 600))
+        dao.upsert(offlineProgress(positionSeconds = 1200, updatedAtEpochSeconds = 3000))
+        assertEquals(1200, dao.getByContentId("100")?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `offlinePlaybackProgress getAll returns all`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlinePlaybackProgressDao()
+        dao.upsert(offlineProgress(contentId = "100"))
+        dao.upsert(offlineProgress(contentId = "200"))
+        dao.getAll().test {
+            assertEquals(2, awaitItem().size)
+        }
+        db.close()
+    }
+
+    @Test
+    fun `offlinePlaybackProgress deleteAll clears all`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlinePlaybackProgressDao()
+        dao.upsert(offlineProgress())
+        dao.deleteAll()
+        assertNull(dao.getByContentId("100"))
         db.close()
     }
 }
