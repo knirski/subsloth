@@ -134,6 +134,21 @@ class SeasonQueueController(
             )
         }
 
+        fun parseFailureReason(error: Throwable): DownloadFailureReason {
+            val message = error.message ?: ""
+            return when {
+                message.contains("Wi-Fi", ignoreCase = true) ||
+                    message.contains("wifi", ignoreCase = true) ||
+                    message.contains("NeedsWifi", ignoreCase = true) -> DownloadFailureReason.NeedsWifi
+
+                message.contains("storage", ignoreCase = true) -> DownloadFailureReason.InsufficientStorage
+
+                message.contains("already", ignoreCase = true) -> DownloadFailureReason.DownloadFailed
+
+                else -> DownloadFailureReason.DownloadFailed
+            }
+        }
+
         return result.fold(
             onSuccess = { outcome ->
                 when (outcome) {
@@ -172,6 +187,23 @@ class SeasonQueueController(
     }
 
     private fun SeasonQueueEntity.toDomain(items: List<QueueItemEntity>): SeasonDownloadQueue {
+        fun domFailureReason(
+            raw: String?,
+            default: DownloadFailureReason = DownloadFailureReason.DownloadFailed,
+        ): DownloadFailureReason {
+            fun parseDownloadFailureReason(value: String): DownloadFailureReason = when (value) {
+                "NeedsWifi" -> DownloadFailureReason.NeedsWifi
+                "InsufficientStorage" -> DownloadFailureReason.InsufficientStorage
+                "MissingLocalFile" -> DownloadFailureReason.MissingLocalFile
+                "SubtitleUnavailable" -> DownloadFailureReason.SubtitleUnavailable
+                "AmbiguousQuality" -> DownloadFailureReason.AmbiguousQuality
+                "DownloadFailed" -> DownloadFailureReason.DownloadFailed
+                "Unavailable" -> DownloadFailureReason.Unavailable
+                else -> DownloadFailureReason.DownloadFailed
+            }
+            return raw?.let { parseDownloadFailureReason(it) } ?: default
+        }
+
         val queueId = QueueId(id)
         val domainItems = items.map { item ->
             SeasonDownloadQueueItem(
@@ -216,7 +248,9 @@ class SeasonQueueController(
                     ),
                 )
 
-                "paused" -> SeasonQueueExecution.Paused(domFailureReason(failureReason))
+                "paused" -> SeasonQueueExecution.Paused(
+                    domFailureReason(failureReason, DownloadFailureReason.NeedsWifi),
+                )
 
                 "completed" -> SeasonQueueExecution.Completed
 
@@ -233,28 +267,4 @@ private fun Media.MediaId.toEpisodeIdString(): String = when (this) {
     is Media.MediaId.Episode -> value.value.toString()
     is Media.MediaId.Movie -> value.value.toString()
     is Media.MediaId.Show -> value.value.toString()
-}
-
-private fun domFailureReason(raw: String?): DownloadFailureReason =
-    raw?.let { parseDownloadFailureReason(it) } ?: DownloadFailureReason.DownloadFailed
-
-private fun parseFailureReason(error: Throwable): DownloadFailureReason {
-    val message = error.message ?: ""
-    return when {
-        message.contains("Wi-Fi", ignoreCase = true) -> DownloadFailureReason.NeedsWifi
-        message.contains("storage", ignoreCase = true) -> DownloadFailureReason.InsufficientStorage
-        message.contains("already", ignoreCase = true) -> DownloadFailureReason.DownloadFailed
-        else -> DownloadFailureReason.DownloadFailed
-    }
-}
-
-private fun parseDownloadFailureReason(value: String): DownloadFailureReason = when (value) {
-    "NeedsWifi" -> DownloadFailureReason.NeedsWifi
-    "InsufficientStorage" -> DownloadFailureReason.InsufficientStorage
-    "MissingLocalFile" -> DownloadFailureReason.MissingLocalFile
-    "SubtitleUnavailable" -> DownloadFailureReason.SubtitleUnavailable
-    "AmbiguousQuality" -> DownloadFailureReason.AmbiguousQuality
-    "DownloadFailed" -> DownloadFailureReason.DownloadFailed
-    "Unavailable" -> DownloadFailureReason.Unavailable
-    else -> DownloadFailureReason.DownloadFailed
 }
