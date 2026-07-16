@@ -831,11 +831,8 @@ class RoomDaoTest {
         val dao = db.downloadedSubtitleDao()
         dao.upsert(subtitle())
         dao.getForDownload(1).test {
-            val list = awaitItem()
-            val entity = list.first()
+            val entity = awaitItem().first()
             dao.delete(entity)
-        }
-        dao.getForDownload(1).test {
             assertTrue(awaitItem().isEmpty())
         }
         db.close()
