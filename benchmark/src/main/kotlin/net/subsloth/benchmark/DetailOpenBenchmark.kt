@@ -1,7 +1,7 @@
 package net.subsloth.benchmark
 
+import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.StartupMode
-import androidx.benchmark.macro.StartupTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.Direction
@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Macrobenchmarks measuring time to open movie and series detail screens.
+ * Macrobenchmarks measuring frame timing when opening movie and series detail screens.
  *
  * Run on a device/emulator via:
  * ```
@@ -27,14 +27,13 @@ class DetailOpenBenchmark {
     fun openMovieDetail() {
         benchmarkRule.measureRepeated(
             packageName = "net.subsloth",
-            metrics = listOf(StartupTimingMetric()),
+            metrics = listOf(FrameTimingMetric()),
             iterations = 5,
             startupMode = StartupMode.COLD,
             setupBlock = {
                 startActivityAndWait()
             },
         ) {
-            // Navigate to home if not already there
             // Tap the first movie card to open its detail screen
             val movieCard = device.findObject(
                 androidx.test.uiautomator.By.descContains("The Grand Adventure")
@@ -50,7 +49,7 @@ class DetailOpenBenchmark {
     fun openSeriesDetail() {
         benchmarkRule.measureRepeated(
             packageName = "net.subsloth",
-            metrics = listOf(StartupTimingMetric()),
+            metrics = listOf(FrameTimingMetric()),
             iterations = 5,
             startupMode = StartupMode.COLD,
             setupBlock = {
