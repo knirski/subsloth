@@ -33,10 +33,12 @@ class HomeLoadBenchmark {
             iterations = 10,
             startupMode = StartupMode.COLD,
             setupBlock = {
-                // Pre-condition: app has cached catalog data from a prior session.
-                // The benchmark measures the time until the home screen content
-                // is fully rendered when using cached data (offline-capable).
+                // Pre-condition: populate the cache by launching the app first.
+                // The benchmark measures true cold start time with cached data.
                 startActivityAndWait()
+                device.waitForIdle()
+                // Force-stop to ensure measureBlock starts with a true cold launch
+                device.executeShellCommand("am force-stop net.subsloth")
             },
         ) {
             pressHome()
