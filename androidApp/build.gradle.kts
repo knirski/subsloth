@@ -114,6 +114,8 @@ dependencies {
 
     implementation(libs.datastore.preferences)
 
+    implementation(libs.profileinstaller)
+
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
 
