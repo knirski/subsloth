@@ -1,6 +1,7 @@
 package net.subsloth.benchmark
 
-import androidx.benchmark.macro.StartupTimingMetric
+import androidx.benchmark.macro.FrameTimingMetric
+import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -8,10 +9,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Macrobenchmark measuring time to start playback from a cold start.
+ * Macrobenchmark measuring frame timing when starting playback from a cold start.
  *
  * The benchmark launches the app, navigates to a movie detail screen,
- * taps Play, and measures the time until the player surface is rendering.
+ * taps Play, and measures frame timing during the playback transition.
  *
  * Run on a device/emulator via:
  * ```
@@ -31,8 +32,9 @@ class PlaybackStartBenchmark {
     fun playbackStart() {
         benchmarkRule.measureRepeated(
             packageName = "net.subsloth",
-            metrics = listOf(StartupTimingMetric()),
+            metrics = listOf(FrameTimingMetric()),
             iterations = 5,
+            startupMode = StartupMode.COLD,
             setupBlock = {
                 startActivityAndWait()
             },
