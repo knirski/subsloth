@@ -8,7 +8,6 @@ import androidx.compose.ui.test.performScrollTo
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import net.subsloth.core.model.Availability
-import net.subsloth.core.model.download.DownloadFailureReason
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.identifier.LocalMediaIdentifier

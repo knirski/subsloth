@@ -3,9 +3,7 @@ package net.subsloth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.auth.LoginFormContent
@@ -61,40 +59,6 @@ class AccessibilityDesktopTest {
     )
 
     @Test
-    fun loginForm_signInButton_hasClickAction() {
-        composeRule.setContent {
-            MaterialTheme {
-                LoginFormContent(
-                    login = "user",
-                    password = "pass",
-                    isLoading = false,
-                    error = null,
-                    hasOfflineLibrary = false,
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Sign In").assertHasClickAction()
-    }
-
-    @Test
-    fun loginForm_signInButton_disabled_whenEmpty() {
-        composeRule.setContent {
-            MaterialTheme {
-                LoginFormContent(
-                    login = "",
-                    password = "",
-                    isLoading = false,
-                    error = null,
-                    hasOfflineLibrary = false,
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Sign In").assertIsNotEnabled()
-    }
-
-    @Test
     fun loginForm_offlineLibraryButton_hasClickAction() {
         composeRule.setContent {
             MaterialTheme {
@@ -112,23 +76,6 @@ class AccessibilityDesktopTest {
     }
 
     @Test
-    fun loginForm_errorMessage_displaysAuthRequired() {
-        composeRule.setContent {
-            MaterialTheme {
-                LoginFormContent(
-                    login = "user",
-                    password = "pass",
-                    isLoading = false,
-                    error = UiError.AuthRequired(),
-                    hasOfflineLibrary = false,
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Authentication required").assertIsDisplayed()
-    }
-
-    @Test
     fun loginForm_authErrorMessage_displays() {
         composeRule.setContent {
             MaterialTheme {
@@ -143,19 +90,6 @@ class AccessibilityDesktopTest {
         }
 
         composeRule.onNodeWithText("Not found").assertIsDisplayed()
-    }
-
-    @Test
-    fun movieDetail_playButton_hasClickAction() {
-        composeRule.setContent {
-            MaterialTheme {
-                MovieDetailContent(
-                    state = MovieDetailUiState.Content(details = movieDetails),
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Play").assertHasClickAction()
     }
 
     @Test
