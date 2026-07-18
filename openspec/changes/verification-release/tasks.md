@@ -16,7 +16,7 @@
 
 - [x] 3.1 Add baseline profile generation for startup, catalog scroll, detail open, and playback start.
 - [x] 3.2 Add macrobenchmarks for startup, home load from cache, movie detail open, series detail open, and playback start. Android TV 8 is a required manual/device benchmark target.
-- [ ] 3.3 Add `docs/testing/device-acceptance.md` for Android TV 8, Android tablet 13, and Android phone 16.
+- [x] 3.3 Add `docs/testing/device-acceptance.md` for Android TV 8, Android tablet 13, and Android phone 16.
 
 ## 4. Final Verification
 
