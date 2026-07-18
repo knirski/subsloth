@@ -95,7 +95,8 @@ object MockApi {
         ),
     )
 
-    @Volatile
+    // @Volatile removed: @kotlin.jvm.Volatile is JVM-only and breaks WasmJS commonMain
+    // This mock is single-threaded in tests; no visibility concerns.
     private var sessionExpired: Boolean = false
 
     private fun libraryItem(mediaId: Media.MediaId, collection: LibraryCollection, sortOrder: Int): LibraryItem =

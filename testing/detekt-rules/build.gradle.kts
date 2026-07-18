@@ -7,7 +7,10 @@ group = "net.subsloth.buildlogic"
 
 dependencies {
     compileOnly(libs.detekt.api)
-    testImplementation(libs.detekt.test)
+    testImplementation(libs.detekt.api)
+    testImplementation(libs.detekt.test) {
+        exclude(group = "dev.detekt", module = "detekt-api")
+    }
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
