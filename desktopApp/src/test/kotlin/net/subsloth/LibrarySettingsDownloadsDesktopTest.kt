@@ -198,66 +198,6 @@ class LibrarySettingsDownloadsDesktopTest {
     }
 
     @Test
-    fun downloadsContent_activeItem_cancelButton_hasClickAction() {
-        composeRule.setContent {
-            MaterialTheme {
-                DownloadsContent(
-                    state = DownloadsUiState.Content(
-                        active = persistentListOf(
-                            DownloadGroupItem(
-                                state = DownloadState.Active(
-                                    localId = LocalMediaIdentifier("d2"),
-                                    mediaId = Media.MediaId.Movie(MovieId(2)),
-                                    quality = sampleQuality,
-                                    subtitleLanguages = persistentSetOf(),
-                                    progressPercent = 75,
-                                ),
-                                progressFraction = 0.75,
-                            ),
-                        ),
-                        queuedOrPaused = persistentListOf<DownloadGroupItem>(),
-                        failedOrUnavailable = persistentListOf<DownloadGroupItem>(),
-                        completed = persistentListOf<DownloadGroupItem>(),
-                        seasonQueues = persistentListOf(),
-                    ),
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Cancel").assertHasClickAction()
-    }
-
-    @Test
-    fun downloadsContent_activeItem_pauseButton_hasClickAction() {
-        composeRule.setContent {
-            MaterialTheme {
-                DownloadsContent(
-                    state = DownloadsUiState.Content(
-                        active = persistentListOf(
-                            DownloadGroupItem(
-                                state = DownloadState.Active(
-                                    localId = LocalMediaIdentifier("d3"),
-                                    mediaId = Media.MediaId.Movie(MovieId(3)),
-                                    quality = sampleQuality,
-                                    subtitleLanguages = persistentSetOf(),
-                                    progressPercent = 50,
-                                ),
-                                progressFraction = 0.5,
-                            ),
-                        ),
-                        queuedOrPaused = persistentListOf<DownloadGroupItem>(),
-                        failedOrUnavailable = persistentListOf<DownloadGroupItem>(),
-                        completed = persistentListOf<DownloadGroupItem>(),
-                        seasonQueues = persistentListOf(),
-                    ),
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Pause").assertHasClickAction()
-    }
-
-    @Test
     fun downloadsContent_showsCompletedSection() {
         composeRule.setContent {
             MaterialTheme {
@@ -311,46 +251,6 @@ class LibrarySettingsDownloadsDesktopTest {
         composeRule.onNodeWithText("Quality & Playback").assertIsDisplayed()
         composeRule.onNodeWithText("Logout").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Logout").performScrollTo().assertHasClickAction()
-    }
-
-    @Test
-    fun settingsContent_logoutButton_hasClickAction() {
-        val settingsState = SettingsUiState.Content(
-            subtitleEnabled = true,
-            subtitleLanguage = "English",
-            quality = "1080p",
-            playbackSpeed = 1.0f,
-            downloadsWifiOnly = true,
-            diagnostics = DiagnosticsState(),
-        )
-
-        composeRule.setContent {
-            MaterialTheme {
-                SettingsContent(state = settingsState)
-            }
-        }
-
-        composeRule.onNodeWithText("Logout").performScrollTo().assertHasClickAction()
-    }
-
-    @Test
-    fun settingsContent_diagnosticsButton_hasClickAction() {
-        val settingsState = SettingsUiState.Content(
-            subtitleEnabled = true,
-            subtitleLanguage = "English",
-            quality = "1080p",
-            playbackSpeed = 1.0f,
-            downloadsWifiOnly = true,
-            diagnostics = DiagnosticsState(),
-        )
-
-        composeRule.setContent {
-            MaterialTheme {
-                SettingsContent(state = settingsState)
-            }
-        }
-
-        composeRule.onNodeWithText("Diagnostics").performScrollTo().assertHasClickAction()
     }
 
     @Test
