@@ -1,5 +1,11 @@
 name: "KMP Gradle Setup"
 description: "Set up JDK 17 + Gradle + Kotlin/Native cache for KMP builds"
+
+outputs:
+  playwright-cache-hit:
+    description: "Whether the Playwright Chromium cache was restored"
+    value: ${{ steps.cache-playwright.outputs.cache-hit }}
+
 runs:
   using: "composite"
   steps:
@@ -48,6 +54,15 @@ runs:
         key: ${{ runner.os }}-${{ runner.arch }}-wasm-${{ steps.kotlin-version.outputs.version }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-wasm-${{ steps.kotlin-version.outputs.version }}-
+
+    # Playwright browsers cache for Kotlin/Wasm browser tests.
+    # https://playwright.dev/docs/browsers lists the default install path.
+    - name: Cache Playwright Chromium
+      id: cache-playwright
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-${{ runner.arch }}-playwright-chromium
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
