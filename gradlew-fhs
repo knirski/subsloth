@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Wrapper that runs Gradle inside a FHS environment via steam-run.
+# On NixOS, dynamically-linked binaries downloaded by AGP/Kotlin work
+# without patchelf when run through this wrapper.
+if command -v steam-run >/dev/null 2>&1; then
+  exec steam-run ./gradlew "$@"
+else
+  exec ./gradlew "$@"
+fi
