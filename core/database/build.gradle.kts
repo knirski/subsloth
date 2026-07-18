@@ -1,5 +1,6 @@
 plugins {
     id("subsloth.kmp.library")
+    id("com.android.kotlin.multiplatform.library")
     alias(libs.plugins.room3)
     alias(libs.plugins.ksp)
 }
@@ -9,6 +10,17 @@ room3 {
 }
 
 kotlin {
+    android {
+        namespace = "net.subsloth.database"
+        compileSdk = 37
+        minSdk = 26
+
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            execution = "HOST"
+        }
+    }
+
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
@@ -23,6 +35,15 @@ kotlin {
 
         jvmMain.dependencies {
             implementation(libs.sqlite.bundled)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.sqlite.bundled)
+        }
+
+        getByName("androidDeviceTest").dependencies {
+            implementation("androidx.test:runner:1.6.2")
+            implementation(libs.androidx.test.ext.junit)
         }
 
         // TODO: restore when iOS targets re-enabled — iosMain.dependencies needs
@@ -43,6 +64,7 @@ kotlin {
 
 dependencies {
     kspJvm(libs.room3.compiler)
+    kspAndroid(libs.room3.compiler)
     kspWasmJs(libs.room3.compiler)
 }
 

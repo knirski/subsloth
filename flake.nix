@@ -42,7 +42,7 @@
 
       # System image for x86_64 emulation. google_apis includes Play
       # Services and is the standard choice for app testing.
-      systemImage = "system-images;android-37;google_apis;x86_64";
+      systemImage = "system-images;android-36;google_apis;x86_64";
       systemImageDir = "${writableSdkRoot}/${builtins.replaceStrings [ ";" ] [ "/" ] systemImage}";
       avdName = "subsloth-device";
 
@@ -67,6 +67,9 @@
         AVD_DIR="$HOME/.android/avd"
         SYS_IMG_DIR="${systemImageDir}"
 
+        echo "→ Accepting SDK licenses..."
+        yes | sdkmanager --sdk_root="$SDK" --licenses 2>/dev/null || true
+
         echo "→ Installing x86_64 system image..."
         sdkmanager --sdk_root="$SDK" --install "${systemImage}"
 
@@ -81,7 +84,7 @@
 
         # Write the AVD .ini file
         cat > "$AVD_DIR/${avdName}.ini" << INI
-        target=android-37
+        target=android-36
         path=$AVD_DIR/${avdName}.avd
         INI
 
@@ -128,7 +131,7 @@
         echo ""
         echo "Next steps:"
         echo "  1. start-subsloth-emulator"
-        echo "  2. run-subsloth-instrumented-test :core:preferences:connectedDebugAndroidTest"
+        echo "  2. run-subsloth-instrumented-test :core:database:connectedAndroidDeviceTest"
         echo "  3. stop-subsloth-emulator"
         echo "======================"
       '';
@@ -241,7 +244,7 @@
       # ── run-subsloth-instrumented-test script ───────────────────────────────
       # Runs a single Gradle connectedAndroidTest task on the running emulator.
       # Usage: run-subsloth-instrumented-test <gradle-task-path> [additional-gradle-args]
-      # Example: run-subsloth-instrumented-test :core:preferences:connectedDebugAndroidTest
+      # Example: run-subsloth-instrumented-test :core:database:connectedAndroidDeviceTest
       runSubSlothInstrumentedTest = pkgs.writeShellScriptBin "run-subsloth-instrumented-test" ''
         set -euo pipefail
 
@@ -251,7 +254,7 @@
           echo "Run a single Gradle connectedAndroidTest task on the running emulator."
           echo ""
           echo "Example:"
-          echo "  run-subsloth-instrumented-test :core:preferences:connectedDebugAndroidTest"
+          echo "  run-subsloth-instrumented-test :core:database:connectedAndroidDeviceTest"
           echo ""
           echo "Signals: TEST_RUNNER_STARTING, TEST_PASSED, TEST_FAILED"
           exit 0
@@ -259,7 +262,7 @@
 
         if [ $# -lt 1 ]; then
           echo "USAGE: run-subsloth-instrumented-test <gradle-task-path>" >&2
-          echo "Example: run-subsloth-instrumented-test :core:preferences:connectedDebugAndroidTest" >&2
+          echo "Example: run-subsloth-instrumented-test :core:database:connectedAndroidDeviceTest" >&2
           echo "See --help for details." >&2
           exit 1
         fi
@@ -350,7 +353,7 @@
           echo "If the emulator is already running, it is reused and NOT stopped afterward."
           echo ""
           echo "Example:"
-          echo "  run-subsloth-instrumented-tests :core:preferences:connectedDebugAndroidTest"
+          echo "  run-subsloth-instrumented-tests :core:database:connectedAndroidDeviceTest"
           echo ""
           echo "Signals: PIPELINE_START, EMULATOR_ALREADY_RUNNING, PIPELINE_RUNNING_TESTS,"
           echo "         TEST_PASSED, TEST_FAILED, PIPELINE_PASSED, PIPELINE_FAILED"
@@ -359,7 +362,7 @@
 
         if [ $# -lt 1 ]; then
           echo "USAGE: run-subsloth-instrumented-tests <gradle-task-path>" >&2
-          echo "Example: run-subsloth-instrumented-tests :core:preferences:connectedDebugAndroidTest" >&2
+          echo "Example: run-subsloth-instrumented-tests :core:database:connectedAndroidDeviceTest" >&2
           echo "See --help for details." >&2
           exit 1
         fi

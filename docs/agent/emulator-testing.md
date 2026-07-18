@@ -6,7 +6,7 @@ Set up and run Android instrumented tests on the emulator.
 
 ```bash
 setup-emulator                                         # one-time: install system image + create AVD
-run-subsloth-instrumented-tests :core:preferences:connectedDebugAndroidTest  # start → run → stop
+run-subsloth-instrumented-tests :core:database:connectedAndroidDeviceTest  # start → run → stop
 ```
 
 ## Step by Step
@@ -14,7 +14,7 @@ run-subsloth-instrumented-tests :core:preferences:connectedDebugAndroidTest  # s
 ```bash
 setup-emulator                                    # once per machine
 start-subsloth-emulator                            # start + wait for boot
-run-subsloth-instrumented-test :core:preferences:connectedDebugAndroidTest
+run-subsloth-instrumented-test :core:database:connectedAndroidDeviceTest
 stop-subsloth-emulator
 ```
 
@@ -51,7 +51,7 @@ All scripts emit `UPPER_CASE` signals on stdout (errors on stderr). Parse stdout
 
 ## CI Integration
 
-Instrumented tests run on every PR and push to main via GitHub Actions: `reactivecircus/android-emulator-runner@v2`, API 36, `google_apis`, `x86_64`, `swiftshader_indirect`. Currently tests `:core:preferences`.
+Instrumented tests run on every PR and push to main via GitHub Actions: `reactivecircus/android-emulator-runner@v2`, API 36, `google_apis`, `x86_64`, `swiftshader_indirect`. Currently tests `:core:database` (Room database creation) and `:androidApp` (app smoke test).
 
 ## Troubleshooting
 
@@ -65,7 +65,7 @@ Instrumented tests run on every PR and push to main via GitHub Actions: `reactiv
 
 ## Tips
 
-- Gradle warmup: `./gradlew :core:preferences:assembleDebug` once after entering shell
+- Gradle warmup: `./gradlew :core:model:classes` once after entering shell
 - adb state: `adb devices` to check connectivity
 - One emulator at a time — don't run multiple `start-subsloth-emulator` instances
 - Emulator output: `/tmp/subsloth-emulator-$USER.log`

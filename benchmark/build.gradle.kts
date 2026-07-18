@@ -9,12 +9,21 @@ android {
     defaultConfig {
         minSdk = 26
         targetSdk = 37
+
+        // Suppress expected benchmark errors for local/emulator runs.
+        // On CI a physical device with a release build is used for accurate
+        // measurements; the suppressions allow non-representative runs to
+        // at least exercise the benchmark code paths for smoke-testing.
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] =
+            "EMULATOR,DEBUGGABLE"
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    experimentalProperties["android.experimental.self-instrumenting"] = true
 
     kotlin {
         jvmToolchain(17)
