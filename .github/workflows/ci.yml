@@ -171,11 +171,20 @@ jobs:
   build-web:
     name: 🌐 Web / wasmJs
     needs: [changes]
-    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.source == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: ./.github/actions/kmp-setup
+      - id: kmp-setup
+        uses: ./.github/actions/kmp-setup
+
+      - name: Install Chromium for WasmJS browser tests
+        if: steps.kmp-setup.outputs.playwright-cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
       - run: ./gradlew :webApp:compileKotlinWasmJs
+
+      - name: WasmJS browser tests
+        run: ./gradlew :webApp:wasmJsBrowserTest
