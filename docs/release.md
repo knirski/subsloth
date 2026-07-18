@@ -14,7 +14,7 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 
  1. A maintainer merges changes to `main` using conventional commits (squash + merge).
  2. The PR title becomes the commit message on `main`, and `pr-title.yml` enforces the conventional commit format.
- 3. `semantic-release.yml` runs on push to `main`, sets up JDK 25 + JDK 17, analyzes commits since the last tag, determines the next version, builds the debug APK via `:app:assembleDebug`, and creates a GitHub Release with the APK attached and tag `vX.Y.Z`.
+ 3. `semantic-release.yml` runs on push to `main`, sets up JDK 25 + JDK 17, analyzes commits since the last tag, determines the next version, builds the debug APK via `:androidApp:assembleDebug`, and creates a GitHub Release with the APK attached and tag `vX.Y.Z`.
  4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
 
 No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.

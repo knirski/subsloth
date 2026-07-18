@@ -1,53 +1,157 @@
 # SubSloth
 
+[![Android SDK](https://img.shields.io/badge/Android%20SDK-37-3DDC84?logo=android&logoColor=white)](https://developer.android.com/about/versions/14)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.12-06B6D4?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/compose-multiplatform/)
+[![NixOS](https://img.shields.io/badge/Nix-25.05-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
+
 <img src="docs/subsloth-mascot.svg" width="180" height="180" align="right" alt="SubSloth mascot" />
 
-> 🚧 **Work in progress.** This project is under active development. Features are incomplete and APIs may change.
+**Learn languages by watching.** SubSloth is a native multi-platform streaming
+client for the [Media](https://media-mirror.tv) Kodi-compatible API. It brings
+dual-subtitle video immersion to Android TV, tablets, phones, desktop Linux,
+and the browser.
 
-Learn languages by watching. Native Android streaming client with dual subtitles, built with modern Android tooling.
+Built with a Functional Core / Imperative Shell architecture, Compose
+Multiplatform, and a reproducible Nix development environment — the project is
+as much a demonstration of modern Android and KMP engineering as it is a
+functional streaming app.
 
-## Architecture
+## Design principles
 
-Functional Core / Imperative Shell, with typed domain models, sealed errors, and strict mapper boundaries between the API layer and app decisions.
+- **Keep the core pure.** Domain logic, types, and transformations live in
+  zero-dependency functional modules. I/O, state, and platform APIs are pushed
+  to the outermost shell — tested through integration tests, not mocks.
+- **Model the domain with sealed types.** Every variant is explicit, every
+  `when` is exhaustive, every invalid state is unrepresentable. No boolean
+  flags where a sealed interface tells the full story.
+- **One module, one responsibility.** Twenty-one modules with a strict inward
+  dependency gradient. Features share nothing but core types; the dependency
+  graph is acyclic by convention.
+- **Test through contracts, not implementations.** API fixtures are captured
+  from the live service, sanitised, and replayed through Ktor MockEngine.
+  Architecture boundary tests scan import lines — no ArchUnit needed.
+- **Reproduce the environment.** Nix pins the JDK (25 for Gradle, 17 for
+  bytecode), the Android SDK, Node.js, Yarn, Binaryen, and even Android Studio.
+  A single `direnv allow` is the entire setup.
 
-- **UI:** Jetpack Compose with adaptive layouts, TV focus, and accessibility
-- **Networking:** Ktor HTTP client with bounded retry and rate-limit handling
-- **Storage:** Room (SQLite), DataStore (preferences), Android Keystore (credentials)
-- **Build:** Gradle with Kotlin DSL and version catalogs
-- **Dev environment:** Nix flake with pinned JDK 25/17, Android SDK 36, and bundled Android Studio
+The [canonical architecture specification](openspec/specs/architecture/spec.md)
+records the decisions and trade-offs behind these rules.
 
-## Features
+## Quick start
 
-- Learn languages through video content with dual subtitles
-- Catalog browsing with search, filters, and sort
-- Movie and series detail views with episode structure
-- Video playback with subtitles, quality selection, and resume
-- Offline downloads with queue management and storage safety
-- Library, central Downloads, settings, and diagnostics
-
-## Getting Started
+You need Nix with the `nix-command` and `flakes` experimental features.
 
 ```bash
-# Activate the development environment (requires Nix with flakes enabled)
-direnv allow            # or run non-interactively: nix develop --command <cmd>
+git clone https://github.com/knirski/subsloth.git
+cd subsloth
+direnv allow
 
-# Build and test
+# Safe, local inspection
 ./gradlew build
 
 # Run on a connected device or emulator
 ./gradlew installDebug
 ```
 
-See [`docs/development.md`](docs/development.md) for detailed setup instructions, [`docs/jdk.md`](docs/jdk.md) for JDK toolchain notes, and [`docs/agent/emulator-testing.md`](docs/agent/emulator-testing.md) for instrumented test workflow.
+The development shell provides everything: JDK 25 and 17, Android SDK 36 with
+command-line tools, sdkmanager, adb, Android Studio, vacuum (OpenAPI linter),
+and emulator helper scripts.
 
-## Planning & Specs
+See [`docs/development.md`](docs/development.md) for detailed setup and
+[`docs/jdk.md`](docs/jdk.md) for JDK toolchain notes.
 
-This project uses [OpenSpec](https://github.com/anthropics/openspec) as the source of truth for product and engineering requirements.
+## Find your path
 
-- Start with [`openspec/README.md`](openspec/README.md) for the planning workflow.
-- Active requirements live in `openspec/changes/*/specs/`.
-- Archived (completed) changes move to `openspec/changes/archive/` and promote their specs into `openspec/specs/`.
-- Step-level implementation detail is preserved in `docs/archive/superpowers/plans/`.
+- **Learn:** start with the [OpenSpec planning overview](openspec/README.md),
+  then read the [canonical specs](openspec/specs/) that define every v1
+  requirement.
+- **Build:** follow the [module structure guide](docs/module-structure.md) to
+  understand the 21-module dependency graph, then the [convention plugins
+  reference](docs/convention-plugins.md) for Gradle conventions.
+- **Code:** read the [codestyle](docs/codestyle.md), the
+  [FC/IS architecture](docs/agent/fc-is-architecture.md), and the
+  [best-practices quick reference](best_practices.md).
+- **Test:** run [offline unit tests](docs/development.md#running-tests),
+  [emulator instrumented tests](docs/agent/emulator-testing.md),
+  [screenshot tests](docs/testing/screenshot-tests.md), or
+  [macrobenchmarks](docs/testing/benchmarks.md).
+- **Navigate:** understand [Navigation3 across all platforms](docs/navigation3.md).
+- **Contribute:** read [`AGENTS.md`](AGENTS.md) before editing — it contains
+  the hard invariants, commit conventions, and verification workflow.
+
+The complete, progressively organized index is at
+[`docs/agent/README.md`](docs/agent/README.md).
+
+## Architecture in one minute
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  :androidApp  │  :desktopApp  │  :webApp                          │
+│  (AndroidX)   │  (CMP)        │  (WasmJS)                         │
+├────────────────────────────────────────────────────────────────────┤
+│  :feature:auth  :feature:catalog  :feature:details                │
+│  :feature:player  :feature:library  :feature:settings             │
+├────────────────────────────────────────────────────────────────────┤
+│  :core:network  │  :core:database  │  :core:preferences           │
+│  (Ktor, DTOs)  │  (Room 3, DAOs)  │  (DataStore, Credentials)    │
+│  :core:media    │  :core:ui        │                              │
+│  (Playback, DL) │  (Compose, Nav)  │                              │
+├────────────────────────────────────────────────────────────────────┤
+│  :core:domain  │  :core:model                                      │
+│  (Ports, Use Cases, DomainError) │  (ADTs, Value Types)           │
+└────────────────────────────────────────────────────────────────────┘
+│  :testing:api-contract  :testing:assertions  :testing:detekt-rules │
+│  :testing:mock-api  :testing:tv-focus-harness                      │
+│  :benchmark                                                        │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Data flows inward and outward through pure mappers.** The shell layer
+(`network`, `database`, `preferences`, `media`) implements port interfaces
+defined in `domain`, fetches and persists data, and maps DTOs to domain types
+in isolated mapper boundaries. The feature modules consume only domain types
+and compose UI from them.
+
+The [full module map](docs/module-structure.md) documents every module's
+convention plugin, dependencies, targets, and responsibilities. The
+[convention plugins](docs/convention-plugins.md) explain each Gradle
+convention's exact configuration.
+
+## Features
+
+| Capability | Details |
+|---|---|
+| **Dual-subtitle playback** | Watch with two simultaneous subtitle tracks for language immersion |
+| **Catalog browsing** | Movies and series with search, filters, and sort |
+| **Detail views** | Movie and series detail screens with episode structure and metadata |
+| **Video player** | Playback with quality selection, resume, speed control, and subtitle picker |
+| **Offline downloads** | Queue management, storage safety, and offline playback |
+| **Library & settings** | Personal library, central Downloads screen, settings, diagnostics |
+
+Comments, Chromecast, external player handoff, Play Store billing, and
+multi-profile switching are explicitly out of scope for v1. See the
+[scope exclusions](docs/policies/scope-exclusions.md).
+
+## Platform support
+
+| Target | Status | Notes |
+|---|---|---|
+| Android (phone, tablet, TV) | ✅ Production | API 26+, adaptive layouts, TV D-pad focus |
+| Desktop (Linux, macOS, Windows) | ✅ Production | CMP desktop app via `:desktopApp` |
+| Web (WasmJS) | ✅ Production | Browser build via `:webApp` with OPFS-backed SQLite |
+| iOS | 🔜 Future | KMP targets declared but disabled — no CI infrastructure |
+
+## Scope
+
+This project is a native client for the Media Kodi-compatible API, built as a
+demonstration of modern Android, Kotlin Multiplatform, and Compose engineering.
+Its modules, tests, and patterns are intended to be reusable; the API contract,
+fixtures, and credentials handling are specific to the Media service and must
+be adapted before use elsewhere.
+
+Shared as a learning project. Contributions should favour clarity, type safety,
+and declarative recovery over cleverness.
 
 ## License
 
