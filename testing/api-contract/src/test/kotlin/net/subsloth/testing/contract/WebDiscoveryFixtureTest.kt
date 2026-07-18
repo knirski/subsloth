@@ -10,10 +10,9 @@ import java.util.regex.Pattern
 class WebDiscoveryFixtureTest {
     companion object {
         @JvmStatic
-        fun fixtures(): List<Endpoint> =
-            Endpoint.entries
-                .filter { it.category == Endpoint.FixtureCategory.WebDiscovery }
-                .sortedBy { it.fixtureName }
+        fun fixtures(): List<Endpoint> = Endpoint.entries
+            .filter { it.category == Endpoint.FixtureCategory.WebDiscovery }
+            .sortedBy { it.fixtureName }
     }
 
     private val forbiddenHosts =
@@ -107,11 +106,10 @@ class WebDiscoveryFixtureTest {
         }
     }
 
-    private fun extractUrls(text: String): List<String> =
-        Pattern
-            .compile("https?://[^\\s'\"`]+")
-            .matcher(text)
-            .results()
-            .map { result -> result.group() }
-            .toList()
+    private fun extractUrls(text: String): List<String> = Pattern
+        .compile("https?://[^\\s'\"`]+")
+        .matcher(text)
+        .results()
+        .map { result -> result.group() }
+        .toList()
 }

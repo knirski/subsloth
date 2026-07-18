@@ -26,10 +26,8 @@ object FixtureLoader {
 
     fun loadFixtureText(endpoint: Endpoint): String = loadFixtureText(endpoint.resourcePath)
 
-    fun loadFixtureText(
-        endpoint: Endpoint,
-        method: HttpMethod,
-    ): String = loadFixtureText(endpoint.resourcePathFor(method))
+    fun loadFixtureText(endpoint: Endpoint, method: HttpMethod): String =
+        loadFixtureText(endpoint.resourcePathFor(method))
 
     /**
      * Load a fixture file and parse it into a [JsonElement].
@@ -38,22 +36,19 @@ object FixtureLoader {
 
     fun loadFixtureJson(endpoint: Endpoint): JsonElement = loadFixtureJson(endpoint.resourcePath)
 
-    fun loadFixtureJson(
-        endpoint: Endpoint,
-        method: HttpMethod,
-    ): JsonElement = loadFixtureJson(endpoint.resourcePathFor(method))
+    fun loadFixtureJson(endpoint: Endpoint, method: HttpMethod): JsonElement =
+        loadFixtureJson(endpoint.resourcePathFor(method))
 
     /**
      * Recursively collect all string values from a parsed [JsonElement] tree.
      *
      * Useful for URL/host checks and sensitive-value scanning.
      */
-    fun collectStrings(element: JsonElement): List<String> =
-        when (element) {
-            is JsonPrimitive -> if (element.isString) listOf(element.content) else emptyList()
-            is JsonArray -> element.flatMap { collectStrings(it) }
-            is JsonObject -> element.values.flatMap { collectStrings(it) }
-        }
+    fun collectStrings(element: JsonElement): List<String> = when (element) {
+        is JsonPrimitive -> if (element.isString) listOf(element.content) else emptyList()
+        is JsonArray -> element.flatMap { collectStrings(it) }
+        is JsonObject -> element.values.flatMap { collectStrings(it) }
+    }
 
     /**
      * Convenience overload that loads a fixture and returns all string values.

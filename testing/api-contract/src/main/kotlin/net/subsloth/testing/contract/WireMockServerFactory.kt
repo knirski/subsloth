@@ -38,20 +38,13 @@ object WireMockServerFactory {
         return server
     }
 
-    private fun requestBuilder(
-        method: HttpMethod,
-        urlPattern: String,
-    ): MappingBuilder =
-        when (method) {
-            HttpMethod.GET -> get(urlPathMatching(urlPattern))
-            HttpMethod.POST -> post(urlPathMatching(urlPattern))
-            HttpMethod.DELETE -> delete(urlPathMatching(urlPattern))
-        }
+    private fun requestBuilder(method: HttpMethod, urlPattern: String): MappingBuilder = when (method) {
+        HttpMethod.GET -> get(urlPathMatching(urlPattern))
+        HttpMethod.POST -> post(urlPathMatching(urlPattern))
+        HttpMethod.DELETE -> delete(urlPathMatching(urlPattern))
+    }
 
-    private fun responseBuilder(
-        endpoint: Endpoint,
-        body: String,
-    ): ResponseDefinitionBuilder {
+    private fun responseBuilder(endpoint: Endpoint, body: String): ResponseDefinitionBuilder {
         val response = aResponse().withStatus(endpoint.responseStatus)
         endpoint.contentType?.let { contentType ->
             response.withHeader("Content-Type", contentType)

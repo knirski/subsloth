@@ -82,22 +82,21 @@ internal fun loadSanitizationRules(file: File): SanitizationRules {
         urlPatterns = requireField("url_patterns").jsonArray.map { it.parseUrlPattern() },
         hostBlocklist = requireField("host_blocklist").jsonArray.map { it.jsonPrimitive.content },
         responseHeaderRedactions =
-            requireField(
-                "response_header_redactions",
-            ).jsonArray.map { it.jsonPrimitive.content },
+        requireField(
+            "response_header_redactions",
+        ).jsonArray.map { it.jsonPrimitive.content },
         requestHeaderRedactions =
-            requireField(
-                "request_header_redactions",
-            ).jsonArray.map { it.jsonPrimitive.content },
+        requireField(
+            "request_header_redactions",
+        ).jsonArray.map { it.jsonPrimitive.content },
     )
 }
 
 private fun JsonElement.parseUrlPattern(): UrlRewriteRule {
     val obj = jsonObject
 
-    fun requireField(name: String) =
-        obj[name]?.jsonPrimitive?.content
-            ?: error("Missing required field \"$name\" in url_pattern entry")
+    fun requireField(name: String) = obj[name]?.jsonPrimitive?.content
+        ?: error("Missing required field \"$name\" in url_pattern entry")
 
     return UrlRewriteRule(
         match = requireField("match"),

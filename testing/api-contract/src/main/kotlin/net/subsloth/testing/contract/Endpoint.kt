@@ -9,10 +9,7 @@ enum class HttpMethod {
     DELETE,
 }
 
-enum class ResponseKind(
-    val fileExtension: String,
-    val contentType: String?,
-) {
+enum class ResponseKind(val fileExtension: String, val contentType: String?) {
     Json("json", "application/json"),
     JavaScript("js", "text/javascript"),
     SubRip("srt", "text/plain"),
@@ -261,23 +258,21 @@ enum class Endpoint(
 
         fun kodiEndpoints(): List<Endpoint> = entries.filter { it.kodiSource }
 
-        private fun extractPath(url: String): String =
-            try {
-                URI(url).path?.trimEnd('/').let { path ->
-                    if (path.isNullOrEmpty()) url.substringBefore("?").trimEnd('/') else path
-                }
-            } catch (_: URISyntaxException) {
-                url.substringBefore("?").trimEnd('/')
+        private fun extractPath(url: String): String = try {
+            URI(url).path?.trimEnd('/').let { path ->
+                if (path.isNullOrEmpty()) url.substringBefore("?").trimEnd('/') else path
             }
+        } catch (_: URISyntaxException) {
+            url.substringBefore("?").trimEnd('/')
+        }
 
-        private fun normalisePrefixes(rawPath: String): String =
-            rawPath
-                .replaceFirst(
-                    Regex("^/(en|pl|ru|de|fr|es|pt|ja|ko|zh)(?=/|$)"),
-                    "",
-                ).replaceFirst(
-                    Regex("^/api/(v\\d+|frontend)(?=/|$)"),
-                    "",
-                ).ifEmpty { rawPath }
+        private fun normalisePrefixes(rawPath: String): String = rawPath
+            .replaceFirst(
+                Regex("^/(en|pl|ru|de|fr|es|pt|ja|ko|zh)(?=/|$)"),
+                "",
+            ).replaceFirst(
+                Regex("^/api/(v\\d+|frontend)(?=/|$)"),
+                "",
+            ).ifEmpty { rawPath }
     }
 }

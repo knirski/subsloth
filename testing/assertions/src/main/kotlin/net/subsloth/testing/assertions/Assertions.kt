@@ -32,9 +32,7 @@ fun assertThat(actual: Double): DoubleSubject = DoubleSubject(actual)
 
 fun assertThat(actual: Throwable): ThrowableSubject = ThrowableSubject(actual)
 
-open class Subject<T>(
-    protected val actual: T,
-) {
+open class Subject<T>(protected val actual: T) {
     fun isEqualTo(expected: T) {
         assertEquals(expected, actual)
     }
@@ -65,22 +63,19 @@ open class Subject<T>(
         assertTrue(klass.isInstance(actual))
     }
 
-    private fun sizeOf(value: Any?): Int =
-        when (value) {
-            null -> fail("Size assertions require a non-null value")
-            is Collection<*> -> value.size
-            is Map<*, *> -> value.size
-            is CharSequence -> value.length
-            is Array<*> -> value.size
-            is Iterable<*> -> value.toList().size
-            is Optional<*> -> if (value.isPresent) 1 else 0
-            else -> fail("Size assertions are not supported for ${value::class.qualifiedName}")
-        }
+    private fun sizeOf(value: Any?): Int = when (value) {
+        null -> fail("Size assertions require a non-null value")
+        is Collection<*> -> value.size
+        is Map<*, *> -> value.size
+        is CharSequence -> value.length
+        is Array<*> -> value.size
+        is Iterable<*> -> value.toList().size
+        is Optional<*> -> if (value.isPresent) 1 else 0
+        else -> fail("Size assertions are not supported for ${value::class.qualifiedName}")
+    }
 }
 
-class BooleanSubject(
-    actual: Boolean?,
-) : Subject<Boolean?>(actual) {
+class BooleanSubject(actual: Boolean?) : Subject<Boolean?>(actual) {
     fun isTrue() {
         assertTrue(actual == true)
     }
@@ -90,9 +85,7 @@ class BooleanSubject(
     }
 }
 
-open class ComparableSubject<T : Comparable<T>>(
-    actual: T,
-) : Subject<T>(actual) {
+open class ComparableSubject<T : Comparable<T>>(actual: T) : Subject<T>(actual) {
     fun isGreaterThan(expected: T) {
         assertTrue(actual > expected)
     }
@@ -110,9 +103,7 @@ open class ComparableSubject<T : Comparable<T>>(
     }
 }
 
-class NullableComparableSubject<T : Comparable<T>>(
-    private val actual: T?,
-) {
+class NullableComparableSubject<T : Comparable<T>>(private val actual: T?) {
     fun isEqualTo(expected: T?) = assertEquals(expected, actual)
 
     fun isNotEqualTo(expected: T?) = assertNotEquals(expected, actual)
@@ -140,40 +131,28 @@ class NullableComparableSubject<T : Comparable<T>>(
     }
 }
 
-class FloatSubject(
-    actual: Float,
-) : ComparableSubject<Float>(actual) {
+class FloatSubject(actual: Float) : ComparableSubject<Float>(actual) {
     fun isWithin(delta: Float): FloatToleranceSubject = FloatToleranceSubject(actual, delta)
 }
 
-class DoubleSubject(
-    actual: Double,
-) : ComparableSubject<Double>(actual) {
+class DoubleSubject(actual: Double) : ComparableSubject<Double>(actual) {
     fun isWithin(delta: Double): DoubleToleranceSubject = DoubleToleranceSubject(actual, delta)
 }
 
-class FloatToleranceSubject(
-    private val actual: Float,
-    private val delta: Float,
-) {
+class FloatToleranceSubject(private val actual: Float, private val delta: Float) {
     fun of(expected: Float) {
         assertTrue((actual - expected).absoluteValue <= delta)
     }
 }
 
-class DoubleToleranceSubject(
-    private val actual: Double,
-    private val delta: Double,
-) {
+class DoubleToleranceSubject(private val actual: Double, private val delta: Double) {
     fun of(expected: Double) {
         assertTrue((actual - expected).absoluteValue <= delta)
     }
 }
 
 @Suppress("TooManyFunctions")
-open class StringSubject(
-    private val actual: String?,
-) {
+open class StringSubject(private val actual: String?) {
     fun isEqualTo(expected: String?) {
         assertEquals(expected, actual)
     }
@@ -223,9 +202,7 @@ open class StringSubject(
     private fun stringValue(): String = assertNotNull(actual)
 }
 
-class IterableSubject<T>(
-    actual: List<T>,
-) : Subject<List<T>>(actual) {
+class IterableSubject<T>(actual: List<T>) : Subject<List<T>>(actual) {
     fun contains(expected: T) {
         assertTrue(actual.contains(expected))
     }
@@ -241,10 +218,7 @@ class IterableSubject<T>(
     }
 }
 
-class ContainsExactlySubject<T>(
-    private val actual: List<T>,
-    private val expected: List<T>,
-) {
+class ContainsExactlySubject<T>(private val actual: List<T>, private val expected: List<T>) {
     fun inOrder() {
         assertEquals(expected, actual)
     }
@@ -254,9 +228,7 @@ class ContainsExactlySubject<T>(
     }
 }
 
-class OptionalSubject<T>(
-    private val actual: Optional<T>,
-) {
+class OptionalSubject<T>(private val actual: Optional<T>) {
     fun isPresent() {
         assertTrue(actual.isPresent)
     }
@@ -271,8 +243,6 @@ class OptionalSubject<T>(
     }
 }
 
-class ThrowableSubject(
-    private val actual: Throwable,
-) {
+class ThrowableSubject(private val actual: Throwable) {
     fun hasMessageThat(): StringSubject = StringSubject(assertNotNull(actual.message))
 }
