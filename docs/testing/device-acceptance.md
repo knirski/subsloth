@@ -8,7 +8,7 @@ This document describes the manual device acceptance checklist for the three sup
 |---|---|---|---|
 | Android TV 8 | API 26 | TV (1920×1080) | D-pad navigation, leanback UX, playback focus |
 | Android tablet 13 | API 33 | Tablet (default >= 600dp w) | Adaptive layout, split-screen, landscape/portrait |
-| Android phone 16 | API 35 | Phone (default < 600dp w) | Touch navigation, portrait-first, edge-to-edge |
+| Android phone 16 | API 36 | Phone (default < 600dp w) | Touch navigation, portrait-first, edge-to-edge |
 
 ---
 
@@ -31,7 +31,7 @@ This document describes the manual device acceptance checklist for the three sup
 1. While signed in, navigate to **Settings** → **Sign Out**.
 2. Confirm the logout dialog.
 3. Verify the app returns to the login screen.
-4. Verify that shared offline media and progress data is retained (see [Logout retention](#313-logout-retention-partition)).
+4. Verify that shared offline media and progress data is retained (see [Logout retention](#appendix-logout-retention-partition)).
 
 ### 1.4 Multi-profile detection
 1. Sign in with an account that has access to multiple Kodi profiles.
