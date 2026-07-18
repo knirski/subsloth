@@ -85,7 +85,7 @@ This document maps all 21 modules in the project, their responsibilities, depend
 
 | Module | Convention Plugin | Depends On | Targets | Description |
 |---|---|---|---|---|
-| `:core:model` | `subsloth.kmp.library` | none (stdlib + Compose runtime) | JVM, WasmJS | Pure domain types: sealed ADTs, value objects, enums. Zero dependencies beyond Kotlin stdlib and Compose runtime for `@Stable`/`@Immutable`. |
+| `:core:model` | `subsloth.kmp.library` | none (stdlib + Compose runtime) | JVM, WasmJS | Pure domain types: sealed ADTs, value objects, enums. No explicit project dependencies — relies on Kotlin stdlib, Compose runtime, and convention-provided libraries (immutable collections, kermit). |
 | `:core:domain` | `subsloth.kmp.library` | `:core:model` | JVM, WasmJS | Port interfaces, use cases, domain logic, `DomainError` hierarchy. Pure Kotlin — no platform APIs. |
 | `:core:network` | `subsloth.kmp.library` | `:core:model`, `:core:domain`, `:core:database`, `:core:preferences` | JVM, WasmJS | Ktor HTTP client, DTOs, API definitions, request identity, rate limiting. |
 | `:core:database` | `subsloth.kmp.library` + Room | `:core:model`, `:core:domain` | JVM, WasmJS, Android | Room 3 database, DAOs, migrations, schemas. Platform-specific SQLite drivers. |

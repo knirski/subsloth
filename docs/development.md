@@ -85,7 +85,7 @@ Run manually:
 ```bash
 ./.github/scripts/check-invariants.sh
 ```
-See [`docs/agent/emulator-testing.md`](agent/emulator-testing.md) for instrumented test workflow, [`docs/testing/benchmarks.md`](testing/benchmarks.md) for macrobenchmarks and baseline profiles, [`docs/testing/screenshot-tests.md`](testing/screenshot-tests.md) for screenshot tests, and [`docs/troubleshooting.md`](troubleshooting.md) for common build, test, and IDE issues.
+See [`docs/agent/emulator-testing.md`](docs/agent/emulator-testing.md) for instrumented test workflow, [`docs/testing/benchmarks.md`](docs/testing/benchmarks.md) for macrobenchmarks and baseline profiles, [`docs/testing/screenshot-tests.md`](docs/testing/screenshot-tests.md) for screenshot tests, and [`docs/troubleshooting.md`](docs/troubleshooting.md) for common build, test, and IDE issues.
 
 ### Pre-Commit Checks
 
