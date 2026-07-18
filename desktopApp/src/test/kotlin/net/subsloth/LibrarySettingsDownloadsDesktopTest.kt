@@ -1,6 +1,7 @@
 package net.subsloth
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -73,6 +74,28 @@ class LibrarySettingsDownloadsDesktopTest {
 
         composeRule.onNodeWithText("Continue Watching").assertIsDisplayed()
         composeRule.onNodeWithText("The Grand Adventure").assertIsDisplayed()
+        composeRule.onNodeWithText("The Grand Adventure").assertHasClickAction()
+    }
+
+    @Test
+    fun libraryContent_favoritesItem_hasClickAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                LibraryContent(
+                    state = LibraryUiState.Content(
+                        isLoggedIn = true,
+                        continueWatching = persistentListOf<Media>(),
+                        favorites = persistentListOf(sampleMovie),
+                        watchLater = persistentListOf<Media>(),
+                        availableOffline = persistentListOf<Media>(),
+                        custom = persistentListOf<Media>(),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+        composeRule.onNodeWithText("The Grand Adventure").assertHasClickAction()
     }
 
     @Test
@@ -170,6 +193,68 @@ class LibrarySettingsDownloadsDesktopTest {
 
         composeRule.onNodeWithText("Active").assertIsDisplayed()
         composeRule.onNodeWithText("42%").assertIsDisplayed()
+        composeRule.onNodeWithText("Cancel").assertHasClickAction()
+        composeRule.onNodeWithText("Pause").assertHasClickAction()
+    }
+
+    @Test
+    fun downloadsContent_activeItem_cancelButton_hasClickAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                DownloadsContent(
+                    state = DownloadsUiState.Content(
+                        active = persistentListOf(
+                            DownloadGroupItem(
+                                state = DownloadState.Active(
+                                    localId = LocalMediaIdentifier("d2"),
+                                    mediaId = Media.MediaId.Movie(MovieId(2)),
+                                    quality = sampleQuality,
+                                    subtitleLanguages = persistentSetOf(),
+                                    progressPercent = 75,
+                                ),
+                                progressFraction = 0.75,
+                            ),
+                        ),
+                        queuedOrPaused = persistentListOf<DownloadGroupItem>(),
+                        failedOrUnavailable = persistentListOf<DownloadGroupItem>(),
+                        completed = persistentListOf<DownloadGroupItem>(),
+                        seasonQueues = persistentListOf(),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Cancel").assertHasClickAction()
+    }
+
+    @Test
+    fun downloadsContent_activeItem_pauseButton_hasClickAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                DownloadsContent(
+                    state = DownloadsUiState.Content(
+                        active = persistentListOf(
+                            DownloadGroupItem(
+                                state = DownloadState.Active(
+                                    localId = LocalMediaIdentifier("d3"),
+                                    mediaId = Media.MediaId.Movie(MovieId(3)),
+                                    quality = sampleQuality,
+                                    subtitleLanguages = persistentSetOf(),
+                                    progressPercent = 50,
+                                ),
+                                progressFraction = 0.5,
+                            ),
+                        ),
+                        queuedOrPaused = persistentListOf<DownloadGroupItem>(),
+                        failedOrUnavailable = persistentListOf<DownloadGroupItem>(),
+                        completed = persistentListOf<DownloadGroupItem>(),
+                        seasonQueues = persistentListOf(),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Pause").assertHasClickAction()
     }
 
     @Test
@@ -225,6 +310,47 @@ class LibrarySettingsDownloadsDesktopTest {
         composeRule.onNodeWithText("Subtitles enabled").assertIsDisplayed()
         composeRule.onNodeWithText("Quality & Playback").assertIsDisplayed()
         composeRule.onNodeWithText("Logout").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Logout").performScrollTo().assertHasClickAction()
+    }
+
+    @Test
+    fun settingsContent_logoutButton_hasClickAction() {
+        val settingsState = SettingsUiState.Content(
+            subtitleEnabled = true,
+            subtitleLanguage = "English",
+            quality = "1080p",
+            playbackSpeed = 1.0f,
+            downloadsWifiOnly = true,
+            diagnostics = DiagnosticsState(),
+        )
+
+        composeRule.setContent {
+            MaterialTheme {
+                SettingsContent(state = settingsState)
+            }
+        }
+
+        composeRule.onNodeWithText("Logout").performScrollTo().assertHasClickAction()
+    }
+
+    @Test
+    fun settingsContent_diagnosticsButton_hasClickAction() {
+        val settingsState = SettingsUiState.Content(
+            subtitleEnabled = true,
+            subtitleLanguage = "English",
+            quality = "1080p",
+            playbackSpeed = 1.0f,
+            downloadsWifiOnly = true,
+            diagnostics = DiagnosticsState(),
+        )
+
+        composeRule.setContent {
+            MaterialTheme {
+                SettingsContent(state = settingsState)
+            }
+        }
+
+        composeRule.onNodeWithText("Diagnostics").performScrollTo().assertHasClickAction()
     }
 
     @Test
