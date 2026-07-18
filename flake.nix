@@ -516,6 +516,29 @@
             fi
           fi
 
+          # ── NixOS binary patching ────────────────────────────────────────────
+          # On NixOS, dynamically linked Linux binaries (aapt2, node, etc.)
+          # downloaded by Gradle/Kotlin cannot run. Patch them with the NixOS
+          # glibc linker and add the GCC runtime library path.
+          GLIBC_LD="$(find /nix/store -maxdepth 4 -name 'ld-linux-x86-64.so*' -type f -print -quit 2>/dev/null || echo '')"
+          GCC_LIB="$(find /nix/store -maxdepth 4 -type d -path '*-gcc-*-lib/lib' -print -quit 2>/dev/null || echo '')"
+          if [ -n "$GLIBC_LD" ] && [ -n "$GCC_LIB" ]; then
+            # Patch downloaded Node.js (Kotlin/Wasm toolchain)
+            for node_bin in "$HOME"/.gradle/nodejs/node-*/bin/node; do
+              if [ -f "$node_bin" ] && file "$node_bin" | grep -q ELF; then
+                patchelf --set-interpreter "$GLIBC_LD" --add-rpath "$GCC_LIB" "$node_bin" 2>/dev/null &&
+                  echo "  ✓ patched: $node_bin"
+              fi
+            done
+            # Patch downloaded aapt2 binaries (Android AAPT2)
+            for aapt2_bin in "$HOME"/.gradle/caches/*/transforms/*/transformed/aapt2-*-linux/aapt2; do
+              if [ -f "$aapt2_bin" ] && file "$aapt2_bin" | grep -q ELF; then
+                patchelf --set-interpreter "$GLIBC_LD" --add-rpath "$GCC_LIB" "$aapt2_bin" 2>/dev/null &&
+                  echo "  ✓ patched: $aapt2_bin"
+              fi
+            done
+          fi
+
           echo "subsloth — emulator: ✓, sdk: $ANDROID_HOME"
           echo "  Emulator scripts: setup-emulator, start-subsloth-emulator, wait-subsloth-emulator, run-subsloth-instrumented-test, stop-subsloth-emulator"
           echo "  One-shot: run-subsloth-instrumented-tests <gradle-task>"

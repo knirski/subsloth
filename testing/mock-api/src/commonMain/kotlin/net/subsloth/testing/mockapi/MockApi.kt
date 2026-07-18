@@ -95,7 +95,6 @@ object MockApi {
         ),
     )
 
-    @Volatile
     private var sessionExpired: Boolean = false
 
     private fun libraryItem(mediaId: Media.MediaId, collection: LibraryCollection, sortOrder: Int): LibraryItem =

@@ -32,6 +32,7 @@ kotlin {
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
+        binaries.executable()
         browser {
             commonWebpackConfig {
                 outputFileName = "subsloth-media.js"

@@ -25,6 +25,7 @@ kotlin {
     // macosArm64() — disabled: no macOS testing infra available
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
+        binaries.executable()
         browser {
             commonWebpackConfig {
                 outputFileName = "subsloth.js"
@@ -69,6 +70,8 @@ powerAssert {
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
+
+
 
 spotless {
     kotlin {
