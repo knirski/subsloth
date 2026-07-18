@@ -41,6 +41,11 @@ ktor = "3.5.1"
 androidxAnnotation = "1.10.0"
 kermit = "2.1.0"
 composeMediaPlayer = "0.11.1"
+benchmark = "1.4.0"
+profileinstaller = "1.4.1"
+androidxTestExt = "1.2.1"
+androidxTestUiautomator = "2.3.0"
+
 
 
 [libraries]
@@ -155,6 +160,12 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+
+# Benchmark & Baseline Profile
+benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExt" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidxTestUiautomator" }
+profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 
 # Detekt
 detekt-api = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
