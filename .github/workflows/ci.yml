@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   # ─── Path filtering ──────────────────────────────────────────────────────
@@ -112,13 +113,30 @@ jobs:
   # Shared code (core/, feature/, testing/, build-logic/, gradle/) triggers
   # all platforms. App-only changes only trigger their own platform.
   #
+  # Platform jobs gate on `changes` only — NOT on `pre-checks` — so they
+  # start as soon as the path filter resolves, overlapping with formatting,
+  # detekt, and invariant checks (saves ~2-3 min wall-clock per run).
+  # If pre-checks fail the workflow still shows red; the overlapping
+  # compilation is wasted only on those rare pre-check failures.
+  #
+  # build-jvm-and-desktop runs both JVM tests and desktop compilation in a
+  # single Gradle daemon.  When shared code changes, jvmTest compiles all
+  # KMP JVM targets first, then :desktopApp:compileKotlin reuses the warm
+  # daemon and build cache — no duplicated compilation.  When only desktop
+  # files change, the JVM test step is skipped and only the desktop app
+  # compiles.
+  #
+  # build-android and build-web use different KMP targets (Android/WasmJs)
+  # so they run in parallel with build-jvm-and-desktop. Their compilation
+  # outputs are not shared via this mechanism.
+  #
   # KMP modules use target-specific test tasks (jvmTest, wasmJsTest, etc.)
   # rather than a generic `test` task, because the Kotlin Multiplatform
   # plugin intentionally doesn't apply java-base/java-library.
 
   build-android:
     name: 🟢 Android
-    needs: [changes, pre-checks]
+    needs: [changes]
     if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -128,25 +146,14 @@ jobs:
       - uses: ./.github/actions/kmp-setup
       - run: ./gradlew lintDebug testDebugUnitTest assembleDebug
 
-  # JVM tests across all KMP modules. KMP doesn't create a generic `test`
-  # task — it creates target-specific tasks (jvmTest, wasmJsTest, etc.)
-  # instead, because each target has its own test runner. The `test` task
-  # comes from java-base/java-library, which KMP deliberately doesn't apply.
-  build-jvm:
-    name: ☕ JVM / KMP
-    needs: [changes, pre-checks]
-    if: needs.changes.outputs.shared == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/kmp-setup
-      - run: ./gradlew jvmTest
-
-  build-desktop:
-    name: 🖥️ Desktop / Linux
-    needs: [changes, pre-checks]
+  # JVM tests + Desktop compilation — merged into one job so Gradle's own
+  # build cache and daemon are shared naturally between the two Gradle
+  # invocations.  When shared code changes, jvmTest compiles all KMP JVM
+  # targets; then :desktopApp:compileKotlin skips already-compiled modules.
+  # When only desktop files change, jvmTest is skipped (step-level if).
+  build-jvm-and-desktop:
+    name: ☕ JVM / 🖥️ Desktop
+    needs: [changes]
     if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.desktop == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -154,11 +161,17 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/kmp-setup
-      - run: ./gradlew :desktopApp:compileKotlin
+
+      - name: JVM tests (shared code)
+        if: needs.changes.outputs.shared == 'true'
+        run: ./gradlew jvmTest
+
+      - name: Desktop compilation
+        run: ./gradlew :desktopApp:compileKotlin
 
   build-web:
     name: 🌐 Web / wasmJs
-    needs: [changes, pre-checks]
+    needs: [changes]
     if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
