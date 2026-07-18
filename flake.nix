@@ -432,6 +432,7 @@
           binaryen
 
           # Utilities (not provided by stdenv)
+          act
           curl
           ripgrep
           unzip
