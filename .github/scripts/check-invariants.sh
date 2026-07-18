@@ -6,6 +6,8 @@
 #
 # 1. Sensitive artifact / credential scanning
 # 2. Kodi-parity basic request-behaviour patterns
+# 3. Banned-dependency lint check
+# 4. No-comments invariant scanning
 #
 # Exits with a non-zero status if any check fails.
 
@@ -161,11 +163,38 @@ check_banned_deps() {
 }
 
 # ----
+# 4. No-comments invariant scanning.
+#    Ensure production code does not reference comments API endpoints,
+#    comments-related UI text, or comments field names.
+# ----
+check_no_comments() {
+  local dir
+  for dir in androidApp/src/main desktopApp/src/main core feature; do
+    target="$repo_root/$dir"
+    if [ ! -d "$target" ]; then
+      continue
+    fi
+    while IFS=: read -r file line content; do
+      case "$file" in
+        */test/*|*/jvmTest/*|*/commonTest/*|*/androidTest/*|*/screenshotTest/*) continue ;;
+      esac
+      fail "NO_COMMENTS" "$file:$line — comments reference: $content"
+    done < <(
+      grep -rnwI -E '(Endpoint\.Comments|/api/frontend/comments|"comments"|"Comments")' \
+        --include='*.kt' --include='*.java' \
+        "$target" 2>/dev/null \
+      || true
+    )
+  done
+}
+
+# ----
 # Run all checks
 # ----
 check_secrets
 check_banned_deps
 check_kodi_parity
+check_no_comments
 
 if [ "$rc" -eq 0 ]; then
   printf "OK — all invariant checks passed.\n"
