@@ -71,8 +71,6 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-
-
 spotless {
     kotlin {
         target("src/*/kotlin/**/*.kt")

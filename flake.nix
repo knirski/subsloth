@@ -520,8 +520,9 @@
           # On NixOS, dynamically linked Linux binaries (aapt2, node, etc.)
           # downloaded by Gradle/Kotlin cannot run. Patch them with the NixOS
           # glibc linker and add the GCC runtime library path.
-          GLIBC_LD="$(find /nix/store -maxdepth 4 -name 'ld-linux-x86-64.so*' -type f -print -quit 2>/dev/null || echo '')"
-          GCC_LIB="$(find /nix/store -maxdepth 4 -type d -path '*-gcc-*-lib/lib' -print -quit 2>/dev/null || echo '')"
+          # Paths are resolved at Nix evaluation time, not via store search.
+          GLIBC_LD="${pkgs.stdenv.cc.bintools.dynamicLinker}"
+          GCC_LIB="${pkgs.stdenv.cc.cc.lib}/lib"
           if [ -n "$GLIBC_LD" ] && [ -n "$GCC_LIB" ]; then
             # Patch downloaded Node.js (Kotlin/Wasm toolchain)
             for node_bin in "$HOME"/.gradle/nodejs/node-*/bin/node; do
