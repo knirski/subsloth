@@ -309,7 +309,7 @@ Remove unused declarations promptly. A type that is declared but never reference
 
 ## 10. Modern Kotlin FP Techniques
 
-### 11.1 Higher-order functions
+### 10.1 Higher-order functions
 
 Functions that accept or return lambdas. This is the core of Kotlin FP composition.
 
@@ -331,7 +331,7 @@ entries.map(::sanitize)
 entries.map { sanitize(it) }
 ```
 
-### 11.2 Scope functions
+### 10.2 Scope functions
 
 | Function | Receiver | Return value | Use case |
 |---|---|---|---|
@@ -340,7 +340,7 @@ entries.map { sanitize(it) }
 | `also` | `it` | receiver itself | Side-effect in chain: `.also { log(it) }` |
 | `apply` | `this` | receiver itself | Object configuration: `File(dir).apply { mkdirs() }` |
 
-### 11.3 Extension functions
+### 10.3 Extension functions
 
 Add behavior to existing types without inheritance or wrappers. Place in the same package or a dedicated `extensions` package.
 
@@ -357,7 +357,7 @@ Private extensions are fine for domain-specific parsing inside a single file:
 private fun JsonElement.parseUrlPattern(): UrlRewriteRule { ... }
 ```
 
-### 11.4 `by lazy` for deferred computation
+### 10.4 `by lazy` for deferred computation
 
 Compute once on first access and cache the result. Use for memoization and initialisation that depends on properties not available at construction time.
 
@@ -367,7 +367,7 @@ val compiledUrlRules: List<UrlRewriteRule.Compiled> by lazy {
 }
 ```
 
-### 11.5 Collection pipelines
+### 10.5 Collection pipelines
 
 Prefer declarative functions over imperative loops with mutable accumulators:
 
@@ -392,14 +392,14 @@ fun categorizeEntries(entries: List<HarEntry>): Map<Endpoint, List<HarEntry>> {
 }
 ```
 
-### 11.6 `data class copy()` for immutable updates
+### 10.6 `data class copy()` for immutable updates
 
 ```kotlin
 fun updatePriority(mapping: WireMockMapping, newPriority: Int) =
     mapping.copy(priority = newPriority)
 ```
 
-### 11.7 Local functions
+### 10.7 Local functions
 
 Define helpers inside the function that uses them to prevent namespace pollution:
 
@@ -411,7 +411,7 @@ fun loadSanitizationRules(json: String): Result<SanitizationRules> {
 }
 ```
 
-### 11.8 `?.` safe access + `?:` Elvis
+### 10.8 `?.` safe access + `?:` Elvis
 
 Null-safe chains are the idiomatic alternative to nested `if (x != null)`:
 
@@ -421,7 +421,7 @@ val entries = root["log"]?.jsonObject
     ?: emptyList()
 ```
 
-### 11.9 `require()` and `check()` for preconditions
+### 10.9 `require()` and `check()` for preconditions
 
 ```kotlin
 fun process(entries: List<HarEntry>): List<HarEntry> {

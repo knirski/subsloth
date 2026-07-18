@@ -133,7 +133,7 @@ All three platforms (Android, Desktop, Web) use `NavDisplay`/`entryProvider`/
 
 ---
 
-## 9. WorkManager in `:feature:library`
+## 8. WorkManager in `:feature:library`
 
 **Status:** Removed from KMP module
 

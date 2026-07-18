@@ -1,5 +1,7 @@
 # SubSloth Best Practices
 
+> **Source of truth:** This document is a condensed quick-reference. The authoritative rules live in `docs/codestyle.md`. If the two disagree, `docs/codestyle.md` wins.
+
 ## Port / Adapter
 
 Define I/O boundary interfaces as ports in `core/domain/.../port/`. Implementations (adapters) live in shell modules (`:core:network`, `:core:database`, etc.).

@@ -85,6 +85,17 @@ Run manually:
 ```bash
 ./.github/scripts/check-invariants.sh
 ```
+See [`docs/agent/emulator-testing.md`](agent/emulator-testing.md) for instrumented test workflow, [`docs/testing/benchmarks.md`](testing/benchmarks.md) for macrobenchmarks and baseline profiles, [`docs/testing/screenshot-tests.md`](testing/screenshot-tests.md) for screenshot tests, and [`docs/troubleshooting.md`](troubleshooting.md) for common build, test, and IDE issues.
+
+### Pre-Commit Checks
+
+Before committing, run the full pre-commit suite defined in `AGENTS.md` to catch formatting, lint, and compilation issues early:
+
+```bash
+./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug test
+```
+
+This is stricter than the CI-only command set (`check testDebugUnitTest lintDebug assembleDebug`) — it includes spotless formatting, detekt, and targeted KMP compilation checks that CI also runs. Running it locally avoids commit-then-fix cycles.
 
 ### Building
 
