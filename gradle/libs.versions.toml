@@ -18,7 +18,6 @@ datastore = "1.3.0-alpha09"
 okio = "3.17.0"
 sqliteKmp = "2.7.0"
 detekt = "2.0.0-alpha.5"
-detektGradle = "2.0.0-alpha.5"
 media3 = "1.10.1"
 coil = "3.5.0"
 kotlinxSerialization = "1.11.0"
@@ -30,9 +29,8 @@ spotless = "8.8.0"
 wiremock = "3.13.2"
 composeRules = "0.6.3"
 ktlint = "1.8.0"
-composeMultiplatformRuntime = "1.12.0-beta02"
+composeMultiplatform = "1.12.0-beta02"
 composeMultiplatformMaterial3 = "1.12.0-alpha03"
-composeMultiplatformPlugin = "1.12.0-beta02"
 kotlinxCollectionsImmutable = "0.5.1"
 kotlinxDatetime = "0.8.0"
 kotlinxBrowser = "0.5.0"
@@ -46,26 +44,26 @@ profileinstaller = "1.4.1"
 androidxTestExt = "1.3.0"
 androidxTestUiautomator = "2.4.0"
 
-
-
 [libraries]
+
 # AndroidX core
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
 # Compose
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+
 # Compose Multiplatform runtime (provides @Stable, @Immutable for KMP targets)
 # Short name for `:core:model` that only needs the runtime annotation types.
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatformRuntime" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 savedstate = { module = "androidx.savedstate:savedstate", version.ref = "savedstate" }
 savedstate-compose = { module = "androidx.savedstate:savedstate-compose", version.ref = "savedstate" }
-compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatformRuntime" }
+compose-multiplatform-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 compose-multiplatform-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatformMaterial3" }
-compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatformRuntime" }
-compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatformRuntime" }
-compose-multiplatform-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "composeMultiplatformRuntime" }
-compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatformRuntime" }
+compose-multiplatform-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-multiplatform-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+compose-multiplatform-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "composeMultiplatform" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
@@ -90,10 +88,12 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 # Navigation3 (Compose-first navigation) — KMP variants
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidxNavigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "androidxNavigation3" }
+
 # KMP multiplatform variants (for native targets: iOS, macOS, desktop)
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleKmp" }
 lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleKmp" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleKmp" }
+
 # KMP Navigation3 UI (used by Desktop, Web, and core:ui — distinct from the AndroidX variant)
 navigation3-ui-kmp = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version = "1.1.1" }
 
@@ -177,14 +177,15 @@ android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref 
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-multiplatform-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
-compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "composeMultiplatformPlugin" }
+compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "composeMultiplatform" }
 compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 spotless-gradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
-detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detektGradle" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 kotlin-power-assert-gradlePlugin = { module = "org.jetbrains.kotlin.plugin.power-assert:org.jetbrains.kotlin.plugin.power-assert.gradle.plugin", version.ref = "kotlin" }
 
 [plugins]
+
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 
@@ -193,10 +194,10 @@ kotlin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultiplatformPlugin" }
+compose-gradle = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
-detekt = { id = "dev.detekt", version.ref = "detektGradle" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 room3 = { id = "androidx.room3", version.ref = "room3" }
