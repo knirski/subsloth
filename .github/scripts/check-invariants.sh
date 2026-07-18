@@ -180,7 +180,7 @@ check_no_comments() {
       esac
       fail "NO_COMMENTS" "$file:$line — comments reference: $content"
     done < <(
-      grep -rnwI -E '(Endpoint\.Comments|/api/frontend/comments|"comments"|"Comments")' \
+      grep -rnI -E '(Endpoint\.Comments|/api/frontend/comments|"comments"|"Comments")' \
         --include='*.kt' --include='*.java' \
         "$target" 2>/dev/null \
       || true
