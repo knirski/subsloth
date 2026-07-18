@@ -1,6 +1,7 @@
 package net.subsloth
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -73,6 +74,28 @@ class LibrarySettingsDownloadsDesktopTest {
 
         composeRule.onNodeWithText("Continue Watching").assertIsDisplayed()
         composeRule.onNodeWithText("The Grand Adventure").assertIsDisplayed()
+        composeRule.onNodeWithText("The Grand Adventure").assertHasClickAction()
+    }
+
+    @Test
+    fun libraryContent_favoritesItem_hasClickAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                LibraryContent(
+                    state = LibraryUiState.Content(
+                        isLoggedIn = true,
+                        continueWatching = persistentListOf<Media>(),
+                        favorites = persistentListOf(sampleMovie),
+                        watchLater = persistentListOf<Media>(),
+                        availableOffline = persistentListOf<Media>(),
+                        custom = persistentListOf<Media>(),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+        composeRule.onNodeWithText("The Grand Adventure").assertHasClickAction()
     }
 
     @Test
@@ -170,6 +193,8 @@ class LibrarySettingsDownloadsDesktopTest {
 
         composeRule.onNodeWithText("Active").assertIsDisplayed()
         composeRule.onNodeWithText("42%").assertIsDisplayed()
+        composeRule.onNodeWithText("Cancel").assertHasClickAction()
+        composeRule.onNodeWithText("Pause").assertHasClickAction()
     }
 
     @Test
@@ -225,6 +250,7 @@ class LibrarySettingsDownloadsDesktopTest {
         composeRule.onNodeWithText("Subtitles enabled").assertIsDisplayed()
         composeRule.onNodeWithText("Quality & Playback").assertIsDisplayed()
         composeRule.onNodeWithText("Logout").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Logout").performScrollTo().assertHasClickAction()
     }
 
     @Test

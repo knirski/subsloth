@@ -52,6 +52,8 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.compose.multiplatform.ui.test.junit4)
     testImplementation(libs.kotlinx.collections.immutable)
+    testImplementation(libs.compose.media.player)
+    testImplementation(kotlin("test"))
 }
 
 // Forward LD_LIBRARY_PATH from the shell to the forked desktop app JVM.
