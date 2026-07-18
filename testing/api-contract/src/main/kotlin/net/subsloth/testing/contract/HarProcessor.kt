@@ -43,19 +43,15 @@ object HarProcessor {
         }
     }
 
-    fun categorizeEntries(entries: List<HarEntry>): Map<Endpoint, List<HarEntry>> =
-        entries
-            .mapNotNull { entry ->
-                Endpoint.parse(entry.url)?.let { endpoint -> endpoint to entry }
-            }.groupBy(
-                keySelector = { (endpoint, unused) -> endpoint },
-                valueTransform = { (unused, entry) -> entry },
-            )
+    fun categorizeEntries(entries: List<HarEntry>): Map<Endpoint, List<HarEntry>> = entries
+        .mapNotNull { entry ->
+            Endpoint.parse(entry.url)?.let { endpoint -> endpoint to entry }
+        }.groupBy(
+            keySelector = { (endpoint, unused) -> endpoint },
+            valueTransform = { (unused, entry) -> entry },
+        )
 
-    fun sanitizeStructuredBody(
-        rawBody: String,
-        rules: SanitizationRules,
-    ): String {
+    fun sanitizeStructuredBody(rawBody: String, rules: SanitizationRules): String {
         val parsed = json.parseToJsonElement(rawBody)
         val redacted = redactFields(parsed, rules.redactFields)
         val sanitized = rewriteUrlsToString(redacted, rules.compiledUrlRules)
@@ -63,10 +59,7 @@ object HarProcessor {
         return sanitized
     }
 
-    fun sanitizeTextBody(
-        rawBody: String,
-        rules: SanitizationRules,
-    ): String {
+    fun sanitizeTextBody(rawBody: String, rules: SanitizationRules): String {
         val sanitized = rawBody.applyUrlRewrites(rules.compiledUrlRules)
         sanitized.assertBlockedHostsRemoved(rules.blockedHostsLowercase)
         return sanitized
@@ -92,10 +85,7 @@ object HarProcessor {
         return writeCategorizedFixtures(categorised, rules, nativeOutputDir, webOutputDir)
     }
 
-    private fun readHarFiles(
-        harFiles: Set<File>,
-        keepRaw: Boolean,
-    ): List<HarEntry> {
+    private fun readHarFiles(harFiles: Set<File>, keepRaw: Boolean): List<HarEntry> {
         val allEntries = mutableListOf<HarEntry>()
 
         for (harFile in harFiles) {
@@ -205,11 +195,7 @@ object HarProcessor {
         }
     }
 
-    private fun chooseCanonicalEntry(
-        endpoint: Endpoint,
-        method: HttpMethod,
-        entries: List<HarEntry>,
-    ): HarEntry? =
+    private fun chooseCanonicalEntry(endpoint: Endpoint, method: HttpMethod, entries: List<HarEntry>): HarEntry? =
         entries
             .filter { entry -> method.name.equals(entry.method, ignoreCase = true) }
             .sortedWith(
@@ -222,11 +208,7 @@ object HarProcessor {
                 ).thenByDescending { entry -> payloadLength(endpoint, entry) },
             ).firstOrNull { entry -> hasReplayPayload(endpoint, entry) }
 
-    private fun buildFixtureText(
-        endpoint: Endpoint,
-        entry: HarEntry,
-        rules: SanitizationRules,
-    ): String =
+    private fun buildFixtureText(endpoint: Endpoint, entry: HarEntry, rules: SanitizationRules): String =
         when (endpoint.responseKind) {
             ResponseKind.Json -> {
                 val body = requireNotNull(entry.body) { "JSON body missing" }
@@ -246,52 +228,42 @@ object HarProcessor {
             }
         }
 
-    private fun hasReplayPayload(
-        endpoint: Endpoint,
-        entry: HarEntry,
-    ): Boolean =
-        when (endpoint.responseKind) {
-            ResponseKind.Json,
-            ResponseKind.JavaScript,
-            ResponseKind.SubRip,
-            -> !entry.body.isNullOrBlank() && entry.body != "null"
+    private fun hasReplayPayload(endpoint: Endpoint, entry: HarEntry): Boolean = when (endpoint.responseKind) {
+        ResponseKind.Json,
+        ResponseKind.JavaScript,
+        ResponseKind.SubRip,
+        -> !entry.body.isNullOrBlank() && entry.body != "null"
 
-            ResponseKind.RedirectLocation -> !entry.responseHeaders["location"].isNullOrBlank()
-        }
+        ResponseKind.RedirectLocation -> !entry.responseHeaders["location"].isNullOrBlank()
+    }
 
-    private fun payloadLength(
-        endpoint: Endpoint,
-        entry: HarEntry,
-    ): Int =
-        when (endpoint.responseKind) {
-            ResponseKind.Json,
-            ResponseKind.JavaScript,
-            ResponseKind.SubRip,
-            -> entry.body?.length ?: 0
+    private fun payloadLength(endpoint: Endpoint, entry: HarEntry): Int = when (endpoint.responseKind) {
+        ResponseKind.Json,
+        ResponseKind.JavaScript,
+        ResponseKind.SubRip,
+        -> entry.body?.length ?: 0
 
-            ResponseKind.RedirectLocation -> entry.responseHeaders["location"]?.length ?: 0
-        }
+        ResponseKind.RedirectLocation -> entry.responseHeaders["location"]?.length ?: 0
+    }
 
-    private fun canonicalSelectionKey(url: String): String =
-        try {
-            val uri = URI(url)
-            buildString {
-                append(uri.path ?: url.substringBefore("?"))
-                val query = uri.query
-                if (!query.isNullOrBlank()) {
-                    append('?')
-                    append(query)
-                }
+    private fun canonicalSelectionKey(url: String): String = try {
+        val uri = URI(url)
+        buildString {
+            append(uri.path ?: url.substringBefore("?"))
+            val query = uri.query
+            if (!query.isNullOrBlank()) {
+                append('?')
+                append(query)
             }
-        } catch (_: Exception) {
-            url
         }
+    } catch (_: Exception) {
+        url
+    }
 
-    private fun HarEntry.sanitizedHeaders(rules: SanitizationRules): HarEntry =
-        copy(
-            requestHeaders = requestHeaders.withoutHeaders(rules.requestHeaderRedactionSet),
-            responseHeaders = responseHeaders.withoutHeaders(rules.responseHeaderRedactionSet),
-        )
+    private fun HarEntry.sanitizedHeaders(rules: SanitizationRules): HarEntry = copy(
+        requestHeaders = requestHeaders.withoutHeaders(rules.requestHeaderRedactionSet),
+        responseHeaders = responseHeaders.withoutHeaders(rules.responseHeaderRedactionSet),
+    )
 
     private fun parseHeaders(headers: JsonArray?): Map<String, String> {
         if (headers == null) {

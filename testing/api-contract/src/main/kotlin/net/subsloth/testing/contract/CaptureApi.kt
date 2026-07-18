@@ -13,10 +13,7 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.Base64
 
-data class CaptureRequest(
-    val endpoint: Endpoint,
-    val path: String,
-)
+data class CaptureRequest(val endpoint: Endpoint, val path: String)
 
 /**
  * Captures only the five native Kodi-compatible API fixtures directly from the
@@ -27,14 +24,13 @@ object CaptureApi {
     private const val USER_AGENT = "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1"
     private const val HTTP_OK = 200
 
-    fun capturePlan(): List<CaptureRequest> =
-        listOf(
-            CaptureRequest(Endpoint.Movies, "/movies"),
-            CaptureRequest(Endpoint.Shows, "/shows"),
-            CaptureRequest(Endpoint.MovieDetail, "/movies/{id}"),
-            CaptureRequest(Endpoint.ShowDetail, "/shows/{id}"),
-            CaptureRequest(Endpoint.EpisodeDetail, "/episodes/{id}"),
-        )
+    fun capturePlan(): List<CaptureRequest> = listOf(
+        CaptureRequest(Endpoint.Movies, "/movies"),
+        CaptureRequest(Endpoint.Shows, "/shows"),
+        CaptureRequest(Endpoint.MovieDetail, "/movies/{id}"),
+        CaptureRequest(Endpoint.ShowDetail, "/shows/{id}"),
+        CaptureRequest(Endpoint.EpisodeDetail, "/episodes/{id}"),
+    )
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -118,11 +114,7 @@ object CaptureApi {
             }
     }
 
-    private fun fetch(
-        client: HttpClient,
-        auth: String,
-        path: String,
-    ): String {
+    private fun fetch(client: HttpClient, auth: String, path: String): String {
         val request =
             HttpRequest
                 .newBuilder()
@@ -142,33 +134,22 @@ object CaptureApi {
         return response.body()
     }
 
-    private class HttpException(
-        val statusCode: Int,
-        path: String,
-    ) : Exception("HTTP $statusCode for $path")
+    private class HttpException(val statusCode: Int, path: String) : Exception("HTTP $statusCode for $path")
 
-    private fun extractFirstId(
-        jsonBody: String,
-        arrayField: String,
-    ): Int? =
-        try {
-            val obj = Json.parseToJsonElement(jsonBody).jsonObject
-            val array = obj[arrayField]?.jsonArray
-            array
-                ?.firstOrNull()
-                ?.jsonObject
-                ?.get("id")
-                ?.jsonPrimitive
-                ?.intOrNull
-        } catch (_: Exception) {
-            null
-        }
+    private fun extractFirstId(jsonBody: String, arrayField: String): Int? = try {
+        val obj = Json.parseToJsonElement(jsonBody).jsonObject
+        val array = obj[arrayField]?.jsonArray
+        array
+            ?.firstOrNull()
+            ?.jsonObject
+            ?.get("id")
+            ?.jsonPrimitive
+            ?.intOrNull
+    } catch (_: Exception) {
+        null
+    }
 
-    private fun writeFixture(
-        rawBody: String,
-        rules: SanitizationRules,
-        outFile: File,
-    ) {
+    private fun writeFixture(rawBody: String, rules: SanitizationRules, outFile: File) {
         val sanitized = HarProcessor.sanitizeStructuredBody(rawBody, rules)
 
         outFile.parentFile?.mkdirs()

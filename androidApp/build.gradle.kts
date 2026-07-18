@@ -97,6 +97,25 @@ dependencies {
     implementation(project(":feature:library"))
     implementation(project(":feature:settings"))
 
+    // ── AndroidX Jetpack Compose — platform-specific dependencies ──────────
+    //
+    // This module (the Android application shell) uses the official AndroidX
+    // Jetpack Compose BOM and artifacts rather than the compose-multiplatform
+    // variants used by :feature:* and :core:ui modules.  The reasons:
+    //
+    // 1. Android TV requires `androidx.tv:tv-foundation` and
+    //    `androidx.tv:tv-material` which are AndroidX-only — mixing BOM
+    //    variants in the same dependency graph is cleanest when the shell
+    //    owns the BOM.
+    //
+    // 2. Adaptive layout (`material3.adaptive.*`) and other Android-only
+    //    APIs (Activity, WindowInsets, system bars) are only available
+    //    through AndroidX artifacts.
+    //
+    // Shared feature modules use org.jetbrains.compose.* (multiplatform) so
+    // they compile for all targets (JVM desktop, Wasm web, and iOS when
+    // re-enabled).  The Android shell retains AndroidX for full fidelity to
+    // platform capabilities.
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)

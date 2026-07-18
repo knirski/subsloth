@@ -1,23 +1,12 @@
 plugins {
-    kotlin("jvm")
+    id("subsloth.jvm.library")
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.gradle)
-    alias(libs.plugins.spotless)
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.kotlin.power.assert)
 }
 
-kotlin {
-    jvmToolchain(17)
-    compilerOptions {
-        allWarningsAsErrors = true
-    }
-}
-
-tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
-}
+// jvmToolchain(17), allWarningsAsErrors, JUnit Platform, spotless, detekt,
+// and power-assert are configured by the subsloth.jvm.library convention plugin above.
 
 dependencies {
     implementation(compose.desktop.currentOs)
@@ -56,6 +45,15 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+// Compose compiler — share the project-wide stability configuration so that
+// types like kotlin.time.Instant and kotlin.time.Duration are recognised as
+// stable during strong-skipping-mode analysis.
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("config/compose_stability.conf"),
+    )
+}
+
 // Forward LD_LIBRARY_PATH from the shell to the forked desktop app JVM.
 // The Nix shell sets ORG_GRADLE_PROJECT_desktopLibPath in the environment;
 // gradlew forwards ORG_GRADLE_PROJECT_* vars to the daemon as project
@@ -85,36 +83,16 @@ compose.desktop {
     }
 }
 
+// Hot Reload is enabled by default in Compose Multiplatform 1.12.0 for
+// desktop.  When running `./gradlew :desktopApp:run`, the app will
+// automatically reload Composable code changes without restarting.
+// Uncomment to tune:
+// compose.hotReload {
+//     enabled.set(true)
+// }
+
 tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
     if (desktopLibPath != null) {
         environment("LD_LIBRARY_PATH", desktopLibPath)
     }
-}
-
-spotless {
-    kotlin {
-        target("src/*/kotlin/**/*.kt")
-        ktlint(libs.versions.ktlint.get())
-            .editorConfigOverride(
-                mapOf(
-                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
-                ),
-            )
-        toggleOffOn()
-    }
-    kotlinGradle {
-        target("*.gradle.kts")
-        ktlint(libs.versions.ktlint.get())
-    }
-}
-
-detekt {
-    config.setFrom(file("${rootProject.layout.projectDirectory}/config/detekt.yml"))
-    basePath = rootProject.layout.projectDirectory.asFile
-    baseline.set(file("${rootProject.layout.projectDirectory}/config/detekt-baseline.xml"))
-}
-
-dependencies {
-    detektPlugins(project(":testing:detekt-rules"))
-    detektPlugins(libs.compose.rules.detekt)
 }

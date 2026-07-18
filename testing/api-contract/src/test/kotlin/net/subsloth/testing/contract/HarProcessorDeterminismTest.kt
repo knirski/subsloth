@@ -93,12 +93,7 @@ class HarProcessorDeterminismTest {
         {"log":{"entries":[${entries.joinToString(",")} ]}}
         """.trimIndent()
 
-    private fun harEntry(
-        url: String,
-        method: String,
-        status: Int,
-        body: String,
-    ): String =
+    private fun harEntry(url: String, method: String, status: Int, body: String): String =
         """
         {
           "request": {
@@ -118,19 +113,18 @@ class HarProcessorDeterminismTest {
         }
         """.trimIndent()
 
-    private fun jsonString(value: String): String =
-        buildString {
-            append('"')
-            value.forEach { ch ->
-                when (ch) {
-                    '\\' -> append("\\\\")
-                    '"' -> append("\\\"")
-                    '\n' -> append("\\n")
-                    '\r' -> append("\\r")
-                    '\t' -> append("\\t")
-                    else -> append(ch)
-                }
+    private fun jsonString(value: String): String = buildString {
+        append('"')
+        value.forEach { ch ->
+            when (ch) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> append(ch)
             }
-            append('"')
         }
+        append('"')
+    }
 }

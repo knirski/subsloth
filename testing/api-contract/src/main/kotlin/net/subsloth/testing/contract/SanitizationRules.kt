@@ -41,23 +41,14 @@ data class SanitizationRules(
     }
 }
 
-data class UrlRewriteRule(
-    val match: String,
-    val pattern: String,
-    val replacement: String,
-) {
-    data class Compiled(
-        val match: String,
-        val regex: Regex,
-        val replacement: String,
-    )
+data class UrlRewriteRule(val match: String, val pattern: String, val replacement: String) {
+    data class Compiled(val match: String, val regex: Regex, val replacement: String)
 
-    fun compile() =
-        Compiled(
-            match = match,
-            regex = Regex(pattern),
-            replacement = replacement,
-        )
+    fun compile() = Compiled(
+        match = match,
+        regex = Regex(pattern),
+        replacement = replacement,
+    )
 }
 
 fun String.applyUrlRewrites(rules: List<UrlRewriteRule.Compiled>): String {
@@ -77,59 +68,51 @@ fun String.assertBlockedHostsRemoved(blockedHosts: Set<String>) {
 fun Map<String, String>.withoutHeaders(headersToRemove: Set<String>): Map<String, String> =
     filterKeys { key -> key.lowercase() !in headersToRemove }
 
-fun redactFields(
-    element: JsonElement,
-    redactFields: List<String>,
-): JsonElement {
+fun redactFields(element: JsonElement, redactFields: List<String>): JsonElement {
     val fieldSet = redactFields.map { it.lowercase() }.toSet()
 
-    fun walk(e: JsonElement): JsonElement =
-        when (e) {
-            is JsonObject -> {
-                val newFields =
-                    e.entries.associate { (key, value) ->
-                        if (key.lowercase() in fieldSet) {
-                            key to JsonPrimitive("[REDACTED]")
-                        } else {
-                            key to walk(value)
-                        }
+    fun walk(e: JsonElement): JsonElement = when (e) {
+        is JsonObject -> {
+            val newFields =
+                e.entries.associate { (key, value) ->
+                    if (key.lowercase() in fieldSet) {
+                        key to JsonPrimitive("[REDACTED]")
+                    } else {
+                        key to walk(value)
                     }
-                JsonObject(newFields)
-            }
-
-            is JsonArray -> {
-                JsonArray(e.map(::walk))
-            }
-
-            is JsonPrimitive -> {
-                e
-            }
+                }
+            JsonObject(newFields)
         }
+
+        is JsonArray -> {
+            JsonArray(e.map(::walk))
+        }
+
+        is JsonPrimitive -> {
+            e
+        }
+    }
     return walk(element)
 }
 
-fun rewriteUrlsToString(
-    element: JsonElement,
-    urlRules: List<UrlRewriteRule.Compiled>,
-): String {
-    fun walk(e: JsonElement): JsonElement =
-        when (e) {
-            is JsonPrimitive -> {
-                if (e.isString) {
-                    val cleaned = e.content.applyUrlRewrites(urlRules)
-                    if (cleaned != e.content) JsonPrimitive(cleaned) else e
-                } else {
-                    e
-                }
-            }
-
-            is JsonArray -> {
-                JsonArray(e.map(::walk))
-            }
-
-            is JsonObject -> {
-                JsonObject(e.entries.associate { (key, value) -> key to walk(value) })
+fun rewriteUrlsToString(element: JsonElement, urlRules: List<UrlRewriteRule.Compiled>): String {
+    fun walk(e: JsonElement): JsonElement = when (e) {
+        is JsonPrimitive -> {
+            if (e.isString) {
+                val cleaned = e.content.applyUrlRewrites(urlRules)
+                if (cleaned != e.content) JsonPrimitive(cleaned) else e
+            } else {
+                e
             }
         }
+
+        is JsonArray -> {
+            JsonArray(e.map(::walk))
+        }
+
+        is JsonObject -> {
+            JsonObject(e.entries.associate { (key, value) -> key to walk(value) })
+        }
+    }
     return prettyJson.encodeToString(JsonElement.serializer(), walk(element)) + "\n"
 }
