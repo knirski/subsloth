@@ -141,7 +141,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | Layer | Tools | Coverage |
 |-------|-------|----------|
 | **Unit (Pure)** | JUnit 5, Turbine, `kotlinx-coroutines-test` | Policies, mappers, `Outcome` combinators, `InMemorySessionState` |
-| **Contract** | `:testing:api-contract` + WireMock | Fixture schema validation, DTO round-trip |
+| **Contract** | `:testing:api-contract` + WireMock | Fixture schema validation (all endpoints), DTO round-trip, JSON structural checks |
 | **Integration (I/O)** | Room `TestDatabaseFactory`, DataStore in-memory, Ktor `MockEngine` | Repository behavior, sync logic, download queue |
 | **UI (Desktop)** | Compose UI Test (JUnit 4) | 6 test classes: Login, Catalog, Detail, Library, Player, Search |
 | **Screenshot** | Compose Preview Screenshot Testing | 10 screens × 3 configs |
@@ -274,7 +274,12 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ## Recommendations
 
 ### Short-term (v1.1 / Next)
-1. **Automated offline fixture/schema validation** — scheduled workflow using captured fixtures from `:testing:api-contract` to detect schema drift without live credentials (per `testing-release/spec.md` requirement for offline-only CI)
+1. ✅ **Automated offline fixture/schema validation** — 
+   - Credential capture now reads `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD` env vars (no CLI history exposure)
+   - `FixtureSchemaValidationTest` extended to cover all JSON endpoints (native + web-discovery), including structural and round-trip checks
+   - Added `:testing:api-contract:validateFixtures` (offline) and `:testing:api-contract:captureAndValidate` (full pipeline) Gradle tasks
+   - Shell script `scripts/capture/validate-fixtures.sh` for one-command pipeline
+   - See PR #192
 2. ✅ **Add `androidTarget()` to KMP convention** — 
    - New `subsloth.kmp.android.library` convention plugin with `androidTarget()`, `jvm()`, `wasmJs()` targets
    - Migrated `:core:database` and `:core:media` from manual config to the new plugin (removed ~82 lines of boilerplate)
@@ -305,11 +310,11 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 - **Disciplined architecture** — FC/IS not just claimed but tested
 - **Spec-driven development** — OpenSpec as single source of truth, changes archived with traceability
 - **Multiplatform done right** — shared business logic, platform-specific shells, Compose UI across 3 targets
-- **Testing depth** — unit, contract, integration, UI, screenshot, benchmark, baseline profiles
+- **Testing depth** — unit, contract (all endpoints), integration, UI, screenshot, benchmark, baseline profiles
 - **Reproducible builds** — Nix flake pins entire toolchain
 - **Operational hygiene** — invariant scanning, secret hygiene, conventional commits, automated releases
 
-All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. Two of three short-term goals (KMP Android target convention, webApp feature parity) are completed via PR #189 and PR #190 respectively. No architectural or implementation gaps block release.
+All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. All three short-term goals are now completed: KMP Android target convention (PR #189), webApp feature parity (PR #190), and automated offline fixture/schema validation (PR #192). No architectural or implementation gaps block release.
 
 ---
 
