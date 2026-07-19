@@ -10,7 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import android.util.Log
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                     val app = LocalContext.current.applicationContext
                     val container = (app as? SubSlothApplication)?.container
                     val userPreferences = container?.userPreferences ?: run {
-                        Log.e("MainActivity", "SubSlothApplication container not found")
+                        Logger.withTag("MainActivity").e { "SubSlothApplication container not found" }
                         null
                     }
                     SessionGate(
