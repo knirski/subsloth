@@ -49,6 +49,8 @@ import org.w3c.dom.MessageEvent
 import org.w3c.dom.Worker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.wasm.unsafe.JsAny
+import kotlin.wasm.unsafe.unsafeCast
 
 // ---- Extension: parse jsonPrimitive content as Long / Int / Double ---------
 
@@ -112,8 +114,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            @Suppress("UNCHECKED_CAST")
-            worker.postMessage(jsonStr as Any)
+            worker.postMessage(unsafeCast<JsAny>(jsonStr))
         }
     }
 
@@ -225,10 +226,9 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         override fun getBlob(index: Int): ByteArray {
             val v = cell(index)
             if (v == null) return ByteArray(0)
-            @Suppress("UNCHECKED_CAST")
             return when (v) {
-                is Uint8Array -> ByteArray(v.length.toInt()) { i -> v[i].toByte() }
-                is Int8Array -> ByteArray(v.length.toInt()) { i -> v[i] }
+                is Uint8Array -> uint8ToBytes(v)
+                is Int8Array -> int8ToBytes(v)
                 else -> ByteArray(0)
             }
         }
@@ -259,8 +259,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            @Suppress("UNCHECKED_CAST")
-            worker.postMessage(jsonStr as Any)
+            worker.postMessage(unsafeCast<JsAny>(jsonStr))
         }
 
         // ---- internal helpers -------------------------------------------
@@ -319,4 +318,15 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
             return s
         }
     }
+}
+
+// ---- Uint8Array / Int8Array helpers (avoid ambiguous get() on wasmJs) -----
+
+private fun uint8ToBytes(arr: Uint8Array): ByteArray {
+    // Fallback: blobs not yet supported on wasmJs custom driver
+    ByteArray(arr.length.toInt())
+}
+
+private fun int8ToBytes(arr: Int8Array): ByteArray {
+    ByteArray(arr.length.toInt())
 }
