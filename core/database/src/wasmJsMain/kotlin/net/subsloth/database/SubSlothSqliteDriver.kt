@@ -39,14 +39,14 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromString
 import kotlinx.serialization.json.encodeToString
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.put
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
@@ -59,9 +59,7 @@ import kotlin.coroutines.resumeWithException
 // Driver
 // ---------------------------------------------------------------------------
 
-class SubSlothSqliteDriver(
-    private val worker: Worker,
-) : SQLiteDriver {
+class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
     private val pending = mutableMapOf<Long, (JsonObject) -> Unit>()
     private var nextId = 1L
@@ -98,7 +96,7 @@ class SubSlothSqliteDriver(
                 val error = resp["error"]?.jsonPrimitive?.contentOrNull
                 if (error != null) {
                     cont.resumeWithException(
-                        RuntimeException("$cmd: $error")
+                        RuntimeException("$cmd: $error"),
                     )
                 } else {
                     cont.resume(resp["data"]!!.jsonObject)
@@ -106,24 +104,24 @@ class SubSlothSqliteDriver(
             }
             val msg = buildJsonObject {
                 put("id", id)
-                put("data", buildJsonObject {
-                    put("cmd", cmd)
-                    payload.forEach { (k, v) -> put(k, v) }
-                })
+                put(
+                    "data",
+                    buildJsonObject {
+                        put("cmd", cmd)
+                        payload.forEach { (k, v) -> put(k, v) }
+                    },
+                )
             }
             worker.postMessage(json.encodeToString(msg))
         }
     }
 
     /** Blocking variant — bridges non-suspend step()/close() to suspend. */
-    private fun blockingRequest(cmd: String, payload: JsonObject): JsonObject =
-        runBlocking { requestCmd(cmd, payload) }
+    private fun blockingRequest(cmd: String, payload: JsonObject): JsonObject = runBlocking { requestCmd(cmd, payload) }
 
     // ---- Connection -----------------------------------------------------
 
-    private inner class Connection(
-        private val databaseId: Long,
-    ) : SQLiteConnection {
+    private inner class Connection(private val databaseId: Long) : SQLiteConnection {
 
         override val inTransaction: Boolean get() = false
 
@@ -188,28 +186,38 @@ class SubSlothSqliteDriver(
 
         // ---- typed bind helpers -----------------------------------------
 
-        override fun bindText(index: Int, value: String) { pendingBindings[index] = value }
-        override fun bindLong(index: Int, value: Long) { pendingBindings[index] = value }
-        override fun bindDouble(index: Int, value: Double) { pendingBindings[index] = value }
-        override fun bindFloat(index: Int, value: Float) { pendingBindings[index] = value.toDouble() }
-        override fun bindInt(index: Int, value: Int) { pendingBindings[index] = value.toLong() }
-        override fun bindBoolean(index: Int, value: Boolean) { pendingBindings[index] = if (value) 1L else 0L }
-        override fun bindBlob(index: Int, value: ByteArray) { pendingBindings[index] = value }
-        override fun bindNull(index: Int) { pendingBindings[index] = null }
+        override fun bindText(index: Int, value: String) {
+            pendingBindings[index] = value
+        }
+        override fun bindLong(index: Int, value: Long) {
+            pendingBindings[index] = value
+        }
+        override fun bindDouble(index: Int, value: Double) {
+            pendingBindings[index] = value
+        }
+        override fun bindFloat(index: Int, value: Float) {
+            pendingBindings[index] = value.toDouble()
+        }
+        override fun bindInt(index: Int, value: Int) {
+            pendingBindings[index] = value.toLong()
+        }
+        override fun bindBoolean(index: Int, value: Boolean) {
+            pendingBindings[index] = if (value) 1L else 0L
+        }
+        override fun bindBlob(index: Int, value: ByteArray) {
+            pendingBindings[index] = value
+        }
+        override fun bindNull(index: Int) {
+            pendingBindings[index] = null
+        }
 
         // ---- row getters (all null-safe) ---------------------------------
 
-        override fun getText(index: Int): String {
-            return currentCell(index) as? String ?: ""
-        }
+        override fun getText(index: Int): String = currentCell(index) as? String ?: ""
 
-        override fun getLong(index: Int): Long {
-            return (currentCell(index) as? Number)?.toLong() ?: 0L
-        }
+        override fun getLong(index: Int): Long = (currentCell(index) as? Number)?.toLong() ?: 0L
 
-        override fun getDouble(index: Int): Double {
-            return (currentCell(index) as? Number)?.toDouble() ?: 0.0
-        }
+        override fun getDouble(index: Int): Double = (currentCell(index) as? Number)?.toDouble() ?: 0.0
 
         override fun getFloat(index: Int): Float = getDouble(index).toFloat()
         override fun getInt(index: Int): Int = getLong(index).toInt()
@@ -241,20 +249,19 @@ class SubSlothSqliteDriver(
         override fun getColumnCount(): Int = columnNames.size
 
         override fun close() {
-            blockingRequest("close", buildJsonObject {
-                put("statementId", statementId)
-            })
+            blockingRequest(
+                "close",
+                buildJsonObject {
+                    put("statementId", statementId)
+                },
+            )
         }
 
         // ---- internal helpers -------------------------------------------
 
-        private fun currentRow(): List<Any?>? {
-            return if (pos in rows.indices) rows[pos] else null
-        }
+        private fun currentRow(): List<Any?>? = if (pos in rows.indices) rows[pos] else null
 
-        private fun currentCell(index: Int): Any? {
-            return currentRow()?.getOrNull(index)
-        }
+        private fun currentCell(index: Int): Any? = currentRow()?.getOrNull(index)
 
         /** Build JSON array of bindings from pending typed bind* calls. */
         private fun encodeBindings(): JsonArray {
@@ -282,12 +289,17 @@ class SubSlothSqliteDriver(
                 rowElement.jsonArray.map { cell ->
                     when {
                         cell is JsonNull -> null
+
                         cell is JsonPrimitive && cell.isString -> cell.content
+
                         cell is JsonPrimitive && cell.contentOrNull?.toLongOrNull() != null ->
                             cell.long
+
                         cell is JsonPrimitive && cell.contentOrNull?.toDoubleOrNull() != null ->
                             cell.double
+
                         cell is JsonPrimitive -> cell.content
+
                         else -> null
                     }
                 }
