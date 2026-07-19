@@ -171,7 +171,7 @@ jobs:
   build-web:
     name: 🌐 Web / wasmJs
     needs: [changes]
-    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.source == 'true'
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
