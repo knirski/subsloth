@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# agent-browser wrapper for NixOS
+# Uses nixpkgs Chromium (already has all library deps) instead of the bundled
+# Chrome binary which is dynamically linked and rejected by NixOS stub-ld.
+#
+# Usage: ./agent-browser [args...]
+#
+# Also works with AGENT_BROWSER_EXECUTABLE_PATH env var if you prefer:
+#   export AGENT_BROWSER_EXECUTABLE_PATH=$(nix eval --raw nixpkgs#chromium.outPath)/bin/chromium
+#   ./agent-browser open https://example.com
+
+set -euo pipefail
+
+AGENT_BROWSER_BIN="${AGENT_BROWSER_BIN:-/home/krzysiek/.npm-global/lib/node_modules/agent-browser/bin/agent-browser-linux-x64}"
+
+# Prefer explicit env var, else autodetect nixpkgs chromium
+if [ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ]; then
+  CHROMIUM=$(nix eval --raw nixpkgs#chromium.outPath 2>/dev/null)/bin/chromium
+  if [ ! -x "$CHROMIUM" ]; then
+    echo "ERROR: Chromium not found. Run: nix shell nixpkgs#chromium" >&2
+    exit 1
+  fi
+  export AGENT_BROWSER_EXECUTABLE_PATH="$CHROMIUM"
+fi
+
+exec nix shell nixpkgs#chromium --command \
+  "$AGENT_BROWSER_BIN" "$@"
