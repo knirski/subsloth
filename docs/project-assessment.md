@@ -142,6 +142,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 |-------|-------|----------|
 | **Unit (Pure)** | JUnit 5, Turbine, `kotlinx-coroutines-test` | Policies, mappers, `Outcome` combinators, `InMemorySessionState` |
 | **Contract** | `:testing:api-contract` + WireMock | Fixture schema validation (all endpoints), DTO round-trip, JSON structural checks |
+| **Live Drift** | `ApiLiveDriftTest` + manual CI | Real API contract verification on demand via `workflow_dispatch` with secrets |
 | **Integration (I/O)** | Room `TestDatabaseFactory`, DataStore in-memory, Ktor `MockEngine` | Repository behavior, sync logic, download queue |
 | **UI (Desktop)** | Compose UI Test (JUnit 4) | 6 test classes: Login, Catalog, Detail, Library, Player, Search |
 | **Screenshot** | Compose Preview Screenshot Testing | 10 screens × 3 configs |
@@ -163,7 +164,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 |--------|----------------|
 | **Environment** | Nix flake (`flake.nix` + `flake.lock`) — pinned JDK 25/17, Android SDK 36, Android Studio, Node/Yarn/Binaryen for Wasm |
 | **Gradle** | Wrapper 8.x + `build-logic` convention plugins + version catalog |
-| **CI** | GitHub Actions (offline-only) — `check lintDebug testDebugUnitTest assembleDebug` + `vacuum lint` |
+| **CI** | GitHub Actions (offline-only) — `check lintDebug testDebugUnitTest assembleDebug` + `vacuum lint`; manual API drift workflow via `workflow_dispatch` |
 | **Release** | `release-please` (conventional commits) → semantic-release → GitHub Release + debug APK artifact |
 | **Invariants** | `.github/scripts/check-invariants.sh` — scans for credentials, signed URLs, HAR files, traces |
 
@@ -276,15 +277,18 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ### Short-term (v1.1 / Next)
 1. ✅ **Automated offline fixture/schema validation** — 
    - Credential capture now reads `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD` env vars (no CLI history exposure)
+   - `CaptureApi` reads `SUBSLOTH_URL` for API base URL (falls back to default endpoint)
    - `FixtureSchemaValidationTest` extended to cover all JSON endpoints (native + web-discovery), including structural and round-trip checks
    - Added `:testing:api-contract:validateFixtures` (offline) and `:testing:api-contract:captureAndValidate` (full pipeline) Gradle tasks
    - Shell script `scripts/capture/validate-fixtures.sh` for one-command pipeline
    - See PR #192
-2. ✅ **Add `androidTarget()` to KMP convention** — 
+2. ✅ **API drift detection CI** — manually-triggered workflow using `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD`/`SUBSLOTH_URL` secrets to run `ApiLiveDriftTest` against the live API; detects schema or endpoint drift before it reaches users
+   - See PR #193
+3. ✅ **Add `androidTarget()` to KMP convention** —
    - New `subsloth.kmp.android.library` convention plugin with `androidTarget()`, `jvm()`, `wasmJs()` targets
    - Migrated `:core:database` and `:core:media` from manual config to the new plugin (removed ~82 lines of boilerplate)
    - See PR #189 — `known-gaps.md` #2 resolved
-3. ✅ **Flesh out `:webApp` feature parity** — 
+4. ✅ **Flesh out `:webApp` feature parity** —
    - All nav entries in `WebNavHost` now wired to real feature screens: Catalog → `HomeScreen`, Detail → `MovieDetailScreen`/`SeriesDetailScreen`, Library → `LibraryScreen`, Downloads → `DownloadsScreen`, Settings → `SettingsScreen`, Diagnostics → `DiagnosticsScreen`, OfflineLibrary → `LibraryScreen`
    - ViewModels scoped per entry with `ViewModelStoreOwner` lifecycle
    - Added `:feature:library` dependency
@@ -314,7 +318,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 - **Reproducible builds** — Nix flake pins entire toolchain
 - **Operational hygiene** — invariant scanning, secret hygiene, conventional commits, automated releases
 
-All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. All three short-term goals are now completed: KMP Android target convention (PR #189), webApp feature parity (PR #190), and automated offline fixture/schema validation (PR #192). No architectural or implementation gaps block release.
+All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. All short-term goals are now completed: KMP Android target convention (PR #189), webApp feature parity (PR #190), automated offline fixture/schema validation (PR #192), and API drift detection CI (PR #193). No architectural or implementation gaps block release.
 
 ---
 

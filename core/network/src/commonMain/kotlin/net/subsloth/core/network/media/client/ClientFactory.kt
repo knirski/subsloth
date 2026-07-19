@@ -19,7 +19,7 @@ import kotlinx.serialization.json.Json
 
 object ClientFactory {
     /** Default API base URL. Override via [create]'s [baseUrl] parameter. */
-    private const val DEFAULT_BASE_URL = "http://localhost:8080/api/v2/"
+    internal const val DEFAULT_BASE_URL = "http://localhost:8080/api/v2/"
 
     /**
      * Creates an [HttpClient] configured with:

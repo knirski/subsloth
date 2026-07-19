@@ -1,0 +1,29 @@
+name: API Drift
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: api-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api-drift:
+    name: 🧪 API Drift Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/kmp-setup
+
+      - name: Run API drift tests
+        env:
+          SUBSLOTH_LOGIN: ${{ secrets.SUBSLOTH_LOGIN }}
+          SUBSLOTH_PASSWORD: ${{ secrets.SUBSLOTH_PASSWORD }}
+          SUBSLOTH_URL: ${{ secrets.SUBSLOTH_URL }}
+        run: ./gradlew :core:network:jvmTest --tests "net.subsloth.core.network.media.ApiLiveDriftTest"

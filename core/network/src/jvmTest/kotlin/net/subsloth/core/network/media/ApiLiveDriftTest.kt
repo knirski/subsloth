@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 class ApiLiveDriftTest {
     private val login: String = System.getenv("SUBSLOTH_LOGIN") ?: ""
     private val password: String = System.getenv("SUBSLOTH_PASSWORD") ?: ""
+    private val baseUrl: String = System.getenv("SUBSLOTH_URL") ?: ""
 
     private val clients = mutableListOf<HttpClient>()
 
@@ -23,6 +24,7 @@ class ApiLiveDriftTest {
             .create(
                 login = login,
                 password = password,
+                baseUrl = baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL },
                 enableHttpLogging = false,
             ).also { clients.add(it) }
     }
