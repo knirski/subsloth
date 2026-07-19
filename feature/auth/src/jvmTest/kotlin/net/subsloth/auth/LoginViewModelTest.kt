@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -175,6 +176,7 @@ class LoginViewModelTest {
             saveApiBaseUrl = { savedUrl = it },
         )
         viewModel.onApiBaseUrlChanged("https://new.example.com/api/")
+        advanceUntilIdle()
         assertThat(savedUrl).isEqualTo("https://new.example.com/api/")
         assertThat(viewModel.apiBaseUrl.value).isEqualTo("https://new.example.com/api/")
     }

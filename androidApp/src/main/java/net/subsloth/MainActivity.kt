@@ -10,13 +10,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.util.Log
 import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 import net.subsloth.preferences.UserPreferences
-import net.subsloth.core.ui.SessionGate
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                     val app = LocalContext.current.applicationContext
                     val container = (app as? SubSlothApplication)?.container
                     val userPreferences = container?.userPreferences ?: run {
-                        android.util.Log.e("MainActivity", "SubSlothApplication container not found")
+                        Log.e("MainActivity", "SubSlothApplication container not found")
                         null
                     }
                     SessionGate(

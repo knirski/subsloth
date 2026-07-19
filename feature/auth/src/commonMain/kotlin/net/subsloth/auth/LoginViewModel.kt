@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -81,6 +82,7 @@ class LoginViewModel(
     fun onApiBaseUrlChanged(url: String) {
         _apiBaseUrl.value = url
         viewModelScope.launch {
+            delay(300)
             saveApiBaseUrl(url)
         }
     }
