@@ -55,7 +55,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 
 ### Module Structure (KMP)
 
-```
+```text
 :core:model           → Pure domain types, identifiers, errors, Outcome<T>      [KMP: JVM, WasmJS]
 :core:domain          → Policies, ports, pure business logic                    [KMP: JVM, WasmJS]
 :core:network         → Ktor client, API DTOs, mappers, CatalogRepository       [KMP: JVM, WasmJS]
