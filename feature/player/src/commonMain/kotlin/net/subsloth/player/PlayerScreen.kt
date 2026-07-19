@@ -119,7 +119,6 @@ fun PlayerOverlay(
 
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black),
-        contentAlignment = Alignment.Center,
     ) {
         if (state.playbackError != null) {
             ErrorContent(
@@ -149,7 +148,6 @@ fun PlayerOverlay(
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = state.title,
@@ -176,7 +174,8 @@ fun PlayerOverlay(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Push controls to the bottom of the screen
+            Spacer(modifier = Modifier.weight(1f))
 
             val displaySeconds = draggingPosition?.let {
                 (it / 1000f * state.durationSeconds).toLong()
