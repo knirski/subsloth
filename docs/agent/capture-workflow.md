@@ -9,8 +9,11 @@ Media fixture-capture and export pipeline. Local-only, never in CI. Credentials 
 Talks to Kodi-plugin REST API at `front.media-mirror.tv/api/v2/` using Basic auth.
 
 ```bash
-nix develop --command ./gradlew :testing:api-contract:captureApi -Pemail=you@example.com -Ppassword=your-password
+nix develop --command ./gradlew :testing:api-contract:captureApi
 ```
+
+Credentials are read from `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD` environment
+variables by default. Fallback to `-Pemail=... -Ppassword=...` Gradle properties.
 
 Calls 5 Kodi endpoints (`/movies`, `/shows`, `/movies/{id}`, `/shows/{id}`, `/episodes/{id}`), applies sanitization, writes to `testing/api-contract/src/main/resources/media/`. Implementation in `CaptureApi.kt`.
 
@@ -43,6 +46,25 @@ Never commit raw HAR files — they're git-ignored (`*.har`, `*.har.gz`) and con
 5. After fixture changes: `./gradlew :testing:api-contract:test && ./gradlew :core:network:testDebugUnitTest`.
 6. Captured real data wins over existing fixtures. When a real capture differs, update fixture and DTO.
 7. Module boundaries: `:testing:api-contract` (Endpoint, CaptureApi, HarProcessor, fixtures), `:core:network` (DTOs, Api, FixtureTest).
+
+## Automated Offline Validation
+
+A combined validation pipeline verifies all fixtures offline (no network):
+
+```bash
+# Full pipeline: capture + validate
+./scripts/capture/validate-fixtures.sh
+
+# Or via Gradle directly
+./gradlew :testing:api-contract:validateFixtures
+```
+
+What it checks:
+- Native JSON fixtures deserialize into their typed DTOs (`MovieListResponse`, `ShowListResponse`, `Movie`, `Show`, `Episode`)
+- All JSON fixtures produce valid generated schemas (via `SerializationClassJsonSchemaGenerator`)
+- All JSON fixtures parse as valid `JsonElement` and round-trip through serialization
+- All non-JSON fixtures (JavaScript, SRT, RedirectLocation) exist and are non-empty
+- Fixture bodies contain no sensitive fields (enforced by `WebDiscoveryFixtureTest`)
 
 ## Troubleshooting
 

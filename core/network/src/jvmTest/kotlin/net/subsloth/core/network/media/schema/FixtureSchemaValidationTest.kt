@@ -3,6 +3,8 @@ package net.subsloth.core.network.media.schema
 import kotlinx.schema.generator.json.serialization.SerializationClassJsonSchemaGenerator
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import net.subsloth.core.network.media.api.model.Episode
 import net.subsloth.core.network.media.api.model.Movie
@@ -12,7 +14,10 @@ import net.subsloth.core.network.media.api.model.ShowListResponse
 import net.subsloth.testing.assertions.assertThat
 import net.subsloth.testing.contract.Endpoint
 import net.subsloth.testing.contract.FixtureLoader
+import net.subsloth.testing.contract.ResponseKind
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 /**
  * Full API contract validation: every JSON fixture must deserialize into
@@ -22,6 +27,10 @@ import org.junit.jupiter.api.Test
  * reads kotlinx.serialization descriptors). Fixture validation uses
  * kotlinx.serialization itself — if a fixture deserializes successfully
  * into its DTO, the contract holds.
+ *
+ * Web-discovery JSON fixtures (which lack typed DTOs in :core:network)
+ * are validated as parseable JSON with structural consistency checks.
+ * Non-JSON fixtures are validated for existence and non-emptiness.
  */
 class FixtureSchemaValidationTest {
     private val schemaGenerator = SerializationClassJsonSchemaGenerator()
@@ -29,6 +38,22 @@ class FixtureSchemaValidationTest {
         Json {
             ignoreUnknownKeys = true
         }
+
+    companion object {
+        /** All endpoints with JSON responses. */
+        @JvmStatic
+        fun jsonEndpoints(): List<Endpoint> = Endpoint.entries
+            .filter { it.responseKind == ResponseKind.Json }
+            .sortedBy { it.fixtureName }
+
+        /** All endpoints with non-JSON responses. */
+        @JvmStatic
+        fun nonJsonEndpoints(): List<Endpoint> = Endpoint.entries
+            .filter { it.responseKind != ResponseKind.Json }
+            .sortedBy { it.fixtureName }
+    }
+
+    // ── Schema generation helpers ───────────────────────────────────────────
 
     private fun assertFixtureValid(descriptor: SerialDescriptor) {
         val schemaString = schemaGenerator.generateSchemaString(descriptor)
@@ -38,7 +63,7 @@ class FixtureSchemaValidationTest {
         assertThat((schema as JsonObject)["type"]).isNotNull()
     }
 
-    // ── Movies ─────────────────────────────────────────────────────────────
+    // ── Native contract endpoint tests ──────────────────────────────────────
 
     @Test
     fun `Movies fixture deserializes into MovieListResponse and schema validates`() {
@@ -61,8 +86,6 @@ class FixtureSchemaValidationTest {
         assertFixtureValid(Movie.serializer().descriptor)
     }
 
-    // ── Shows ──────────────────────────────────────────────────────────────
-
     @Test
     fun `Shows fixture deserializes into ShowListResponse and schema validates`() {
         val fixture = FixtureLoader.loadFixtureJson(Endpoint.Shows)
@@ -84,8 +107,6 @@ class FixtureSchemaValidationTest {
         assertFixtureValid(Show.serializer().descriptor)
     }
 
-    // ── Episodes ───────────────────────────────────────────────────────────
-
     @Test
     fun `EpisodeDetail fixture deserializes into Episode and schema validates`() {
         val fixture = FixtureLoader.loadFixtureJson(Endpoint.EpisodeDetail)
@@ -96,7 +117,57 @@ class FixtureSchemaValidationTest {
         assertFixtureValid(Episode.serializer().descriptor)
     }
 
-    // ── Schema round-trip ──────────────────────────────────────────────────
+    // ── All JSON endpoints (parameterized: native + web-discovery) ──────────
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("jsonEndpoints")
+    fun `JSON fixture parses as valid JsonElement`(endpoint: Endpoint) {
+        for (method in endpoint.methods) {
+            val element = FixtureLoader.loadFixtureJson(endpoint, method)
+            assertThat(element).isNotNull()
+            // Every JSON endpoint fixture should be a non-empty object or array
+            when (element) {
+                is JsonObject -> assertThat(element).isNotEmpty()
+                is JsonArray -> assertThat(element).isNotEmpty()
+                else -> { /* JsonPrimitive at root is unusual but valid */ }
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("jsonEndpoints")
+    fun `JSON fixture round-trips through JsonElement serialization`(endpoint: Endpoint) {
+        for (method in endpoint.methods) {
+            val element = FixtureLoader.loadFixtureJson(endpoint, method)
+            val reSerialized = json.encodeToString(JsonElement.serializer(), element)
+            val reParsed = json.parseToJsonElement(reSerialized)
+            assertThat(reParsed).isEqualTo(element)
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("jsonEndpoints")
+    fun `JSON fixture body has no structural null in place of real content`(endpoint: Endpoint) {
+        for (method in endpoint.methods) {
+            val text = FixtureLoader.loadFixtureText(endpoint, method).trim()
+            assertThat(text).isNotEqualTo("null")
+            assertThat(text).isNotEqualTo("{}")
+            assertThat(text).isNotEqualTo("[]")
+        }
+    }
+
+    // ── Non-JSON endpoints (parameterized) ──────────────────────────────────
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("nonJsonEndpoints")
+    fun `non-JSON fixture is not empty`(endpoint: Endpoint) {
+        for (method in endpoint.methods) {
+            val text = FixtureLoader.loadFixtureText(endpoint, method)
+            assertThat(text).isNotEmpty()
+        }
+    }
+
+    // ── Schema round-trip (all DTO descriptors) ─────────────────────────────
 
     @Test
     fun `all generated schemas are valid JSON`() {

@@ -34,10 +34,12 @@ object CaptureApi {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val email =
-            args.getOrNull(0) ?: error("Usage: CaptureApi <email> <password> [native-dir] [rules-file]")
-        val password =
-            args.getOrNull(1) ?: error("Usage: CaptureApi <email> <password> [native-dir] [rules-file]")
+        val email = args.getOrNull(0) ?: System.getenv("SUBSLOTH_LOGIN")
+            ?: error("Usage: CaptureApi <email> <password> [native-dir] [rules-file] — or set SUBSLOTH_LOGIN env var")
+        val password = args.getOrNull(1) ?: System.getenv("SUBSLOTH_PASSWORD")
+            ?: error(
+                "Usage: CaptureApi <email> <password> [native-dir] [rules-file] — or set SUBSLOTH_PASSWORD env var",
+            )
         val nativeDir = File(args.getOrNull(2) ?: "src/main/resources/media")
         val rulesFile = File(args.getOrNull(3) ?: "scripts/capture/sanitization-rules.json")
 

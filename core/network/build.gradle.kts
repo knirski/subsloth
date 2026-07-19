@@ -51,6 +51,7 @@ kotlin {
             implementation(libs.coroutines.test)
             implementation(libs.turbine)
             implementation(libs.kotlinx.schema.generator.json)
+            implementation(libs.junit.jupiter.params)
         }
     }
 }
