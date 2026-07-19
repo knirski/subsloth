@@ -25,7 +25,7 @@ functional streaming app.
 - **Model the domain with sealed types.** Every variant is explicit, every
   `when` is exhaustive, every invalid state is unrepresentable. No boolean
   flags where a sealed interface tells the full story.
-- **One module, one responsibility.** Twenty-one modules with a strict inward
+- **One module, one responsibility.** Twenty-two modules with a strict inward
   dependency gradient. Features share nothing but core types; the dependency
   graph is acyclic by convention.
 - **Test through contracts, not implementations.** API fixtures are captured
@@ -67,7 +67,7 @@ See [`docs/development.md`](docs/development.md) for detailed setup and
   then read the [canonical specs](openspec/specs/) that define every v1
   requirement.
 - **Build:** follow the [module structure guide](docs/module-structure.md) to
-  understand the 21-module dependency graph, then the [convention plugins
+  understand the 22-module dependency graph, then the [convention plugins
   reference](docs/convention-plugins.md) for Gradle conventions.
 - **Code:** read the [codestyle](docs/codestyle.md), the
   [FC/IS architecture](docs/agent/fc-is-architecture.md), and the
