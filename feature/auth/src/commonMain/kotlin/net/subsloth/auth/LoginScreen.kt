@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.flow.first
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
@@ -61,7 +62,13 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var login by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    var apiBaseUrl by rememberSaveable { mutableStateOf(viewModel.apiBaseUrl.value) }
+    var apiBaseUrl by rememberSaveable { mutableStateOf("") }
+
+    // Seed apiBaseUrl from the ViewModel's persisted value once loaded
+    LaunchedEffect(Unit) {
+        val url = viewModel.apiBaseUrl.first()
+        if (url.isNotEmpty()) apiBaseUrl = url
+    }
 
     val currentOnNavigateToCatalog by rememberUpdatedState(onNavigateToCatalog)
 

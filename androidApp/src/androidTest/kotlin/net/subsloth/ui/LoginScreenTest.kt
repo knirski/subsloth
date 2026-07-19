@@ -141,10 +141,10 @@ class LoginScreenTest {
             )
         }
 
-        // Labels are still visible but fields should be disabled (via enabled = !isLoading)
-        composeTestRule.onNodeWithText("Login").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Password").assertIsDisplayed()
-        composeTestRule.onNodeWithText("API Base URL").assertIsDisplayed()
+        // Labels are visible but fields should be disabled (via enabled = !isLoading)
+        composeTestRule.onNodeWithText("Login").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Password").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("API Base URL").assertIsNotEnabled()
     }
 
     @Test
