@@ -32,6 +32,9 @@ class LoginFormDesktopTest {
                 )
             }
         }
+
+        composeRule.onNodeWithText("SubSloth").assertIsDisplayed()
+        composeRule.onNodeWithText("Sign In").assertIsDisplayed()
     }
 
     @Test
@@ -66,6 +69,8 @@ class LoginFormDesktopTest {
                 )
             }
         }
+
+        composeRule.onNodeWithText("Authentication required").assertIsDisplayed()
     }
 
     @Test
