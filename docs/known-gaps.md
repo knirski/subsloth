@@ -33,31 +33,24 @@ from the Nix environment via `KOTLIN_NODEJS_HOME`, `KOTLIN_YARN_HOME`, and
 
 ## 2. `androidTarget()` in KMP Convention
 
-**Status:** Deferred
+**Status:** Resolved ✅
 
-The `subsloth.kmp.library` convention does not declare `androidTarget()`.
-Android modules use separate AGP-based conventions (`subsloth.android.library`,
-`subsloth.android.application`) and consume KMP modules as JVM bytecode.
+**Resolution:** A new `subsloth.kmp.android.library` convention plugin was created
+at `build-logic/convention/src/main/kotlin/subsloth.kmp.android.library.gradle.kts`.
+It uses `com.android.kotlin.multiplatform.library` (the combined AGP+KMP plugin)
+which avoids the `kotlin` extension conflict that prevented adding `androidTarget()`
+directly to `subsloth.kmp.library`.
 
-Adding `androidTarget()` would:
-- Allow KMP modules to produce native Android artifacts directly
-- Enable `androidMain` source sets for Android-specific `expect`/`actual`
-- Remove the dual-build-system split for some modules
+**Migrated modules:**
+- `:core:database` — switched to `subsloth.kmp.android.library`, removed redundant
+  `compileSdk`/`minSdk` config (now provided by convention, see PR #189)
+- `:core:media` — switched to `subsloth.kmp.android.library`, removed ~78 lines
+  of manual boilerplate (Spotless, Detekt, Power-Assert, JUnit Platform, etc.)
 
-**Blocked by:** Both `com.android.library` and `org.jetbrains.kotlin.multiplatform`
-register a `kotlin` extension, causing a conflict in the precompiled script
-plugin. Possible approaches:
-- Create a separate `subsloth.kmp.android.library` convention
-- Add `androidTarget()` per-module (doesn't need convention changes)
-- Wait for Gradle/AGP/KMP compatibility improvements
-
-**Impact:** Low. The current approach works (Android → JVM bytecode → AGP). The
-main cost is that Android-only libraries (WorkManager, Media3) require separate
-AGP modules rather than `androidMain` in shared modules.
-
-**To close:** Resolve the AGP+KMP plugin conflict in the convention, add
-`androidTarget()` to `subsloth.kmp.library`, migrate `androidMain` source sets
-where applicable, and update `:androidApp` consumption.
+**Key decision:** The new plugin is a sibling (not a replacement) of
+`subsloth.kmp.library`. Modules without Android needs continue using
+`subsloth.kmp.library`. Modules needing `androidMain` source sets use
+`subsloth.kmp.android.library`.
 
 ---
 

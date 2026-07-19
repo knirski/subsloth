@@ -43,7 +43,7 @@ Common build, test, emulator, IDE, and development issues and their fixes.
 | WasmJS build fails | Missing npm dependency | Declare in `wasmJsMain` with `implementation(npm(...))` |
 | WasmJS webpack bundling fails | Missing `KOTLIN_NODEJS_HOME` / `KOTLIN_YARN_HOME` | Ensure inside Nix dev shell (`direnv allow`) |
 | iOS targets don't compile | iOS targets disabled | See `docs/known-gaps.md` §6 — deferred |
-| `androidTarget()` plugin conflict | AGP + KMP conflict in convention | Use separate AGP module or add per-module `androidTarget()` |
+| `androidTarget()` plugin conflict | AGP + KMP conflict in `subsloth.kmp.library` convention | Use `subsloth.kmp.android.library` convention plugin instead (resolves the conflict via `com.android.kotlin.multiplatform.library`) |
 | SQLite on WasmJS: `isNull` bug | Upstream bug in `sqlite-web:2.7.0-alpha05` | See `docs/known-gaps.md` §3 — blocked on upstream |
 
 ---
