@@ -18,13 +18,15 @@ import net.subsloth.core.ui.theme.SubSlothTheme
 import net.subsloth.library.DownloadGroupItem
 import net.subsloth.library.DownloadsContent
 import net.subsloth.library.DownloadsUiState
+import net.subsloth.screenshot.DEVICE_PHONE
+import net.subsloth.screenshot.DEVICE_TABLET
+import net.subsloth.screenshot.DEVICE_TV
 import kotlin.time.Instant
 
-@Suppress("ktlint:standard:max-line-length")
 @PreviewTest
-@Preview(name = "Phone Light", device = "spec:width=411dp,height=731dp,dpi=420", showBackground = true)
-@Preview(name = "Tablet Light", device = "spec:width=800dp,height=1280dp,dpi=320", showBackground = true)
-@Preview(name = "TV Light", device = "spec:width=960dp,height=540dp,dpi=320", showBackground = true)
+@Preview(name = "Phone Light", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Tablet Light", device = DEVICE_TABLET, showBackground = true)
+@Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
 fun DownloadsScreenLightScreenshot() {
     SubSlothTheme(darkTheme = false) {
@@ -96,11 +98,10 @@ fun DownloadsScreenLightScreenshot() {
     }
 }
 
-@Suppress("ktlint:standard:max-line-length")
 @PreviewTest
-@Preview(name = "Phone Dark", device = "spec:width=411dp,height=731dp,dpi=420", showBackground = true)
-@Preview(name = "Tablet Dark", device = "spec:width=800dp,height=1280dp,dpi=320", showBackground = true)
-@Preview(name = "TV Dark", device = "spec:width=960dp,height=540dp,dpi=320", showBackground = true)
+@Preview(name = "Phone Dark", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Tablet Dark", device = DEVICE_TABLET, showBackground = true)
+@Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
 fun DownloadsScreenDarkScreenshot() {
     SubSlothTheme(darkTheme = true) {

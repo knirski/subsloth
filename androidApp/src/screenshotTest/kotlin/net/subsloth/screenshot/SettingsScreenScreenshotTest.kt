@@ -7,15 +7,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import net.subsloth.core.ui.theme.SubSlothTheme
+import net.subsloth.screenshot.DEVICE_PHONE
+import net.subsloth.screenshot.DEVICE_TABLET
+import net.subsloth.screenshot.DEVICE_TV
 import net.subsloth.settings.DiagnosticsState
 import net.subsloth.settings.SettingsContent
 import net.subsloth.settings.SettingsUiState
 
-@Suppress("ktlint:standard:max-line-length")
 @PreviewTest
-@Preview(name = "Phone Light", device = "spec:width=411dp,height=731dp,dpi=420", showBackground = true)
-@Preview(name = "Tablet Light", device = "spec:width=800dp,height=1280dp,dpi=320", showBackground = true)
-@Preview(name = "TV Light", device = "spec:width=960dp,height=540dp,dpi=320", showBackground = true)
+@Preview(name = "Phone Light", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Tablet Light", device = DEVICE_TABLET, showBackground = true)
+@Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
 fun SettingsScreenLightScreenshot() {
     SubSlothTheme(darkTheme = false) {
@@ -35,11 +37,10 @@ fun SettingsScreenLightScreenshot() {
     }
 }
 
-@Suppress("ktlint:standard:max-line-length")
 @PreviewTest
-@Preview(name = "Phone Dark", device = "spec:width=411dp,height=731dp,dpi=420", showBackground = true)
-@Preview(name = "Tablet Dark", device = "spec:width=800dp,height=1280dp,dpi=320", showBackground = true)
-@Preview(name = "TV Dark", device = "spec:width=960dp,height=540dp,dpi=320", showBackground = true)
+@Preview(name = "Phone Dark", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Tablet Dark", device = DEVICE_TABLET, showBackground = true)
+@Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
 fun SettingsScreenDarkScreenshot() {
     SubSlothTheme(darkTheme = true) {
