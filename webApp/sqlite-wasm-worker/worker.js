@@ -62,11 +62,11 @@ function stepRequest(id, requestData) {
     const rows = [];
     const columnTypes = [];
     while (statement.step()) {
-      if (!columnTypes.length) {
-        for (let i = 0; i < statement.columnCount; i++) {
-          columnTypes.push(sqlite3.capi.sqlite3_column_type(statement, i));
-        }
+      const rowTypes = [];
+      for (let i = 0; i < statement.columnCount; i++) {
+        rowTypes.push(sqlite3.capi.sqlite3_column_type(statement, i));
       }
+      columnTypes.push(rowTypes);
       rows.push(statement.get([]));
     }
     postMessage({ id, data: { rows, columnTypes } });

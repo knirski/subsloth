@@ -67,19 +67,35 @@ class WebWorkerProtocolContractTest {
 
     @Test
     fun `step response`() {
-        val d = parse("""{"id":3,"data":{"rows":[["a","b"],["c",null]],"columnTypes":[3,4]}}""")
+        // columnTypes is now row-major: [[col0_row1, col1_row1], [col0_row2, col1_row2]]
+        val d = parse("""{"id":3,"data":{"rows":[["a","b"],["c",null]],"columnTypes":[[3,4],[3,5]]}}""")
         val dd = d.obj("data")
         val rows = dd["rows"]!!.jsonArray
         assertEquals(2, rows.size)
         assertEquals(listOf(JsonPrimitive("a"), JsonPrimitive("b")), rows[0].jsonArray.toList())
         assertEquals(listOf(JsonPrimitive("c"), JsonNull), rows[1].jsonArray.toList())
-        assertEquals(listOf(3, 4), dd["columnTypes"]!!.jsonArray.map { it.jsonPrimitive.content.toInt() })
+        val types = dd["columnTypes"]!!.jsonArray.map { it.jsonArray.map { it.jsonPrimitive.content.toInt() } }
+        assertEquals(listOf(listOf(3, 4), listOf(3, 5)), types)
     }
 
     @Test
     fun `step response empty`() {
         val d = parse("""{"id":3,"data":{"rows":[],"columnTypes":[]}}""")
         assertTrue(d.obj("data")["rows"]!!.jsonArray.isEmpty())
+    }
+
+    @Test
+    fun `step response nullable bug scenario`() {
+        // Row 1 has non-null TEXT, row 2 has NULL in same nullable column.
+        // With per-row types each row's type is reported correctly.
+        val d = parse("""{"id":3,"data":{"rows":[["hello"],[null]],"columnTypes":[[3],[5]]}}""")
+        val dd = d.obj("data")
+        val rows = dd["rows"]!!.jsonArray
+        assertEquals(2, rows.size)
+        assertEquals(JsonPrimitive("hello"), rows[0].jsonArray.single())
+        assertEquals(JsonNull, rows[1].jsonArray.single())
+        val types = dd["columnTypes"]!!.jsonArray.map { it.jsonArray.map { it.jsonPrimitive.content.toInt() } }
+        assertEquals(listOf(listOf(3), listOf(5)), types, "Row 1: TEXT; Row 2: NULL — per-row types")
     }
 
     @Test
