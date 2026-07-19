@@ -26,4 +26,4 @@ jobs:
           SUBSLOTH_LOGIN: ${{ secrets.SUBSLOTH_LOGIN }}
           SUBSLOTH_PASSWORD: ${{ secrets.SUBSLOTH_PASSWORD }}
           SUBSLOTH_URL: ${{ secrets.SUBSLOTH_URL }}
-        run: ./gradlew :core:network:jvmTest --tests "net.subsloth.core.network.media.ApiLiveDriftTest"
+        run: ./gradlew :core:network:jvmTest --tests "net.subsloth.core.network.media.ApiLiveDriftTest" --info

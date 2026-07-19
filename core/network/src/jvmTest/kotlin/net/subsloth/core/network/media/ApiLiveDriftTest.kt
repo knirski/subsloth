@@ -87,13 +87,13 @@ class ApiLiveDriftTest {
         try {
             clients.add(probeClient)
             val response = probeClient.get(resolvedBaseUrl.trimEnd('/') + "/movies")
-            println(
+            System.err.println(
                 "[ApiLiveDriftTest] $resolvedBaseUrl -> HTTP ${response.status.value} " +
                     "Content-Type: ${response.contentType() ?: "none"} " +
                     "Body preview: ${response.bodyAsText().take(200)}",
             )
         } catch (e: Exception) {
-            println("[ApiLiveDriftTest] Connectivity check failed for $resolvedBaseUrl: ${e.message}")
+            System.err.println("[ApiLiveDriftTest] Connectivity check failed for $resolvedBaseUrl: ${e.message}")
         }
     }
 
