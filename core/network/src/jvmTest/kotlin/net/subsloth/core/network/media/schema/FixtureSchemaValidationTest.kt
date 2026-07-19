@@ -122,6 +122,7 @@ class FixtureSchemaValidationTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("jsonEndpoints")
     fun `JSON fixture parses as valid JsonElement`(endpoint: Endpoint) {
+        assertThat(endpoint.methods).isNotEmpty()
         for (method in endpoint.methods) {
             val element = FixtureLoader.loadFixtureJson(endpoint, method)
             assertThat(element).isNotNull()
@@ -150,6 +151,7 @@ class FixtureSchemaValidationTest {
     fun `JSON fixture body has no structural null in place of real content`(endpoint: Endpoint) {
         for (method in endpoint.methods) {
             val text = FixtureLoader.loadFixtureText(endpoint, method).trim()
+            assertThat(text).isNotEmpty()
             assertThat(text).isNotEqualTo("null")
             assertThat(text).isNotEqualTo("{}")
             assertThat(text).isNotEqualTo("[]")
