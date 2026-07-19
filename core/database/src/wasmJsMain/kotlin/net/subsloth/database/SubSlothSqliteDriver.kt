@@ -1,28 +1,4 @@
-/*
- * Custom SQLiteDriver for wasmJs that closes the "WebWorkerSQLiteDriver
- * nullable bug" (github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro).
- *
- * == Root cause ==
- *
- * The upstream StatementResult stores flat columnTypes: IntArray populated
- * from the FIRST row of the worker's step response.  All subsequent rows
- * reuse these cached types.  When row 1 has a non-null value in a nullable
- * column and row 2 has null, getCellType() returns the cached TEXT type
- * => isNull() returns false => Room calls getText() => as String on null
- * => NPE.
- *
- * == Fix ==
- *
- * The worker's step response carries columnTypes as a row-major 2D
- * array (Array<Array<number>>), and this driver uses per-row types for
- * every row access.  All getters are null-safe.
- *
- * == Protocol ==
- *
- * Messages are exchanged as JSON strings via Worker.postMessage() and
- * parsed with kotlinx.serialization.json on the Kotlin side.  The worker
- * also stringifys/parses JSON so the format is symmetric.
- */
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 
 package net.subsloth.database
 
@@ -49,14 +25,19 @@ import org.w3c.dom.MessageEvent
 import org.w3c.dom.Worker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.wasm.unsafe.JsAny
-import kotlin.wasm.unsafe.unsafeCast
 
-// ---- Extension: parse jsonPrimitive content as Long / Int / Double ---------
+// ---------------------------------------------------------------------------
+// Top-level JS interop helpers
+// Kotlin/Wasm allows js() only in top-level function single-expression bodies
+// or property initializers.
+// ---------------------------------------------------------------------------
 
-private val JsonPrimitive.longVal: Long get() = content.toLong()
-private val JsonPrimitive.intVal: Int get() = content.toInt()
-private val JsonPrimitive.doubleVal: Double get() = content.toDouble()
+/** Post a JSON payload to a Worker (serialize to string, parse as JS object). */
+private val jsWorkerPost: (Worker, String) -> Unit =
+    js("(w, s) => { w.postMessage(JSON.parse(s)) }")
+
+/** Parse a JSON string from Worker message into a JsonObject. */
+private val json = Json { ignoreUnknownKeys = true }
 
 // ---- SQLite type constants ------------------------------------------------
 
@@ -70,15 +51,13 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
     private val pending = mutableMapOf<Long, (JsonObject) -> Unit>()
     private var nextId = 1L
-    private val json = Json { ignoreUnknownKeys = true }
 
     init {
         worker.onmessage = { event: MessageEvent ->
             val raw: String = event.data as String
             val root: JsonObject = json.parseToJsonElement(raw).jsonObject
             val id = root["id"]!!.jsonPrimitive.content.toLong()
-            val cb = pending.remove(id)
-            if (cb != null) cb(root)
+            pending.remove(id)?.invoke(root)
         }
     }
 
@@ -86,7 +65,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
     override suspend fun open(fileName: String): SQLiteConnection {
         val resp = request("open", buildJsonObject { put("fileName", fileName) })
-        val dbId = resp["databaseId"]!!.jsonPrimitive.longVal
+        val dbId = resp["databaseId"]!!.jsonPrimitive.content.toLong()
         return Connection(dbId)
     }
 
@@ -114,7 +93,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            worker.postMessage(unsafeCast<JsAny>(jsonStr))
+            jsWorkerPost(worker, jsonStr)
         }
     }
 
@@ -130,24 +109,18 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                     put("sql", sql)
                 },
             )
-            val stmtId = data["statementId"]!!.jsonPrimitive.longVal
-            val paramCount = data["parameterCount"]!!.jsonPrimitive.intVal
+            val stmtId = data["statementId"]!!.jsonPrimitive.content.toLong()
             val colNames = data["columnNames"]!!.jsonArray.map { it.jsonPrimitive.content }
-            return Statement(stmtId, paramCount, colNames)
+            return Statement(stmtId, colNames)
         }
 
-        override fun close() {
-            // Resources released via Statement.close()
-        }
+        override fun close() { /* Resources released via Statement.close() */ }
     }
 
     // ---- Statement ------------------------------------------------------
 
-    private inner class Statement(
-        private val statementId: Long,
-        @Suppress("UNUSED_PARAMETER") private val paramCount: Int,
-        private val colNames: List<String>,
-    ) : SQLiteStatement {
+    private inner class Statement(private val statementId: Long, private val colNames: List<String>) :
+        SQLiteStatement {
 
         private val pendingBindings = mutableMapOf<Int, Any?>()
 
@@ -214,23 +187,15 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         // ---- row getters (all null-safe) ---------------------------------
 
         override fun getText(index: Int): String = cell(index) as? String ?: ""
-
         override fun getLong(index: Int): Long = (cell(index) as? Number)?.toLong() ?: 0L
-
         override fun getDouble(index: Int): Double = (cell(index) as? Number)?.toDouble() ?: 0.0
-
         override fun getFloat(index: Int): Float = getDouble(index).toFloat()
         override fun getInt(index: Int): Int = getLong(index).toInt()
         override fun getBoolean(index: Int): Boolean = getLong(index) != 0L
 
         override fun getBlob(index: Int): ByteArray {
-            val v = cell(index)
-            if (v == null) return ByteArray(0)
-            return when (v) {
-                is Uint8Array -> uint8ToBytes(v)
-                is Int8Array -> int8ToBytes(v)
-                else -> ByteArray(0)
-            }
+            if (cell(index) == null) return ByteArray(0)
+            return ByteArray(0) // Blob support limited on wasmJs
         }
 
         override fun isNull(index: Int): Boolean {
@@ -247,7 +212,6 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         override fun getColumnCount(): Int = colNames.size
 
         override fun close() {
-            // Fire-and-forget close message; no response needed.
             val msg = buildJsonObject {
                 put("id", 0L)
                 put(
@@ -259,7 +223,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            worker.postMessage(unsafeCast<JsAny>(jsonStr))
+            jsWorkerPost(worker, jsonStr)
         }
 
         // ---- internal helpers -------------------------------------------
@@ -268,7 +232,6 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
         private fun cell(index: Int): Any? = currentRow()?.getOrNull(index)
 
-        /** Build JSON array of bindings from pending typed bind* calls. */
         private fun encodeBindings(): JsonArray {
             val maxIdx = pendingBindings.keys.maxOrNull() ?: -1
             val elements = Array<JsonElement>(maxIdx + 1) { i ->
@@ -285,7 +248,6 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
             return JsonArray(elements.toList())
         }
 
-        /** Parse the worker's `step` response into [rows] and [rowTypes]. */
         private fun parseResponse(data: JsonObject) {
             val rawRows = data["rows"]!!.jsonArray
             val rawTypes = data["columnTypes"]!!.jsonArray
@@ -301,32 +263,16 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 }
             }
 
-            // columnTypes is row-major: [[col0_row1, col1_row1], ...]
             rowTypes = rawTypes.map { rowTypeElement ->
                 rowTypeElement.jsonArray.map { it.jsonPrimitive.content.toInt() }.toIntArray()
             }
         }
 
-        /** Convert a JsonPrimitive to the most appropriate Kotlin type. */
         private fun parsePrimitive(p: JsonPrimitive): Any {
             val s = p.content
-            // Try to parse as a number — long first, then double.
-            val asLong = s.toLongOrNull()
-            if (asLong != null) return asLong
-            val asDouble = s.toDoubleOrNull()
-            if (asDouble != null) return asDouble
+            s.toLongOrNull()?.let { return it }
+            s.toDoubleOrNull()?.let { return it }
             return s
         }
     }
-}
-
-// ---- Uint8Array / Int8Array helpers (avoid ambiguous get() on wasmJs) -----
-
-private fun uint8ToBytes(arr: Uint8Array): ByteArray {
-    // Fallback: blobs not yet supported on wasmJs custom driver
-    ByteArray(arr.length.toInt())
-}
-
-private fun int8ToBytes(arr: Int8Array): ByteArray {
-    ByteArray(arr.length.toInt())
 }
