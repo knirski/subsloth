@@ -114,3 +114,7 @@ tasks.register("captureAndValidate") {
         ":testing:api-contract:validateFixtures",
     )
 }
+
+tasks.named("validateFixtures") {
+    mustRunAfter(":testing:api-contract:captureApi")
+}
