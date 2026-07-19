@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.flow.first
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
@@ -59,9 +60,15 @@ fun LoginScreen(
     onNavigateToCatalog: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val apiBaseUrl by viewModel.apiBaseUrl.collectAsStateWithLifecycle()
     var login by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var apiBaseUrl by rememberSaveable { mutableStateOf("") }
+
+    // Seed apiBaseUrl from the ViewModel's persisted value once loaded
+    LaunchedEffect(Unit) {
+        val url = viewModel.apiBaseUrl.first()
+        if (url.isNotEmpty()) apiBaseUrl = url
+    }
 
     val currentOnNavigateToCatalog by rememberUpdatedState(onNavigateToCatalog)
 
@@ -96,8 +103,11 @@ fun LoginScreen(
                 modifier = modifier,
                 onLoginChange = { login = it },
                 onPasswordChange = { password = it },
-                onApiBaseUrlChange = { viewModel.onApiBaseUrlChanged(it) },
-                onSignIn = { viewModel.login(login, password) },
+                onApiBaseUrlChange = { apiBaseUrl = it },
+                onSignIn = {
+                    viewModel.onApiBaseUrlChanged(apiBaseUrl)
+                    viewModel.login(login, password)
+                },
                 onNavigateToOfflineLibrary = onNavigateToOfflineLibrary,
             )
         }

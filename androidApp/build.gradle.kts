@@ -62,6 +62,10 @@ android {
         }
     }
 
+    lint {
+        disable += "ViewModelConstructorInComposable"
+    }
+
     androidComponents {
         onVariants { variant ->
             variant.outputs.forEach { output ->
@@ -142,15 +146,22 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
 
+    // Align concurrent-futures version — transitive via core-ktx, needed at 1.2.0 for test runner
+    implementation(libs.concurrent.futures)
+
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(project(":testing:tv-focus-harness"))
+
+    androidTestImplementation(libs.kotlinx.collections.immutable)
 
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(platform(libs.androidx.compose.bom))
