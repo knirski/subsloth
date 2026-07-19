@@ -99,13 +99,12 @@ fun SubSlothNavHost(
 
             entry<PlayerKey> { key ->
                 val context = LocalContext.current
-                val activity = context as? ComponentActivity
+                val activity = context as? ComponentActivity ?: return@entry
                 DisposableEffect(Unit) {
-                    val originalOrientation = activity?.requestedOrientation
-                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    val originalOrientation = activity.requestedOrientation
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                     onDispose {
-                        activity?.requestedOrientation = originalOrientation
-                            ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        activity.requestedOrientation = originalOrientation
                     }
                 }
 
