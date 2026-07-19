@@ -34,9 +34,9 @@ object CaptureApi {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val email = args.getOrNull(0) ?: System.getenv("SUBSLOTH_LOGIN")
+        val email = args.getOrNull(0)?.takeIf { it.isNotBlank() } ?: System.getenv("SUBSLOTH_LOGIN")
             ?: error("Usage: CaptureApi <email> <password> [native-dir] [rules-file] — or set SUBSLOTH_LOGIN env var")
-        val password = args.getOrNull(1) ?: System.getenv("SUBSLOTH_PASSWORD")
+        val password = args.getOrNull(1)?.takeIf { it.isNotBlank() } ?: System.getenv("SUBSLOTH_PASSWORD")
             ?: error(
                 "Usage: CaptureApi <email> <password> [native-dir] [rules-file] — or set SUBSLOTH_PASSWORD env var",
             )
