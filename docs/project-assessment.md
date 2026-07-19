@@ -272,7 +272,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ## Recommendations
 
 ### Short-term (v1.1 / Next)
-1. **Automate live drift in CI** — scheduled workflow with test credentials; fail on breaking changes
+1. **Automated offline fixture/schema validation** — scheduled workflow using captured fixtures from `:testing:api-contract` to detect schema drift without live credentials (per `testing-release/spec.md` requirement for offline-only CI)
 2. **Add `androidTarget()` to KMP convention** — enables `androidMain` source sets, reduces AGP/KMP split (see `known-gaps.md` #2)
 3. **Flesh out `:webApp` feature parity** — currently only Login + Player have real content; mirror Desktop implementations
 
