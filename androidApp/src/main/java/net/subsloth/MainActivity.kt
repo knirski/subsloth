@@ -30,7 +30,10 @@ class MainActivity : ComponentActivity() {
                     val sessionPort = root.sessionPort
                     val app = LocalContext.current.applicationContext
                     val container = (app as? SubSlothApplication)?.container
-                    val userPreferences = container?.userPreferences
+                    val userPreferences = container?.userPreferences ?: run {
+                        android.util.Log.e("MainActivity", "SubSlothApplication container not found")
+                        null
+                    }
                     SessionGate(
                         sessionPort = sessionPort,
                         login = {
