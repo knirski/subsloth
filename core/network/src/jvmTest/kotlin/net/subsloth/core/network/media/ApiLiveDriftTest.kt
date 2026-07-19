@@ -36,10 +36,6 @@ class ApiLiveDriftTest {
             login.isNotEmpty() && password.isNotEmpty(),
             "Live drift tests skipped: SUBSLOTH_LOGIN and SUBSLOTH_PASSWORD must be set",
         )
-        assumeTrue(
-            baseUrl.isNotEmpty(),
-            "Live drift tests skipped: SUBSLOTH_URL must be set",
-        )
     }
 
     @BeforeEach
