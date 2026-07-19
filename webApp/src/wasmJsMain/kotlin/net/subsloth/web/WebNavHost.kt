@@ -83,8 +83,8 @@ fun WebNavHost(modifier: Modifier = Modifier) {
 
             entry<CatalogKey> {
                 CatalogContent(
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                 )
             }
 
@@ -113,8 +113,8 @@ fun WebNavHost(modifier: Modifier = Modifier) {
 
             entry<LibraryKey> {
                 LibraryContent(
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                 )
             }
 
@@ -138,8 +138,8 @@ fun WebNavHost(modifier: Modifier = Modifier) {
 
             entry<OfflineLibraryKey> {
                 OfflineLibraryContent(
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                 )
             }
         },
@@ -180,7 +180,7 @@ private fun MovieDetailContent(movieId: Media.MediaId.Movie) {
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value}") {
+        val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
             MovieDetailViewModel(mediaId = movieId)
         }
         MovieDetailScreen(viewModel = vm)
@@ -198,7 +198,7 @@ private fun ShowDetailContent(showId: Media.MediaId.Show) {
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value}") {
+        val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value.value}") {
             ShowDetailViewModel(mediaId = showId)
         }
         SeriesDetailScreen(viewModel = vm)
