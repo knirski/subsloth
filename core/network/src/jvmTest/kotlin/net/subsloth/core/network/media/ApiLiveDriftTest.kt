@@ -2,10 +2,14 @@ package net.subsloth.core.network.media
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.contentType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.core.network.media.client.ResponseValidationException
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -21,7 +25,6 @@ class ApiLiveDriftTest {
     private val clients = mutableListOf<HttpClient>()
 
     private val client by lazy {
-        println("[ApiLiveDriftTest] Connecting to: ${resolvedBaseUrl.takeWhile { it != '@' }.substringBefore('@')}...")
         ClientFactory
             .create(
                 login = login,
@@ -68,92 +71,142 @@ class ApiLiveDriftTest {
         }
     }
 
+    private fun String?.diagnosticMessage(): String =
+        if (this == null) {
+            "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct"
+        } else if (contains("ResponseValidationPlugin") || contains("Expected JSON")) {
+            "API returned unexpected response — check that SUBSLOTH_URL ($resolvedBaseUrl) is correct " +
+                "and the server is reachable. Error: $this"
+        } else {
+            this
+        }
+
+    @Test
+    fun `connectivity check to API base URL`() = runTest {
+        val probeClient = HttpClient { }
+        try {
+            clients.add(probeClient)
+            val response = probeClient.get(resolvedBaseUrl.trimEnd('/') + "/movies")
+            println(
+                "[ApiLiveDriftTest] $resolvedBaseUrl -> HTTP ${response.status.value} " +
+                    "Content-Type: ${response.contentType() ?: "none"} " +
+                    "Body preview: ${response.bodyAsText().take(200)}",
+            )
+        } catch (e: Exception) {
+            println("[ApiLiveDriftTest] Connectivity check failed for $resolvedBaseUrl: ${e.message}")
+        }
+    }
+
     @Test
     fun `list movies returns non-empty typed movie list`() = runTest {
-        val response = api.listMovies()
-        assertThat(response.movies).isNotEmpty()
-        val first = response.movies.first()
-        assertThat(first.id).isGreaterThan(0)
-        assertThat(first.name).isNotNull()
-        assertThat(first.updatedAt).isNotNull()
+        try {
+            val response = api.listMovies()
+            assertThat(response.movies).isNotEmpty()
+            val first = response.movies.first()
+            assertThat(first.id).isGreaterThan(0)
+            assertThat(first.name).isNotNull()
+            assertThat(first.updatedAt).isNotNull()
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
     fun `list shows returns non-empty typed show list`() = runTest {
-        val response = api.listShows()
-        assertThat(response.shows).isNotEmpty()
-        val first = response.shows.first()
-        assertThat(first.id).isGreaterThan(0)
-        assertThat(first.name).isNotNull()
-        assertThat(first.newestVideo).isNotNull()
+        try {
+            val response = api.listShows()
+            assertThat(response.shows).isNotEmpty()
+            val first = response.shows.first()
+            assertThat(first.id).isGreaterThan(0)
+            assertThat(first.name).isNotNull()
+            assertThat(first.newestVideo).isNotNull()
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
     fun `movie detail with valid id returns typed movie`() = runTest {
-        val firstId =
-            api
-                .listMovies()
-                .movies
-                .firstOrNull()
-                ?.id
-                ?: error("No movies returned from list — check API drift")
-        val movie = api.getMovie(firstId)
-        assertThat(movie.id).isGreaterThan(0)
-        assertThat(movie.name).isNotNull()
-        assertThat(movie.updatedAt).isNotNull()
-        assertThat(movie.imdbRating).isNotNull()
+        try {
+            val firstId =
+                api
+                    .listMovies()
+                    .movies
+                    .firstOrNull()
+                    ?.id
+                    ?: error("No movies returned from list — check API drift")
+            val movie = api.getMovie(firstId)
+            assertThat(movie.id).isGreaterThan(0)
+            assertThat(movie.name).isNotNull()
+            assertThat(movie.updatedAt).isNotNull()
+            assertThat(movie.imdbRating).isNotNull()
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
     fun `movie detail with nonexistent id returns 404`() = runTest {
-        assertHttpError(404) { api.getMovie(0) }
+        try {
+            assertHttpError(404) { api.getMovie(0) }
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
     fun `show detail with valid id returns typed show with episodes`() = runTest {
-        val firstId =
-            api
-                .listShows()
-                .shows
-                .firstOrNull()
-                ?.id
-                ?: error("No shows returned from list — check API drift")
-        val show = api.getShow(firstId)
-        assertThat(show.id).isGreaterThan(0)
-        assertThat(show.name).isNotNull()
-        assertThat(show.seasons).isNotNull()
-        val episodes =
-            show.episodes
-                ?: error("Show detail has no flat episodes list — check OpenAPI drift")
-        assertThat(episodes).isNotEmpty()
+        try {
+            val firstId =
+                api
+                    .listShows()
+                    .shows
+                    .firstOrNull()
+                    ?.id
+                    ?: error("No shows returned from list — check API drift")
+            val show = api.getShow(firstId)
+            assertThat(show.id).isGreaterThan(0)
+            assertThat(show.name).isNotNull()
+            assertThat(show.seasons).isNotNull()
+            val episodes =
+                show.episodes
+                    ?: error("Show detail has no flat episodes list — check OpenAPI drift")
+            assertThat(episodes).isNotEmpty()
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
     fun `episode detail with discovered id returns typed episode`() = runTest {
-        val firstShowId =
-            api
-                .listShows()
-                .shows
-                .firstOrNull()
-                ?.id
-                ?: error("No shows returned from list — check API drift")
-        val firstEpisode =
-            api
-                .getShow(firstShowId)
-                .episodes
-                ?.firstOrNull()
-                ?: error("Show detail has no flat episodes list — check OpenAPI drift")
+        try {
+            val firstShowId =
+                api
+                    .listShows()
+                    .shows
+                    .firstOrNull()
+                    ?.id
+                    ?: error("No shows returned from list — check API drift")
+            val firstEpisode =
+                api
+                    .getShow(firstShowId)
+                    .episodes
+                    ?.firstOrNull()
+                    ?: error("Show detail has no flat episodes list — check OpenAPI drift")
 
-        val episode = api.getEpisode(firstEpisode.id)
-        assertThat(episode.id).isGreaterThan(0)
-        assertThat(episode.name ?: episode.title).isNotNull()
-        assertThat(episode.url).isNotNull()
-        assertThat(episode.createdAt).isNotNull()
-        assertThat(episode.updatedAt).isNotNull()
-        assertThat(episode.subtitles).isNotEmpty()
-        val firstSubtitle = episode.subtitles!!.first()
-        assertThat(firstSubtitle.lang ?: firstSubtitle.language ?: firstSubtitle.code).isNotNull()
-        assertThat(firstSubtitle.url ?: firstSubtitle.downloadUrl).isNotNull()
+            val episode = api.getEpisode(firstEpisode.id)
+            assertThat(episode.id).isGreaterThan(0)
+            assertThat(episode.name ?: episode.title).isNotNull()
+            assertThat(episode.url).isNotNull()
+            assertThat(episode.createdAt).isNotNull()
+            assertThat(episode.updatedAt).isNotNull()
+            assertThat(episode.subtitles).isNotEmpty()
+            val firstSubtitle = episode.subtitles!!.first()
+            assertThat(firstSubtitle.lang ?: firstSubtitle.language ?: firstSubtitle.code).isNotNull()
+            assertThat(firstSubtitle.url ?: firstSubtitle.downloadUrl).isNotNull()
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 
     @Test
@@ -167,6 +220,10 @@ class ApiLiveDriftTest {
                     enableHttpLogging = false,
                 ).also { clients.add(it) }
         val badApi = Api(badClient)
-        assertHttpError(401) { badApi.listMovies() }
+        try {
+            assertHttpError(401) { badApi.listMovies() }
+        } catch (e: ResponseValidationException) {
+            throw AssertionError(e.message.diagnosticMessage(), e)
+        }
     }
 }
