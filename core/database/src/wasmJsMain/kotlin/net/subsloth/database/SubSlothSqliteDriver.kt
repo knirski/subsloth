@@ -233,9 +233,9 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         private fun cell(index: Int): Any? = currentRow()?.getOrNull(index)
 
         private fun encodeBindings(): JsonArray {
-            val maxIdx = pendingBindings.keys.maxOrNull() ?: -1
-            val elements = Array<JsonElement>(maxIdx + 1) { i ->
-                val v = pendingBindings.remove(i)
+            val maxIdx = pendingBindings.keys.maxOrNull() ?: 0
+            val elements = Array<JsonElement>(maxIdx) { i ->
+                val v = pendingBindings.remove(i + 1)
                 when (v) {
                     null -> JsonNull
                     is String -> JsonPrimitive(v)
