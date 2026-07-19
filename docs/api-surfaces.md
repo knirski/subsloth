@@ -31,7 +31,7 @@ HTTP GET requests with Basic authentication.
 |------|--------|-------|
 | `https://front.some-content-provider.com/api/v2` | ✅ Working | Primary — used by Kodi plugin first |
 | `https://front.content-provider-mirror.tv/api/v2` | ✅ Working | Fallback mirror |
-| `https://front.some-content-provider.com/api/v2` | ❌ Dead | **Default in `CaptureApi` — needs update** |
+| `https://front.unreachable-mirror.example.com/api/v2` | ❌ Dead | **Default in `CaptureApi` — needs update** |
 
 ### Authentication
 

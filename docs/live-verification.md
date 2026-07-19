@@ -168,7 +168,7 @@ SMIL files to serve HLS, but the web frontend uses direct MP4 URLs).
 |--------|--------|-------|
 | `front.some-content-provider.com` | ✅ HTTP 200 with auth | Primary API |
 | `front.some-content-provider-mirror.tv` | ✅ Same as above | Fallback |
-| `front.some-content-provider.com` | ❌ Unreachable | Dead/misconfigured (default in CaptureApi) |
+| `front.unreachable-mirror.example.com` | ❌ Unreachable | Dead/misconfigured (default in CaptureApi) |
 
 ### Endpoints
 
@@ -334,7 +334,7 @@ Speed selection uses two latency bands:
 ## 8. Scripts & Tooling
 
 ### CaptureApi (`testing/api-contract/`)
-- Default API base: `https://front.some-content-provider.com/api/v2` (DEAD — should be `front.some-content-provider.com`)
+- Default API base: `https://front.unreachable-mirror.example.com/api/v2` (DEAD — should be `front.some-content-provider.com`)
 - Captures 5 endpoints: movies list, shows list, movie detail, show detail, episode detail
 - **Movies endpoint returns empty** — capture will produce empty fixtures
 - Auth via Basic header with env vars `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD`

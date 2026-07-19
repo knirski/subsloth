@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-AGENT_BROWSER_BIN="/home/krzysiek/.npm-global/lib/node_modules/agent-browser/bin/agent-browser-linux-x64"
+AGENT_BROWSER_BIN="${AGENT_BROWSER_BIN:-/home/krzysiek/.npm-global/lib/node_modules/agent-browser/bin/agent-browser-linux-x64}"
 
 # Prefer explicit env var, else autodetect nixpkgs chromium
 if [ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ]; then
