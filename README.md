@@ -127,6 +127,7 @@ flowchart TB
 
     Apps --> Feat
     Feat --> Core
+    Feat --> Domain
     Core --> Domain
 ```
 
