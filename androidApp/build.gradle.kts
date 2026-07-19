@@ -133,6 +133,8 @@ dependencies {
 
     implementation(libs.datastore.preferences)
 
+    implementation(libs.kermit)
+
     implementation(libs.profileinstaller)
 
     implementation(libs.androidx.tv.foundation)

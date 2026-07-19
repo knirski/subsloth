@@ -144,6 +144,25 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    // ── API Base URL (global, not account-scoped) ────────────────────────
+
+    private val apiBaseUrlKey = stringPreferencesKey("api_base_url")
+
+    fun apiBaseUrl(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[apiBaseUrlKey] ?: DEFAULT_API_BASE_URL
+    }
+
+    suspend fun setApiBaseUrl(url: String) {
+        dataStore.edit { prefs ->
+            prefs[apiBaseUrlKey] = url
+        }
+    }
+
+    companion object {
+        /** Default API base URL used when no value has been persisted yet. */
+        const val DEFAULT_API_BASE_URL = "http://localhost:8080/api/v2/"
+    }
+
     // ── Cleanup ──────────────────────────────────────────────────────────
 
     /**

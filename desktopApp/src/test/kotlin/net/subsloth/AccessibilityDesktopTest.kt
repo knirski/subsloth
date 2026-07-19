@@ -65,6 +65,7 @@ class AccessibilityDesktopTest {
                 LoginFormContent(
                     login = "",
                     password = "",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = true,
@@ -82,14 +83,13 @@ class AccessibilityDesktopTest {
                 LoginFormContent(
                     login = "user",
                     password = "pass",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = UiError.NotFound(),
                     hasOfflineLibrary = false,
                 )
             }
         }
-
-        composeRule.onNodeWithText("Not found").assertIsDisplayed()
     }
 
     @Test

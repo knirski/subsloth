@@ -2,9 +2,12 @@ package net.subsloth.auth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -12,6 +15,7 @@ import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.preferences.UserPreferences
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -141,6 +145,40 @@ class LoginViewModelTest {
         viewModel.retryAuth()
         viewModel.dismissNeedsAuthRepair()
         assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoginForm::class.java)
+    }
+
+    // ── API Base URL ──────────────────────────────────────────────────────
+
+    @Test
+    fun `apiBaseUrl loads from preferences`() = runTest(testDispatcher) {
+        val apiBaseUrlFlow = MutableStateFlow("https://custom.example.com/api/")
+        val session = FakeSessionPort(startAuthenticated = false)
+        val viewModel = LoginViewModel(
+            sessionPort = session,
+            readApiBaseUrl = { apiBaseUrlFlow },
+        )
+        assertThat(viewModel.apiBaseUrl.value).isEqualTo("https://custom.example.com/api/")
+    }
+
+    @Test
+    fun `apiBaseUrl defaults to UserPreferences default`() = runTest(testDispatcher) {
+        val session = FakeSessionPort(startAuthenticated = false)
+        val viewModel = LoginViewModel(sessionPort = session)
+        assertThat(viewModel.apiBaseUrl.value).isEqualTo(UserPreferences.DEFAULT_API_BASE_URL)
+    }
+
+    @Test
+    fun `onApiBaseUrlChanged persists the value`() = runTest(testDispatcher) {
+        var savedUrl: String? = null
+        val session = FakeSessionPort(startAuthenticated = false)
+        val viewModel = LoginViewModel(
+            sessionPort = session,
+            saveApiBaseUrl = { savedUrl = it },
+        )
+        viewModel.onApiBaseUrlChanged("https://new.example.com/api/")
+        advanceUntilIdle()
+        assertThat(savedUrl).isEqualTo("https://new.example.com/api/")
+        assertThat(viewModel.apiBaseUrl.value).isEqualTo("https://new.example.com/api/")
     }
 
     // ── Offline Library ───────────────────────────────────────────────────

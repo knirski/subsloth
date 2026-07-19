@@ -5,9 +5,12 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
@@ -17,6 +20,7 @@ import net.subsloth.core.model.error.DomainError
 import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
+import net.subsloth.preferences.UserPreferences
 
 /**
  * UI state for the login screen.
@@ -52,13 +56,35 @@ class LoginViewModel(
     private val sessionPort: SessionPort,
     private val hasPlayableDownloads: () -> Boolean = { false },
     private val onLogout: () -> Unit = {},
+    private val readApiBaseUrl: suspend () -> Flow<String> = { flowOf(UserPreferences.DEFAULT_API_BASE_URL) },
+    private val saveApiBaseUrl: suspend (String) -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("LoginViewModel")
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.LoginForm())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    private val _apiBaseUrl = MutableStateFlow(UserPreferences.DEFAULT_API_BASE_URL)
+    val apiBaseUrl: StateFlow<String> = _apiBaseUrl.asStateFlow()
+
     init {
         checkInitialState()
+        loadApiBaseUrl()
+    }
+
+    private fun loadApiBaseUrl() {
+        viewModelScope.launch {
+            readApiBaseUrl().collect { url ->
+                _apiBaseUrl.value = url
+            }
+        }
+    }
+
+    fun onApiBaseUrlChanged(url: String) {
+        _apiBaseUrl.value = url
+        viewModelScope.launch {
+            delay(300)
+            saveApiBaseUrl(url)
+        }
     }
 
     private fun checkInitialState() {
