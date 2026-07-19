@@ -56,17 +56,32 @@ directly to `subsloth.kmp.library`.
 
 ## 3. `WebWorkerSQLiteDriver` nullable bug
 
-**Status:** Blocked on upstream
+**Status:** Resolved ✅ (custom driver)
 
-`sqlite-web:2.7.0-alpha05` has a bug where `isNull` caches the column
-type from the first row only. Documented in
+`sqlite-web:2.7.0-alpha05` has a bug where `isNull` / `getCellType` caches
+the column type from the first row only. Documented in
 `linhvnguyen9/room3-sqlite-web-nullable-npe-repro`.
 
 **Impact:** Affects wasmJs database queries with nullable columns. May cause
 incorrect results or crashes when `isNull` returns a cached type from a
 different row.
 
-**To close:** Upgrade `sqlite-web` when a fix is published.
+**Resolution:** Replaced the upstream `WebWorkerSQLiteDriver` with a custom
+[SubSlothSqliteDriver] that changes the protocol to use **per-row column
+types** (`Array<Array<number>>` instead of `Array<number>`). The worker
+populates `columnTypes[rowIdx][colIdx]` for every row, and the driver
+checks the current row's actual type before reading values.
+
+Files changed:
+- `core/database/src/wasmJsMain/.../SubSlothSqliteDriver.kt` — custom driver
+- `core/database/src/wasmJsMain/.../SubSlothDatabaseBuilder.wasm.kt` — uses
+  `SubSlothSqliteDriver` instead of `WebWorkerSQLiteDriver`
+- `webApp/sqlite-wasm-worker/worker.js` — per-row column types in `step`
+- `webApp/sqlite-wasm-worker/protocol.d.ts` — updated type declarations
+- `core/database/src/jvmTest/.../WebWorkerProtocolContractTest.kt` — updated
+  test expectations + new nullable-scenario test
+
+**Upstream issue:** https://github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro
 
 ---
 
