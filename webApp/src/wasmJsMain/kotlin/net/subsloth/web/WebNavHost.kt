@@ -2,13 +2,13 @@ package net.subsloth.web
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -18,6 +18,8 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import net.subsloth.catalog.HomeScreen
+import net.subsloth.catalog.HomeViewModel
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -34,8 +36,20 @@ import net.subsloth.core.ui.PlayerKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.subslothNavConfig
+import net.subsloth.details.MovieDetailScreen
+import net.subsloth.details.MovieDetailViewModel
+import net.subsloth.details.SeriesDetailScreen
+import net.subsloth.details.ShowDetailViewModel
+import net.subsloth.library.DownloadsScreen
+import net.subsloth.library.DownloadsViewModel
+import net.subsloth.library.LibraryScreen
+import net.subsloth.library.LibraryViewModel
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
+import net.subsloth.settings.DiagnosticsScreen
+import net.subsloth.settings.DiagnosticsViewModel
+import net.subsloth.settings.SettingsScreen
+import net.subsloth.settings.SettingsViewModel
 
 /**
  * Web navigation host for SubSloth.
@@ -68,15 +82,24 @@ fun WebNavHost(modifier: Modifier = Modifier) {
             }
 
             entry<CatalogKey> {
-                // Catalog home — wired in catalog-details
+                CatalogContent(
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
 
             entry<MovieDetailKey> { key ->
-                // Movie detail — wired in catalog-details
+                val movieId = key.movieId.toIntOrNull()?.let { Media.MediaId.Movie(MovieId(it)) }
+                if (movieId != null) {
+                    MovieDetailContent(movieId = movieId)
+                }
             }
 
             entry<ShowDetailKey> { key ->
-                // Show/series detail — wired in catalog-details
+                val showId = key.showId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
+                if (showId != null) {
+                    ShowDetailContent(showId = showId)
+                }
             }
 
             entry<PlayerKey> { key ->
@@ -89,19 +112,24 @@ fun WebNavHost(modifier: Modifier = Modifier) {
             }
 
             entry<LibraryKey> {
-                // Library screen — wired in library-settings-diagnostics
+                LibraryContent(
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
 
             entry<DownloadsKey> {
-                // Downloads screen — wired in library-settings-diagnostics
+                DownloadsContent()
             }
 
             entry<SettingsKey> {
-                // Settings screen — wired in library-settings-diagnostics
+                SettingsContent(
+                    onNavigateToDiagnostics = { backStack += DiagnosticsKey },
+                )
             }
 
             entry<DiagnosticsKey> {
-                // Diagnostics screen — wired in library-settings-diagnostics
+                DiagnosticsContent()
             }
 
             entry<AuthRepairKey> {
@@ -109,10 +137,171 @@ fun WebNavHost(modifier: Modifier = Modifier) {
             }
 
             entry<OfflineLibraryKey> {
-                // Offline library — wired in library-settings-diagnostics
+                OfflineLibraryContent(
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
             }
         },
     )
+}
+
+@Composable
+private fun CatalogContent(
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
+    val storeOwner = remember("catalog_home") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: HomeViewModel = viewModel(key = "catalog_home") { HomeViewModel() }
+        HomeScreen(
+            viewModel = vm,
+            onMovieClick = onMovieClick,
+            onShowClick = onShowClick,
+        )
+    }
+}
+
+@Composable
+private fun MovieDetailContent(movieId: Media.MediaId.Movie) {
+    val storeOwner = remember(movieId) {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value}") {
+            MovieDetailViewModel(mediaId = movieId)
+        }
+        MovieDetailScreen(viewModel = vm)
+    }
+}
+
+@Composable
+private fun ShowDetailContent(showId: Media.MediaId.Show) {
+    val storeOwner = remember(showId) {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value}") {
+            ShowDetailViewModel(mediaId = showId)
+        }
+        SeriesDetailScreen(viewModel = vm)
+    }
+}
+
+@Composable
+private fun LibraryContent(
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
+    val storeOwner = remember("library") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: LibraryViewModel = viewModel(key = "library") { LibraryViewModel() }
+        LibraryScreen(
+            viewModel = vm,
+            onMovieClick = onMovieClick,
+            onShowClick = onShowClick,
+        )
+    }
+}
+
+@Composable
+private fun DownloadsContent() {
+    val storeOwner = remember("downloads") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: DownloadsViewModel = viewModel(key = "downloads") { DownloadsViewModel() }
+        DownloadsScreen(viewModel = vm)
+    }
+}
+
+@Composable
+private fun SettingsContent(onNavigateToDiagnostics: () -> Unit) {
+    val storeOwner = remember("settings") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: SettingsViewModel = viewModel(key = "settings") { SettingsViewModel() }
+        SettingsScreen(
+            viewModel = vm,
+            onNavigateToDiagnostics = onNavigateToDiagnostics,
+        )
+    }
+}
+
+@Composable
+private fun DiagnosticsContent() {
+    val storeOwner = remember("diagnostics") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") { DiagnosticsViewModel() }
+        DiagnosticsScreen(viewModel = vm)
+    }
+}
+
+@Composable
+private fun OfflineLibraryContent(
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
+    val storeOwner = remember("offline_library") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: LibraryViewModel = viewModel(key = "offline_library") {
+            LibraryViewModel(isLoggedIn = { false })
+        }
+        LibraryScreen(
+            viewModel = vm,
+            onMovieClick = onMovieClick,
+            onShowClick = onShowClick,
+        )
+    }
 }
 
 @Composable
