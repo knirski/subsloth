@@ -16,15 +16,17 @@ class ApiLiveDriftTest {
     private val login: String = System.getenv("SUBSLOTH_LOGIN") ?: ""
     private val password: String = System.getenv("SUBSLOTH_PASSWORD") ?: ""
     private val baseUrl: String = System.getenv("SUBSLOTH_URL") ?: ""
+    private val resolvedBaseUrl: String by lazy { baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL } }
 
     private val clients = mutableListOf<HttpClient>()
 
     private val client by lazy {
+        println("[ApiLiveDriftTest] Connecting to: ${resolvedBaseUrl.takeWhile { it != '@' }.substringBefore('@')}...")
         ClientFactory
             .create(
                 login = login,
                 password = password,
-                baseUrl = baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL },
+                baseUrl = resolvedBaseUrl,
                 enableHttpLogging = false,
             ).also { clients.add(it) }
     }
@@ -161,6 +163,7 @@ class ApiLiveDriftTest {
                 .create(
                     login = "invalid",
                     password = "credentials",
+                    baseUrl = resolvedBaseUrl,
                     enableHttpLogging = false,
                 ).also { clients.add(it) }
         val badApi = Api(badClient)
