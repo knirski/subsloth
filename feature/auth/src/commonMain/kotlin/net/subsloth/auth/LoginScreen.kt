@@ -59,9 +59,9 @@ fun LoginScreen(
     onNavigateToCatalog: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val apiBaseUrl by viewModel.apiBaseUrl.collectAsStateWithLifecycle()
     var login by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var apiBaseUrl by rememberSaveable { mutableStateOf(viewModel.apiBaseUrl.value) }
 
     val currentOnNavigateToCatalog by rememberUpdatedState(onNavigateToCatalog)
 
@@ -96,8 +96,11 @@ fun LoginScreen(
                 modifier = modifier,
                 onLoginChange = { login = it },
                 onPasswordChange = { password = it },
-                onApiBaseUrlChange = { viewModel.onApiBaseUrlChanged(it) },
-                onSignIn = { viewModel.login(login, password) },
+                onApiBaseUrlChange = { apiBaseUrl = it },
+                onSignIn = {
+                    viewModel.onApiBaseUrlChanged(apiBaseUrl)
+                    viewModel.login(login, password)
+                },
                 onNavigateToOfflineLibrary = onNavigateToOfflineLibrary,
             )
         }
