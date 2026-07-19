@@ -141,7 +141,10 @@ fun PlayerOverlay(
         }
 
         if (playerState.isLoading) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center),
+            )
             return
         }
 
