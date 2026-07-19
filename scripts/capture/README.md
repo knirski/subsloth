@@ -11,11 +11,13 @@ Calls the API directly — no browser needed.
 ```bash
 export SUBSLOTH_LOGIN=you@example.com
 export SUBSLOTH_PASSWORD=your-password
+export SUBSLOTH_URL=https://custom-api.example.com/api/v2
 ./gradlew :testing:api-contract:captureApi
 ```
 
-Credentials are read from the same `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD`
-environment variables used by `ApiLiveDriftTest`. No CLI history exposure.
+Credentials are read from `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD`
+environment variables (same as `ApiLiveDriftTest`). The API base URL
+is read from `SUBSLOTH_URL` (falls back to the default endpoint).
 
 ### Using Gradle properties (manual)
 

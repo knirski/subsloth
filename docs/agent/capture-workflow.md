@@ -13,7 +13,9 @@ nix develop --command ./gradlew :testing:api-contract:captureApi
 ```
 
 Credentials are read from `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD` environment
-variables by default. Fallback to `-Pemail=... -Ppassword=...` Gradle properties.
+variables by default. The API base URL is read from `SUBSLOTH_URL` (falls back to
+the default `front.media-mirror.tv` endpoint). Fallback to `-Pemail=... -Ppassword=...`
+Gradle properties.
 
 Calls 5 Kodi endpoints (`/movies`, `/shows`, `/movies/{id}`, `/shows/{id}`, `/episodes/{id}`), applies sanitization, writes to `testing/api-contract/src/main/resources/media/`. Implementation in `CaptureApi.kt`.
 

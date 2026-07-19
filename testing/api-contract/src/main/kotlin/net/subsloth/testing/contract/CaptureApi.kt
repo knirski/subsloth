@@ -20,9 +20,11 @@ data class CaptureRequest(val endpoint: Endpoint, val path: String)
  * live API. Browser-only discovery fixtures come from HAR export.
  */
 object CaptureApi {
-    private const val API_BASE = "https://front.media-mirror.tv/api/v2"
+    private const val DEFAULT_API_BASE = "https://front.media-mirror.tv/api/v2"
     private const val USER_AGENT = "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1"
     private const val HTTP_OK = 200
+
+    private fun apiBase(): String = System.getenv("SUBSLOTH_URL") ?: DEFAULT_API_BASE
 
     fun capturePlan(): List<CaptureRequest> = listOf(
         CaptureRequest(Endpoint.Movies, "/movies"),
@@ -120,7 +122,7 @@ object CaptureApi {
         val request =
             HttpRequest
                 .newBuilder()
-                .uri(URI.create("$API_BASE$path"))
+                .uri(URI.create("${apiBase()}$path"))
                 .header("Authorization", auth)
                 .header("User-Agent", USER_AGENT)
                 .header("Accept", "application/json, */*")
