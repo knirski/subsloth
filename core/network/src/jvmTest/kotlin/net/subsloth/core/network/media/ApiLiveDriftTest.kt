@@ -2,10 +2,14 @@ package net.subsloth.core.network.media
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.contentType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.core.network.media.client.ResponseValidationException
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -16,6 +20,7 @@ class ApiLiveDriftTest {
     private val login: String = System.getenv("SUBSLOTH_LOGIN") ?: ""
     private val password: String = System.getenv("SUBSLOTH_PASSWORD") ?: ""
     private val baseUrl: String = System.getenv("SUBSLOTH_URL") ?: ""
+    private val resolvedBaseUrl: String by lazy { baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL } }
 
     private val clients = mutableListOf<HttpClient>()
 
@@ -24,7 +29,7 @@ class ApiLiveDriftTest {
             .create(
                 login = login,
                 password = password,
-                baseUrl = baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL },
+                baseUrl = resolvedBaseUrl,
                 enableHttpLogging = false,
             ).also { clients.add(it) }
     }
@@ -66,9 +71,48 @@ class ApiLiveDriftTest {
         }
     }
 
+    private fun String?.diagnosticMessage(): String {
+        if (this == null) {
+            return "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct and includes /api/v2/ path"
+        }
+        return if (contains("redirect") || contains("HTML") || contains("Expected JSON")) {
+            "API returned unexpected response (redirect or HTML) — SUBSLOTH_URL ($resolvedBaseUrl) may point " +
+                "to the web frontend instead of the Kodi API endpoint (needs /api/v2/ path). Error: $this"
+        } else {
+            this
+        }
+    }
+
+    /**
+     * Wraps an [Api] call to convert [ResponseValidationException] into a
+     * test [AssertionError] with a diagnostic message. Eliminates the
+     * repeated try/catch in every test method.
+     */
+    private suspend fun <T> apiCall(block: suspend Api.() -> T): T = try {
+        api.block()
+    } catch (e: ResponseValidationException) {
+        throw AssertionError(e.message.diagnosticMessage(), e)
+    }
+
+    @Test
+    fun `connectivity check to API base URL`() = runTest {
+        val probeClient = HttpClient { }
+        try {
+            clients.add(probeClient)
+            val response = probeClient.get(resolvedBaseUrl.trimEnd('/') + "/movies")
+            System.err.println(
+                "[ApiLiveDriftTest] $resolvedBaseUrl -> HTTP ${response.status.value} " +
+                    "Content-Type: ${response.contentType() ?: "none"} " +
+                    "Body preview: ${response.bodyAsText().take(200)}",
+            )
+        } catch (e: Exception) {
+            System.err.println("[ApiLiveDriftTest] Connectivity check failed for $resolvedBaseUrl: ${e.message}")
+        }
+    }
+
     @Test
     fun `list movies returns non-empty typed movie list`() = runTest {
-        val response = api.listMovies()
+        val response = apiCall { listMovies() }
         assertThat(response.movies).isNotEmpty()
         val first = response.movies.first()
         assertThat(first.id).isGreaterThan(0)
@@ -78,7 +122,7 @@ class ApiLiveDriftTest {
 
     @Test
     fun `list shows returns non-empty typed show list`() = runTest {
-        val response = api.listShows()
+        val response = apiCall { listShows() }
         assertThat(response.shows).isNotEmpty()
         val first = response.shows.first()
         assertThat(first.id).isGreaterThan(0)
@@ -89,13 +133,12 @@ class ApiLiveDriftTest {
     @Test
     fun `movie detail with valid id returns typed movie`() = runTest {
         val firstId =
-            api
-                .listMovies()
+            apiCall { listMovies() }
                 .movies
                 .firstOrNull()
                 ?.id
                 ?: error("No movies returned from list — check API drift")
-        val movie = api.getMovie(firstId)
+        val movie = apiCall { getMovie(firstId) }
         assertThat(movie.id).isGreaterThan(0)
         assertThat(movie.name).isNotNull()
         assertThat(movie.updatedAt).isNotNull()
@@ -104,19 +147,18 @@ class ApiLiveDriftTest {
 
     @Test
     fun `movie detail with nonexistent id returns 404`() = runTest {
-        assertHttpError(404) { api.getMovie(0) }
+        assertHttpError(404) { apiCall { getMovie(0) } }
     }
 
     @Test
     fun `show detail with valid id returns typed show with episodes`() = runTest {
         val firstId =
-            api
-                .listShows()
+            apiCall { listShows() }
                 .shows
                 .firstOrNull()
                 ?.id
                 ?: error("No shows returned from list — check API drift")
-        val show = api.getShow(firstId)
+        val show = apiCall { getShow(firstId) }
         assertThat(show.id).isGreaterThan(0)
         assertThat(show.name).isNotNull()
         assertThat(show.seasons).isNotNull()
@@ -129,20 +171,18 @@ class ApiLiveDriftTest {
     @Test
     fun `episode detail with discovered id returns typed episode`() = runTest {
         val firstShowId =
-            api
-                .listShows()
+            apiCall { listShows() }
                 .shows
                 .firstOrNull()
                 ?.id
                 ?: error("No shows returned from list — check API drift")
         val firstEpisode =
-            api
-                .getShow(firstShowId)
+            apiCall { getShow(firstShowId) }
                 .episodes
                 ?.firstOrNull()
                 ?: error("Show detail has no flat episodes list — check OpenAPI drift")
 
-        val episode = api.getEpisode(firstEpisode.id)
+        val episode = apiCall { getEpisode(firstEpisode.id) }
         assertThat(episode.id).isGreaterThan(0)
         assertThat(episode.name ?: episode.title).isNotNull()
         assertThat(episode.url).isNotNull()
@@ -161,6 +201,7 @@ class ApiLiveDriftTest {
                 .create(
                     login = "invalid",
                     password = "credentials",
+                    baseUrl = resolvedBaseUrl,
                     enableHttpLogging = false,
                 ).also { clients.add(it) }
         val badApi = Api(badClient)
