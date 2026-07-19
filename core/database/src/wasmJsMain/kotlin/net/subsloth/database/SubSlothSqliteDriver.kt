@@ -1,26 +1,26 @@
-/**
+/*
  * Custom SQLiteDriver for wasmJs that closes the "WebWorkerSQLiteDriver
  * nullable bug" (github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro).
  *
- * ## Root cause
+ * == Root cause ==
  *
- * The upstream `StatementResult` stores flat `columnTypes: IntArray` populated
- * from the FIRST row of the worker's `step` response.  All subsequent rows
+ * The upstream StatementResult stores flat columnTypes: IntArray populated
+ * from the FIRST row of the worker's step response.  All subsequent rows
  * reuse these cached types.  When row 1 has a non-null value in a nullable
- * column and row 2 has null, `getCellType()` returns the cached TEXT type
- * → `isNull()` returns false → Room calls `getText()` → `as String` on null
- * → NPE.
+ * column and row 2 has null, getCellType() returns the cached TEXT type
+ * => isNull() returns false => Room calls getText() => as String on null
+ * => NPE.
  *
- * ## Fix
+ * == Fix ==
  *
- * The worker's `step` response carries `columnTypes` as a **row-major 2D
- * array** (`Array<Array<number>>`), and this driver uses per-row types for
+ * The worker's step response carries columnTypes as a row-major 2D
+ * array (Array<Array<number>>), and this driver uses per-row types for
  * every row access.  All getters are null-safe.
  *
- * ## Protocol
+ * == Protocol ==
  *
- * Messages are exchanged as **JSON strings** via `Worker.postMessage()` and
- * parsed with `kotlinx.serialization.json` on the Kotlin side.  The worker
+ * Messages are exchanged as JSON strings via Worker.postMessage() and
+ * parsed with kotlinx.serialization.json on the Kotlin side.  The worker
  * also stringifys/parses JSON so the format is symmetric.
  */
 
