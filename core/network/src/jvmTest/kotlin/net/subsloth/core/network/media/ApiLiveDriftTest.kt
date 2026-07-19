@@ -71,15 +71,14 @@ class ApiLiveDriftTest {
         }
     }
 
-    private fun String?.diagnosticMessage(): String =
-        if (this == null) {
-            "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct and includes /api/v2/ path"
-        } else if (contains("redirect") || contains("HTML") || contains("Expected JSON")) {
-            "API returned unexpected response (redirect or HTML) — SUBSLOTH_URL ($resolvedBaseUrl) may point " +
-                "to the web frontend instead of the Kodi API endpoint (needs /api/v2/ path). Error: $this"
-        } else {
-            this
-        }
+    private fun String?.diagnosticMessage(): String = if (this == null) {
+        "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct and includes /api/v2/ path"
+    } else if (contains("redirect") || contains("HTML") || contains("Expected JSON")) {
+        "API returned unexpected response (redirect or HTML) — SUBSLOTH_URL ($resolvedBaseUrl) may point " +
+            "to the web frontend instead of the Kodi API endpoint (needs /api/v2/ path). Error: $this"
+    } else {
+        this
+    }
 
     @Test
     fun `connectivity check to API base URL`() = runTest {
