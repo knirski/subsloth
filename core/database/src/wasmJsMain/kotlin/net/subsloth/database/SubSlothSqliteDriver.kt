@@ -50,6 +50,16 @@ import org.w3c.dom.Worker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+// ---- Extension: parse jsonPrimitive content as Long / Int / Double ---------
+
+private val JsonPrimitive.longVal: Long get() = content.toLong()
+private val JsonPrimitive.intVal: Int get() = content.toInt()
+private val JsonPrimitive.doubleVal: Double get() = content.toDouble()
+
+// ---- SQLite type constants ------------------------------------------------
+
+private const val TYPE_NULL = 5
+
 // ---------------------------------------------------------------------------
 // Driver
 // ---------------------------------------------------------------------------
@@ -66,7 +76,7 @@ class SubSlothSqliteDriver(
         worker.onmessage = { event: MessageEvent ->
             val raw: String = event.data as String
             val root: JsonObject = json.parseToJsonElement(raw).jsonObject
-            val id = root["id"]!!.jsonPrimitive.long
+            val id = root["id"]!!.jsonPrimitive.content.toLong()
             val cb = pending.remove(id)
             if (cb != null) cb(root)
         }
@@ -76,7 +86,7 @@ class SubSlothSqliteDriver(
 
     override suspend fun open(fileName: String): SQLiteConnection {
         val resp = request("open", buildJsonObject { put("fileName", fileName) })
-        val dbId = resp["databaseId"]!!.jsonPrimitive.long
+        val dbId = resp["databaseId"]!!.jsonPrimitive.longVal
         return Connection(dbId)
     }
 
@@ -86,9 +96,9 @@ class SubSlothSqliteDriver(
         val id = nextId++
         return suspendCancellableCoroutine { cont ->
             pending[id] = { resp ->
-                val err = resp["error"]?.jsonPrimitive?.contentOrNull
-                if (err != null) {
-                    cont.resumeWithException(RuntimeException("$cmd: $err"))
+                val errEl = resp["error"]?.jsonPrimitive
+                if (errEl != null) {
+                    cont.resumeWithException(RuntimeException("$cmd: ${errEl.content}"))
                 } else {
                     cont.resume(resp["data"]!!.jsonObject)
                 }
@@ -101,7 +111,8 @@ class SubSlothSqliteDriver(
                 })
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            worker.postMessage(jsonStr)
+            @Suppress("UNCHECKED_CAST")
+            worker.postMessage(jsonStr as Any)
         }
     }
 
@@ -119,8 +130,8 @@ class SubSlothSqliteDriver(
                     put("sql", sql)
                 },
             )
-            val stmtId = data["statementId"]!!.jsonPrimitive.long
-            val paramCount = data["parameterCount"]!!.jsonPrimitive.int
+            val stmtId = data["statementId"]!!.jsonPrimitive.longVal
+            val paramCount = data["parameterCount"]!!.jsonPrimitive.intVal
             val colNames = data["columnNames"]!!.jsonArray.map { it.jsonPrimitive.content }
             return Statement(stmtId, paramCount, colNames)
         }
@@ -134,7 +145,7 @@ class SubSlothSqliteDriver(
 
     private inner class Statement(
         private val statementId: Long,
-        private val paramCount: Int,
+        @Suppress("UNUSED_PARAMETER") private val paramCount: Int,
         private val colNames: List<String>,
     ) : SQLiteStatement {
 
@@ -205,9 +216,10 @@ class SubSlothSqliteDriver(
         override fun getBlob(index: Int): ByteArray {
             val v = cell(index)
             if (v == null) return ByteArray(0)
+            @Suppress("UNCHECKED_CAST")
             return when (v) {
-                is Uint8Array -> ByteArray(v.length.toInt()) { v[it].toByte() }
-                is Int8Array -> ByteArray(v.length.toInt()) { v[it] }
+                is Uint8Array -> ByteArray(v.length.toInt()) { i -> v[i].toByte() }
+                is Int8Array -> ByteArray(v.length.toInt()) { i -> v[i] }
                 else -> ByteArray(0)
             }
         }
@@ -218,8 +230,8 @@ class SubSlothSqliteDriver(
         }
 
         override fun getColumnType(index: Int): Int {
-            if (pos < 0 || pos >= rowTypes.size) return 5 /* NULL */
-            return rowTypes[pos].getOrNull(index) ?: 5
+            if (pos < 0 || pos >= rowTypes.size) return TYPE_NULL
+            return rowTypes[pos].getOrNull(index) ?: TYPE_NULL
         }
 
         override fun getColumnName(index: Int): String = colNames[index]
@@ -235,7 +247,8 @@ class SubSlothSqliteDriver(
                 })
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
-            worker.postMessage(jsonStr)
+            @Suppress("UNCHECKED_CAST")
+            worker.postMessage(jsonStr as Any)
         }
 
         // ---- internal helpers -------------------------------------------
@@ -275,11 +288,7 @@ class SubSlothSqliteDriver(
                     when {
                         cell is JsonNull -> null
                         cell is JsonPrimitive && cell.isString -> cell.content
-                        cell is JsonPrimitive && cell.contentOrNull?.toLongOrNull() != null ->
-                            cell.long
-                        cell is JsonPrimitive && cell.contentOrNull?.toDoubleOrNull() != null ->
-                            cell.double
-                        cell is JsonPrimitive -> cell.content
+                        cell is JsonPrimitive -> parsePrimitive(cell)
                         else -> null
                     }
                 }
@@ -287,8 +296,19 @@ class SubSlothSqliteDriver(
 
             // columnTypes is row-major: [[col0_row1, col1_row1], ...]
             rowTypes = rawTypes.map { rowTypeElement ->
-                rowTypeElement.jsonArray.map { it.jsonPrimitive.int }.toIntArray()
+                rowTypeElement.jsonArray.map { it.jsonPrimitive.content.toInt() }.toIntArray()
             }
+        }
+
+        /** Convert a JsonPrimitive to the most appropriate Kotlin type. */
+        private fun parsePrimitive(p: JsonPrimitive): Any {
+            val s = p.content
+            // Try to parse as a number — long first, then double.
+            val asLong = s.toLongOrNull()
+            if (asLong != null) return asLong
+            val asDouble = s.toDoubleOrNull()
+            if (asDouble != null) return asDouble
+            return s
         }
     }
 }
