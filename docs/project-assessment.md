@@ -277,6 +277,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ### Short-term (v1.1 / Next)
 1. ✅ **Automated offline fixture/schema validation** — 
    - Credential capture now reads `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD` env vars (no CLI history exposure)
+   - `CaptureApi` reads `SUBSLOTH_URL` for API base URL (falls back to default endpoint)
    - `FixtureSchemaValidationTest` extended to cover all JSON endpoints (native + web-discovery), including structural and round-trip checks
    - Added `:testing:api-contract:validateFixtures` (offline) and `:testing:api-contract:captureAndValidate` (full pipeline) Gradle tasks
    - Shell script `scripts/capture/validate-fixtures.sh` for one-command pipeline
