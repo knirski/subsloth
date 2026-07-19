@@ -64,9 +64,7 @@ private const val TYPE_NULL = 5
 // Driver
 // ---------------------------------------------------------------------------
 
-class SubSlothSqliteDriver(
-    private val worker: Worker,
-) : SQLiteDriver {
+class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
     private val pending = mutableMapOf<Long, (JsonObject) -> Unit>()
     private var nextId = 1L
@@ -105,10 +103,13 @@ class SubSlothSqliteDriver(
             }
             val msg = buildJsonObject {
                 put("id", id)
-                put("data", buildJsonObject {
-                    put("cmd", cmd)
-                    payload.forEach { (k, v) -> put(k, v) }
-                })
+                put(
+                    "data",
+                    buildJsonObject {
+                        put("cmd", cmd)
+                        payload.forEach { (k, v) -> put(k, v) }
+                    },
+                )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
             @Suppress("UNCHECKED_CAST")
@@ -118,9 +119,7 @@ class SubSlothSqliteDriver(
 
     // ---- Connection -----------------------------------------------------
 
-    private inner class Connection(
-        private val databaseId: Long,
-    ) : SQLiteConnection {
+    private inner class Connection(private val databaseId: Long) : SQLiteConnection {
 
         override suspend fun prepare(sql: String): SQLiteStatement {
             val data = request(
@@ -186,28 +185,38 @@ class SubSlothSqliteDriver(
 
         // ---- typed bind helpers -----------------------------------------
 
-        override fun bindText(index: Int, value: String) { pendingBindings[index] = value }
-        override fun bindLong(index: Int, value: Long) { pendingBindings[index] = value }
-        override fun bindDouble(index: Int, value: Double) { pendingBindings[index] = value }
-        override fun bindFloat(index: Int, value: Float) { pendingBindings[index] = value.toDouble() }
-        override fun bindInt(index: Int, value: Int) { pendingBindings[index] = value.toLong() }
-        override fun bindBoolean(index: Int, value: Boolean) { pendingBindings[index] = if (value) 1L else 0L }
-        override fun bindBlob(index: Int, value: ByteArray) { pendingBindings[index] = value }
-        override fun bindNull(index: Int) { pendingBindings[index] = null }
+        override fun bindText(index: Int, value: String) {
+            pendingBindings[index] = value
+        }
+        override fun bindLong(index: Int, value: Long) {
+            pendingBindings[index] = value
+        }
+        override fun bindDouble(index: Int, value: Double) {
+            pendingBindings[index] = value
+        }
+        override fun bindFloat(index: Int, value: Float) {
+            pendingBindings[index] = value.toDouble()
+        }
+        override fun bindInt(index: Int, value: Int) {
+            pendingBindings[index] = value.toLong()
+        }
+        override fun bindBoolean(index: Int, value: Boolean) {
+            pendingBindings[index] = if (value) 1L else 0L
+        }
+        override fun bindBlob(index: Int, value: ByteArray) {
+            pendingBindings[index] = value
+        }
+        override fun bindNull(index: Int) {
+            pendingBindings[index] = null
+        }
 
         // ---- row getters (all null-safe) ---------------------------------
 
-        override fun getText(index: Int): String {
-            return cell(index) as? String ?: ""
-        }
+        override fun getText(index: Int): String = cell(index) as? String ?: ""
 
-        override fun getLong(index: Int): Long {
-            return (cell(index) as? Number)?.toLong() ?: 0L
-        }
+        override fun getLong(index: Int): Long = (cell(index) as? Number)?.toLong() ?: 0L
 
-        override fun getDouble(index: Int): Double {
-            return (cell(index) as? Number)?.toDouble() ?: 0.0
-        }
+        override fun getDouble(index: Int): Double = (cell(index) as? Number)?.toDouble() ?: 0.0
 
         override fun getFloat(index: Int): Float = getDouble(index).toFloat()
         override fun getInt(index: Int): Int = getLong(index).toInt()
@@ -241,10 +250,13 @@ class SubSlothSqliteDriver(
             // Fire-and-forget close message; no response needed.
             val msg = buildJsonObject {
                 put("id", 0L)
-                put("data", buildJsonObject {
-                    put("cmd", "close")
-                    put("statementId", statementId)
-                })
+                put(
+                    "data",
+                    buildJsonObject {
+                        put("cmd", "close")
+                        put("statementId", statementId)
+                    },
+                )
             }
             val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
             @Suppress("UNCHECKED_CAST")
@@ -253,13 +265,9 @@ class SubSlothSqliteDriver(
 
         // ---- internal helpers -------------------------------------------
 
-        private fun currentRow(): List<Any?>? {
-            return if (pos in rows.indices) rows[pos] else null
-        }
+        private fun currentRow(): List<Any?>? = if (pos in rows.indices) rows[pos] else null
 
-        private fun cell(index: Int): Any? {
-            return currentRow()?.getOrNull(index)
-        }
+        private fun cell(index: Int): Any? = currentRow()?.getOrNull(index)
 
         /** Build JSON array of bindings from pending typed bind* calls. */
         private fun encodeBindings(): JsonArray {
