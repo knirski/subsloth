@@ -1,4 +1,28 @@
-@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+/**
+ * Custom SQLiteDriver for wasmJs that closes the "WebWorkerSQLiteDriver
+ * nullable bug" (github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro).
+ *
+ * ## Root cause
+ *
+ * The upstream `StatementResult` stores flat `columnTypes: IntArray` populated
+ * from the FIRST row of the worker's `step` response.  All subsequent rows
+ * reuse these cached types.  When row 1 has a non-null value in a nullable
+ * column and row 2 has null, `getCellType()` returns the cached TEXT type
+ * → `isNull()` returns false → Room calls `getText()` → `as String` on null
+ * → NPE.
+ *
+ * ## Fix
+ *
+ * The worker's `step` response carries `columnTypes` as a **row-major 2D
+ * array** (`Array<Array<number>>`), and this driver uses per-row types for
+ * every row access.  All getters are null-safe.
+ *
+ * ## Protocol
+ *
+ * Messages are exchanged as **JSON strings** via `Worker.postMessage()` and
+ * parsed with `kotlinx.serialization.json` on the Kotlin side.  The worker
+ * also stringifys/parses JSON so the format is symmetric.
+ */
 
 package net.subsloth.database
 
@@ -7,126 +31,102 @@ import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.SQLiteStatement
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.*
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.MessageEvent
 import org.w3c.dom.Worker
-import org.w3c.dom.get
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 // ---------------------------------------------------------------------------
-// Fixed SQLiteDriver for wasmJs — closes the "WebWorkerSQLiteDriver nullable
-// bug" documented at
-//   github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro
-//
-// ## Root cause
-//
-// The upstream `StatementResult` stores a flat `columnTypes: IntArray`
-// populated from the FIRST row of the worker's `step` response.  All
-// subsequent rows reuse these cached types.  When row 1 has a non-null value
-// in a nullable column and row 2 has null:
-//
-//   [row 1]  value="hello"   → columnTypes[0] = TEXT (3)
-//   [row 2]  value=null      → columnTypes[0] still = TEXT from row 1
-//                              → StatementResult.getCellType() returns TEXT
-//                              → statement.isNull()       returns false
-//                              → Room calls getText()
-//                              → `as String` on null JsAny  → NPE
-//
-// ## Fix
-//
-// Our worker sends `columnTypes` as `Array<Array<number>>` (row-major), and
-// every method on the statement checks the current row's actual type.
+// Driver
 // ---------------------------------------------------------------------------
 
-/** @see [androidx.sqlite.SQLITE_DATA_INTEGER] */
-private const val TYPE_INTEGER = 1
+class SubSlothSqliteDriver(
+    private val worker: Worker,
+) : SQLiteDriver {
 
-/** @see [androidx.sqlite.SQLITE_DATA_FLOAT] */
-private const val TYPE_FLOAT = 2
-
-/** @see [androidx.sqlite.SQLITE_DATA_TEXT] */
-private const val TYPE_TEXT = 3
-
-/** @see [androidx.sqlite.SQLITE_DATA_BLOB] */
-private const val TYPE_BLOB = 4
-
-/** @see [androidx.sqlite.SQLITE_DATA_NULL] */
-private const val TYPE_NULL = 5
-
-/**
- * Custom [SQLiteDriver] for wasmJs that correctly handles per-row column
- * types, avoiding the NPE documented in the upstream nullable bug.
- *
- * The message protocol is identical to `WebWorkerSQLiteDriver` except that
- * the `step` response carries `columnTypes` as `Array<Array<number>>`
- * (row-major) instead of `Array<number>`.
- */
-class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
-
-    /** Pending response callbacks keyed by message id. */
-    private val pending = mutableMapOf<Long, (dynamic) -> Unit>()
+    private val pending = mutableMapOf<Long, (JsonObject) -> Unit>()
     private var nextId = 1L
+    private val json = Json { ignoreUnknownKeys = true }
 
     init {
         worker.onmessage = { event: MessageEvent ->
-            val resp = event.data as dynamic
-            val id = resp.id as Long
-            pending.remove(id)?.invoke(resp)
+            val raw: String = event.data as String
+            val root: JsonObject = json.decodeFromString(raw)
+            val id = root["id"]!!.jsonPrimitive.long
+            val cb = pending.remove(id)
+            if (cb != null) cb(root)
         }
     }
 
     override val hasConnectionPool: Boolean get() = false
 
     override suspend fun open(fileName: String): SQLiteConnection {
-        val resp = request("open", js("{ fileName: fileName }"))
-        val dbId: Long = resp.data.databaseId as Long
+        val resp = requestCmd("open", buildJsonObject { put("fileName", fileName) })
+        val dbId = resp["databaseId"]!!.jsonPrimitive.long
         return Connection(dbId)
     }
 
-    // ---- suspend request/reply ------------------------------------------
+    // ---- Coroutine request/reply ----------------------------------------
 
-    private suspend fun request(cmd: String, payload: dynamic): dynamic {
+    /**
+     * Send a command and await the response via coroutine suspension.
+     * The caller is responsible for wrapping in [runBlocking] if needed.
+     */
+    private suspend fun requestCmd(cmd: String, payload: JsonObject): JsonObject {
         val id = nextId++
         return suspendCancellableCoroutine { cont ->
             pending[id] = { resp ->
-                if (resp.error != null) {
+                val error = resp["error"]?.jsonPrimitive?.contentOrNull
+                if (error != null) {
                     cont.resumeWithException(
-                        SubSlothSqliteException("$cmd: ${resp.error}"),
+                        RuntimeException("$cmd: $error")
                     )
                 } else {
-                    cont.resume(resp)
+                    cont.resume(resp["data"]!!.jsonObject)
                 }
             }
-            val msg = js("{ id: id, data: Object.assign({ cmd: cmd }, payload) }")
-            worker.postMessage(msg)
+            val msg = buildJsonObject {
+                put("id", id)
+                put("data", buildJsonObject {
+                    put("cmd", cmd)
+                    payload.forEach { (k, v) -> put(k, v) }
+                })
+            }
+            worker.postMessage(json.encodeToString(msg))
         }
     }
 
-    /** Blocking variant — only safe inside non-suspend step()/close(). */
-    private fun blockingRequest(cmd: String, payload: dynamic): dynamic = runBlocking { request(cmd, payload) }
+    /** Blocking variant — bridges non-suspend step()/close() to suspend. */
+    private fun blockingRequest(cmd: String, payload: JsonObject): JsonObject =
+        runBlocking { requestCmd(cmd, payload) }
 
     // ---- Connection -----------------------------------------------------
 
-    private inner class Connection(private val databaseId: Long) : SQLiteConnection {
+    private inner class Connection(
+        private val databaseId: Long,
+    ) : SQLiteConnection {
 
         override val inTransaction: Boolean get() = false
 
         override suspend fun prepare(sql: String): SQLiteStatement {
-            val resp = request(
+            val data = requestCmd(
                 "prepare",
-                js("{ databaseId: databaseId, sql: sql }"),
+                buildJsonObject {
+                    put("databaseId", databaseId)
+                    put("sql", sql)
+                },
             )
-            val stmtId = resp.data.statementId as Long
-            val paramCount = (resp.data.parameterCount as Number).toInt()
-            val colNames: List<String> =
-                (resp.data.columnNames as Array<*>).map { it as String }
+            val stmtId = data["statementId"]!!.jsonPrimitive.long
+            val paramCount = data["parameterCount"]!!.jsonPrimitive.int
+            val colNames = data["columnNames"]!!.jsonArray.map { it.jsonPrimitive.content }
             return Statement(stmtId, paramCount, colNames)
         }
 
         override fun close() {
-            // Resources released via Statement.close()
+            // Resources are released via Statement.close()
         }
     }
 
@@ -138,20 +138,23 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         override val columnNames: List<String>,
     ) : SQLiteStatement {
 
-        /** Pending bindings accumulated via typed bind* calls. */
         private val pendingBindings = mutableMapOf<Int, Any?>()
 
         /** Eagerly fetched rows + per-row types from the first step(). */
-        private var rows: Array<Array<Any?>> = emptyArray()
-        private var rowTypes: Array<IntArray> = emptyArray()
+        private var rows: List<List<Any?>> = emptyList()
+        private var rowTypes: List<IntArray> = emptyList()
         private var pos = -1
 
         // ---- step / reset / clear ---------------------------------------
 
         override fun step(): Boolean {
-            if (pos == -1) {
-                val resp = blockingRequest("step", buildPayload())
-                parseRowsAndTypes(resp.data)
+            if (rows.isEmpty()) {
+                val payload = buildJsonObject {
+                    put("statementId", statementId)
+                    put("bindings", encodeBindings())
+                }
+                val data = blockingRequest("step", payload)
+                parseResponse(data)
             }
             pos++
             return pos < rows.size
@@ -159,8 +162,8 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
         override fun reset() {
             pos = -1
-            rows = emptyArray()
-            rowTypes = emptyArray()
+            rows = emptyList()
+            rowTypes = emptyList()
         }
 
         override fun clearBindings() {
@@ -169,49 +172,27 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
         // ---- typed bind helpers -----------------------------------------
 
-        override fun bindText(index: Int, value: String) {
-            pendingBindings[index] = value
-        }
-        override fun bindLong(index: Int, value: Long) {
-            pendingBindings[index] = value
-        }
-        override fun bindDouble(index: Int, value: Double) {
-            pendingBindings[index] = value
-        }
-        override fun bindFloat(index: Int, value: Float) {
-            pendingBindings[index] = value.toDouble()
-        }
-        override fun bindInt(index: Int, value: Int) {
-            pendingBindings[index] = value.toLong()
-        }
-        override fun bindBoolean(index: Int, value: Boolean) {
-            pendingBindings[index] = if (value) 1L else 0L
-        }
-        override fun bindBlob(index: Int, value: ByteArray) {
-            pendingBindings[index] = value
-        }
-        override fun bindNull(index: Int) {
-            pendingBindings[index] = null
-        }
+        override fun bindText(index: Int, value: String) { pendingBindings[index] = value }
+        override fun bindLong(index: Int, value: Long) { pendingBindings[index] = value }
+        override fun bindDouble(index: Int, value: Double) { pendingBindings[index] = value }
+        override fun bindFloat(index: Int, value: Float) { pendingBindings[index] = value.toDouble() }
+        override fun bindInt(index: Int, value: Int) { pendingBindings[index] = value.toLong() }
+        override fun bindBoolean(index: Int, value: Boolean) { pendingBindings[index] = if (value) 1L else 0L }
+        override fun bindBlob(index: Int, value: ByteArray) { pendingBindings[index] = value }
+        override fun bindNull(index: Int) { pendingBindings[index] = null }
 
         // ---- row getters (all null-safe) ---------------------------------
 
         override fun getText(index: Int): String {
-            assertRow()
-            val v = rows[pos][index]
-            return v as? String ?: ""
+            return currentCell(index) as? String ?: ""
         }
 
         override fun getLong(index: Int): Long {
-            assertRow()
-            val v = rows[pos][index]
-            return (v as? Number)?.toLong() ?: 0L
+            return (currentCell(index) as? Number)?.toLong() ?: 0L
         }
 
         override fun getDouble(index: Int): Double {
-            assertRow()
-            val v = rows[pos][index]
-            return (v as? Number)?.toDouble() ?: 0.0
+            return (currentCell(index) as? Number)?.toDouble() ?: 0.0
         }
 
         override fun getFloat(index: Int): Float = getDouble(index).toFloat()
@@ -219,75 +200,93 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         override fun getBoolean(index: Int): Boolean = getLong(index) != 0L
 
         override fun getBlob(index: Int): ByteArray {
-            assertRow()
-            val v = rows[pos][index]
+            val v = currentCell(index)
             if (v == null) return ByteArray(0)
             return when (v) {
                 is Uint8Array -> ByteArray(v.length.toInt()) { v[it].toByte() }
                 is Int8Array -> ByteArray(v.length.toInt()) { v[it] }
-                else -> throw SubSlothSqliteException("Column $index is not a blob")
+                else -> throw RuntimeException("Column $index is not a blob")
             }
         }
 
         override fun isNull(index: Int): Boolean {
-            assertRow()
-            // Check the ACTUAL value, not the cached column type.
-            return rows[pos][index] == null
+            // Check the ACTUAL value, not a cached column type.
+            val row = currentRow() ?: return true
+            return index < 0 || index >= row.size || row[index] == null
         }
 
         override fun getColumnType(index: Int): Int {
-            assertRow()
-            // Return the per-row column type.
-            return rowTypes.getOrNull(pos)?.getOrNull(index) ?: TYPE_NULL
+            if (pos < 0 || pos >= rowTypes.size) return 5 /* NULL */
+            val types = rowTypes[pos]
+            return types.getOrNull(index) ?: 5
         }
 
         override fun getColumnName(index: Int): String = columnNames[index]
         override fun getColumnCount(): Int = columnNames.size
 
         override fun close() {
-            blockingRequest("close", js("{ statementId: statementId }"))
+            blockingRequest("close", buildJsonObject {
+                put("statementId", statementId)
+            })
         }
 
         // ---- internal helpers -------------------------------------------
 
-        private fun assertRow() {
-            if (pos < 0 || pos >= rows.size) {
-                throw SubSlothSqliteException(
-                    "No current row — call step() first (pos=$pos, count=${rows.size})",
-                )
-            }
+        private fun currentRow(): List<Any?>? {
+            return if (pos in rows.indices) rows[pos] else null
         }
 
-        /**
-         * Build the bindings array from pending typed bind* calls.
-         * 1‑based SQLite indices are mapped to 0‑based array indices.
-         */
-        private fun buildPayload(): dynamic {
+        private fun currentCell(index: Int): Any? {
+            return currentRow()?.getOrNull(index)
+        }
+
+        /** Build JSON array of bindings from pending typed bind* calls. */
+        private fun encodeBindings(): JsonArray {
             val maxIdx = pendingBindings.keys.maxOrNull() ?: -1
-            val arr = Array<Any?>(maxIdx + 1) { i -> pendingBindings.remove(i) }
+            val elements = Array<JsonElement>(maxIdx + 1) { i ->
+                val v = pendingBindings.remove(i)
+                when (v) {
+                    null -> JsonNull
+                    is String -> JsonPrimitive(v)
+                    is Number -> JsonPrimitive(v.toDouble())
+                    is Boolean -> JsonPrimitive(v)
+                    else -> JsonNull
+                }
+            }
             pendingBindings.clear()
-            return js("{ statementId: statementId, bindings: arr }")
+            return JsonArray(elements.toList())
         }
 
         /** Parse the worker's `step` response into [rows] and [rowTypes]. */
-        private fun parseRowsAndTypes(data: dynamic) {
-            val rawRows: Array<dynamic> = data.rows as Array<dynamic>
-            val rawTypes: Array<dynamic> = data.columnTypes as Array<dynamic>
+        private fun parseResponse(data: JsonObject) {
+            val rawRows = data["rows"]!!.jsonArray
+            val rawTypes = data["columnTypes"]!!.jsonArray
 
-            // Unwrap rows: dynamic → concrete Kotlin values
-            rows = Array(rawRows.size) { r ->
-                val src = rawRows[r] as Array<dynamic>
-                Array(src.size) { c -> src[c] }
+            rows = rawRows.map { rowElement ->
+                rowElement.jsonArray.map { cell ->
+                    when {
+                        cell is JsonNull -> null
+                        cell is JsonPrimitive && cell.isString -> cell.content
+                        cell is JsonPrimitive && cell.contentOrNull?.toLongOrNull() != null ->
+                            cell.long
+                        cell is JsonPrimitive && cell.contentOrNull?.toDoubleOrNull() != null ->
+                            cell.double
+                        cell is JsonPrimitive -> cell.content
+                        else -> null
+                    }
+                }
             }
 
-            // columnTypes is now row-major: Array<Array<number>>
-            rowTypes = Array(rawTypes.size) { r ->
-                val src = rawTypes[r] as Array<dynamic>
-                IntArray(src.size) { c -> (src[c] as Number).toInt() }
+            // columnTypes is row-major: [[col0_row1, col1_row1], [col0_row2, col1_row2], ...]
+            rowTypes = rawTypes.map { rowTypeElement ->
+                rowTypeElement.jsonArray.map { it.jsonPrimitive.int }.toIntArray()
             }
         }
     }
 }
 
-/** SQLite exception thrown by [SubSlothSqliteDriver]. */
-private class SubSlothSqliteException(message: String) : RuntimeException(message)
+// ---------------------------------------------------------------------------
+// Extensions
+// ---------------------------------------------------------------------------
+
+private fun JsonObject.long(key: String): Long = this[key]!!.jsonPrimitive.long

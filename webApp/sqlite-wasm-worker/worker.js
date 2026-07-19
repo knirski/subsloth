@@ -14,9 +14,9 @@ function openRequest(id, requestData) {
       ? new sqlite3.oo1.OpfsDb(requestData.fileName)
       : new sqlite3.oo1.DB(requestData.fileName, 'ct');
     databases.set(newDatabaseId, newDatabase);
-    postMessage({ id, data: { databaseId: newDatabaseId } });
+    postMessage(JSON.stringify({ id, data: { databaseId: newDatabaseId } }));
   } catch (error) {
-    postMessage({ id, error: error.message });
+    postMessage(JSON.stringify({ id, error: error.message }));
   }
 }
 
@@ -25,7 +25,7 @@ function prepareRequest(id, requestData) {
     const newStatementId = nextStatementId++;
     const database = databases.get(requestData.databaseId);
     if (!database) {
-      postMessage({ id, error: 'Invalid database ID: ' + requestData.databaseId });
+      postMessage(JSON.stringify({ id, error: 'Invalid database ID: ' + requestData.databaseId }));
       return;
     }
     const statement = database.prepare(requestData.sql);
@@ -34,23 +34,23 @@ function prepareRequest(id, requestData) {
     for (let i = 0; i < statement.columnCount; i++) {
       columnNames.push(sqlite3.capi.sqlite3_column_name(statement, i));
     }
-    postMessage({
+    postMessage(JSON.stringify({
       id,
       data: {
         statementId: newStatementId,
         parameterCount: sqlite3.capi.sqlite3_bind_parameter_count(statement),
         columnNames,
       },
-    });
+    }));
   } catch (error) {
-    postMessage({ id, error: error.message });
+    postMessage(JSON.stringify({ id, error: error.message }));
   }
 }
 
 function stepRequest(id, requestData) {
   const statement = statements.get(requestData.statementId);
   if (!statement) {
-    postMessage({ id, error: 'Invalid statement ID: ' + requestData.statementId });
+    postMessage(JSON.stringify({ id, error: 'Invalid statement ID: ' + requestData.statementId }));
     return;
   }
   try {
@@ -69,9 +69,9 @@ function stepRequest(id, requestData) {
       columnTypes.push(rowTypes);
       rows.push(statement.get([]));
     }
-    postMessage({ id, data: { rows, columnTypes } });
+    postMessage(JSON.stringify({ id, data: { rows, columnTypes } }));
   } catch (error) {
-    postMessage({ id, error: error.message });
+    postMessage(JSON.stringify({ id, error: error.message }));
   }
 }
 
@@ -91,9 +91,9 @@ function closeRequest(id, requestData) {
         databases.delete(requestData.databaseId);
       }
     }
-    postMessage({ id });
+    postMessage(JSON.stringify({ id }));
   } catch (error) {
-    postMessage({ id, error: error.message });
+    postMessage(JSON.stringify({ id, error: error.message }));
   }
 }
 
@@ -105,9 +105,10 @@ const commandMap = {
 };
 
 function handleMessage(e) {
-  const requestMsg = e.data;
+  // Accept both JS objects (legacy) and JSON strings (SubSlothSqliteDriver)
+  const requestMsg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
   if (requestMsg.data == null) {
-    postMessage({ id: requestMsg.id, error: "Invalid request, missing 'data'." });
+    postMessage(JSON.stringify({ id: requestMsg.id, error: "Invalid request, missing 'data'." }));
     return;
   }
   const command = requestMsg.data.cmd;
@@ -115,7 +116,7 @@ function handleMessage(e) {
   if (requestHandler) {
     requestHandler(requestMsg.id, requestMsg.data);
   } else {
-    postMessage({ id: requestMsg.id, error: "Invalid request, unknown command: '" + command + "'." });
+    postMessage(JSON.stringify({ id: requestMsg.id, error: "Invalid request, unknown command: '" + command + "'." }));
   }
 }
 
@@ -137,6 +138,6 @@ sqlite3InitModule().then(instance => {
   while (messageQueue.length > 0) {
     const queued = messageQueue.shift();
     const requestId = queued?.data?.id;
-    postMessage({ id: requestId, error: `sqlite3 init failed: ${error?.message ?? String(error)}` });
+    postMessage(JSON.stringify({ id: requestId, error: `sqlite3 init failed: ${error?.message ?? String(error)}` }));
   }
 });
