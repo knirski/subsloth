@@ -29,7 +29,6 @@ package net.subsloth.database
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.SQLiteStatement
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -39,15 +38,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeFromString
-import kotlinx.serialization.json.encodeToString
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
+import kotlinx.serialization.serializer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.MessageEvent
@@ -59,7 +54,9 @@ import kotlin.coroutines.resumeWithException
 // Driver
 // ---------------------------------------------------------------------------
 
-class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
+class SubSlothSqliteDriver(
+    private val worker: Worker,
+) : SQLiteDriver {
 
     private val pending = mutableMapOf<Long, (JsonObject) -> Unit>()
     private var nextId = 1L
@@ -68,7 +65,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
     init {
         worker.onmessage = { event: MessageEvent ->
             val raw: String = event.data as String
-            val root: JsonObject = json.decodeFromString(raw)
+            val root: JsonObject = json.parseToJsonElement(raw).jsonObject
             val id = root["id"]!!.jsonPrimitive.long
             val cb = pending.remove(id)
             if (cb != null) cb(root)
@@ -78,55 +75,44 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
     override val hasConnectionPool: Boolean get() = false
 
     override suspend fun open(fileName: String): SQLiteConnection {
-        val resp = requestCmd("open", buildJsonObject { put("fileName", fileName) })
+        val resp = request("open", buildJsonObject { put("fileName", fileName) })
         val dbId = resp["databaseId"]!!.jsonPrimitive.long
         return Connection(dbId)
     }
 
     // ---- Coroutine request/reply ----------------------------------------
 
-    /**
-     * Send a command and await the response via coroutine suspension.
-     * The caller is responsible for wrapping in [runBlocking] if needed.
-     */
-    private suspend fun requestCmd(cmd: String, payload: JsonObject): JsonObject {
+    private suspend fun request(cmd: String, payload: JsonObject): JsonObject {
         val id = nextId++
         return suspendCancellableCoroutine { cont ->
             pending[id] = { resp ->
-                val error = resp["error"]?.jsonPrimitive?.contentOrNull
-                if (error != null) {
-                    cont.resumeWithException(
-                        RuntimeException("$cmd: $error"),
-                    )
+                val err = resp["error"]?.jsonPrimitive?.contentOrNull
+                if (err != null) {
+                    cont.resumeWithException(RuntimeException("$cmd: $err"))
                 } else {
                     cont.resume(resp["data"]!!.jsonObject)
                 }
             }
             val msg = buildJsonObject {
                 put("id", id)
-                put(
-                    "data",
-                    buildJsonObject {
-                        put("cmd", cmd)
-                        payload.forEach { (k, v) -> put(k, v) }
-                    },
-                )
+                put("data", buildJsonObject {
+                    put("cmd", cmd)
+                    payload.forEach { (k, v) -> put(k, v) }
+                })
             }
-            worker.postMessage(json.encodeToString(msg))
+            val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
+            worker.postMessage(jsonStr)
         }
     }
 
-    /** Blocking variant — bridges non-suspend step()/close() to suspend. */
-    private fun blockingRequest(cmd: String, payload: JsonObject): JsonObject = runBlocking { requestCmd(cmd, payload) }
-
     // ---- Connection -----------------------------------------------------
 
-    private inner class Connection(private val databaseId: Long) : SQLiteConnection {
-
-        override val inTransaction: Boolean get() = false
+    private inner class Connection(
+        private val databaseId: Long,
+    ) : SQLiteConnection {
 
         override suspend fun prepare(sql: String): SQLiteStatement {
-            val data = requestCmd(
+            val data = request(
                 "prepare",
                 buildJsonObject {
                     put("databaseId", databaseId)
@@ -140,7 +126,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         }
 
         override fun close() {
-            // Resources are released via Statement.close()
+            // Resources released via Statement.close()
         }
     }
 
@@ -148,8 +134,8 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
     private inner class Statement(
         private val statementId: Long,
-        override val parameterCount: Int,
-        override val columnNames: List<String>,
+        private val paramCount: Int,
+        private val colNames: List<String>,
     ) : SQLiteStatement {
 
         private val pendingBindings = mutableMapOf<Int, Any?>()
@@ -158,16 +144,18 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
         private var rows: List<List<Any?>> = emptyList()
         private var rowTypes: List<IntArray> = emptyList()
         private var pos = -1
+        private var stepExecuted = false
 
         // ---- step / reset / clear ---------------------------------------
 
-        override fun step(): Boolean {
-            if (rows.isEmpty()) {
+        override suspend fun step(): Boolean {
+            if (!stepExecuted) {
+                stepExecuted = true
                 val payload = buildJsonObject {
                     put("statementId", statementId)
                     put("bindings", encodeBindings())
                 }
-                val data = blockingRequest("step", payload)
+                val data = request("step", payload)
                 parseResponse(data)
             }
             pos++
@@ -178,6 +166,7 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
             pos = -1
             rows = emptyList()
             rowTypes = emptyList()
+            stepExecuted = false
         }
 
         override fun clearBindings() {
@@ -186,82 +175,78 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
 
         // ---- typed bind helpers -----------------------------------------
 
-        override fun bindText(index: Int, value: String) {
-            pendingBindings[index] = value
-        }
-        override fun bindLong(index: Int, value: Long) {
-            pendingBindings[index] = value
-        }
-        override fun bindDouble(index: Int, value: Double) {
-            pendingBindings[index] = value
-        }
-        override fun bindFloat(index: Int, value: Float) {
-            pendingBindings[index] = value.toDouble()
-        }
-        override fun bindInt(index: Int, value: Int) {
-            pendingBindings[index] = value.toLong()
-        }
-        override fun bindBoolean(index: Int, value: Boolean) {
-            pendingBindings[index] = if (value) 1L else 0L
-        }
-        override fun bindBlob(index: Int, value: ByteArray) {
-            pendingBindings[index] = value
-        }
-        override fun bindNull(index: Int) {
-            pendingBindings[index] = null
-        }
+        override fun bindText(index: Int, value: String) { pendingBindings[index] = value }
+        override fun bindLong(index: Int, value: Long) { pendingBindings[index] = value }
+        override fun bindDouble(index: Int, value: Double) { pendingBindings[index] = value }
+        override fun bindFloat(index: Int, value: Float) { pendingBindings[index] = value.toDouble() }
+        override fun bindInt(index: Int, value: Int) { pendingBindings[index] = value.toLong() }
+        override fun bindBoolean(index: Int, value: Boolean) { pendingBindings[index] = if (value) 1L else 0L }
+        override fun bindBlob(index: Int, value: ByteArray) { pendingBindings[index] = value }
+        override fun bindNull(index: Int) { pendingBindings[index] = null }
 
         // ---- row getters (all null-safe) ---------------------------------
 
-        override fun getText(index: Int): String = currentCell(index) as? String ?: ""
+        override fun getText(index: Int): String {
+            return cell(index) as? String ?: ""
+        }
 
-        override fun getLong(index: Int): Long = (currentCell(index) as? Number)?.toLong() ?: 0L
+        override fun getLong(index: Int): Long {
+            return (cell(index) as? Number)?.toLong() ?: 0L
+        }
 
-        override fun getDouble(index: Int): Double = (currentCell(index) as? Number)?.toDouble() ?: 0.0
+        override fun getDouble(index: Int): Double {
+            return (cell(index) as? Number)?.toDouble() ?: 0.0
+        }
 
         override fun getFloat(index: Int): Float = getDouble(index).toFloat()
         override fun getInt(index: Int): Int = getLong(index).toInt()
         override fun getBoolean(index: Int): Boolean = getLong(index) != 0L
 
         override fun getBlob(index: Int): ByteArray {
-            val v = currentCell(index)
+            val v = cell(index)
             if (v == null) return ByteArray(0)
             return when (v) {
                 is Uint8Array -> ByteArray(v.length.toInt()) { v[it].toByte() }
                 is Int8Array -> ByteArray(v.length.toInt()) { v[it] }
-                else -> throw RuntimeException("Column $index is not a blob")
+                else -> ByteArray(0)
             }
         }
 
         override fun isNull(index: Int): Boolean {
-            // Check the ACTUAL value, not a cached column type.
             val row = currentRow() ?: return true
             return index < 0 || index >= row.size || row[index] == null
         }
 
         override fun getColumnType(index: Int): Int {
             if (pos < 0 || pos >= rowTypes.size) return 5 /* NULL */
-            val types = rowTypes[pos]
-            return types.getOrNull(index) ?: 5
+            return rowTypes[pos].getOrNull(index) ?: 5
         }
 
-        override fun getColumnName(index: Int): String = columnNames[index]
-        override fun getColumnCount(): Int = columnNames.size
+        override fun getColumnName(index: Int): String = colNames[index]
+        override fun getColumnCount(): Int = colNames.size
 
         override fun close() {
-            blockingRequest(
-                "close",
-                buildJsonObject {
+            // Fire-and-forget close message; no response needed.
+            val msg = buildJsonObject {
+                put("id", 0L)
+                put("data", buildJsonObject {
+                    put("cmd", "close")
                     put("statementId", statementId)
-                },
-            )
+                })
+            }
+            val jsonStr = json.encodeToString(serializer<JsonObject>(), msg)
+            worker.postMessage(jsonStr)
         }
 
         // ---- internal helpers -------------------------------------------
 
-        private fun currentRow(): List<Any?>? = if (pos in rows.indices) rows[pos] else null
+        private fun currentRow(): List<Any?>? {
+            return if (pos in rows.indices) rows[pos] else null
+        }
 
-        private fun currentCell(index: Int): Any? = currentRow()?.getOrNull(index)
+        private fun cell(index: Int): Any? {
+            return currentRow()?.getOrNull(index)
+        }
 
         /** Build JSON array of bindings from pending typed bind* calls. */
         private fun encodeBindings(): JsonArray {
@@ -289,32 +274,21 @@ class SubSlothSqliteDriver(private val worker: Worker) : SQLiteDriver {
                 rowElement.jsonArray.map { cell ->
                     when {
                         cell is JsonNull -> null
-
                         cell is JsonPrimitive && cell.isString -> cell.content
-
                         cell is JsonPrimitive && cell.contentOrNull?.toLongOrNull() != null ->
                             cell.long
-
                         cell is JsonPrimitive && cell.contentOrNull?.toDoubleOrNull() != null ->
                             cell.double
-
                         cell is JsonPrimitive -> cell.content
-
                         else -> null
                     }
                 }
             }
 
-            // columnTypes is row-major: [[col0_row1, col1_row1], [col0_row2, col1_row2], ...]
+            // columnTypes is row-major: [[col0_row1, col1_row1], ...]
             rowTypes = rawTypes.map { rowTypeElement ->
                 rowTypeElement.jsonArray.map { it.jsonPrimitive.int }.toIntArray()
             }
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Extensions
-// ---------------------------------------------------------------------------
-
-private fun JsonObject.long(key: String): Long = this[key]!!.jsonPrimitive.long
