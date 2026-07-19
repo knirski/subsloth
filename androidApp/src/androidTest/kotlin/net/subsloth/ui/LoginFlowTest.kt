@@ -12,13 +12,20 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.CatalogContent
 import net.subsloth.catalog.HomeRow
 import net.subsloth.catalog.HomeUiState
+import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.InMemorySessionState
+import net.subsloth.core.domain.port.Session
+import net.subsloth.core.domain.port.SessionPort
+import net.subsloth.core.model.error.AuthError
+import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource
@@ -52,9 +59,8 @@ class LoginFlowTest {
     private fun LoginFlowShell(
         screen: LoginFlowScreen,
         onLoginSuccess: () -> Unit,
+        sessionPort: SessionPort = remember { InMemorySessionState() },
     ) {
-        val sessionPort = remember { InMemorySessionState() }
-
         when (screen) {
             LoginFlowScreen.Login -> {
                 LoginScreen(
@@ -132,17 +138,27 @@ class LoginFlowTest {
 
     @Test
     fun loginFails_showsErrorMessage() {
+        // A SessionPort that always rejects credentials
+        val failingPort = object : SessionPort {
+            override val state = MutableStateFlow<Session>(Session.Anonymous).asStateFlow()
+            override fun current(): Session = Session.Anonymous
+            override fun open(credentials: Credentials): Outcome<Unit> =
+                Outcome.Failure(AuthError.InvalidCredentials)
+            override fun close(): Outcome<Unit> = Outcome.Success(Unit)
+            override fun invalidate(): Outcome<Unit> = Outcome.Success(Unit)
+        }
+
         var screen by mutableStateOf<LoginFlowScreen>(LoginFlowScreen.Login)
 
         composeTestRule.setContent {
             LoginFlowShell(
                 screen = screen,
                 onLoginSuccess = { screen = LoginFlowScreen.Home },
+                sessionPort = failingPort,
             )
         }
 
-        // Fill in credentials that InMemorySessionState will reject
-        // (blank password triggers AuthError.InvalidCredentials)
+        // Fill in credentials (non-blank so Sign In is enabled)
         composeTestRule.onNodeWithText("Login").performTextInput("alice")
         composeTestRule.onNodeWithText("Password").performTextInput("wrong")
 
