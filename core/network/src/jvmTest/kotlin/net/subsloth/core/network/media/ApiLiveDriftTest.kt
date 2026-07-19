@@ -73,10 +73,10 @@ class ApiLiveDriftTest {
 
     private fun String?.diagnosticMessage(): String =
         if (this == null) {
-            "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct"
-        } else if (contains("ResponseValidationPlugin") || contains("Expected JSON")) {
-            "API returned unexpected response — check that SUBSLOTH_URL ($resolvedBaseUrl) is correct " +
-                "and the server is reachable. Error: $this"
+            "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct and includes /api/v2/ path"
+        } else if (contains("redirect") || contains("HTML") || contains("Expected JSON")) {
+            "API returned unexpected response (redirect or HTML) — SUBSLOTH_URL ($resolvedBaseUrl) may point " +
+                "to the web frontend instead of the Kodi API endpoint (needs /api/v2/ path). Error: $this"
         } else {
             this
         }
