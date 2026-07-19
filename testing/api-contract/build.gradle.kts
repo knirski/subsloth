@@ -69,8 +69,16 @@ tasks.register<JavaExec>("captureApi") {
     classpath = workerClasspath
     mainClass = "net.subsloth.testing.contract.CaptureApi"
 
-    val email = project.providers.gradleProperty("email").orElse("")
-    val password = project.providers.gradleProperty("password").orElse("")
+    val email =
+        project.providers
+            .gradleProperty("email")
+            .orElse(project.providers.environmentVariable("SUBSLOTH_LOGIN"))
+            .orElse("")
+    val password =
+        project.providers
+            .gradleProperty("password")
+            .orElse(project.providers.environmentVariable("SUBSLOTH_PASSWORD"))
+            .orElse("")
 
     args(
         email.get(),
@@ -83,4 +91,30 @@ tasks.register<JavaExec>("captureApi") {
     inputs.property("password", password)
     inputs.file(rulesFile).withPropertyName("sanitizationRules")
     outputs.dir(nativeFixturesDir).withPropertyName("nativeFixtures")
+}
+
+// ── Offline fixture validation ──────────────────────────────────────────────
+
+tasks.register("validateFixtures") {
+    group = "verification"
+    description = "Run all fixture-validation tests (offline, no network needed)"
+    dependsOn(
+        ":testing:api-contract:test",
+        ":core:network:jvmTest",
+    )
+}
+
+// ── Capture + validate (full pipeline) ──────────────────────────────────────
+
+tasks.register("captureAndValidate") {
+    group = "verification"
+    description = "Capture fresh native fixtures from live API, then validate all fixtures offline"
+    dependsOn(
+        ":testing:api-contract:captureApi",
+        ":testing:api-contract:validateFixtures",
+    )
+}
+
+tasks.named("validateFixtures") {
+    mustRunAfter(":testing:api-contract:captureApi")
 }

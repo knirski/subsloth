@@ -6,6 +6,19 @@ Developer tooling for capturing Media API responses and exporting sanitised fixt
 
 Calls the API directly — no browser needed.
 
+### Using environment variables (automated, recommended)
+
+```bash
+export SUBSLOTH_LOGIN=you@example.com
+export SUBSLOTH_PASSWORD=your-password
+./gradlew :testing:api-contract:captureApi
+```
+
+Credentials are read from the same `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD`
+environment variables used by `ApiLiveDriftTest`. No CLI history exposure.
+
+### Using Gradle properties (manual)
+
 ```bash
 ./gradlew :testing:api-contract:captureApi -Pemail=... -Ppassword=...
 ```
@@ -14,7 +27,7 @@ Writes to `testing/api-contract/src/main/resources/media/`.
 
 ## Web-discovery fixtures (browser HAR)
 
-Export HAR from Firefox DevTools (Network tab → Save All As HAR), then:
+Export HAR from Firefox DevTools (Network tab -> Save All As HAR), then:
 
 ```bash
 ./gradlew :testing:api-contract:exportFixtures -PharFiles=file.har
@@ -27,7 +40,43 @@ Writes to `testing/api-contract/src/main/resources/media/web-discovery/`.
 `sanitization-rules.json` defines redacted fields, URL rewrites, and host blocklist.
 Add new sensitive fields here before committing fixtures.
 
-## Verification
+## Automated offline validation
+
+### Full pipeline: capture + validate (requires credentials)
+
+```bash
+./scripts/capture/validate-fixtures.sh
+```
+
+Or directly via Gradle:
+
+```bash
+./gradlew :testing:api-contract:captureAndValidate
+```
+
+### Offline validation only (no capture, no network)
+
+```bash
+./scripts/capture/validate-fixtures.sh --validate
+```
+
+Or:
+
+```bash
+./gradlew :testing:api-contract:validateFixtures
+```
+
+This runs:
+- `:testing:api-contract:test` -- fixture existence, sanitisation, WireMock replay, URL validation
+- `:core:network:jvmTest` -- DTO schema generation, JSON parse validation, schema round-trip
+
+### Capture only
+
+```bash
+./scripts/capture/validate-fixtures.sh --capture
+```
+
+## Verification (targeted commands)
 
 ```bash
 ./gradlew :testing:api-contract:test
