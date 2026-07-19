@@ -8,7 +8,8 @@ Precompiled script plugins in `build-logic/convention/src/main/kotlin/` that enc
 
 | Plugin | Applies To | Key Configuration |
 |---|---|---|
-| `subsloth.kmp.library` | KMP libraries (`:core:*`, `:feature:*`) | Kotlin Multiplatform (JVM + WasmJS), jvmToolchain(17), allWarningsAsErrors, spotless, detekt, power-assert, JUnit Platform, `kotlinx-collections-immutable`, `kermit` |
+| `subsloth.kmp.library` | KMP libraries without Android targets (`:core:*`, `:feature:*`) | Kotlin Multiplatform (JVM + WasmJS), jvmToolchain(17), allWarningsAsErrors, spotless, detekt, power-assert, JUnit Platform, `kotlinx-collections-immutable`, `kermit` |
+| `subsloth.kmp.android.library` | KMP libraries with Android targets (`:core:database`, `:core:media`) | Kotlin Multiplatform (Android + JVM + WasmJS), jvmToolchain(17), allWarningsAsErrors, compileSdk 37, minSdk 26, lint config, spotless, detekt, power-assert, JUnit Platform, `kotlinx-collections-immutable`, `kermit` |
 | `subsloth.android.application` | Android apps (`:androidApp`) | Android application plugin, compileSdk 37, minSdk 26, targetSdk 37, lint strict, spotless, detekt, power-assert, JUnit Platform |
 | `subsloth.android.application.compose` | Android apps with Compose | Extends `subsloth.android.application` + enables Compose build features + Compose compiler with stability config |
 | `subsloth.android.library` | Android libraries | Android library plugin, compileSdk 37, minSdk 26, lint strict, spotless, detekt, power-assert, JUnit Platform, `kermit` |
@@ -53,6 +54,71 @@ The primary convention for **cross-platform modules** shared across Android, Des
 **Testing:**
 - JUnit Platform (5.x) with JUnit Jupiter API + Engine
 - `kotlin.test` assertions enhanced by power-assert plugin
+
+---
+
+## `subsloth.kmp.android.library`
+
+Extends `subsloth.kmp.library` with `androidTarget()` support via the `com.android.kotlin.multiplatform.library` plugin.
+
+Use this plugin for **KMP modules that need `androidMain` source sets** (platform-specific Android code,
+Android-only dependencies like WorkManager, Media3).
+
+**Applied plugins:**
+- `com.android.kotlin.multiplatform.library` — AGP variant compatible with KMP
+- `org.jetbrains.kotlin.multiplatform`
+- `com.diffplug.spotless`
+- `dev.detekt`
+- `org.jetbrains.kotlin.plugin.power-assert`
+
+**KMP targets:**
+| Target | Enabled? | Notes |
+|---|---|---|
+| `androidTarget()` | ✅ Enabled via `com.android.kotlin.multiplatform.library` | `compileSdk = 37`, `minSdk = 26` |
+| `jvm()` | ✅ Enabled | Primary test target |
+| `wasmJs()` | ✅ Enabled | Browser output, `binaries.executable()` |
+| `iosArm64()` | ❌ Disabled | No iOS testing infra available |
+| `iosSimulatorArm64()` | ❌ Disabled | No iOS testing infra available |
+| `macosArm64()` | ❌ Disabled | No macOS testing infra available |
+
+**Android defaults:**
+- `compileSdk = 37`
+- `minSdk = 26`
+- Lint: `abortOnError = true`, `warningsAsErrors = true`, `checkReleaseBuilds = false`, `checkAllWarnings = true`
+- Lint suppressed: `GradleDependency`, `InvalidPackage`
+
+**Common dependencies (applied to all modules automatically):**
+- `kotlinx-collections-immutable` (commonMain)
+- `kermit` logging (commonMain)
+- `kotlin("test")` (commonTest)
+- JUnit 5 + JUnit Platform (jvmTest)
+
+**Compiler settings:**
+- `jvmToolchain(17)` — compiles to Java 17 bytecode
+- `allWarningsAsErrors = true` — no warnings tolerated
+
+**Linting:**
+- Spotless/ktlint — applied to `src/*/kotlin/**/*.kt` and `*.gradle.kts`
+- detekt — configured from `config/detekt.yml`, baseline at `config/detekt-baseline.xml`, custom rules from `:testing:detekt-rules` + Compose rules
+
+**Usage:**
+
+Replace `subsloth.kmp.library` with `subsloth.kmp.android.library` in any module that needs
+`androidMain` source sets. The `kotlin { android { } }` block must configure `namespace` per-module:
+
+```kotlin
+plugins {
+    id("subsloth.kmp.android.library")
+}
+
+kotlin {
+    android {
+        namespace = "net.subsloth.mymodule"
+    }
+}
+```
+
+`compileSdk` and `minSdk` are set by the convention and can be omitted unless overrides are needed.
 
 ---
 
