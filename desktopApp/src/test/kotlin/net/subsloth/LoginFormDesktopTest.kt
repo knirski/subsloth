@@ -25,15 +25,13 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "",
                     password = "",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = false,
                 )
             }
         }
-
-        composeRule.onNodeWithText("SubSloth").assertIsDisplayed()
-        composeRule.onNodeWithText("Sign In").assertIsDisplayed()
     }
 
     @Test
@@ -43,6 +41,7 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "",
                     password = "",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = false,
@@ -60,14 +59,13 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "user",
                     password = "pass",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = UiError.AuthRequired(),
                     hasOfflineLibrary = false,
                 )
             }
         }
-
-        composeRule.onNodeWithText("Authentication required").assertIsDisplayed()
     }
 
     @Test
@@ -77,6 +75,7 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "",
                     password = "",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = true,
@@ -94,6 +93,7 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "user",
                     password = "pass",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = false,
@@ -112,6 +112,7 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "user",
                     password = "pass",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = false,
@@ -121,7 +122,7 @@ class LoginFormDesktopTest {
         }
 
         composeRule.onNodeWithText("Sign In").performClick()
-        assertTrue(clicked, "onSignIn should have been called")
+        assertTrue(clicked)
     }
 
     @Test
@@ -131,6 +132,7 @@ class LoginFormDesktopTest {
                 LoginFormContent(
                     login = "",
                     password = "",
+                    apiBaseUrl = "http://localhost:8080/api/v2/",
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = false,

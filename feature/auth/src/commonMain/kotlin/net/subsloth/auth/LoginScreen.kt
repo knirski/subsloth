@@ -34,6 +34,7 @@ import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.auth.generated.resources.Res
+import subsloth.feature.auth.generated.resources.api_base_url_label
 import subsloth.feature.auth.generated.resources.app_title
 import subsloth.feature.auth.generated.resources.cancel
 import subsloth.feature.auth.generated.resources.login_label
@@ -58,6 +59,7 @@ fun LoginScreen(
     onNavigateToCatalog: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val apiBaseUrl by viewModel.apiBaseUrl.collectAsStateWithLifecycle()
     var login by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
@@ -87,12 +89,14 @@ fun LoginScreen(
             LoginFormContent(
                 login = login,
                 password = password,
+                apiBaseUrl = apiBaseUrl,
                 isLoading = uiState is LoginUiState.Loading,
                 error = formState.error,
                 hasOfflineLibrary = formState.hasOfflineLibrary,
                 modifier = modifier,
                 onLoginChange = { login = it },
                 onPasswordChange = { password = it },
+                onApiBaseUrlChange = { viewModel.onApiBaseUrlChanged(it) },
                 onSignIn = { viewModel.login(login, password) },
                 onNavigateToOfflineLibrary = onNavigateToOfflineLibrary,
             )
@@ -149,12 +153,14 @@ fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, o
 fun LoginFormContent(
     login: String,
     password: String,
+    apiBaseUrl: String,
     isLoading: Boolean,
     error: UiError?,
     hasOfflineLibrary: Boolean,
     modifier: Modifier = Modifier,
     onLoginChange: (String) -> Unit = {},
     onPasswordChange: (String) -> Unit = {},
+    onApiBaseUrlChange: (String) -> Unit = {},
     onSignIn: () -> Unit = {},
     onNavigateToOfflineLibrary: () -> Unit = {},
 ) {
@@ -191,6 +197,17 @@ fun LoginFormContent(
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = apiBaseUrl,
+            onValueChange = onApiBaseUrlChange,
+            label = { Text(stringResource(Res.string.api_base_url_label)) },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
         )

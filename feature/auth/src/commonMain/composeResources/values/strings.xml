@@ -9,4 +9,5 @@
     <string name="session_expired">Session Expired</string>
     <string name="session_expired_message">Your session has expired or the service is unavailable. Please sign in again. Your offline downloads and local data remain intact.</string>
     <string name="cancel">Cancel</string>
+    <string name="api_base_url_label">API Base URL</string>
 </resources>

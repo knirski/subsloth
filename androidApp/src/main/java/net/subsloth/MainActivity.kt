@@ -8,10 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.ui.RootContainerViewModel
+import net.subsloth.core.ui.SessionGate
+import net.subsloth.preferences.UserPreferences
 import net.subsloth.core.ui.SessionGate
 
 class MainActivity : ComponentActivity() {
@@ -24,11 +28,24 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val root: RootContainerViewModel = viewModel()
                     val sessionPort = root.sessionPort
+                    val app = LocalContext.current.applicationContext
+                    val container = (app as? SubSlothApplication)?.container
+                    val userPreferences = container?.userPreferences
                     SessionGate(
                         sessionPort = sessionPort,
                         login = {
                             val viewModel: LoginViewModel = viewModel {
-                                LoginViewModel(sessionPort = sessionPort)
+                                LoginViewModel(
+                                    sessionPort = sessionPort,
+                                    readApiBaseUrl = {
+                                        userPreferences?.apiBaseUrl() ?: flowOf(
+                                            UserPreferences.DEFAULT_API_BASE_URL,
+                                        )
+                                    },
+                                    saveApiBaseUrl = { url ->
+                                        userPreferences?.setApiBaseUrl(url)
+                                    },
+                                )
                             }
                             LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
                         },
