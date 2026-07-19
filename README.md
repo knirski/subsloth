@@ -142,6 +142,54 @@ convention plugin, dependencies, targets, and responsibilities. The
 [convention plugins](docs/convention-plugins.md) explain each Gradle
 convention's exact configuration.
 
+## Screenshots
+
+### Light theme
+
+<p align="center">
+  <img src="docs/screenshots/home-light-phone.png" width="200" alt="Home (Phone)" />
+  <img src="docs/screenshots/home-light-tablet.png" width="280" alt="Home (Tablet)" />
+  <img src="docs/screenshots/home-light-tv.png" width="320" alt="Home (TV)" />
+</p>
+
+<p align="center">
+  <em>Catalog home — Phone, Tablet, and TV (left to right)</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/movie-light-phone.png" width="200" alt="Movie detail (Phone)" />
+  <img src="docs/screenshots/series-light-tablet.png" width="280" alt="Series detail (Tablet)" />
+  <img src="docs/screenshots/player-light-phone.png" width="200" alt="Player (Phone)" />
+  <img src="docs/screenshots/downloads-light-phone.png" width="200" alt="Downloads (Phone)" />
+</p>
+
+<p align="center">
+  <em>Movie detail, series detail with episode structure, video player overlay, and downloads management</em>
+</p>
+
+### Dark theme
+
+<p align="center">
+  <img src="docs/screenshots/home-dark-phone.png" width="200" alt="Home Dark (Phone)" />
+  <img src="docs/screenshots/home-dark-tablet.png" width="280" alt="Home Dark (Tablet)" />
+  <img src="docs/screenshots/home-dark-tv.png" width="320" alt="Home Dark (TV)" />
+</p>
+
+<p align="center">
+  <em>Catalog home in dark mode — Phone, Tablet, and TV (left to right)</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/movie-dark-phone.png" width="200" alt="Movie detail Dark (Phone)" />
+  <img src="docs/screenshots/series-dark-tablet.png" width="280" alt="Series detail Dark (Tablet)" />
+  <img src="docs/screenshots/player-dark-phone.png" width="200" alt="Player Dark (Phone)" />
+  <img src="docs/screenshots/downloads-dark-phone.png" width="200" alt="Downloads Dark (Phone)" />
+</p>
+
+<p align="center">
+  <em>The same screens in dark mode</em>
+</p>
+
 ## Features
 
 | Capability | Details |
