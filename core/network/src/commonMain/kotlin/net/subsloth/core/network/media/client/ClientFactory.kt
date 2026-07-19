@@ -98,6 +98,7 @@ object ClientFactory {
                 url(baseUrl)
                 header(HttpHeaders.UserAgent, "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
                 header(HttpHeaders.Accept, "application/json, */*")
+                header(HttpHeaders.ContentType, "application/json")
                 header(HttpHeaders.AcceptLanguage, "en-US,en;q=0.5")
             }
         }

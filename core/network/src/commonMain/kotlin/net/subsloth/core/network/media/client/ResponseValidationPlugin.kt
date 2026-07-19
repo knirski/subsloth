@@ -52,7 +52,16 @@ val ResponseValidationPlugin =
                 )
             }
 
-            // 3. For successful responses, check Content-Type indicates JSON
+            // 3. Check for 402 Payment Required (subscription limit)
+            if (response.status.value == 402) {
+                InterceptorLogger.w("ResponseValidationPlugin", "[$url] HTTP 402 — subscription limit reached")
+                throw ResponseValidationException(
+                    error = NetworkError.HttpError(402, "Subscription limit reached"),
+                    message = "Subscription limit reached — verify account status",
+                )
+            }
+
+            // 4. For successful responses, check Content-Type indicates JSON
             if (response.status.value in 200..299 && contentType != null) {
                 val ct = contentType.toString()
                 if (!ct.contains("json", ignoreCase = true) &&
