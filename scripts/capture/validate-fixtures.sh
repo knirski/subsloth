@@ -28,7 +28,7 @@ case "$MODE" in
     fi
     echo "=== Capture fresh native API fixtures ==="
     cd "$ROOT"
-    ./gradlew :testing:api-contract:captureAndValidate
+    ./gradlew :testing:api-contract:captureApi
     ;;
   all|*)
     if [ -z "${SUBSLOTH_LOGIN:-}" ] || [ -z "${SUBSLOTH_PASSWORD:-}" ]; then

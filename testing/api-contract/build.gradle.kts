@@ -72,11 +72,13 @@ tasks.register<JavaExec>("captureApi") {
     val email =
         project.providers
             .gradleProperty("email")
-            .orElse(System.getenv("SUBSLOTH_LOGIN") ?: "")
+            .orElse(project.providers.environmentVariable("SUBSLOTH_LOGIN"))
+            .orElse("")
     val password =
         project.providers
             .gradleProperty("password")
-            .orElse(System.getenv("SUBSLOTH_PASSWORD") ?: "")
+            .orElse(project.providers.environmentVariable("SUBSLOTH_PASSWORD"))
+            .orElse("")
 
     args(
         email.get(),
