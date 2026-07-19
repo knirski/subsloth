@@ -1,7 +1,7 @@
 # Project Assessment — SubSloth
 
 **Date:** 2026-07-19
-**Status:** v1 Released ✅ — All 11 OpenSpec changes archived
+**Status:** v1 Released ✅ — All 11 OpenSpec changes archived; 2/3 short-term goals completed
 **Scope:** Full repository review — architecture, code quality, testing, documentation, and operational readiness.
 
 ---
@@ -78,6 +78,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 
 **Convention Plugins** (`build-logic/convention`):
 - `subsloth.kmp.library` — KMP library with shared test deps, `freeCompilerArgs += "-Xexpect-actual-classes"`
+- `subsloth.kmp.android.library` — KMP + Android library via `com.android.kotlin.multiplatform.library` (resolves AGP+KMP extension conflict); used by `:core:database`, `:core:media`
 - `subsloth.android.library` / `.application` / `.library.compose` — AGP + Compose
 - Version catalog in `gradle/libs.versions.toml` (single source of truth)
 
@@ -123,7 +124,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 |----------|------------|---------|----------|----------|---------------|
 | **Android** | Navigation3 (AGP) | Material3 | `material3-adaptive` | `androidx.tv` + `TvFocus` | Semantic labels, `clickAction`, `AccessibilityTestRecipes` |
 | **Desktop** | Navigation3 (KMP) | Material3 | Window size classes | N/A | Desktop A11y tests |
-| **Web (Wasm)** | Navigation3 (KMP) | Material3 | Responsive CSS | N/A | Semantic HTML via Compose HTML |
+| **Web (Wasm)** | Navigation3 (KMP) — all feature screens wired | Material3 | Responsive CSS | N/A | Semantic HTML via Compose HTML |
 
 **State Management:**
 - ViewModels (KMP `androidx.lifecycle:lifecycle-viewmodel-compose`) scoped to navigation entries
@@ -230,6 +231,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | **Upstream API drift** | High | High | Live drift tests (manual); fixture replay in CI; OpenAPI contract as baseline |
 | **Kodi plugin API changes** | Medium | High | Version-pinned discovery (`plugin.video.mediatv-4.0.1.zip`); `x-kodi-source-reference` in spec |
 | **Room Wasm nullable bug** | Low | Medium | Tracked in `known-gaps.md` #3; workaround: avoid nullable columns in web queries |
+| **KMP Android target convention** | ✅ Resolved | N/A | New `subsloth.kmp.android.library` convention plugin resolves AGP+KMP split (`known-gaps.md` #2 closed via PR #189) |
 | **iOS not supported** | N/A (out of scope) | N/A | Product decision; architecture ready but `iosMain` disabled |
 | **Media3/ExoPlayer on Desktop/Web** | Medium | Medium | ComposeMediaPlayer wraps Media3 on Android; Desktop/Web use same API via `expect`/`actual` |
 | **Signed URL leakage** | Low | Critical | `check-invariants.sh` scans for auth headers, signed URLs in fixtures/logs/screenshots |
@@ -245,7 +247,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | `AGENTS.md` | Agent bootstrap, verification, commit rules | ✅ Authoritative |
 | `best_practices.md` | Port/adapter, errors, sealed types, collections, datetime, Compose | ✅ Normative |
 | `docs/development.md` | Nix shell, test commands, live drift | ✅ Current |
-| `docs/known-gaps.md` | Deferred/blocked items with resolution path | ✅ Current |
+| `docs/known-gaps.md` | Deferred/blocked items with resolution path | ✅ Current — #2 resolved (PR #189) |
 | `docs/production-deployment.md` | COOP/COEP headers, Wasm MIME, SPA fallback | ✅ Current |
 | `docs/agent/README.md` | Doc routing table for agents | ✅ Current |
 | `docs/agent/*.md` | Workflow docs (OpenSpec, review, publishing, etc.) | ✅ Complete |
@@ -273,8 +275,15 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 
 ### Short-term (v1.1 / Next)
 1. **Automated offline fixture/schema validation** — scheduled workflow using captured fixtures from `:testing:api-contract` to detect schema drift without live credentials (per `testing-release/spec.md` requirement for offline-only CI)
-2. **Add `androidTarget()` to KMP convention** — enables `androidMain` source sets, reduces AGP/KMP split (see `known-gaps.md` #2)
-3. **Flesh out `:webApp` feature parity** — currently only Login + Player have real content; mirror Desktop implementations
+2. ✅ **Add `androidTarget()` to KMP convention** — 
+   - New `subsloth.kmp.android.library` convention plugin with `androidTarget()`, `jvm()`, `wasmJs()` targets
+   - Migrated `:core:database` and `:core:media` from manual config to the new plugin (removed ~82 lines of boilerplate)
+   - See PR #189 — `known-gaps.md` #2 resolved
+3. ✅ **Flesh out `:webApp` feature parity** — 
+   - All nav entries in `WebNavHost` now wired to real feature screens: Catalog → `HomeScreen`, Detail → `MovieDetailScreen`/`SeriesDetailScreen`, Library → `LibraryScreen`, Downloads → `DownloadsScreen`, Settings → `SettingsScreen`, Diagnostics → `DiagnosticsScreen`, OfflineLibrary → `LibraryScreen`
+   - ViewModels scoped per entry with `ViewModelStoreOwner` lifecycle
+   - Added `:feature:library` dependency
+   - See PR #190
 
 ### Medium-term (v2)
 1. **Enable iOS targets** — Xcode in Nix, `sqlite-framework`, AVPlayer wrapper, Compose for iOS (when stable)
@@ -300,7 +309,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 - **Reproducible builds** — Nix flake pins entire toolchain
 - **Operational hygiene** — invariant scanning, secret hygiene, conventional commits, automated releases
 
-All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. No architectural or implementation gaps block release.
+All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. Two of three short-term goals (KMP Android target convention, webApp feature parity) are completed via PR #189 and PR #190 respectively. No architectural or implementation gaps block release.
 
 ---
 

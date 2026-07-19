@@ -1,6 +1,5 @@
 plugins {
-    id("subsloth.kmp.library")
-    id("com.android.kotlin.multiplatform.library")
+    id("subsloth.kmp.android.library")
     alias(libs.plugins.room3)
     alias(libs.plugins.ksp)
 }
@@ -12,8 +11,6 @@ room3 {
 kotlin {
     android {
         namespace = "net.subsloth.database"
-        compileSdk = 37
-        minSdk = 26
 
         withDeviceTest {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
