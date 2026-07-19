@@ -1,10 +1,12 @@
 package net.subsloth
 
+import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -99,7 +101,14 @@ fun SubSlothNavHost(
 
             entry<PlayerKey> { key ->
                 val context = LocalContext.current
-                val activity = context as? ComponentActivity ?: return@entry
+                val activity = remember(context) {
+                    var current = context
+                    while (current is ContextWrapper) {
+                        if (current is ComponentActivity) break
+                        current = current.baseContext
+                    }
+                    current as? ComponentActivity
+                } ?: return@entry
                 DisposableEffect(Unit) {
                     val originalOrientation = activity.requestedOrientation
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
