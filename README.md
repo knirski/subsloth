@@ -25,7 +25,7 @@ functional streaming app.
 - **Model the domain with sealed types.** Every variant is explicit, every
   `when` is exhaustive, every invalid state is unrepresentable. No boolean
   flags where a sealed interface tells the full story.
-- **One module, one responsibility.** Twenty-one modules with a strict inward
+- **One module, one responsibility.** Twenty-two modules with a strict inward
   dependency gradient. Features share nothing but core types; the dependency
   graph is acyclic by convention.
 - **Test through contracts, not implementations.** API fixtures are captured
@@ -67,7 +67,7 @@ See [`docs/development.md`](docs/development.md) for detailed setup and
   then read the [canonical specs](openspec/specs/) that define every v1
   requirement.
 - **Build:** follow the [module structure guide](docs/module-structure.md) to
-  understand the 21-module dependency graph, then the [convention plugins
+  understand the 22-module dependency graph, then the [convention plugins
   reference](docs/convention-plugins.md) for Gradle conventions.
 - **Code:** read the [codestyle](docs/codestyle.md), the
   [FC/IS architecture](docs/agent/fc-is-architecture.md), and the
@@ -85,26 +85,50 @@ The complete, progressively organized index is at
 
 ## Architecture in one minute
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│  :androidApp  │  :desktopApp  │  :webApp                          │
-│  (AndroidX)   │  (CMP)        │  (WasmJS)                         │
-├────────────────────────────────────────────────────────────────────┤
-│  :feature:auth  :feature:catalog  :feature:details                │
-│  :feature:player  :feature:library  :feature:settings             │
-├────────────────────────────────────────────────────────────────────┤
-│  :core:network  │  :core:database  │  :core:preferences           │
-│  (Ktor, DTOs)  │  (Room 3, DAOs)  │  (DataStore, Credentials)    │
-│  :core:media    │  :core:ui        │                              │
-│  (Playback, DL) │  (Compose, Nav)  │                              │
-├────────────────────────────────────────────────────────────────────┤
-│  :core:domain  │  :core:model                                      │
-│  (Ports, Use Cases, DomainError) │  (ADTs, Value Types)           │
-└────────────────────────────────────────────────────────────────────┘
-│  :testing:api-contract  :testing:assertions  :testing:detekt-rules │
-│  :testing:mock-api  :testing:tv-focus-harness                      │
-│  :benchmark                                                        │
-└────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Apps["App Layer"]
+        direction LR
+        A1[":androidApp<br/>(AndroidX)"]
+        A2[":desktopApp<br/>(CMP)"]
+        A3[":webApp<br/>(WasmJS)"]
+    end
+    subgraph Feat["Feature Layer"]
+        direction LR
+        F1[":feature:auth"]
+        F2[":feature:catalog"]
+        F3[":feature:details"]
+        F4[":feature:player"]
+        F5[":feature:library"]
+        F6[":feature:settings"]
+    end
+    subgraph Core["Core Layer"]
+        direction LR
+        C1[":core:network<br/>(Ktor, DTOs)"]
+        C2[":core:database<br/>(Room 3, DAOs)"]
+        C3[":core:preferences<br/>(DataStore, Credentials)"]
+        C4[":core:media<br/>(Playback, DL)"]
+        C5[":core:ui<br/>(Compose, Nav)"]
+    end
+    subgraph Domain["Domain Layer"]
+        direction LR
+        D1[":core:domain<br/>(Ports, Use Cases, DomainError)"]
+        D2[":core:model<br/>(ADTs, Value Types)"]
+    end
+    subgraph Test["Testing & Benchmark"]
+        direction LR
+        T1[":testing:api-contract"]
+        T2[":testing:assertions"]
+        T3[":testing:detekt-rules"]
+        T4[":testing:mock-api"]
+        T5[":testing:tv-focus-harness"]
+        BM[":benchmark"]
+    end
+
+    Apps --> Feat
+    Feat --> Core
+    Feat --> Domain
+    Core --> Domain
 ```
 
 **Data flows inward and outward through pure mappers.** The shell layer
