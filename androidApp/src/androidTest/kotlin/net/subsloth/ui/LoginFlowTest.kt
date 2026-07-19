@@ -24,9 +24,9 @@ import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.InMemorySessionState
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
+import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.AuthError
 import net.subsloth.core.model.error.Outcome
-import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ExternalIdSource
 import net.subsloth.core.model.identifier.MovieId
@@ -138,15 +138,7 @@ class LoginFlowTest {
 
     @Test
     fun loginFails_showsErrorMessage() {
-        // A SessionPort that always rejects credentials
-        val failingPort = object : SessionPort {
-            override val state = MutableStateFlow<Session>(Session.Anonymous).asStateFlow()
-            override fun current(): Session = Session.Anonymous
-            override fun open(credentials: Credentials): Outcome<Unit> =
-                Outcome.Failure(AuthError.InvalidCredentials)
-            override fun close(): Outcome<Unit> = Outcome.Success(Unit)
-            override fun invalidate(): Outcome<Unit> = Outcome.Success(Unit)
-        }
+        val failingPort = FailingSessionPort()
 
         var screen by mutableStateOf<LoginFlowScreen>(LoginFlowScreen.Login)
 
@@ -171,4 +163,16 @@ class LoginFlowTest {
         composeTestRule.onNodeWithText("SubSloth").assertIsDisplayed()
         composeTestRule.onNodeWithText("Sign In").assertIsDisplayed()
     }
+}
+
+private class FailingSessionPort : SessionPort {
+    override val state = MutableStateFlow<Session>(Session.Anonymous).asStateFlow()
+
+    override fun current(): Session = Session.Anonymous
+
+    override fun open(credentials: Credentials): Outcome<Unit> = Outcome.Failure(AuthError.InvalidCredentials)
+
+    override fun close(): Outcome<Unit> = Outcome.Success(Unit)
+
+    override fun invalidate(): Outcome<Unit> = Outcome.Success(Unit)
 }
