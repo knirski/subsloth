@@ -47,9 +47,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-avd-${{ runner.arch }}-
 
-      # reactivecircus/android-emulator-runner@v2 handles KVM setup automatically.
-      - name: Verify KVM availability
-        run: ls -la /dev/kvm
+      # GitHub Actions Linux runners have /dev/kvm but the runner user
+      # may not be in the kvm group. Add it so the emulator can use
+      # hardware acceleration instead of -accel off (software emulation
+      # which is too slow for the 600s boot timeout).
+      - name: Enable KVM for emulator
+        run: |
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::/dev/kvm is unavailable; hardware acceleration is required."
+            exit 1
+          fi
+          sudo chmod 666 /dev/kvm
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            echo "::error::/dev/kvm is not readable and writable by the runner."
+            exit 1
+          fi
 
       - name: Run screenshot tests (verify mode)
         if: ${{ github.event.inputs.mode == 'verify' }}
@@ -63,11 +75,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
           emulator-boot-timeout: 600
-          script: |
-            ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
-              -Pkotlin.daemon.jvmargs="-Xmx256m" \
-              :androidApp:connectedDebugAndroidTest
+          script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx512m" :androidApp:connectedDebugAndroidTest
 
       - name: Run screenshot tests (update mode) — regenerate goldens
         if: ${{ github.event.inputs.mode == 'update' }}
@@ -81,12 +89,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
           emulator-boot-timeout: 600
-          script: |
-            ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
-              -Pkotlin.daemon.jvmargs="-Xmx256m" \
-              :androidApp:connectedDebugAndroidTest \
-              -Pandroid.test.screenshot.update.golden=true
+          script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx512m" :androidApp:connectedDebugAndroidTest -Pandroid.test.screenshot.update.golden=true
 
       # ── Update mode only: export + commit ──────────────────────────────
       - name: Export goldens to docs/screenshots/
