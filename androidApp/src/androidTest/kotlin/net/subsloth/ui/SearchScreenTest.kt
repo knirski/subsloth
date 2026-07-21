@@ -194,7 +194,8 @@ class SearchScreenTest {
             SearchContent(state = resultsState, query = "matrix")
         }
 
-        composeTestRule.onNodeWithText("2003").assertIsDisplayed()
+        // Year is displayed as part of the subtitle: "2003 · Sci-Fi, Action"
+        composeTestRule.onNodeWithText("2003 · Sci-Fi, Action").assertIsDisplayed()
     }
 
     @Test

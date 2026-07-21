@@ -50,6 +50,7 @@ android {
         applicationId = "net.subsloth"
         versionCode = appVersionCode
         versionName = appVersionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {

@@ -49,14 +49,23 @@ sealed interface Media {
      */
     @Stable
     sealed interface MediaId {
-        @Immutable
-        data class Movie(val value: MovieId) : MediaId
+        /** A stable, serialization-safe key for use in Lazy layouts and caching. */
+        val key: String
 
         @Immutable
-        data class Show(val value: ShowId) : MediaId
+        data class Movie(val value: MovieId) : MediaId {
+            override val key get() = "movie:${value.value}"
+        }
 
         @Immutable
-        data class Episode(val value: EpisodeId) : MediaId
+        data class Show(val value: ShowId) : MediaId {
+            override val key get() = "show:${value.value}"
+        }
+
+        @Immutable
+        data class Episode(val value: EpisodeId) : MediaId {
+            override val key get() = "episode:${value.value}"
+        }
     }
 }
 
