@@ -60,7 +60,7 @@ API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 | Technique | What it saves | Implementation | Notes |
 |---|---|---|---|
 | **AVD + system image cache** | ~1–2 min (no re-download) | `actions/cache@v6` on `~/.android/avd/` and `~/.android/system-images/` keyed by `runner.os` + `runner.arch` + `api36-google-apis` | Works on all branches; first run after cache eviction downloads fresh |
-| **Emulator RAM boost** | Faster test execution | `ram-size: 3072`, `heap-size: 512`, Gradle capped at `-Xmx1536m` + Kotlin daemon at `-Xmx512m` | 3 GB emulator fits in 7 GB runner by trimming JVM overhead — 1.5 GB for Gradle + 0.5 GB for Kotlin daemon is plenty for test-only execution |
+| **Emulator RAM boost** | Faster test execution | `ram-size: 6144`, `heap-size: 1024`, Gradle capped at `-Xmx768m` + Kotlin daemon at `-Xmx256m` | 6 GB emulator on 7 GB runner — QEMU's `ram-size` is virtual address space, physical usage tracks guest demand; Gradle/Kotlin trimmed because this job only runs tests, not compilation |
 | **Extended boot timeout** | Prevents timeout with larger RAM | `emulator-boot-timeout: 600` (10 min) | Safety net — default 300 s can be tight with 2048 MB |
 
 | Workflow | What runs | Trigger |

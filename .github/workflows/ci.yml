@@ -234,16 +234,18 @@ jobs:
           api-level: 36
           target: google_apis
           arch: x86_64
-          ram-size: 3072
-          heap-size: 512
+          ram-size: 6144
+          heap-size: 1024
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
           emulator-boot-timeout: 600
           script: |
-            # Crank up emulator RAM, dial back Gradle + Kotlin daemon to fit in
-            # the 7 GB ubuntu-latest runner: 3 GB emulator + 1.5 GB Gradle +
-            # 0.5 GB Kotlin daemon + ~1 GB OS = ~6 GB, with headroom to spare.
+            # 6 GB emulator on a 7 GB runner.  Gradle and Kotlin daemon are
+            # trimmed because this job only runs tests (build-android handles
+            # compilation).  The emulator's ram-size is virtual — QEMU only
+            # backs pages the guest actually touches, so physical pressure is
+            # well below 6 GB during typical test execution.
             ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx1536m -Xms512m" \
-              -Pkotlin.daemon.jvmargs="-Xmx512m" \
+              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
+              -Pkotlin.daemon.jvmargs="-Xmx256m" \
               :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
