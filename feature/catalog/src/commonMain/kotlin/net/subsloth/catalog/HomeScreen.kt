@@ -141,7 +141,7 @@ fun CatalogContent(
 
 @Composable
 private fun HomeRowSection(
-    row: HomeRow,
+    row: HomeRow<*>,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {

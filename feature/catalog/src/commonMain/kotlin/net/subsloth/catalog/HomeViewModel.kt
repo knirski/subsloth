@@ -36,23 +36,32 @@ sealed interface HomeUiState {
     data object Loading : HomeUiState
 
     @Immutable
-    data class Content(val rows: ImmutableList<HomeRow>, val selectedTab: HomeTab, val isSyncing: Boolean = false) :
+    data class Content(val rows: ImmutableList<HomeRow<*>>, val selectedTab: HomeTab, val isSyncing: Boolean = false) :
         HomeUiState
 }
 
 @Stable
-sealed interface HomeRow {
+sealed interface HomeRow<out T : Media> {
     val label: String?
-    val items: ImmutableList<Media>
+    val items: ImmutableList<T>
 
     @Immutable
-    data class Movies(override val items: ImmutableList<Media>, override val label: String? = "Movies") : HomeRow
+    data class Movies(
+        override val items: ImmutableList<MovieSummary>,
+        override val label: String? = "Movies",
+    ) : HomeRow<MovieSummary>
 
     @Immutable
-    data class Shows(override val items: ImmutableList<Media>, override val label: String? = "Shows") : HomeRow
+    data class Shows(
+        override val items: ImmutableList<ShowSummary>,
+        override val label: String? = "Shows",
+    ) : HomeRow<ShowSummary>
 
     @Immutable
-    data class Recency(override val items: ImmutableList<Media>, override val label: String) : HomeRow
+    data class Recency(
+        override val items: ImmutableList<Media>,
+        override val label: String,
+    ) : HomeRow<Media>
 }
 
 enum class HomeTab { MOVIES, SHOWS, SEARCH }
@@ -166,7 +175,7 @@ internal fun buildHomeContent(
 
     val recencyRows = buildRecencyRows(movieItems, showItems)
 
-    val rows = buildList {
+    val rows = buildList<HomeRow<*>> {
         addAll(recencyRows)
         movieItems.takeIf { it.isNotEmpty() }
             ?.let { add(HomeRow.Movies(it.toImmutableList())) }
