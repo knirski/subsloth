@@ -6,8 +6,7 @@
 # framework to docs/screenshots/ for use in README.md.
 #
 # Run AFTER regenerating goldens:
-#   ./gradlew :androidApp:connectedDebugAndroidTest \
-#     -Pandroid.test.screenshot.update.golden=true
+#   ./gradlew :androidApp:updateDebugScreenshotTest
 #
 # Usage:
 #   ./scripts/screenshots/export-readme-screenshots.sh
@@ -30,7 +29,7 @@ docs_dir="$repo_root/docs/screenshots"
 if [[ ! -d "$goldens_dir" ]]; then
   echo "[WARN] Golden images directory not found at $goldens_dir"
   echo "       Creating empty directory. Run screenshot tests with update flag to generate goldens:"
-  echo "       ./gradlew :androidApp:connectedDebugAndroidTest -Pandroid.test.screenshot.update.golden=true"
+  echo "       ./gradlew :androidApp:updateDebugScreenshotTest"
   mkdir -p "$goldens_dir"
 fi
 
@@ -76,19 +75,19 @@ for golden_name in "${!MAPPING[@]}"; do
 
   if [[ -z "$src" ]]; then
     echo "[WARN] Golden not found: $golden_name — skipping $docs_name"
-    ((missing++))
+    missing=$((missing + 1))
     continue
   fi
 
   if [[ ! -f "$src" ]]; then
     echo "[WARN] Golden path is not a file: $src — skipping $docs_name"
-    ((missing++))
+    missing=$((missing + 1))
     continue
   fi
 
   cp "$src" "$docs_dir/$docs_name"
   echo "[OK]   $golden_name → $docs_name"
-  ((copied++))
+  copied=$((copied + 1))
 done
 
 echo ""
