@@ -13,7 +13,7 @@ nix develop --command ./gradlew :testing:api-contract:captureApi
 ```
 
 Credentials are read from `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD` environment
-variables by default. The API base URL is read from `SUBSLOTH_URL` (falls back to
+variables by default. The API base URL is read from `SUBSLOTH_API_BASE_URL` (falls back to
 the default `front.media-mirror.tv` endpoint). Fallback to `-Pemail=... -Ppassword=...`
 Gradle properties.
 

@@ -8,7 +8,7 @@
 #   ./scripts/capture/validate-fixtures.sh --capture     # capture only (skip validation)
 #
 # Credentials are read from SUBSLOTH_LOGIN and SUBSLOTH_PASSWORD environment
-# variables. The API base URL is read from SUBSLOTH_URL (falls back to the
+# variables. The API base URL is read from SUBSLOTH_API_BASE_URL (falls back to the
 # default media-mirror.tv endpoint). These are the same env vars used by
 # ApiLiveDriftTest.
 # ──────────────────────────────────────────────────────────────────────────────

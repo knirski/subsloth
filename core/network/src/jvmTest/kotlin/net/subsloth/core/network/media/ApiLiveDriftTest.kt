@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 class ApiLiveDriftTest {
     private val login: String = System.getenv("SUBSLOTH_LOGIN") ?: ""
     private val password: String = System.getenv("SUBSLOTH_PASSWORD") ?: ""
-    private val baseUrl: String = System.getenv("SUBSLOTH_URL") ?: ""
+    private val baseUrl: String = System.getenv("SUBSLOTH_API_BASE_URL") ?: ""
     private val resolvedBaseUrl: String by lazy { baseUrl.ifEmpty { ClientFactory.DEFAULT_BASE_URL } }
 
     private val clients = mutableListOf<HttpClient>()
@@ -73,10 +73,12 @@ class ApiLiveDriftTest {
 
     private fun String?.diagnosticMessage(): String {
         if (this == null) {
-            return "Unknown error — check SUBSLOTH_URL ($resolvedBaseUrl) is correct and includes /api/v2/ path"
+            return "Unknown error — check SUBSLOTH_API_BASE_URL" +
+                " ($resolvedBaseUrl) is correct and includes /api/v2/ path"
         }
         return if (contains("redirect") || contains("HTML") || contains("Expected JSON")) {
-            "API returned unexpected response (redirect or HTML) — SUBSLOTH_URL ($resolvedBaseUrl) may point " +
+            "API returned unexpected response (redirect or HTML)" +
+                " — SUBSLOTH_API_BASE_URL ($resolvedBaseUrl) may point " +
                 "to the web frontend instead of the Kodi API endpoint (needs /api/v2/ path). Error: $this"
         } else {
             this
