@@ -221,6 +221,8 @@ jobs:
             ~/.android/avd/
             ~/.android/system-images/
           key: ${{ runner.os }}-avd-${{ runner.arch }}-api36-google-apis
+          restore-keys: |
+            ${{ runner.os }}-avd-${{ runner.arch }}-
 
       # reactivecircus/android-emulator-runner@v2 handles KVM setup automatically.
       - name: Verify KVM availability
