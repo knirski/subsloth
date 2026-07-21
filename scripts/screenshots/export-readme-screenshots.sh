@@ -98,5 +98,7 @@ if (( missing > 0 )); then
   echo "Generate missing goldens by running screenshot tests with the update flag."
   if (( copied == 0 )); then
     echo "[WARN] No screenshots exported — this is expected on first run before goldens are generated."
+  else
+    exit 1
   fi
 fi
