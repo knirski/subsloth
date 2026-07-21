@@ -25,5 +25,5 @@ jobs:
         env:
           SUBSLOTH_LOGIN: ${{ secrets.SUBSLOTH_LOGIN }}
           SUBSLOTH_PASSWORD: ${{ secrets.SUBSLOTH_PASSWORD }}
-          SUBSLOTH_URL: ${{ secrets.SUBSLOTH_URL }}
+          SUBSLOTH_API_BASE_URL: ${{ secrets.SUBSLOTH_API_BASE_URL }}
         run: ./gradlew :core:network:jvmTest --tests "net.subsloth.core.network.media.ApiLiveDriftTest" --info

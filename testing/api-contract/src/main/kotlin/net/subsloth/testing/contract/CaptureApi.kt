@@ -24,7 +24,7 @@ object CaptureApi {
     private const val USER_AGENT = "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1"
     private const val HTTP_OK = 200
 
-    private fun apiBase(): String = System.getenv("SUBSLOTH_URL") ?: DEFAULT_API_BASE
+    private fun apiBase(): String = System.getenv("SUBSLOTH_API_BASE_URL") ?: DEFAULT_API_BASE
 
     fun capturePlan(): List<CaptureRequest> = listOf(
         CaptureRequest(Endpoint.Movies, "/movies"),
