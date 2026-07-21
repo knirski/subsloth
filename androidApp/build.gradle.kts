@@ -46,11 +46,18 @@ android {
 
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "net.subsloth"
         versionCode = appVersionCode
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val apiBaseUrlSecret: String = System.getenv("SUBSLOTH_API_BASE_URL") ?: ""
+        buildConfigField("String", "SUBSLOTH_API_BASE_URL", "\"${apiBaseUrlSecret.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
