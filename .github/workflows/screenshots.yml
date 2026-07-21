@@ -15,7 +15,7 @@ on:
           - update
 
 concurrency:
-  group: screenshots-${{ github.ref }}
+  group: screenshots-${{ github.ref }}-${{ github.event.inputs.mode }}
   cancel-in-progress: true
 
 # Manual trigger only — safe to grant write access; update mode pushes commits.
