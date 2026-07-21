@@ -193,6 +193,11 @@ jobs:
   # Runs :core:database device checks and :androidApp UI instrumented
   # tests on a single emulator to minimise boot overhead.
   # Path-gated the same as build-android (shared or android changes).
+  #
+  # Runs in parallel with build-android — the Gradle setup action uses
+  # cache-read-only on PR branches so serialisation would not save
+  # compilation time there.  AVD system-image cache (below) is the main
+  # saving across all branches.
   instrumented-android-tests:
     name: 📱 Instrumented
     needs: [changes]
@@ -205,6 +210,20 @@ jobs:
 
       - uses: ./.github/actions/kmp-setup
 
+      # Cache Android virtual device and system images so they don't have
+      # to be re-downloaded + re-created on every run (~1-2 min saving).
+      # The emulator runner stores AVDs in ~/.android/avd/ and system
+      # images in ~/.android/system-images/ after first setup.
+      - name: Cache AVD and system images
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.android/avd/
+            ~/.android/system-images/
+          key: ${{ runner.os }}-avd-${{ runner.arch }}-api36-google-apis
+          restore-keys: |
+            ${{ runner.os }}-avd-${{ runner.arch }}-
+
       # reactivecircus/android-emulator-runner@v2 handles KVM setup automatically.
       - name: Verify KVM availability
         run: ls -la /dev/kvm
@@ -215,7 +234,16 @@ jobs:
           api-level: 36
           target: google_apis
           arch: x86_64
+          ram-size: 3072
+          heap-size: 512
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
+          emulator-boot-timeout: 600
           script: |
-            ./gradlew :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
+            # Crank up emulator RAM, dial back Gradle + Kotlin daemon to fit in
+            # the 7 GB ubuntu-latest runner: 3 GB emulator + 1.5 GB Gradle +
+            # 0.5 GB Kotlin daemon + ~1 GB OS = ~6 GB, with headroom to spare.
+            ./gradlew \
+              -Dorg.gradle.jvmargs="-Xmx1536m -Xms512m" \
+              -Pkotlin.daemon.jvmargs="-Xmx512m" \
+              :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
