@@ -224,9 +224,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-avd-${{ runner.arch }}-
 
-      # reactivecircus/android-emulator-runner@v2 handles KVM setup automatically.
-      - name: Verify KVM availability
-        run: ls -la /dev/kvm
+      # GitHub Actions Linux runners have /dev/kvm but the runner user
+      # may not be in the kvm group. Add it so the emulator can use
+      # hardware acceleration instead of -accel off (software emulation
+      # which is too slow for the 600s boot timeout).
+      - name: Enable KVM for emulator
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+          fi
 
       - name: Run Android instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -239,13 +245,4 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
           emulator-boot-timeout: 600
-          script: |
-            # 6 GB emulator on a 7 GB runner.  Gradle and Kotlin daemon are
-            # trimmed because this job only runs tests (build-android handles
-            # compilation).  The emulator's ram-size is virtual — QEMU only
-            # backs pages the guest actually touches, so physical pressure is
-            # well below 6 GB during typical test execution.
-            ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
-              -Pkotlin.daemon.jvmargs="-Xmx256m" \
-              :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
+          script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx512m" :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest

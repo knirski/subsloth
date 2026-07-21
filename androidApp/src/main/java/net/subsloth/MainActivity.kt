@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.ui.RootContainerViewModel
@@ -41,10 +42,18 @@ class MainActivity : ComponentActivity() {
                                 LoginViewModel(
                                     sessionPort = sessionPort,
                                     readApiBaseUrl = {
-                                        userPreferences?.apiBaseUrl() ?: flowOf(
-                                            UserPreferences.DEFAULT_API_BASE_URL,
-                                        )
-                                    },
+                                                    (userPreferences?.apiBaseUrl() ?: flowOf(
+                                                        UserPreferences.DEFAULT_API_BASE_URL,
+                                                    )).map { url ->
+                                                        if (url == UserPreferences.DEFAULT_API_BASE_URL &&
+                                                            BuildConfig.SUBSLOTH_API_BASE_URL.isNotEmpty()
+                                                        ) {
+                                                            BuildConfig.SUBSLOTH_API_BASE_URL
+                                                        } else {
+                                                            url
+                                                        }
+                                                    }
+                                                },
                                     saveApiBaseUrl = { url ->
                                         userPreferences?.setApiBaseUrl(url)
                                     },
