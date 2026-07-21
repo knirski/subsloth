@@ -57,10 +57,9 @@ API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 
 | Workflow | What runs | Trigger |
 |----------|-----------|--------|
+| [`ci.yml`](/.github/workflows/ci.yml) — `instrumented-android-tests` | `:core:database:connectedAndroidDeviceTest` (Room DB creation) + `:androidApp:connectedDebugAndroidTest` (UI instrumented tests) | Every PR and push to `main` when `shared` or `android` paths change |
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`verify` mode) | `:androidApp:connectedDebugAndroidTest` — compares against stored golden images | `workflow_dispatch` (manual) |
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`update` mode) | Regenerate goldens + export to `docs/screenshots/` + commit | `workflow_dispatch` (manual) |
-
-Currently also tests `:core:database` (Room database creation).
 
 ## Troubleshooting
 
