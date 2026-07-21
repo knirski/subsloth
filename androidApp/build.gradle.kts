@@ -57,7 +57,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val apiBaseUrlSecret: String = System.getenv("SUBSLOTH_API_BASE_URL") ?: ""
-        buildConfigField("String", "SUBSLOTH_API_BASE_URL", "\"${apiBaseUrlSecret.replace("\"", "\\\"")}\"")
+        val sanitizedUrl = apiBaseUrlSecret.replace("\"", "\\\"")
+        buildConfigField("String", "SUBSLOTH_API_BASE_URL", "\"$sanitizedUrl\"")
     }
 
     buildTypes {
