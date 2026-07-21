@@ -189,7 +189,7 @@ class SettingsScreenTest {
 
         // Click the first Checkbox (Subtitle enabled)
         composeTestRule.onAllNodes(isToggleable())[0].performClick()
-        // Best-effort: on some devices the click may not propagate to callback
+        assertTrue(toggledValues.isNotEmpty(), "Expected subtitle-enabled callback to be invoked")
     }
 
     @Test
