@@ -96,7 +96,7 @@ jobs:
           # means no token is stored — set it explicitly for push).
           git remote set-url origin \
             https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-          git push
+          git push --force-with-lease
 
       - name: Summarise
         run: |

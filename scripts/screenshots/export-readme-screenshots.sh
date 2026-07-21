@@ -80,6 +80,12 @@ for golden_name in "${!MAPPING[@]}"; do
     continue
   fi
 
+  if [[ ! -f "$src" ]]; then
+    echo "[WARN] Golden path is not a file: $src — skipping $docs_name"
+    ((missing++))
+    continue
+  fi
+
   cp "$src" "$docs_dir/$docs_name"
   echo "[OK]   $golden_name → $docs_name"
   ((copied++))
