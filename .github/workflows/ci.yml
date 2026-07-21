@@ -246,6 +246,6 @@ jobs:
             # backs pages the guest actually touches, so physical pressure is
             # well below 6 GB during typical test execution.
             ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx512m -Xms256m" \
+              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
               -Pkotlin.daemon.jvmargs="-Xmx256m" \
               :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest

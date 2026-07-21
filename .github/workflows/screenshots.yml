@@ -65,7 +65,7 @@ jobs:
           emulator-boot-timeout: 600
           script: |
             ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx512m -Xms256m" \
+              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
               -Pkotlin.daemon.jvmargs="-Xmx256m" \
               :androidApp:connectedDebugAndroidTest
 
@@ -83,7 +83,7 @@ jobs:
           emulator-boot-timeout: 600
           script: |
             ./gradlew \
-              -Dorg.gradle.jvmargs="-Xmx512m -Xms256m" \
+              -Dorg.gradle.jvmargs="-Xmx768m -Xms256m" \
               -Pkotlin.daemon.jvmargs="-Xmx256m" \
               :androidApp:connectedDebugAndroidTest \
               -Pandroid.test.screenshot.update.golden=true
