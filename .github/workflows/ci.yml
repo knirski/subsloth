@@ -224,21 +224,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-avd-${{ runner.arch }}-
 
-      # GitHub Actions Linux runners have /dev/kvm but the runner user
-      # may not be in the kvm group. Add it so the emulator can use
-      # hardware acceleration instead of -accel off (software emulation
-      # which is too slow for the 600s boot timeout).
-      - name: Enable KVM for emulator
-        run: |
-          if [ ! -e /dev/kvm ]; then
-            echo "::error::/dev/kvm is unavailable; hardware acceleration is required."
-            exit 1
-          fi
-          sudo chmod 666 /dev/kvm
-          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
-            echo "::error::/dev/kvm is not readable and writable by the runner."
-            exit 1
-          fi
+      - uses: ./.github/actions/kvm-setup
 
       - name: Run Android instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
