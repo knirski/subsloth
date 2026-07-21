@@ -78,7 +78,23 @@ stop-subsloth-emulator
 
 ### CI
 
-Screenshot tests run as part of the Android instrumented test suite on every PR and push to main.
+A dedicated [`Screenshots`](/.github/workflows/screenshots.yml) workflow
+can be triggered manually (`workflow_dispatch`) in two modes:
+
+| Mode | Action |
+|------|--------|
+| `verify` | Run `:androidApp:connectedDebugAndroidTest` — compares rendered previews against stored golden images (fails on pixel diff) |
+| `update` | Run with `-Pandroid.test.screenshot.update.golden=true` to regenerate goldens, then export selected images to `docs/screenshots/` for README.md, and commit both |
+
+Use `verify` on any branch to check whether UI changes drifted from the
+committed goldens. Use `update` after intentionally redesigning a screen —
+it handles the full pipeline: emulator boot → regolden → export → commit.
+
+> **Note:** This workflow is manually triggered (`workflow_dispatch`) rather
+> than running automatically on every PR because screenshot tests require an
+> Android emulator (~5-10 min boot + run). Run `update` once to bootstrap
+> the golden images before using `verify`. Once goldens exist in the repo,
+> the workflow can be added to `ci.yml` as a path-gated job.
 
 ---
 
