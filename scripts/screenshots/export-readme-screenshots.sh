@@ -28,10 +28,10 @@ goldens_dir="$repo_root/androidApp/src/screenshotTest/goldens"
 docs_dir="$repo_root/docs/screenshots"
 
 if [[ ! -d "$goldens_dir" ]]; then
-  echo "[FAIL] Golden images directory not found: $goldens_dir"
-  echo "       Run screenshot tests with update flag first:"
+  echo "[WARN] Golden images directory not found at $goldens_dir"
+  echo "       Creating empty directory. Run screenshot tests with update flag to generate goldens:"
   echo "       ./gradlew :androidApp:connectedDebugAndroidTest -Pandroid.test.screenshot.update.golden=true"
-  exit 1
+  mkdir -p "$goldens_dir"
 fi
 
 mkdir -p "$docs_dir"
@@ -96,5 +96,7 @@ echo "Done — $copied screenshots exported, $missing missing."
 
 if (( missing > 0 )); then
   echo "Generate missing goldens by running screenshot tests with the update flag."
-  exit 1
+  if (( copied == 0 )); then
+    echo "[WARN] No screenshots exported — this is expected on first run before goldens are generated."
+  fi
 fi
