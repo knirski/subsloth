@@ -1,0 +1,32 @@
+name: "KVM Setup"
+description: >
+  Ensure /dev/kvm is accessible to the runner user. GitHub-hosted Linux
+  runners have the device but the user may not be in the kvm group.
+  This action makes it accessible via chmod (immediate) and usermod
+  (for the Android emulator's internal ProbeKVM check).
+
+runs:
+  using: "composite"
+  steps:
+    - name: Enable KVM for emulator
+      shell: bash
+      run: |
+        if [ ! -e /dev/kvm ]; then
+          echo "::error::/dev/kvm is unavailable; hardware acceleration is required."
+          exit 1
+        fi
+
+        # Immediate: make /dev/kvm world-accessible for the current process.
+        sudo chmod 666 /dev/kvm
+
+        # Also add the runner user to the kvm group so the Android emulator's
+        # internal ProbeKVM check (which checks group membership) is satisfied.
+        # Group changes via usermod only take effect on next login, but the
+        # emulator process launched by android-emulator-runner inherits the
+        # group membership change through sudo's preserved group cache.
+        sudo usermod -aG kvm "$USER" 2>/dev/null || true
+
+        if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+          echo "::error::/dev/kvm is not readable and writable by the runner."
+          exit 1
+        fi
