@@ -129,7 +129,7 @@ fun SearchContent(
                         contentPadding = PaddingValues(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(s.items, key = { it.id }, contentType = { it::class }) { media ->
+                        items(s.items, key = { it.id.key }, contentType = { it::class }) { media ->
                             SearchResultItem(
                                 media = media,
                                 onClick = {
