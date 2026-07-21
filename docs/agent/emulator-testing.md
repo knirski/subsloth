@@ -51,7 +51,16 @@ All scripts emit `UPPER_CASE` signals on stdout (errors on stderr). Parse stdout
 
 ## CI Integration
 
-Instrumented tests run on every PR and push to main via GitHub Actions: `reactivecircus/android-emulator-runner@v2`, API 36, `google_apis`, `x86_64`, `swiftshader_indirect`. Currently tests `:core:database` (Room database creation) and `:androidApp` (app smoke test).
+Instrumented tests run on every PR and push to main via GitHub Actions:
+[`reactivecircus/android-emulator-runner@v2`](https://github.com/reactivecircus/android-emulator-runner),
+API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
+
+| Workflow | What runs | Trigger |
+|----------|-----------|--------|
+| [`screenshots.yml`](/.github/workflows/screenshots.yml) (`verify` mode) | `:androidApp:connectedDebugAndroidTest` — compares against stored golden images | `workflow_dispatch` (manual) |
+| [`screenshots.yml`](/.github/workflows/screenshots.yml) (`update` mode) | Regenerate goldens + export to `docs/screenshots/` + commit | `workflow_dispatch` (manual) |
+
+Currently also tests `:core:database` (Room database creation).
 
 ## Troubleshooting
 

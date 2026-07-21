@@ -1,0 +1,107 @@
+name: Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          'verify' — compare against stored golden images (fails on UI drift).
+          'update' — regenerate golden images, export to docs/screenshots/, and commit.
+        required: true
+        default: verify
+        type: choice
+        options:
+          - verify
+          - update
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+# Manual trigger only — safe to grant write access; update mode pushes commits.
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    name: ${{ github.event.inputs.mode == 'update' && '📸 Update' || '🔍 Verify' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          # update mode needs full history to stage golden changes
+          fetch-depth: ${{ github.event.inputs.mode == 'update' && 0 || 1 }}
+
+      - uses: ./.github/actions/kmp-setup
+
+      # reactivecircus/android-emulator-runner@v2 handles KVM setup automatically.
+      - name: Verify KVM availability
+        run: ls -la /dev/kvm
+
+      - name: Run screenshot tests (verify mode)
+        if: ${{ github.event.inputs.mode == 'verify' }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
+          disable-animations: true
+          script: |
+            ./gradlew :androidApp:connectedDebugAndroidTest
+
+      - name: Run screenshot tests (update mode) — regenerate goldens
+        if: ${{ github.event.inputs.mode == 'update' }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
+          disable-animations: true
+          script: |
+            ./gradlew :androidApp:connectedDebugAndroidTest \
+              -Pandroid.test.screenshot.update.golden=true
+
+      # ── Update mode only: export + commit ──────────────────────────────
+      - name: Export goldens to docs/screenshots/
+        if: ${{ github.event.inputs.mode == 'update' }}
+        run: ./scripts/screenshots/export-readme-screenshots.sh
+
+      - name: Commit golden and docs changes
+        if: ${{ github.event.inputs.mode == 'update' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "subsloth-bot"
+          git config user.email "bot@subsloth.net"
+
+          git add \
+            androidApp/src/screenshotTest/goldens/ \
+            docs/screenshots/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          changed=$(git diff --cached --name-only)
+          echo "Changes detected:"
+          echo "$changed"
+
+          git commit -m "chore: regenerate golden images and README screenshots"
+
+          # Configure auth using GITHUB_TOKEN (persist-credentials: false above
+          # means no token is stored — set it explicitly for push).
+          git remote set-url origin \
+            https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git push
+
+      - name: Summarise
+        run: |
+          echo "## Screenshot CI result" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Mode**: ${{ github.event.inputs.mode }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Trigger**: ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Ref**: ${{ github.ref }}" >> "$GITHUB_STEP_SUMMARY"
