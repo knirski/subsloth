@@ -46,22 +46,15 @@ sealed interface HomeRow<out T : Media> {
     val items: ImmutableList<T>
 
     @Immutable
-    data class Movies(
-        override val items: ImmutableList<MovieSummary>,
-        override val label: String? = "Movies",
-    ) : HomeRow<MovieSummary>
+    data class Movies(override val items: ImmutableList<MovieSummary>, override val label: String? = "Movies") :
+        HomeRow<MovieSummary>
 
     @Immutable
-    data class Shows(
-        override val items: ImmutableList<ShowSummary>,
-        override val label: String? = "Shows",
-    ) : HomeRow<ShowSummary>
+    data class Shows(override val items: ImmutableList<ShowSummary>, override val label: String? = "Shows") :
+        HomeRow<ShowSummary>
 
     @Immutable
-    data class Recency(
-        override val items: ImmutableList<Media>,
-        override val label: String,
-    ) : HomeRow<Media>
+    data class Recency(override val items: ImmutableList<Media>, override val label: String) : HomeRow<Media>
 }
 
 enum class HomeTab { MOVIES, SHOWS, SEARCH }
