@@ -55,9 +55,17 @@ Instrumented tests run on every PR and push to main via GitHub Actions:
 [`reactivecircus/android-emulator-runner@v2`](https://github.com/reactivecircus/android-emulator-runner),
 API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 
+### Performance Optimisations
+
+| Technique | What it saves | Implementation | Notes |
+|---|---|---|---|
+| **AVD + system image cache** | ~1–2 min (no re-download) | `actions/cache@v6` on `~/.android/avd/` and `~/.android/system-images/` keyed by `runner.os` + `runner.arch` + `api36-google-apis` | Works on all branches; first run after cache eviction downloads fresh |
+| **Emulator RAM boost** | Faster test execution | `ram-size: 3072`, `heap-size: 512`, Gradle capped at `-Xmx1536m` + Kotlin daemon at `-Xmx512m` | 3 GB emulator fits in 7 GB runner by trimming JVM overhead — 1.5 GB for Gradle + 0.5 GB for Kotlin daemon is plenty for test-only execution |
+| **Extended boot timeout** | Prevents timeout with larger RAM | `emulator-boot-timeout: 600` (10 min) | Safety net — default 300 s can be tight with 2048 MB |
+
 | Workflow | What runs | Trigger |
-|----------|-----------|--------|
-| [`ci.yml`](/.github/workflows/ci.yml) — `instrumented-android-tests` | `:core:database:connectedAndroidDeviceTest` (Room DB creation) + `:androidApp:connectedDebugAndroidTest` (UI instrumented tests) | Every PR and push to `main` when `shared` or `android` paths change |
+|---|---|---|
+| [`ci.yml`](/.github/workflows/ci.yml) — `instrumented-android-tests` | `:core:database:connectedAndroidDeviceTest` (Room DB creation) + `:androidApp:connectedDebugAndroidTest` (UI instrumented tests) | Every PR and push to `main` when `shared` or `android` paths change (runs in parallel with `build-android`) |
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`verify` mode) | `:androidApp:connectedDebugAndroidTest` — compares against stored golden images | `workflow_dispatch` (manual) |
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`update` mode) | Regenerate goldens + export to `docs/screenshots/` + commit | `workflow_dispatch` (manual) |
 
@@ -65,11 +73,13 @@ API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `EMULATOR_TIMEOUT` | Emulator not booting | Check `/dev/kvm`; `stop-subsloth-emulator` then retry |
+| `EMULATOR_TIMEOUT` | Emulator not booting | Check `/dev/kvm`; increase `emulator-boot-timeout` if RAM was just raised; `stop-subsloth-emulator` then retry |
 | `TEST_FAILED` | Test assertion failed | Check `build/reports/androidTests/` for HTML report |
 | Connection refused on adb | Emulator not started | Run `wait-subsloth-emulator` first |
 | Emulator crashes on launch | KVM not available | Ensure `/dev/kvm` exists and is readable |
 | Gradle daemon timeout | Cold start | Run `./gradlew --stop && ./gradlew :core:model:classes` once to warm up |
+| AVD cache miss on new runner arch | Cache key includes `runner.arch` | Expected — first run on a new arch will re-download, subsequent runs hit cache |
+| System image download slow | First run or cache eviction | Expected — AVD cache saves ~1–2 min on subsequent runs |
 
 ## Tips
 
