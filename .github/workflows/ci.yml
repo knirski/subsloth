@@ -103,6 +103,9 @@ jobs:
       - name: Static analysis (detekt)
         run: ./gradlew detekt
 
+      - name: Architecture dependency-graph invariants
+        run: ./gradlew :testing:architecture-rules:test
+
       - name: Invariant checks
         run: .github/scripts/check-invariants.sh
 
