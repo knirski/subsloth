@@ -7,7 +7,7 @@ Functional Core / Imperative Shell conventions for subsloth.
 | Layer | Modules | Side effects | Android deps |
 |---|---|---|---|
 | **Core** | `:core:model`, `:core:domain` | none | none (JVM-only) |
-| **Shell** | `:core:network`, `:core:database`, `:core:media`, `:core:preferences`, `:feature:*`, `:app` | file, network, I/O, platform | yes |
+| **Shell** | `:core:network`, `:core:database`, `:core:media`, `:core:preferences`, `:core:data`, `:feature:*`, `:app` | file, network, I/O, platform | yes |
 
 Pure code goes in core. Side-effectful code goes in shell. Calling a function twice with same args = same result? Core. Reads a file, writes to network, prints to stdout? Shell.
 
@@ -36,12 +36,11 @@ Stateless `object` classes with pure functions encapsulating business rules. Liv
 ## Module Dependencies
 
 ```
-:feature:* → :core:network → :core:domain → :core:model
-:feature:* → :core:database → :core:domain → :core:model
-:feature:* → :core:preferences → :core:model
+:feature:* → :core:model, :core:domain, :core:ui (auth/details), :core:media (player only)
+:core:data → :core:network, :core:database, :core:preferences → :core:domain → :core:model
 ```
 
-`:core:model` has no dependencies. `:core:domain` depends on `:core:model`. No core module depends on Android framework. Enforced by architecture tests.
+Features never depend on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data` directly — concrete adapters are constructed only at each platform's composition root and injected into feature ViewModels through domain port constructor parameters. `:core:model` has no dependencies. `:core:domain` depends on `:core:model`. No core module depends on Android framework. Enforced by an executable Gradle dependency-graph test (`:testing:architecture-rules`), not source-import scanning alone.
 
 ## Banned Dependencies
 

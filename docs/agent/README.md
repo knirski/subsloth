@@ -17,7 +17,7 @@ Then route by task and stop once you have the matching docs:
 7. `docs/agent/capture-workflow.md` - execution workflow for capture/export tasks.
 8. `docs/agent/emulator-testing.md` - execution workflow for Android emulator and instrumented tests.
 9. `docs/agent/lessons-learned.md` - hard-won API, toolchain, and CI patterns from past PRs.
-10. `docs/module-structure.md` - reference for the 21-module architecture, dependency graph, and convention-plugin assignment.
+10. `docs/module-structure.md` - reference for the 24-module architecture, dependency graph, and convention-plugin assignment.
 11. `docs/convention-plugins.md` - reference for all precompiled Gradle convention plugins.
 12. `docs/testing/benchmarks.md` - execution workflow for macrobenchmarks and baseline profile generation.
 13. `docs/testing/screenshot-tests.md` - execution workflow for Compose Preview Screenshot Testing.

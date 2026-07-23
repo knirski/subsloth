@@ -4,7 +4,7 @@
 
 ## Port / Adapter
 
-Define I/O boundary interfaces as ports in `core/domain/.../port/`. Implementations (adapters) live in shell modules (`:core:network`, `:core:database`, etc.).
+Define I/O boundary interfaces as ports in `core/domain/.../port/`. Implementations (adapters) live in shell modules (`:core:network`, `:core:database`, etc.); classes that combine several adapters (transport + persistence + preferences) live in `:core:data`.
 
 ## Error Handling
 

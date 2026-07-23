@@ -1,6 +1,6 @@
 # Module Structure
 
-This document maps all 21 modules in the project, their responsibilities, dependency relationships, and the convention plugin each uses.
+This document maps all 24 modules in the project, their responsibilities, dependency relationships, and the convention plugin each uses.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -30,6 +30,9 @@ This document maps all 21 modules in the project, their responsibilities, depend
          │  ─ Value │  ─ Use   │  ─ DTOs  │  ─ DAOs  │ ─ Keyst.│ ─ Download│
          │  ─ Types │  Cases   │  ─ Api   │          │          │           │
          └──────────┴──────────┴──────────┴──────────┴──────────┴────────────┘
+         Also `:core:data` — repository/orchestration layer combining transport,
+         persistence, and preferences (depends on network + database + preferences;
+         see the Core Modules table below).
                                 │
          ┌──────────────────────▼────────────────────────────────────────────┐
          │                           Core UI                                 │
@@ -44,6 +47,8 @@ This document maps all 21 modules in the project, their responsibilities, depend
          │ api-contract │assertions │ detekt-rules │ mock-api  │tv-focus-    │
          │              │           │              │           │ harness     │
          └──────────────┴───────────┴──────────────┴───────────┴─────────────┘
+         Also `:testing:architecture-rules` — Gradle dependency-graph invariant
+         test (see the Testing Modules table below).
                                 │
          ┌──────────────────────▼────────────────────────────────────────────┐
          │                          Benchmark                                │
@@ -60,7 +65,7 @@ This document maps all 21 modules in the project, their responsibilities, depend
 |---|---|---|---|
 | `:androidApp` | `subsloth.android.application.compose` | Android | APK entry point. Uses AndroidX Compose BOM (not CMP) for TV foundation, adaptive layouts. Wires all features together. |
 | `:desktopApp` | `subsloth.jvm.library` + manual Compose config | JVM | Desktop entry point via `compose.desktop.application`. Same feature set as Android, but Desktop-first Compose. |
-| `:webApp` | None (manual KMP + Compose) | WasmJS | Browser entry point via `kotlin("multiplatform")` + Compose for Web. |
+| `:webApp` | `subsloth.web.library` + Compose | WasmJS | Browser entry point via Compose for Web. |
 
 **Dependency rule:** Shells depend on all feature and core modules. They must not be depended upon by any other module.
 
@@ -70,14 +75,14 @@ This document maps all 21 modules in the project, their responsibilities, depend
 
 | Module | Convention Plugin | Depends On | Description |
 |---|---|---|---|
-| `:feature:auth` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui`, `:core:database`, `:core:preferences` | Login, logout, credential management, profile selection |
-| `:feature:catalog` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui`, `:core:database`, `:core:preferences` | Home screen, search, filters, sort |
-| `:feature:details` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui` | Movie/series detail views, episode lists |
-| `:feature:player` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui`, `:core:media` | Playback UI, controls, subtitles, quality |
-| `:feature:library` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui`, `:core:database`, `:core:preferences` | Library, downloads list, storage management |
-| `:feature:settings` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:network`, `:core:ui` | Settings, diagnostics, about |
+| `:feature:auth` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:ui` | Login, logout, credential management, profile selection |
+| `:feature:catalog` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Home screen, search, filters, sort |
+| `:feature:details` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:ui` | Movie/series detail views, episode lists |
+| `:feature:player` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:media` | Playback UI, controls, subtitles, quality |
+| `:feature:library` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Library, downloads list, storage management |
+| `:feature:settings` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Settings, diagnostics, about |
 
-**Dependency rule:** Features depend on core modules and each other only through explicit project dependencies (not circular). Features do not depend on other features.
+**Dependency rule:** Features depend only on `:core:model`, `:core:domain` (for domain ports), and shared UI modules (`:core:ui`, `:core:media`) — never on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data` directly. Concrete adapter instances are constructed only at each platform's composition root and injected into feature ViewModels through domain port constructor parameters (see [composition-root ownership](architecture/composition-roots.md)). This is enforced by an executable Gradle dependency-graph test, not just convention — see `:testing:architecture-rules` below. Features do not depend on other features.
 
 ---
 
@@ -85,15 +90,16 @@ This document maps all 21 modules in the project, their responsibilities, depend
 
 | Module | Convention Plugin | Depends On | Targets | Description |
 |---|---|---|---|---|
-| `:core:model` | `subsloth.kmp.library` | none (stdlib + Compose runtime) | JVM, WasmJS | Pure domain types: sealed ADTs, value objects, enums. No explicit project dependencies — relies on Kotlin stdlib, Compose runtime, and convention-provided libraries (immutable collections, kermit). |
+| `:core:model` | `subsloth.kmp.library` | none | JVM, WasmJS | Pure domain types: sealed ADTs, value objects, enums. No explicit project dependencies, and no Compose runtime dependency — relies on Kotlin stdlib and convention-provided libraries (immutable collections, kermit). Compose stability is supplied to consuming UI modules via a checked-in stability-configuration file, not via `@Stable`/`@Immutable` annotations here. |
 | `:core:domain` | `subsloth.kmp.library` | `:core:model` | JVM, WasmJS | Port interfaces, use cases, domain logic, `DomainError` hierarchy. Pure Kotlin — no platform APIs. |
-| `:core:network` | `subsloth.kmp.library` | `:core:model`, `:core:domain`, `:core:database`, `:core:preferences` | JVM, WasmJS | Ktor HTTP client, DTOs, API definitions, request identity, rate limiting. |
+| `:core:network` | `subsloth.kmp.library` | `:core:model`, `:core:domain` | JVM, WasmJS | Ktor HTTP client, DTOs, API definitions, request identity, rate limiting. Transport only — no persistence or preferences dependency. |
 | `:core:database` | `subsloth.kmp.library` + Room | `:core:model`, `:core:domain` | JVM, WasmJS, Android | Room 3 database, DAOs, migrations, schemas. Platform-specific SQLite drivers. |
 | `:core:preferences` | `subsloth.kmp.library` | `:core:model`, `:core:domain` | JVM, WasmJS, Android | DataStore-backed preferences, credential store, account profiles. |
-| `:core:media` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | JVM, WasmJS, Android | Media player abstractions, download manager, offline storage. |
-| `:core:ui` | `subsloth.kmp.library` + Compose | `:core:model` | JVM, WasmJS | Shared Compose components, theming, navigation keys, UI error resources. |
+| `:core:media` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:database`, `:core:preferences` | JVM, WasmJS, Android | Media player abstractions, download manager, offline storage. |
+| `:core:ui` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | JVM, WasmJS | Shared Compose components, theming, navigation keys, UI error mapping. |
+| `:core:data` | `subsloth.kmp.library` | `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences` | JVM, WasmJS | Repository/orchestration classes that combine HTTP transport with persistence or preferences (e.g. `CatalogRepository`), implementing the domain ports those repositories fulfill. |
 
-**Dependency rule:** Dependencies flow inward — `:core:model` has zero project dependencies. `:core:domain` depends only on `:core:model`. Every other core module depends on `:core:model` and optionally `:core:domain`.
+**Dependency rule:** Dependencies flow inward — `:core:model` has zero project dependencies. `:core:domain` depends only on `:core:model`. `:core:data` is the only module allowed to depend on `:core:network`, `:core:database`, and `:core:preferences` together; those three never depend on each other. Every other core module depends on `:core:model` and optionally `:core:domain`.
 
 ---
 
@@ -102,6 +108,7 @@ This document maps all 21 modules in the project, their responsibilities, depend
 | Module | Convention Plugin | Description |
 |---|---|---|
 | `:testing:api-contract` | `subsloth.jvm.library` | WireMock stubs, fixture JSONs, HAR processing, `Endpoint` enum, `CaptureApi`/`ExportFixtures` tasks |
+| `:testing:architecture-rules` | `kotlin("jvm")` (plain, no convention plugin) | Gradle TestKit-driven JUnit test that inspects the resolved dependency graph of every `:feature:*` module and `:core:network`, failing the build if a forbidden adapter dependency is present |
 | `:testing:assertions` | `subsloth.jvm.library` | Shared test assertion helpers and matchers |
 | `:testing:detekt-rules` | `subsloth.jvm.library` | Custom detekt rules specific to the project |
 | `:testing:mock-api` | `subsloth.jvm.library` | Mock API server for integration testing |
@@ -123,26 +130,27 @@ See `docs/testing/benchmarks.md` for detailed usage.
 
 ## Dependency Graph (simplified)
 
+Feature modules never depend on concrete adapter modules directly — only on
+`:core:model`, `:core:domain` (domain ports), and shared UI (`:core:ui`,
+`:core:media`). Concrete adapters are wired together in `:core:data` and
+injected only at each platform's composition root
+([details](architecture/composition-roots.md)).
+
 ```
-:androidApp ───┬── :feature:* ──┬── :core:network ──┬── :core:model
-               │                │                    │
-               │                ├── :core:database ──┤
-               │                │                    │
-               │                ├── :core:preferences┤
-               │                │                    │
-               │                ├── :core:media ─────┤
-               │                │                    │
-               │                └── :core:ui ────────┤
-               │                                     │
-               └── :core:* (also directly) ──────────┘
+:feature:* ──────┬── :core:model
+                  ├── :core:domain
+                  ├── :core:ui        (auth, details)
+                  └── :core:media     (player only)
 
-:desktopApp ───┬── :feature:* ──┬── (same core modules)
-               │                │
-               └── :core:* ─────┘
+:core:data ───────┬── :core:network      (transport only)
+                  ├── :core:database
+                  └── :core:preferences
 
-:webApp ───────┬── :feature:* ──┬── (same core modules)
-               │                │
-               └── :core:* ─────┘
+:androidApp / :desktopApp / :webApp (composition roots) ──┬── :feature:*
+                                                            ├── :core:data
+                                                            ├── :core:media
+                                                            ├── :core:ui
+                                                            └── :core:* (directly, for wiring)
 ```
 
 ---
@@ -174,9 +182,9 @@ include(":feature:your-new-feature")
 
 Module paths use colons as separators and follow this naming pattern:
 - Application shells: `:androidApp`, `:desktopApp`, `:webApp`
-- Core: `:core:{name}` (model, domain, network, database, preferences, media, ui)
+- Core: `:core:{name}` (model, domain, network, database, preferences, media, ui, data)
 - Feature: `:feature:{name}` (auth, catalog, details, player, library, settings)
-- Testing: `:testing:{name}` (api-contract, assertions, detekt-rules, mock-api, tv-focus-harness)
+- Testing: `:testing:{name}` (api-contract, architecture-rules, assertions, detekt-rules, mock-api, tv-focus-harness)
 - Benchmark: `:benchmark`
 
 ### 3. Create the Build File

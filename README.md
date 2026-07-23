@@ -33,12 +33,13 @@ reproduced via Nix.
 - **Model the domain with sealed types.** Every variant is explicit, every
   `when` is exhaustive, every invalid state is unrepresentable. No boolean
   flags where a sealed interface tells the full story.
-- **One module, one responsibility.** Twenty-two modules with a strict inward
+- **One module, one responsibility.** Twenty-four modules with a strict inward
   dependency gradient. Features share nothing but core types; the dependency
   graph is acyclic by convention.
 - **Test through contracts, not implementations.** API fixtures are captured
   from the live service, sanitised, and replayed through Ktor MockEngine.
-  Architecture boundary tests scan import lines — no ArchUnit needed.
+  Architecture boundaries are enforced by an executable test on the resolved
+  Gradle dependency graph, not by scanning source imports — no ArchUnit needed.
 - **Reproduce the environment.** Nix pins the JDK (25 for Gradle, 17 for
   bytecode), the Android SDK, Node.js, Yarn, Binaryen, and even Android Studio.
   A single `direnv allow` is the entire setup.
@@ -76,7 +77,7 @@ See [`docs/development.md`](docs/development.md) for detailed setup and
   then read the [canonical specs](openspec/specs/) that define every v1
   requirement.
 - **Build:** follow the [module structure guide](docs/module-structure.md) to
-  understand the 22-module dependency graph, then the [convention plugins
+  understand the 24-module dependency graph, then the [convention plugins
   reference](docs/convention-plugins.md) for Gradle conventions.
 - **Code:** read the [codestyle](docs/codestyle.md), the
   [FC/IS architecture](docs/agent/fc-is-architecture.md), and the
@@ -113,11 +114,12 @@ flowchart TB
     end
     subgraph Core["Core Layer"]
         direction LR
-        C1[":core:network<br/>(Ktor, DTOs)"]
+        C1[":core:network<br/>(Ktor, DTOs — transport only)"]
         C2[":core:database<br/>(Room 3, DAOs)"]
         C3[":core:preferences<br/>(DataStore, Credentials)"]
         C4[":core:media<br/>(Playback, DL)"]
         C5[":core:ui<br/>(Compose, Nav)"]
+        C6[":core:data<br/>(Repositories, orchestration)"]
     end
     subgraph Domain["Domain Layer"]
         direction LR
@@ -127,10 +129,11 @@ flowchart TB
     subgraph Test["Testing & Benchmark"]
         direction LR
         T1[":testing:api-contract"]
-        T2[":testing:assertions"]
-        T3[":testing:detekt-rules"]
-        T4[":testing:mock-api"]
-        T5[":testing:tv-focus-harness"]
+        T2[":testing:architecture-rules"]
+        T3[":testing:assertions"]
+        T4[":testing:detekt-rules"]
+        T5[":testing:mock-api"]
+        T6[":testing:tv-focus-harness"]
         BM[":benchmark"]
     end
 
@@ -143,8 +146,13 @@ flowchart TB
 **Data flows inward and outward through pure mappers.** The shell layer
 (`network`, `database`, `preferences`, `media`) implements port interfaces
 defined in `domain`, fetches and persists data, and maps DTOs to domain types
-in isolated mapper boundaries. The feature modules consume only domain types
-and compose UI from them.
+in isolated mapper boundaries. Repository classes that orchestrate transport,
+persistence, and preferences together live in `:core:data`, which is the only
+module allowed to depend on all three. The feature modules consume only
+domain types and compose UI from them — never the concrete adapter or
+`:core:data` modules directly; concrete instances are wired in only at each
+platform's composition root (see
+[composition-root ownership](docs/architecture/composition-roots.md)).
 
 The [full module map](docs/module-structure.md) documents every module's
 convention plugin, dependencies, targets, and responsibilities. The

@@ -107,11 +107,22 @@ Lambda purity: the transformation lambda may re-execute if CAS fails. Capture ex
 
 ## 11. Architecture Tests (no ArchUnit needed)
 
-Source-scanning approach:
+Source-scanning approach — still fine for single-module invariants (e.g. no
+Android/Compose imports inside `:core:model`) since it's cheap and needs no
+Gradle API:
 ```kotlin
 private val allImports: List<String> by lazy { ... walkTopDown, filter .kt, extract import lines }
 @Test fun `no Android imports`() { assertThat(allImports.filter { forbidden in it }).isEmpty() }
 ```
+
+For *module-boundary* rules (which module may depend on which), source
+scanning alone isn't sufficient — it only sees `commonMain` and misses
+transitive violations. Use a Gradle TestKit-driven test on the *resolved*
+dependency graph instead: see `:testing:architecture-rules`'s
+`DependencyGraphInvariantTest`, which runs `<module>:dependencies` for each
+checked module/configuration and asserts forbidden project paths are absent
+from the resolved output. The `architecture` spec's "Executable Dependency
+Graph Invariants" requirement mandates this for module-boundary rules.
 
 ## 12. Strict SemVer in Gradle Version Code
 

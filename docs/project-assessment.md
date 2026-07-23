@@ -5,9 +5,15 @@
 [`docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`](superpowers/plans/2026-07-23-repository-assessment-remediation.md)
 for the current readiness picture. Current platform status lives in the
 [platform support matrix](readiness/platform-support-matrix.md), not in this
-document's verdict below. Architecture, code quality, and module-structure
-sections below remain accurate as technical detail; the release-readiness
-verdict and operational-readiness table do not.
+document's verdict below. Code quality sections below remain accurate as
+technical detail; the release-readiness verdict and operational-readiness
+table do not. The architecture section is now also stale in places: the
+`enforce-architecture-boundaries` change (merged 2026-07-23, after this
+assessment was written) added `:core:data`, shrank `:core:network` to
+transport-only, removed `:core:model`'s Compose runtime dependency, and
+replaced import-scanning-only enforcement with an executable Gradle
+dependency-graph test. See [`docs/module-structure.md`](module-structure.md)
+for the current picture.
 **Scope:** Full repository review — architecture, code quality, testing, documentation, and operational readiness.
 
 ---
@@ -27,11 +33,11 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | Aspect | Assessment | Evidence |
 |--------|------------|----------|
 | **FC/IS Separation** | Strictly enforced | `:core:model`, `:core:domain` have zero Android/framework deps; verified by architecture tests (`CoreModelArchitectureTest`, `DomainArchitectureTest`) |
-| **Port/Adapter** | Consistent | Ports in `:core:domain/port/`; adapters in `:core:network`, `:core:database`, `:core:preferences` |
+| **Port/Adapter** | Consistent | Ports in `:core:domain/port/`; adapters in `:core:network` (transport only), `:core:database`, `:core:preferences`; multi-adapter orchestration (e.g. `CatalogRepository`) in `:core:data` |
 | **Error Handling** | Typed end-to-end | `Outcome<T>` / `DomainError` sealed hierarchy; no `Throwable` leaks into domain; I/O shell translates at boundaries |
 | **State Management** | Unidirectional + sealed UiState | ViewModels expose `StateFlow<UiState>`; `UiState` sealed interfaces with `@Immutable`/`@Stable` data classes |
 | **Dependencies** | Inward only | `:feature:*` → `:core:*`; no cycles; `:androidApp` wires container only |
-| **KMP Safety** | Verified | `commonMain` compiles for JVM + Wasm/JS; `:core:model` + `:core:domain` use only stdlib, kotlinx-datetime, kotlinx-collections-immutable, compose-runtime annotations |
+| **KMP Safety** | Verified | `commonMain` compiles for JVM + Wasm/JS; `:core:model` + `:core:domain` use only stdlib, kotlinx-datetime, kotlinx-collections-immutable — no Compose runtime dependency (Compose stability is supplied via a checked-in stability-configuration file consumed by UI-facing modules, not by `:core:model` annotations) |
 
 **Architecture Tests Passing:**
 - `:core:model:jvmTest` → `CoreModelArchitectureTest`
