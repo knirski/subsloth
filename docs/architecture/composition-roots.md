@@ -21,6 +21,8 @@ configuration changes and Activity recreation, it constructs:
   is configured yet).
 - `catalogRepository` — a `CatalogRepository` combining the API client, Room cache, and
   preferences.
+- `clock` — a `kotlin.time.Clock` (not an adapter in the port/adapter sense, but listed here
+  since it's still a container-owned dependency other constructed objects consume).
 
 `MainActivity` reads `container.userPreferences` from `SubSlothApplication` and passes it into
 `LoginViewModel`, and a `HomeViewModelFactory` injects `catalogRepository` into `HomeViewModel` —
