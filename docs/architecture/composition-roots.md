@@ -57,7 +57,9 @@ doc, for the authoritative plan.
 ## The shared non-production default
 
 `core/ui/src/commonMain/kotlin/net/subsloth/core/ui/RootContainerViewModel.kt`'s
-`RootContainerViewModel` holds a process-wide `SessionPort` that survives configuration changes:
+`RootContainerViewModel` holds an in-memory `SessionPort` for the lifetime of its
+`ViewModelStoreOwner` — it survives configuration changes (e.g. Activity recreation) but not
+process death, since each `ViewModelStoreOwner` gets its own instance:
 
 ```kotlin
 open class RootContainerViewModel(sessionPort: SessionPort? = null) : ViewModel() {
