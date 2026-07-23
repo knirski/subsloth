@@ -34,7 +34,7 @@
 ## 6. Attempt `:core:model`'s Compose-dependency removal
 
 - [x] 6.1 Add a checked-in Compose stability configuration file (e.g. `compose-stability.conf`) listing the fully-qualified class names of the 17 `@Stable`/`@Immutable` classes in `core/model/src/commonMain`.
-- [x] 6.2 Reference the stability file via `composeCompiler { stabilityConfigurationFile.set(...) }` in every module that already applies the Compose compiler plugin (`:core:ui`, `feature:*`, `:androidApp`, `:desktopApp`, `:webApp`).
+- [x] 6.2 Reference the stability file via `composeCompiler { stabilityConfigurationFiles.add(...) }` in every module that already applies the Compose compiler plugin (`:core:ui`, `feature:*`, `:androidApp`, `:desktopApp`, `:webApp`).
 - [x] 6.3 Remove `@Stable`/`@Immutable` annotations from the 17 files in `core/model/src/commonMain` and remove `api(libs.compose.runtime)` from `core/model/build.gradle.kts`.
 - [x] 6.4 `./gradlew :core:model:compileKotlinJvm :core:model:compileKotlinWasmJs test` — confirm the full suite passes and no module needing Compose stability regresses.
 - [x] 6.5 **If 6.1-6.4 do not hold up** (compile failure, or verified recomposition-skipping regression): revert this section's changes and instead add a narrow, justified exception for `:core:model`'s Compose dependency to `openspec/specs/architecture/spec.md`'s "Functional Core Boundary" requirement text in this change's delta spec, with a one-line rationale referencing what was tried and why it didn't hold up.
