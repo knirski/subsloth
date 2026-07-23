@@ -16,7 +16,7 @@ Every later change in the remediation plan depends on one unambiguous, evidence-
 - Rewrite `project`'s "Toolchain Baseline" requirement so `gradle/wrapper/gradle-wrapper.properties`, `gradle/libs.versions.toml`, and `flake.nix` are the stated executable source of truth, instead of duplicated literal version numbers that drift.
 - Update `platform-parity`'s Platform Support Table to point at a new readiness matrix for release-tier status, instead of restating an unqualified "Supported"/"Production" claim.
 - Add a new `readiness` capability spec that defines platform support tiers with promotion gates, a readiness checklist tied to concrete CI checks, and a requirement that every unchecked archived task carry a recorded disposition.
-- Add `docs/readiness/platform-support-matrix.md` (tiers, promotion gates, checklist mapped to named CI jobs or manual acceptance docs) and `docs/readiness/archived-task-disposition.md` (disposition of all 56 unchecked archived tasks; the 4 that are real gaps are linked to their owning changes in the remediation plan).
+- Add `docs/readiness/platform-support-matrix.md` (tiers, promotion gates, checklist mapped to named CI jobs or manual acceptance docs) and `docs/readiness/archived-task-disposition.md` (disposition of all 56 unchecked archived tasks: 50 verified complete, 1 superseded, 3 still required and linked to their owning change in the remediation plan, and 2 intentionally deferred pending infrastructure that no planned change currently adds).
 - Correct overclaiming and stale-toolchain language in `README.md`, `docs/project-assessment.md`, `docs/testing/benchmarks.md`, `docs/jdk.md`, `docs/release.md`, and `openspec/README.md`.
 
 ## Capabilities
