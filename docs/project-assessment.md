@@ -142,7 +142,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 
 ---
 
-### Testing Strategy ✅ **Comprehensive**
+### Testing Strategy ⚠️ **Broad coverage, gaps in CI enforcement and benchmark evidence — see below**
 
 | Layer | Tools | Coverage |
 |-------|-------|----------|
@@ -150,11 +150,11 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | **Contract** | `:testing:api-contract` + WireMock | Fixture schema validation (all endpoints), DTO round-trip, JSON structural checks |
 | **Live Drift** | `ApiLiveDriftTest` + manual CI | Real API contract verification on demand via `workflow_dispatch` with secrets |
 | **Integration (I/O)** | Room `TestDatabaseFactory`, DataStore in-memory, Ktor `MockEngine` | Repository behavior, sync logic, download queue |
-| **UI (Desktop)** | Compose UI Test (JUnit 4) | 6 test classes: Login, Catalog, Detail, Library, Player, Search |
-| **Screenshot** | Compose Preview Screenshot Testing | 10 screens × 3 configs |
+| **UI (Desktop)** | Compose UI Test (JUnit 4) | 6 test classes exist, but `:desktopApp:test` is not invoked in CI (see `docs/readiness/platform-support-matrix.md`) |
+| **Screenshot** | Compose Preview Screenshot Testing | 10 screens × 3 configs; the verification workflow is `workflow_dispatch`-only, not run on every PR |
 | **Instrumented** | AndroidX Test, Espresso, UIAutomator | Requires emulator/device |
-| **Benchmark** | Macrobenchmark (JUnit 4) | Startup, scroll, detail open, playback start |
-| **Baseline Profiles** | `profileinstaller` + `BaselineProfileGenerator` | 4 critical user journeys |
+| **Benchmark** | Macrobenchmark (JUnit 4) | ⚠️ Not run in CI; last recorded manual run passed 3 of 7 scenarios (see `docs/testing/benchmarks.md`) |
+| **Baseline Profiles** | `profileinstaller` + `BaselineProfileGenerator` | ⚠️ No `baseline-prof.txt` is committed; the Android release build does not currently consume a generated profile |
 
 **Test Organization:**
 - `:testing:assertions` — shared `assertThatOutcome()`, `assertFlowEmits()`
