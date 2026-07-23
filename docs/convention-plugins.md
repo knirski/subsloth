@@ -15,6 +15,7 @@ Precompiled script plugins in `build-logic/convention/src/main/kotlin/` that enc
 | `subsloth.android.library` | Android libraries | Android library plugin, compileSdk 37, minSdk 26, lint strict, spotless, detekt, power-assert, JUnit Platform, `kermit` |
 | `subsloth.android.library.compose` | Android libraries with Compose | Extends `subsloth.android.library` + enables Compose build features + Compose compiler with stability config |
 | `subsloth.jvm.library` | JVM-only libraries (`:testing:*`, `:desktopApp`) | Kotlin JVM plugin, jvmToolchain(17), allWarningsAsErrors, spotless, detekt, power-assert, JUnit Platform |
+| `subsloth.web.library` | `:webApp` | Kotlin Multiplatform plugin (target/dependencies configured directly in `:webApp`'s own build file), jvmToolchain(17), allWarningsAsErrors, spotless, detekt. No power-assert or JUnit wiring — `:webApp` has no test source sets. |
 
 ---
 
@@ -197,6 +198,23 @@ Used for **JVM-only** modules where Kotlin Multiplatform would be overkill (test
 **Compiler settings:**
 - `jvmToolchain(17)`
 - `allWarningsAsErrors = true`
+
+---
+
+## `subsloth.web.library`
+
+Used for **`:webApp`** — the browser (WasmJS) entry point. Mirrors `subsloth.jvm.library`'s Spotless/Detekt configuration, adapted for a Kotlin Multiplatform module rather than a plain JVM one, since `:webApp` compiles for the `wasmJs` target.
+
+**Applied plugins:**
+- `org.jetbrains.kotlin.multiplatform`
+- `com.diffplug.spotless`
+- `dev.detekt`
+
+**Compiler settings:**
+- `jvmToolchain(17)`
+- `allWarningsAsErrors = true`
+
+**Not included:** power-assert and JUnit Platform wiring, unlike `subsloth.jvm.library` — `:webApp` has no test source sets today. The `wasmJs { }` target block, its dependencies, and the Compose plugin aliases are declared directly in `webApp/build.gradle.kts`, not in this convention plugin, since that configuration (output filename, dependency list) is app-specific.
 
 ---
 
