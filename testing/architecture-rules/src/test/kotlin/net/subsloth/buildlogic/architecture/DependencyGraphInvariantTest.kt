@@ -86,8 +86,20 @@ class DependencyGraphInvariantTest {
      * other Gradle steps in the same CI job already populated.
      */
     private fun runDependenciesTask(modulePath: String, configuration: String): String {
-        val rootDir = File(System.getProperty("subsloth.rootDir"))
-        val gradleUserHome = File(System.getProperty("subsloth.gradleUserHome"))
+        val rootDir = File(
+            System.getProperty("subsloth.rootDir")
+                ?: error(
+                    "System property 'subsloth.rootDir' is not set — " +
+                        "run this test via Gradle, not directly from an IDE.",
+                ),
+        )
+        val gradleUserHome = File(
+            System.getProperty("subsloth.gradleUserHome")
+                ?: error(
+                    "System property 'subsloth.gradleUserHome' is not set — " +
+                        "run this test via Gradle, not directly from an IDE.",
+                ),
+        )
         val result = GradleRunner.create()
             .withProjectDir(rootDir)
             .withTestKitDir(gradleUserHome)
