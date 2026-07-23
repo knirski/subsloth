@@ -9,10 +9,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
-            implementation(project(":core:network"))
             implementation(project(":core:ui"))
-            implementation(project(":core:database"))
-            implementation(project(":core:preferences"))
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.multiplatform.foundation)
