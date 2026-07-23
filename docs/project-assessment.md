@@ -70,11 +70,12 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ```text
 :core:model           → Pure domain types, identifiers, errors, Outcome<T>      [KMP: JVM, WasmJS]
 :core:domain          → Policies, ports, pure business logic                    [KMP: JVM, WasmJS]
-:core:network         → Ktor client, API DTOs, mappers, CatalogRepository       [KMP: JVM, WasmJS]
+:core:network         → Ktor client, API DTOs, mappers (transport only)         [KMP: JVM, WasmJS]
 :core:database        → Room 3.0 KMP, DAOs, entities, WebWorkerSQLiteDriver     [KMP: JVM, WasmJS]
 :core:preferences     → DataStore Preferences, AccountProfileStore, Credentials [KMP: JVM, WasmJS]
 :core:media           → Media3/ComposeMediaPlayer boundary, subtitle sync       [KMP: JVM, WasmJS]
 :core:ui              → Shared Compose components, SessionGate, RootContainerVM [KMP: JVM, WasmJS]
+:core:data            → Repositories combining transport/persistence/prefs, e.g. CatalogRepository [KMP: JVM, WasmJS]
 
 :feature:auth         → Login screen, ViewModel, session integration            [KMP: JVM, WasmJS]
 :feature:catalog      → Home, Search, catalog rows, media cards                 [KMP: JVM, WasmJS]
