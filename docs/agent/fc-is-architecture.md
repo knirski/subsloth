@@ -37,7 +37,8 @@ Stateless `object` classes with pure functions encapsulating business rules. Liv
 
 ```
 :feature:* → :core:model, :core:domain, :core:ui (auth/details), :core:media (player only)
-:core:data → :core:network, :core:database, :core:preferences → :core:domain → :core:model
+:core:data → :core:model, :core:domain, :core:network, :core:database, :core:preferences
+:core:network, :core:database, :core:preferences → :core:model, :core:domain
 ```
 
 Features never depend on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data` directly — concrete adapters are constructed only at each platform's composition root and injected into feature ViewModels through domain port constructor parameters. `:core:model` has no dependencies. `:core:domain` depends on `:core:model`. No core module depends on Android framework. Enforced by an executable Gradle dependency-graph test (`:testing:architecture-rules`), not source-import scanning alone.
