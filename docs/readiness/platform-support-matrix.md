@@ -30,18 +30,25 @@ Every promotion requirement above is backed by either a named, currently-runnabl
 | Core/shared JVM tests | CI job `☕ JVM / 🖥️ Desktop` (JVM tests step) | Passing, required |
 | Android assemble + unit tests | CI job `🟢 Android` | Passing, required |
 | Android instrumented smoke | CI job `📱 Instrumented` | Passing, required |
+| Android production runtime has no in-memory/no-op binding | No automated check yet — no test asserts production startup excludes `InMemorySessionState` or no-op ViewModels; `InMemorySessionState` remains the wired default today | Owned by Change 2 |
 | Desktop compiles | CI job `☕ JVM / 🖥️ Desktop` (desktop compilation step) | Passing, required |
+| Desktop real composition root and routes (no placeholders) | No automated check yet — no test asserts absence of placeholder navigation or the in-memory session | Owned by Change 3A |
 | Desktop unit/UI tests run in CI | No automated check yet — `:desktopApp:test` is not invoked anywhere in `.github/workflows/ci.yml` | Owned by Change 5 |
+| Desktop credential support matrix verified per OS | Manual acceptance record — none exists yet; only Linux is built | Owned by Change 3A |
 | Web compiles + browser test task runs | CI job `🌐 Web / wasmJs` | Passing, but the test task has no test files to exercise |
 | Web has meaningful browser tests | No automated check yet — `webApp/src` contains no test sources | Owned by Change 5 |
+| Web demo mode is explicitly labelled and requests no production credentials | No automated check yet — no UI/test asserts the demo-mode label or absence of a production credential prompt | Owned by Change 3B |
+| Web credentials absent from local storage | No automated check yet — no test asserts this today | Owned by Change 3B |
+| Web production auth/CORS architecture decision recorded | No automated check yet — decision record not yet written | Owned by Change 3B |
+| Web COOP/COEP-capable production host selected | No automated check yet — decision record not yet written | Owned by Change 3B |
+| Web OPFS persistence survives a page reload | No automated check yet — no reload-persistence test exists; GitHub Pages lacks COOP/COEP so OPFS falls back to in-memory storage today | Owned by Change 3B |
+| Web production browser test suite (beyond the demo smoke tests above) | No automated check yet — not yet defined | Owned by Change 3B |
 | TV focus traversal/restoration tests | No automated check yet — `testing/tv-focus-harness` exists but is not consumed by any production screen test | Owned by Change 5 |
 | Screenshot regression detection on every PR | No automated check yet — `.github/workflows/screenshots.yml` is `workflow_dispatch`-only | Owned by Change 6 |
 | Benchmark smoke in CI | No automated check yet — no workflow invokes `:benchmark`; last recorded manual run passed 3 of 7 scenarios | Owned by Change 6 |
 | Baseline profile generated and consumed | No automated check yet — no `baseline-prof.txt` is committed | Owned by Change 6 |
 | Release publishes only after build/verify | No automated check yet — see `docs/release.md` for the current (build-after-tag) order | Owned by Change 8 |
-| Desktop credential support matrix verified per OS | Manual acceptance record — none exists yet; only Linux is built | Owned by Change 3A |
 | Android TV/tablet/phone manual device acceptance | Manual acceptance record: `docs/testing/device-acceptance.md` | Documented, run manually |
-| Web COOP/COEP-capable production host selected | No automated check yet — decision record not yet written | Owned by Change 3B |
 
 ## Non-goals of this matrix
 
