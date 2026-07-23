@@ -1,4 +1,4 @@
-package net.subsloth.core.network.error
+package net.subsloth.core.ui.error
 
 import net.subsloth.core.model.error.AuthError
 import net.subsloth.core.model.error.DecodeError
@@ -11,6 +11,7 @@ import net.subsloth.core.model.error.PaymentLimitError
 import net.subsloth.core.model.error.QualityError
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.network.error.NetworkErrorClassifier
 import net.subsloth.core.network.media.client.ResponseValidationException
 
 fun Throwable.toUiError(): UiError {
