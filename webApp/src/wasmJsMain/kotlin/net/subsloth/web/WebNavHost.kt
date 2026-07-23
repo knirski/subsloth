@@ -67,9 +67,9 @@ fun WebNavHost(modifier: Modifier = Modifier) {
         backStack = backStack,
         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
         entryDecorators =
-            listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-            ),
+        listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+        ),
         entryProvider = entryProvider {
             entry<LoginKey> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -147,10 +147,7 @@ fun WebNavHost(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CatalogContent(
-    onMovieClick: (Media.MediaId.Movie) -> Unit,
-    onShowClick: (Media.MediaId.Show) -> Unit,
-) {
+private fun CatalogContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowClick: (Media.MediaId.Show) -> Unit) {
     val storeOwner = remember("catalog_home") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -206,10 +203,7 @@ private fun ShowDetailContent(showId: Media.MediaId.Show) {
 }
 
 @Composable
-private fun LibraryContent(
-    onMovieClick: (Media.MediaId.Movie) -> Unit,
-    onShowClick: (Media.MediaId.Show) -> Unit,
-) {
+private fun LibraryContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowClick: (Media.MediaId.Show) -> Unit) {
     val storeOwner = remember("library") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()

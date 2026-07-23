@@ -7,11 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeViewport
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.auth.LoginScreen
-import net.subsloth.core.ui.theme.SubSlothTheme
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.network.media.client.ClientConfig
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
+import net.subsloth.core.ui.theme.SubSlothTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
