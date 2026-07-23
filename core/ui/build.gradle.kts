@@ -10,7 +10,6 @@ kotlin {
         commonMain.dependencies {
             api(project(":core:model"))
             implementation(project(":core:domain"))
-            implementation(project(":core:network"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.multiplatform.foundation)
             implementation(libs.compose.multiplatform.material3)
