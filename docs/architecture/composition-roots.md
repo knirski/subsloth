@@ -44,10 +44,13 @@ adapters at all — `:webApp`'s `commonMain.dependencies` block does depend dire
 composition root does), but nothing in `Main.kt` currently constructs or wires an `Api`,
 database, or preferences instance into a ViewModel.
 
-Building Desktop's and Web's real composition roots — following the same "construct concrete
-adapters, inject ports into feature ViewModels" pattern `AppContainer` already demonstrates for
-Android's data layer — is `Change 3A` (`wire-desktop-production-runtime`) and `Change 3B`
-(`wire-web-production-runtime`)'s scope respectively, not this change's.
+Building Desktop's real composition root — following the same "construct concrete adapters,
+inject ports into feature ViewModels" pattern `AppContainer` already demonstrates for Android's
+data layer — is `Change 3A` (`wire-desktop-production-runtime`)'s scope, not this change's.
+`Change 3B` (`define-web-runtime-tier`) covers Web's production-connectivity decision record and
+demo/production mode separation, which may or may not include a full `AppContainer`-equivalent
+composition root depending on what that change decides — see that change's own scope, not this
+doc, for the authoritative plan.
 
 ## The shared non-production default
 
