@@ -1,6 +1,5 @@
 package net.subsloth.core.model.download
 
-import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.Resolution
@@ -15,7 +14,6 @@ private const val MAX_PROGRESS_PERCENT = 100
  * Tracks which episodes are pending, downloading, completed, or failed,
  * as well as the overall [execution] state of the season batch operation.
  */
-@Immutable
 data class SeasonDownloadQueue(
     val queueId: QueueId,
     val showId: ShowId,
@@ -45,7 +43,6 @@ sealed interface SeasonQueueExecution {
 }
 
 /** A single episode within a [SeasonDownloadQueue], with its own execution state. */
-@Immutable
 data class SeasonDownloadQueueItem(
     val mediaId: Media.MediaId.Episode,
     val selectedQuality: Resolution,
@@ -80,7 +77,6 @@ sealed interface SeasonQueueItemExecution {
  * fallback, will fall back to English subtitles, have no subtitles, or
  * are unavailable entirely.
  */
-@Immutable
 data class SeasonDownloadConfirmation(
     val episodeCount: Int,
     val alreadyAvailableCount: Int,

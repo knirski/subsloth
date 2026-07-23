@@ -6,6 +6,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core:model"))
+            // Previously transitive via :core:model's api(libs.compose.runtime)
+            // (Compose runtime depends on kotlinx-coroutines-core). Now that
+            // :core:model no longer depends on the Compose runtime, this
+            // module's own use of StateFlow (see SessionPort) must declare
+            // the dependency explicitly. api because StateFlow appears in
+            // this module's public interfaces.
+            api(libs.coroutines.core)
         }
 
         jvmTest.dependencies {

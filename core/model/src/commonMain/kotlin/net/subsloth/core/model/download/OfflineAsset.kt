@@ -1,6 +1,5 @@
 package net.subsloth.core.model.download
 
-import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableSet
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
@@ -101,7 +100,6 @@ sealed interface SubtitleSelection {
  * projection that includes display metadata and playability status, whereas
  * [DownloadState] is the canonical persistence record.
  */
-@Immutable
 data class OfflineAsset(
     val mediaId: Media.MediaId,
     val localId: LocalMediaIdentifier,
