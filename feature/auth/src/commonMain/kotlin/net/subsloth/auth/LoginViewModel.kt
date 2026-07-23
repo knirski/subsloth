@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.LoginDefaults
 import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
@@ -19,7 +20,6 @@ import net.subsloth.core.model.error.DomainError
 import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
-import net.subsloth.preferences.UserPreferences
 
 /**
  * UI state for the login screen.
@@ -55,14 +55,14 @@ class LoginViewModel(
     private val sessionPort: SessionPort,
     private val hasPlayableDownloads: () -> Boolean = { false },
     private val onLogout: () -> Unit = {},
-    private val readApiBaseUrl: suspend () -> Flow<String> = { flowOf(UserPreferences.DEFAULT_API_BASE_URL) },
+    private val readApiBaseUrl: suspend () -> Flow<String> = { flowOf(LoginDefaults.DEFAULT_API_BASE_URL) },
     private val saveApiBaseUrl: suspend (String) -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("LoginViewModel")
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.LoginForm())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val _apiBaseUrl = MutableStateFlow(UserPreferences.DEFAULT_API_BASE_URL)
+    private val _apiBaseUrl = MutableStateFlow(LoginDefaults.DEFAULT_API_BASE_URL)
     val apiBaseUrl: StateFlow<String> = _apiBaseUrl.asStateFlow()
 
     init {
