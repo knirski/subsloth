@@ -9,7 +9,6 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
-            implementation(project(":core:network"))
             implementation(project(":core:media"))
 
             implementation(libs.compose.runtime)
