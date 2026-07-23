@@ -101,12 +101,25 @@ Each journey is driven by `UiAutomator` interactions against the installed app.
 
 ## CI Integration
 
-Benchmarks run on every PR and push to main via GitHub Actions. The CI job uses `reactivecircus/android-emulator-runner@v2` with a physical-device-hosted runner where available, or falls back to an emulator for smoke-testing.
+**Not yet wired into CI.** No workflow in `.github/workflows/` invokes the `:benchmark` module today — this section describes the intended integration, tracked under `docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md` Change 6 (`automate-visual-performance-gates`), not current behavior.
 
-CI runs:
+The last recorded run (`openspec/changes/archive/2026-07-18-verification-release/tasks.md`) was manual/local and passed **3 of 7** scenarios:
+
 ```bash
 ./gradlew :benchmark:connectedDebugAndroidTest
 ```
+
+The module has 7 `@Test` methods across 5 benchmark classes:
+
+- `StartupBenchmark.startupCold` ✅
+- `StartupBenchmark.startupWarm` ✅
+- `HomeLoadBenchmark.homeScreenLoadFromCache` ✅
+- `BaselineProfileGenerator.generate` ❌ — no movie cards found (no real catalog data on emulator)
+- `DetailOpenBenchmark.openMovieDetail` ❌ — login gate prevents navigation without real credentials or mock data
+- `DetailOpenBenchmark.openSeriesDetail` ❌ — same
+- `PlaybackStartBenchmark.playbackStart` ❌ — same
+
+No `baseline-prof.txt` is committed anywhere in the repository, so the Android release build does not currently consume a generated baseline profile. See `docs/readiness/platform-support-matrix.md` for the owning change.
 
 ---
 
