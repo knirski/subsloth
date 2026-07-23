@@ -1,7 +1,13 @@
 # Project Assessment — SubSloth
 
 **Date:** 2026-07-19
-**Status:** v1 Released ✅ — All 11 OpenSpec changes archived; 2/3 short-term goals completed
+**Status:** Superseded — see the 2026-07-23 assessment and
+[`docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`](superpowers/plans/2026-07-23-repository-assessment-remediation.md)
+for the current readiness picture. Current platform status lives in the
+[platform support matrix](readiness/platform-support-matrix.md), not in this
+document's verdict below. Architecture, code quality, and module-structure
+sections below remain accurate as technical detail; the release-readiness
+verdict and operational-readiness table do not.
 **Scope:** Full repository review — architecture, code quality, testing, documentation, and operational readiness.
 
 ---
@@ -10,7 +16,7 @@
 
 SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media application** targeting Android (primary), Desktop (JVM), and Web (Wasm/JS). It implements a native streaming client for language learning with dual subtitles, built against a reverse-engineered Kodi-compatible API.
 
-**Verdict:** **v1 Released ✅** SubSloth is a production-ready Android app with Desktop and Web companion targets. Architecture is sound, code quality is high, testing strategy is comprehensive, and documentation is thorough. All 11 OpenSpec changes are implemented and archived. Main risks are external (API stability, platform scope) not internal.
+**Verdict (superseded, see status header above):** All 11 v1 OpenSpec changes were implemented and archived, and architecture, code quality, and testing depth are strong. However, the 2026-07-23 repository assessment found that Android still runs on an in-memory session with no-op ViewModels in its production start path, Desktop has placeholder navigation and an in-memory session, Web forces mock data and lacks the isolation headers its OPFS persistence claim requires, Desktop tests are not run in CI, the Web test suite is empty, and benchmark/baseline-profile claims exceed what's actually passing. See [`docs/readiness/platform-support-matrix.md`](readiness/platform-support-matrix.md) for the current tier of each platform and what's required to promote it.
 
 ---
 
@@ -162,10 +168,10 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Environment** | Nix flake (`flake.nix` + `flake.lock`) — pinned JDK 25/17, Android SDK 36, Android Studio, Node/Yarn/Binaryen for Wasm |
-| **Gradle** | Wrapper 8.x + `build-logic` convention plugins + version catalog |
-| **CI** | GitHub Actions (offline-only) — `check lintDebug testDebugUnitTest assembleDebug` + `vacuum lint`; manual API drift workflow via `workflow_dispatch` |
-| **Release** | `release-please` (conventional commits) → semantic-release → GitHub Release + debug APK artifact |
+| **Environment** | Nix flake (`flake.nix` + `flake.lock`) — pinned JDK 25/17, Android SDK command-line tools, Android Studio, Node/Yarn/Binaryen for Wasm |
+| **Gradle** | Wrapper and `compileSdk`/`targetSdk`/AGP/Kotlin versions per `gradle/wrapper/gradle-wrapper.properties` and `gradle/libs.versions.toml` (see `docs/readiness/platform-support-matrix.md` — do not duplicate the numbers here, they drift) + `build-logic` convention plugins |
+| **CI** | GitHub Actions (offline-only) — formatting/detekt/invariant pre-checks + per-platform assemble/test jobs (Android, JVM/Desktop compile, Web); manual API drift workflow via `workflow_dispatch`; Desktop has no dedicated test job yet, and Web's test job has no test files to run (see readiness matrix) |
+| **Release** | semantic-release (conventional commit PR titles) → GitHub Release, tag-derived version, debug APK/Desktop/Web artifacts uploaded after the release is created — not `release-please` (see `docs/release.md`) |
 | **Invariants** | `.github/scripts/check-invariants.sh` — scans for credentials, signed URLs, HAR files, traces |
 
 **Pre-commit Checks (enforced by AGENTS.md):**
@@ -264,7 +270,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 | Area | Status | Notes |
 |------|--------|-------|
 | **Debug APK Build** | ✅ | `./gradlew assembleDebug` → `androidApp/build/outputs/apk/debug/` |
-| **Release Pipeline** | ✅ | `release-please` + semantic-release on conventional commit PR titles |
+| **Release Pipeline** | ⚠️ Partial | semantic-release on conventional commit PR titles (not `release-please` — see `docs/release.md`); publishes the GitHub Release before all platform artifacts are verified, and Desktop package metadata is not yet derived from the shared version — tracked under remediation-plan Change 8 |
 | **Secret Management** | ✅ | No secrets in repo; `local.properties` for local creds; CI uses GitHub Secrets |
 | **Artifact Scanning** | ✅ | Invariant check in CI + pre-commit |
 | **Rollback** | ✅ | Git tags + semantic-release; APK artifacts in GitHub Releases |
@@ -318,7 +324,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 - **Reproducible builds** — Nix flake pins entire toolchain
 - **Operational hygiene** — invariant scanning, secret hygiene, conventional commits, automated releases
 
-All v1 requirements have been implemented and verified per OpenSpec. The canonical spec baseline is established in `openspec/specs/`. All short-term goals are now completed: KMP Android target convention (PR #189), webApp feature parity (PR #190), automated offline fixture/schema validation (PR #192), and API drift detection CI (PR #193). No architectural or implementation gaps block release.
+All v1 OpenSpec changes are implemented, verified, and archived, and the four short-term goals listed above (KMP Android target convention PR #189, webApp feature parity PR #190, automated offline fixture/schema validation PR #192, and API drift detection CI PR #193) are complete. That is a different claim from "ready for production": the 2026-07-23 assessment found real gaps in Android's authenticated runtime, Desktop's composition, Web's isolation posture, and the release pipeline's build-before-publish ordering. See `docs/readiness/platform-support-matrix.md` for the current, evidence-linked status of each platform.
 
 ---
 

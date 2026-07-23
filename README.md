@@ -6,7 +6,7 @@
 [![Ktor](https://img.shields.io/badge/Ktor-3.5-087CFA?logo=ktor&logoColor=white)](https://ktor.io)
 [![Room](https://img.shields.io/badge/Room-3.0-FF6F00?logo=android&logoColor=white)](https://developer.android.com/training/data-storage/room)
 [![AGP](https://img.shields.io/badge/AGP-9.3-3DDC84?logo=android&logoColor=white)](https://developer.android.com/build)
-[![NixOS](https://img.shields.io/badge/Nix-25.05-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
+[![NixOS](https://img.shields.io/badge/Nix-unstable-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
 
 <img src="docs/subsloth-mascot.svg" width="180" height="180" align="right" alt="SubSloth mascot" />
 
@@ -62,9 +62,10 @@ direnv allow
 ./gradlew installDebug
 ```
 
-The development shell provides everything: JDK 25 and 17, Android SDK 36 with
-command-line tools, sdkmanager, adb, Android Studio, vacuum (OpenAPI linter),
-and emulator helper scripts.
+The development shell provides everything: JDK 25 and 17, Android SDK
+command-line tools (compileSdk/targetSdk 37; local emulator images pinned to
+API 36), sdkmanager, adb, Android Studio, vacuum (OpenAPI linter), and
+emulator helper scripts.
 
 See [`docs/development.md`](docs/development.md) for detailed setup and
 [`docs/jdk.md`](docs/jdk.md) for JDK toolchain notes.
@@ -215,12 +216,19 @@ multi-profile switching are explicitly out of scope for v1. See the
 
 ## Platform support
 
-| Target | Status | Notes |
+Platform status is tracked in one place — the
+[platform support matrix](docs/readiness/platform-support-matrix.md) — rather
+than restated here. Summary as of the tiers currently assigned:
+
+| Target | Tier | Notes |
 |---|---|---|
-| Android (phone, tablet, TV) | ✅ Production | API 26+, adaptive layouts, TV D-pad focus |
-| Desktop (Linux, macOS, Windows) | ✅ Production | CMP desktop app via `:desktopApp` |
-| Web (WasmJS) | ✅ Production | Browser build via `:webApp` with OPFS-backed SQLite |
+| Android (phone, tablet, TV) | Internal beta | API 26+, adaptive layouts, TV D-pad focus; see the matrix for promotion gates |
+| Desktop (Linux; macOS/Windows not yet built in CI) | Preview | CMP desktop app via `:desktopApp` |
+| Web (WasmJS, GitHub Pages) | Stateless demo | Browser build via `:webApp`; deployed with mock data, no isolation headers — production tier not yet granted |
 | iOS | 🔜 Future | KMP targets declared but disabled — no CI infrastructure |
+
+No platform above is claimed production-ready; see the matrix for exactly
+what's missing and which change is expected to close each gap.
 
 ## Scope
 

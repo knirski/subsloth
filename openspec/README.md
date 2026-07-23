@@ -21,7 +21,7 @@ Development bootstrap:
 Sequential foundation:
 
 1. `foundation-api-contract` - project scaffold, toolchain baseline, API discovery, and OpenAPI contract.
-2. `release-and-ci-foundation` - offline-only required CI, secret/artifact scanning, release-please, version.txt, CHANGELOG, and debug sideload APK workflow.
+2. `release-and-ci-foundation` - offline-only required CI, secret/artifact scanning, and debug sideload APK workflow. Originally proposed `release-please`/`version.txt`/`CHANGELOG.md`; the repository has used semantic-release with tag-derived versioning since shortly after this change (see `docs/release.md` and the `testing-release` spec) — this line describes the change's original proposal, not current behavior.
 3. `core-domain-network` - functional core, typed domain policies, network client, and mappers.
 4. `auth-persistence-shell` - login, credentials, account profiles, persistence, logout, and app shell.
 5. `android-ui-foundation` - cross-cutting adaptive layout primitives, TV focus, accessibility, edge-to-edge, predictive back, and state restoration.
