@@ -109,10 +109,15 @@ The last recorded run (`openspec/changes/archive/2026-07-18-verification-release
 ./gradlew :benchmark:connectedDebugAndroidTest
 ```
 
-- `StartupBenchmark` (cold/warm) ✅
-- `HomeLoadBenchmark` ✅
-- `BaselineProfileGenerator` ❌ — no movie cards found (no real catalog data on emulator)
-- `DetailOpenBenchmark`, `PlaybackStartBenchmark` ❌ — login gate prevents navigation without real credentials or mock data
+The module has 7 `@Test` methods across 5 benchmark classes:
+
+- `StartupBenchmark.startupCold` ✅
+- `StartupBenchmark.startupWarm` ✅
+- `HomeLoadBenchmark.homeScreenLoadFromCache` ✅
+- `BaselineProfileGenerator.generate` ❌ — no movie cards found (no real catalog data on emulator)
+- `DetailOpenBenchmark.openMovieDetail` ❌ — login gate prevents navigation without real credentials or mock data
+- `DetailOpenBenchmark.openSeriesDetail` ❌ — same
+- `PlaybackStartBenchmark.playbackStart` ❌ — same
 
 No `baseline-prof.txt` is committed anywhere in the repository, so the Android release build does not currently consume a generated baseline profile. See `docs/readiness/platform-support-matrix.md` for the owning change.
 
