@@ -3,11 +3,15 @@
 ## ADDED Requirements
 
 ### Requirement: Platform Support Tiers
-The project SHALL maintain a single platform support matrix at `docs/readiness/platform-support-matrix.md` that assigns each platform target an explicit release-readiness tier and states the promotion requirements for the next tier. No documentation SHALL claim a platform is production-ready, fully supported without qualification, or gate-free based solely on the fact that it compiles or renders a shell.
+The project SHALL maintain a single platform support matrix at `docs/readiness/platform-support-matrix.md` that assigns each platform target an explicit release-readiness tier and states the promotion requirements for the next tier. `docs/readiness/platform-support-matrix.md` is authoritative: other documents MAY show a brief tier label as a linked summary (e.g. a table cell reading "See the readiness matrix — Internal beta"), but MUST NOT state a tier, promotion criterion, or readiness judgment that the matrix does not also state, and MUST link to the matrix wherever a tier label appears. No documentation SHALL claim a platform is production-ready, fully supported without qualification, or gate-free based solely on the fact that it compiles or renders a shell.
 
 #### Scenario: A reader wants a platform's current status
 - **WHEN** a developer or reviewer wants to know a platform's current release readiness
-- **THEN** `docs/readiness/platform-support-matrix.md` is the single authoritative source, and `README.md`, `docs/project-assessment.md`, and the canonical OpenSpec specs link to it rather than restating a status independently
+- **THEN** `docs/readiness/platform-support-matrix.md` is the single authoritative source, and `README.md`, `docs/project-assessment.md`, and the canonical OpenSpec specs either link to it without restating a tier or show only a brief, linked tier label that matches it exactly
+
+#### Scenario: A linked summary drifts from the matrix
+- **WHEN** a document's linked tier label no longer matches the tier recorded in `docs/readiness/platform-support-matrix.md`
+- **THEN** the document is corrected to match the matrix; the matrix is never corrected to match a stale summary
 
 #### Scenario: A promotion criterion is marked complete
 - **WHEN** a promotion requirement in the matrix is marked complete

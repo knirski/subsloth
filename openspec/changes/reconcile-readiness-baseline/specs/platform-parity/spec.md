@@ -4,7 +4,7 @@
 
 ### Requirement: Supported Platforms
 
-The project SHALL support three platform targets: Android, desktop (JVM/Compose Desktop), and web (Wasm JS/Compose for Web). Each supported platform SHALL be a first-class target for development, testing, and release. Release-readiness tier and promotion gates for each platform are defined in the `readiness` specification and published at `docs/readiness/platform-support-matrix.md`; they are not restated here. This requirement governs which platforms exist as build/test targets, not their production status — a platform listed here as supported may still be gated at a pre-production tier in the readiness matrix.
+The project SHALL support three platform targets: Android, desktop (JVM/Compose Desktop), and web (Wasm JS/Compose for Web). Each supported platform SHALL be a first-class target for development, testing, and release. Release-readiness tier and promotion gates for each platform are defined in the `readiness` specification and published at `docs/readiness/platform-support-matrix.md`, which is authoritative; the table below shows only a brief, linked tier label per the `readiness` specification's "Platform Support Tiers" requirement, and does not restate promotion gates. This requirement governs which platforms exist as build/test targets, not their production status — a platform listed here as supported may still be gated at a pre-production tier in the readiness matrix.
 
 #### Scenario: Entrypoint modules exist
 - **WHEN** `./gradlew projects` is executed
