@@ -99,7 +99,7 @@ This document maps all 24 modules in the project, their responsibilities, depend
 | `:core:ui` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | JVM, WasmJS | Shared Compose components, theming, navigation keys, UI error mapping. |
 | `:core:data` | `subsloth.kmp.library` | `:core:model`, `:core:domain`, `:core:network`, `:core:database`, `:core:preferences` | JVM, WasmJS | Repository/orchestration classes that combine HTTP transport with persistence or preferences (e.g. `CatalogRepository`), implementing the domain ports those repositories fulfill. |
 
-**Dependency rule:** Dependencies flow inward — `:core:model` has zero project dependencies. `:core:domain` depends only on `:core:model`. `:core:data` is the only module allowed to depend on `:core:network`, `:core:database`, and `:core:preferences` together; those three never depend on each other. Every other core module depends on `:core:model` and optionally `:core:domain`.
+**Dependency rule:** Dependencies flow inward — `:core:model` has zero project dependencies. `:core:domain` depends only on `:core:model`. `:core:data` is, by deliberate architectural rule, the only module that combines `:core:network`, `:core:database`, and `:core:preferences`; those three never depend on each other. Every other core module depends on `:core:model` and optionally `:core:domain`. This specific rule is a documented convention, not yet independently verified by an executable test — `:testing:architecture-rules`'s `DependencyGraphInvariantTest` currently checks only the six `:feature:*` modules and `:core:network`, not arbitrary core-to-core combinations.
 
 ---
 

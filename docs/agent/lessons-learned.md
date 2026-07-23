@@ -124,6 +124,16 @@ checked module/configuration and asserts forbidden project paths are absent
 from the resolved output. The `architecture` spec's "Executable Dependency
 Graph Invariants" requirement mandates this for module-boundary rules.
 
+Today this test only checks the six `:feature:*` modules and `:core:network`
+(the modules with concrete forbidden-edge rules), each against two
+configurations (`jvmCompileClasspath`, `wasmJsCompileClasspath`) — it does not
+verify every core-module adapter-isolation claim documented elsewhere (e.g.
+that `:core:data` is the *only* module combining all three of
+`:core:network`/`:core:database`/`:core:preferences`). Treat those broader
+claims as descriptive of the current, deliberate architecture, not as
+independently executable-test-enforced, unless this test's coverage is
+expanded.
+
 ## 12. Strict SemVer in Gradle Version Code
 
 ```kotlin

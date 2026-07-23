@@ -150,11 +150,13 @@ flowchart TB
 (`network`, `database`, `preferences`, `media`) implements port interfaces
 defined in `domain`, fetches and persists data, and maps DTOs to domain types
 in isolated mapper boundaries. Repository classes that orchestrate transport,
-persistence, and preferences together live in `:core:data`, which is the only
-module allowed to depend on all three. The feature modules consume only
-domain types and compose UI from them — never the concrete adapter or
-`:core:data` modules directly; concrete instances are wired in only at each
-platform's composition root (see
+persistence, and preferences together live in `:core:data` — today the only
+module combining all three (a deliberate architectural rule, not yet checked
+by an executable test beyond the feature-module and `:core:network` rules
+described in [module structure](docs/module-structure.md)). The feature
+modules consume only domain types and compose UI from them — never the
+concrete adapter or `:core:data` modules directly; concrete instances are
+wired in only at each platform's composition root (see
 [composition-root ownership](docs/architecture/composition-roots.md)).
 
 The [full module map](docs/module-structure.md) documents every module's
