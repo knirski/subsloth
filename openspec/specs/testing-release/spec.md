@@ -17,21 +17,6 @@ Live Media drift tests SHALL run only from a developer machine with local `SUBSL
 - **WHEN** a developer wants to verify live drift
 - **THEN** docs provide a local command that skips without env vars and records only sanitized response-shape/capability summaries
 
-### Requirement: Release Please
-The repository SHALL use release-please with `release-type: simple`, `version.txt`, `CHANGELOG.md`, and tags in the form `vX.Y.Z`.
-
-#### Scenario: Release is created after app scaffold exists
-- **WHEN** release-please creates a GitHub Release and the app scaffold exists
-- **THEN** the workflow builds `assembleDebug` and uploads `subsloth-vX.Y.Z-debug-<shortsha>.apk`
-
-#### Scenario: App scaffold does not yet exist
-- **WHEN** release-please creates a release before the app scaffold exists
-- **THEN** the workflow produces a changelog-only release with no APK build or upload
-
-#### Scenario: Android version derives from version.txt
-- **WHEN** the `:app` Gradle build resolves version metadata
-- **THEN** `versionName` is read from `version.txt` and `versionCode` is derived deterministically from the SemVer components using multipliers that accommodate at least three digits per component (e.g., 1,000,000 for Major and 1,000 for Minor)
-
 ### Requirement: Debug Sideload Release Scope
 v1 release artifacts SHALL be debug-signed APKs for internal sideloading, with dedicated release signing deferred.
 
@@ -89,4 +74,19 @@ The project SHALL include baseline profile, macrobenchmark, and manual device ac
 #### Scenario: Device acceptance is documented
 - **WHEN** `docs/testing/device-acceptance.md` is created
 - **THEN** it covers login/logout, browsing, details without comments, playback/resume, subtitles, offline mode, downloads, storage management, and adaptive behavior for the required devices
+
+### Requirement: Release Mechanism
+The repository SHALL use semantic-release, triggered on push to `main`, to determine the next SemVer version from conventional commits, create a `vX.Y.Z` git tag when a release-worthy commit exists, and publish a GitHub Release with auto-generated notes. The repository SHALL NOT require `release-please`, a committed `version.txt`, or a maintained `CHANGELOG.md` file as part of this mechanism.
+
+#### Scenario: Release is created after a push to main
+- **WHEN** a conventionally-titled pull request is squash-merged to `main`
+- **THEN** `semantic-release.yml` runs semantic-release, which creates a `vX.Y.Z` tag when a release-worthy commit exists and publishes a GitHub Release with generated notes, without pushing any commit back to `main`
+
+#### Scenario: Android version derives from the release tag
+- **WHEN** the `:androidApp` Gradle build resolves version metadata
+- **THEN** `versionName` is derived from `git describe --tags --abbrev=0 --match=v*` (falling back to `0.0.0` when no tag exists) and `versionCode` is computed deterministically from the SemVer components
+
+#### Scenario: Release notes have no separate changelog file
+- **WHEN** a developer looks for release notes
+- **THEN** they are read from the GitHub Release description; the repository does not maintain a `CHANGELOG.md` file
 
