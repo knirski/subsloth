@@ -7,7 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import net.subsloth.core.network.media.CatalogRepository
+import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.database.SubSlothDatabase

@@ -1,4 +1,4 @@
-package net.subsloth.core.network.media
+package net.subsloth.core.data.media
 
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.toImmutableList

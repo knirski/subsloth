@@ -93,6 +93,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:database"))
     implementation(project(":core:preferences"))
+    implementation(project(":core:data"))
     implementation(project(":core:media"))
 
     // Room and SQLite — needed for SubSlothDatabase access
