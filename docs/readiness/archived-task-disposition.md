@@ -101,7 +101,7 @@ Note: the remediation plan's gap "authenticated flow starts another login naviga
 
 | Task | Disposition | Evidence / owning change |
 |---|---|---|
-| 4.3 Run local live drift tests only when local credentials are present | **Still required** (mechanism exists but is inadequate) | `core/network/src/jvmTest/kotlin/net/subsloth/core/network/media/ApiLiveDriftTest.kt` reads `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD`/`SUBSLOTH_API_BASE_URL` from `System.getenv` and gates via `assumeTrue(...)`. This satisfies the literal checkbox text but is exactly the ambient-credential-variable pattern the 2026-07-23 assessment flags as a live-test isolation gap. Owned by Change 4 (`isolate-live-drift-tests`). |
+| 4.3 Run local live drift tests only when local credentials are present | **Still required** | `ApiLiveDriftTest.kt` uses ambient environment variables (`SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD`, `SUBSLOTH_API_BASE_URL`) gated by `assumeTrue`. This pattern is flagged as a live-test isolation gap. Owned by Change 4 (`isolate-live-drift-tests`). |
 | 4.5 Run `openspec validate verification-release --strict` | Superseded | The change is archived, which requires this validation to have passed at archive time; re-running it now is bookkeeping, not a functional gap |
 
 ## `2026-05-19-catalog-details` (2 items — verified complete)
