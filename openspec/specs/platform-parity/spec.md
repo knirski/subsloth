@@ -17,13 +17,15 @@ The project SHALL support three platform targets: Android, desktop (JVM/Compose 
 
 #### Platform Support Table
 
+Readiness tier links to [`docs/readiness/platform-support-matrix.md`](../../../docs/readiness/platform-support-matrix.md), the authoritative source for promotion gates.
+
 | Platform | Target | Entrypoint Module | Build System | Readiness tier |
 |---|---|---|---|---|
-| Android phone | Android 16 | `:androidApp` | Gradle + AGP | See `docs/readiness/platform-support-matrix.md` — Internal beta |
-| Android tablet | Android 13 + adaptive | `:androidApp` | Gradle + AGP | See `docs/readiness/platform-support-matrix.md` — Internal beta |
-| Android TV | Android TV 8 | `:androidApp` | Gradle + AGP | See `docs/readiness/platform-support-matrix.md` — Internal beta |
-| Desktop | JVM / Compose Desktop | `:desktopApp` | Gradle + Kotlin JVM | See `docs/readiness/platform-support-matrix.md` — Preview |
-| Web | Wasm JS / Compose for Web | `:webApp` | Gradle + Kotlin Wasm | See `docs/readiness/platform-support-matrix.md` — Stateless demo (GitHub Pages); production not yet granted |
+| Android phone | Android 16 | `:androidApp` | Gradle + AGP | [Internal beta](../../../docs/readiness/platform-support-matrix.md) |
+| Android tablet | Android 13 + adaptive | `:androidApp` | Gradle + AGP | [Internal beta](../../../docs/readiness/platform-support-matrix.md) |
+| Android TV | Android TV 8 | `:androidApp` | Gradle + AGP | [Internal beta](../../../docs/readiness/platform-support-matrix.md) |
+| Desktop | JVM / Compose Desktop | `:desktopApp` | Gradle + Kotlin JVM | [Preview](../../../docs/readiness/platform-support-matrix.md) |
+| Web | Wasm JS / Compose for Web | `:webApp` | Gradle + Kotlin Wasm | [Stateless demo — production not yet granted](../../../docs/readiness/platform-support-matrix.md) |
 | iOS | — | — | — | Exempt (no hardware) |
 | macOS | — | — | — | Exempt (no hardware) |
 
