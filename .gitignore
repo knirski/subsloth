@@ -98,3 +98,6 @@ kodi_plugin/
 # Kotlin/JS Yarn lockfile (wasmJs-only project, not needed)
 kotlin-js-store/
 .commandcode/
+
+# Subagent-driven-development scratch state
+.superpowers/
