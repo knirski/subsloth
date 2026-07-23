@@ -20,4 +20,5 @@ kotlin {
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     systemProperty("subsloth.rootDir", rootProject.projectDir.absolutePath)
+    systemProperty("subsloth.gradleUserHome", gradle.gradleUserHomeDir.absolutePath)
 }

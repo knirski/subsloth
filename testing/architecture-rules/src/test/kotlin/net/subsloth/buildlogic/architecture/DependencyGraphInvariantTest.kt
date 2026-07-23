@@ -75,20 +75,22 @@ class DependencyGraphInvariantTest {
      * Runs `<modulePath>:dependencies --configuration <configuration>` for a single
      * module via Gradle TestKit and returns the captured build output.
      *
-     * Deliberately does *not* pass `--offline`: this test runs after other Gradle
-     * steps in the same CI job have already resolved dependencies into the shared
-     * Gradle dependency cache, and GradleRunner reuses that cache by default (no
-     * `withTestKitDir` override here, and `GRADLE_USER_HOME` is inherited from the
-     * environment) — verified by running this test with a cold `~/.gradle/testkit`
-     * directory and confirming no new network downloads occurred beyond what the
-     * outer build already fetched. Forcing `--offline` here would silently succeed
-     * even if that assumption ever broke (e.g. on a genuinely clean cache), which is
-     * not the failure mode this test should hide.
+     * Without `withTestKitDir`, GradleRunner defaults to an isolated working
+     * directory under this test task's own temp folder (`build/tmp/test/work/
+     * .gradle-test-kit`), which has its own separate dependency cache — it does
+     * NOT reuse `GRADLE_USER_HOME` automatically, and that isolated directory does
+     * not survive between CI runs on ephemeral runners. `withTestKitDir` is pointed
+     * explicitly at `gradle.gradleUserHomeDir` (the *outer* build's actual resolved
+     * Gradle user home, wired in via the `subsloth.gradleUserHome` system property)
+     * so these nested builds share the same, already-warm dependency cache that
+     * other Gradle steps in the same CI job already populated.
      */
     private fun runDependenciesTask(modulePath: String, configuration: String): String {
         val rootDir = File(System.getProperty("subsloth.rootDir"))
+        val gradleUserHome = File(System.getProperty("subsloth.gradleUserHome"))
         val result = GradleRunner.create()
             .withProjectDir(rootDir)
+            .withTestKitDir(gradleUserHome)
             .withArguments("$modulePath:dependencies", "--configuration", configuration)
             .build()
         return result.output
