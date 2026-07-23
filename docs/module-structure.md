@@ -136,7 +136,7 @@ Feature modules never depend on concrete adapter modules directly — only on
 injected only at each platform's composition root
 ([details](architecture/composition-roots.md)).
 
-```
+```text
 :feature:* ──────┬── :core:model
                   ├── :core:domain
                   ├── :core:ui        (auth, details)
