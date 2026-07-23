@@ -15,7 +15,7 @@ The daemon JDK and the toolchain JDK are independent. The daemon runs Gradle / A
 ## Why these versions
 
 - **JDK 25** for the daemon — latest LTS.
-- **JDK 17** for the toolchain — what AGP 9.x and the current Kotlin version (see `gradle/libs.versions.toml`) officially target on Android. Anything newer would force desugaring without buying anything for the current `compileSdk`/`minSdk` (see `gradle/libs.versions.toml` and the convention plugins in `build-logic/convention/`; do not duplicate the numbers here — they drift).
+- **JDK 17** for the toolchain — what AGP 9.x and the current Kotlin version (see `gradle/libs.versions.toml`) officially target on Android. Desugaring needs are driven by source/target compatibility, API usage, and the AGP/`compileSdk` configuration, not by the toolchain JDK version alone; bumping the toolchain wouldn't change that configuration and buys nothing for the current `compileSdk`/`minSdk` (see `gradle/libs.versions.toml` and the convention plugins in `build-logic/convention/`; do not duplicate the numbers here — they drift).
 
 ## How it's wired
 
