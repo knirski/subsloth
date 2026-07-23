@@ -11,11 +11,11 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.subsloth.core.domain.LoginDefaults
 import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
 import net.subsloth.core.model.error.Outcome
-import net.subsloth.preferences.UserPreferences
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -164,7 +164,7 @@ class LoginViewModelTest {
     fun `apiBaseUrl defaults to UserPreferences default`() = runTest(testDispatcher) {
         val session = FakeSessionPort(startAuthenticated = false)
         val viewModel = LoginViewModel(sessionPort = session)
-        assertThat(viewModel.apiBaseUrl.value).isEqualTo(UserPreferences.DEFAULT_API_BASE_URL)
+        assertThat(viewModel.apiBaseUrl.value).isEqualTo(LoginDefaults.DEFAULT_API_BASE_URL)
     }
 
     @Test

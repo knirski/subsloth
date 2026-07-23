@@ -1,6 +1,5 @@
 package net.subsloth.core.model.download
 
-import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import net.subsloth.core.model.identifier.LanguageCode
@@ -33,7 +32,6 @@ sealed interface DownloadState {
     val quality: QualityDescriptor
     val subtitleLanguages: ImmutableSet<LanguageCode>
 
-    @Immutable
     data class Queued(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -42,7 +40,6 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState
 
-    @Immutable
     data class Active(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -58,7 +55,6 @@ sealed interface DownloadState {
         }
     }
 
-    @Immutable
     data class Partial(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -68,7 +64,6 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState
 
-    @Immutable
     data class Completed(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -83,7 +78,6 @@ sealed interface DownloadState {
         }
     }
 
-    @Immutable
     data class Failed(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -93,7 +87,6 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState
 
-    @Immutable
     data class Paused(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -103,7 +96,6 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState
 
-    @Immutable
     data class Unavailable(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,
@@ -113,7 +105,6 @@ sealed interface DownloadState {
         val queueId: QueueId? = null,
     ) : DownloadState
 
-    @Immutable
     data class Removed(
         override val localId: LocalMediaIdentifier,
         override val mediaId: Media.MediaId,

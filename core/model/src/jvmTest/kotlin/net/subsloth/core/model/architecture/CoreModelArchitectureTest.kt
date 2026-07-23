@@ -8,20 +8,14 @@ import java.nio.file.Paths
 
 /**
  * Architecture boundary tests ensuring [net.subsloth.core.model] remains free
- * of Android framework, network, persistence, media, and UI dependencies.
+ * of Android framework, Compose, network, persistence, and media dependencies.
  *
- * The `:core:model` module intentionally exposes `org.jetbrains.compose.runtime:runtime`
- * via `api` for `@Immutable` / `@Stable` annotations — these are Compose
- * Multiplatform annotation types with no Android framework dependency. All
- * other Android, Compose, network, and persistence imports are forbidden.
+ * `:core:model` does not depend on a Compose runtime artifact. Compose
+ * stability for its types is supplied to consuming UI modules via the
+ * checked-in stability configuration file (`config/compose_stability.conf`),
+ * not via a compile-time dependency here.
  */
 class CoreModelArchitectureTest {
-    private val allowedComposePrefixes =
-        setOf(
-            "androidx.compose.runtime.Immutable",
-            "androidx.compose.runtime.Stable",
-        )
-
     @Test
     fun `model module has no Android framework imports`() {
         val violations =
@@ -38,7 +32,7 @@ class CoreModelArchitectureTest {
     }
 
     @Test
-    fun `model module has no Compose imports beyond allowed annotations`() {
+    fun `model module has no Compose imports`() {
         val violations = findForbiddenImports("androidx.compose", "androidx.tv")
         assertThat(violations).isEmpty()
     }
@@ -128,9 +122,6 @@ class CoreModelArchitectureTest {
 
     private fun findForbiddenImports(vararg forbiddenPrefixes: String): List<String> = allModelImports.filter { line ->
         val importTarget = line.removePrefix("import").trim()
-        forbiddenPrefixes.any { prefix ->
-            importTarget.startsWith(prefix) &&
-                allowedComposePrefixes.none { importTarget == it }
-        }
+        forbiddenPrefixes.any { prefix -> importTarget.startsWith(prefix) }
     }
 }

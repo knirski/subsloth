@@ -1,6 +1,5 @@
 package net.subsloth.core.model.media
 
-import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
@@ -8,7 +7,6 @@ import net.subsloth.core.model.identifier.ExternalId
 import net.subsloth.core.model.identifier.ShowId
 import kotlin.time.Instant
 
-@Immutable
 data class Episode(
     val id: EpisodeId,
     val showId: ShowId,

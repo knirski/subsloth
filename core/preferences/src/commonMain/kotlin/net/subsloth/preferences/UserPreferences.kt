@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import net.subsloth.core.domain.LoginDefaults
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 /**
@@ -160,7 +161,7 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
 
     companion object {
         /** Default API base URL used when no value has been persisted yet. */
-        const val DEFAULT_API_BASE_URL = "http://localhost:8080/api/v2/"
+        const val DEFAULT_API_BASE_URL = LoginDefaults.DEFAULT_API_BASE_URL
     }
 
     // ── Cleanup ──────────────────────────────────────────────────────────

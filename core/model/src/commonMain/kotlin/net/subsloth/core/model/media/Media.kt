@@ -1,7 +1,5 @@
 package net.subsloth.core.model.media
 
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
 import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.EpisodeId
@@ -14,7 +12,6 @@ import kotlin.time.Instant
  * A summary representation of a media item shown in catalog lists and search
  * results. Contains enough information for browsing without fetching details.
  */
-@Stable
 sealed interface Media {
     /** Unique identifier for this media item. */
     val id: MediaId
@@ -47,22 +44,18 @@ sealed interface Media {
      * library records can reference individual episodes as well as movies
      * and entire shows.
      */
-    @Stable
     sealed interface MediaId {
         /** A stable, serialization-safe key for use in Lazy layouts and caching. */
         val key: String
 
-        @Immutable
         data class Movie(val value: MovieId) : MediaId {
             override val key get() = "movie:${value.value}"
         }
 
-        @Immutable
         data class Show(val value: ShowId) : MediaId {
             override val key get() = "show:${value.value}"
         }
 
-        @Immutable
         data class Episode(val value: EpisodeId) : MediaId {
             override val key get() = "episode:${value.value}"
         }
@@ -72,7 +65,6 @@ sealed interface Media {
 /**
  * A movie summary for catalog lists and search results.
  */
-@Immutable
 data class MovieSummary(
     override val id: Media.MediaId.Movie,
     override val title: String,
@@ -92,7 +84,6 @@ data class MovieSummary(
 /**
  * A show/series summary for catalog lists and search results.
  */
-@Immutable
 data class ShowSummary(
     override val id: Media.MediaId.Show,
     override val title: String,
@@ -112,7 +103,6 @@ data class ShowSummary(
 ) : Media
 
 /** Production status of a show/series. */
-@Immutable
 enum class ShowStatus {
     ONGOING,
     ENDED,

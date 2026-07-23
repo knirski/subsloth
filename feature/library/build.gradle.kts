@@ -9,8 +9,6 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
-            implementation(project(":core:database"))
-            implementation(project(":core:preferences"))
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.multiplatform.foundation)
@@ -29,4 +27,13 @@ kotlin {
             implementation(libs.coroutines.test)
         }
     }
+}
+
+// Compose compiler — share the project-wide stability configuration so that
+// :core:model types (which no longer depend on the Compose runtime) are
+// still recognised as stable during strong-skipping-mode analysis.
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("config/compose_stability.conf"),
+    )
 }

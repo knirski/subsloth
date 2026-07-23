@@ -1,12 +1,9 @@
 package net.subsloth.core.model.media
 
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
 import kotlinx.collections.immutable.ImmutableList
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.ExternalId
 
-@Stable
 sealed interface MediaDetails {
     val id: Media.MediaId
     val title: String
@@ -21,7 +18,6 @@ sealed interface MediaDetails {
     val subtitles: ImmutableList<Subtitle>
 }
 
-@Immutable
 data class MovieDetails(
     override val id: Media.MediaId.Movie,
     override val title: String,
@@ -42,7 +38,6 @@ data class MovieDetails(
     val backdropUrl: String?,
 ) : MediaDetails
 
-@Immutable
 data class ShowDetails(
     override val id: Media.MediaId.Show,
     override val title: String,

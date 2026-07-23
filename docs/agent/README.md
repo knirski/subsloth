@@ -23,6 +23,7 @@ Then route by task and stop once you have the matching docs:
 13. `docs/testing/screenshot-tests.md` - execution workflow for Compose Preview Screenshot Testing.
 14. `docs/navigation3.md` - reference for Navigation3 architecture across all platforms.
 15. `docs/troubleshooting.md` - reference for common build, test, emulator, and IDE issues.
+16. `docs/architecture/composition-roots.md` - reference for which class constructs concrete adapters per platform, and whether that platform's wiring is production-ready or falls back to a non-production default.
 
 If multiple docs match, read the normative policy docs first, then the execution workflow docs, then the reference docs.
 

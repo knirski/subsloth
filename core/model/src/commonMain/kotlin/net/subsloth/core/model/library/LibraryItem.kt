@@ -1,6 +1,5 @@
 package net.subsloth.core.model.library
 
-import androidx.compose.runtime.Immutable
 import net.subsloth.core.model.media.Media
 import kotlin.time.Instant
 
@@ -13,7 +12,6 @@ import kotlin.time.Instant
  *
  * This is a persistent record and does not contain any raw media URLs.
  */
-@Immutable
 data class LibraryItem(
     val mediaId: Media.MediaId,
     val collection: LibraryCollection,
@@ -22,7 +20,6 @@ data class LibraryItem(
 )
 
 /** The type of library collection an item belongs to. */
-@Immutable
 enum class LibraryCollection {
     /** User's favorites / watchlist. */
     FAVORITES,
