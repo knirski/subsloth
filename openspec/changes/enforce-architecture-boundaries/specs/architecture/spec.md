@@ -41,15 +41,15 @@ Functions that translate a `DomainError` or `Throwable` into a user-displayable 
 - **THEN** the mapping function it calls is defined in `:core:ui` or the feature module itself, not imported from `:core:network`
 
 ### Requirement: Executable Dependency Graph Invariants
-The allowed module dependency graph SHALL be enforced by a test that inspects the resolved Gradle dependency graph or configuration classpath for every `:core:*` and `:feature:*` module across all of that module's source sets. Source-file import-statement scanning limited to a single source set (e.g. `commonMain` only) SHALL NOT be the sole enforcement mechanism for a module-boundary rule.
+For every module boundary this change defines a forbidden dependency for — each `:feature:*` module (forbidding `:core:network`, `:core:database`, `:core:preferences`, `:core:data`) and `:core:network` (forbidding `:core:database`, `:core:preferences`) — the allowed dependency graph SHALL be enforced by a test that inspects that module's resolved Gradle dependency graph or configuration classpath. Source-file import-statement scanning limited to a single source set (e.g. `commonMain` only) SHALL NOT be the sole enforcement mechanism for a module-boundary rule.
 
 #### Scenario: A forbidden edge is introduced
 - **WHEN** a `:feature:*` module's `build.gradle.kts` adds a dependency on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data`, or `:core:network` adds a dependency on `:core:database` or `:core:preferences`
 - **THEN** the dependency-graph invariant test fails
 
-#### Scenario: A violation exists only in a non-commonMain source set
-- **WHEN** a forbidden import appears in an `androidMain`, `jvmMain`, or `wasmJsMain` source set rather than `commonMain`
-- **THEN** the dependency-graph invariant test still detects the violation, because it inspects the resolved dependency graph rather than scanning only `commonMain` source files
+#### Scenario: A violation exists regardless of which declared target it comes from
+- **WHEN** a forbidden dependency is added to any of a checked module's declared Kotlin target source sets (not just `commonMain`)
+- **THEN** the dependency-graph invariant test still detects it, because it inspects the module's resolved compile classpath per target rather than scanning `commonMain` source files only
 
 ### Requirement: Composition Root Documentation
 Each platform's composition root — the class or function responsible for constructing concrete network, persistence, preferences, and platform adapters and injecting them into feature ViewModels — SHALL be documented, including which platforms currently lack a production composition root and what non-production default they fall back to.
