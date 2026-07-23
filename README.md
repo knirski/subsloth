@@ -138,8 +138,11 @@ flowchart TB
     end
 
     Apps --> Feat
-    Feat --> Core
+    Apps --> Core
     Feat --> Domain
+    F1 --> C5
+    F3 --> C5
+    F4 --> C4
     Core --> Domain
 ```
 
