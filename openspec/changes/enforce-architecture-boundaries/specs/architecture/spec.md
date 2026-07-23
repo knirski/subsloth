@@ -23,11 +23,11 @@ The system SHALL keep domain models and pure decisions in Kotlin core modules wi
 - **THEN** it is implemented in `:core:data`, not `:core:network`
 
 ### Requirement: Feature Adapter Isolation
-`:feature:*` modules SHALL depend only on `:core:model`, `:core:domain` (for domain ports), and shared UI modules (`:core:ui`). They SHALL NOT depend on `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, or `:core:data`. Concrete adapter instances are constructed only at each platform's composition root and injected into feature ViewModels through domain port constructor parameters.
+`:feature:*` modules SHALL depend only on `:core:model`, `:core:domain` (for domain ports), and shared UI modules (`:core:ui`, `:core:media`). They SHALL NOT depend on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data`. Concrete adapter instances for transport, persistence, and preferences are constructed only at each platform's composition root and injected into feature ViewModels through domain port constructor parameters. `:core:media` is a shared playback/UI-bridging module, not a concrete IO adapter, and remains a permitted direct dependency for feature modules that need it (e.g. `:feature:player`); its own use of `:core:database`/`:core:preferences` is unchanged by this requirement.
 
 #### Scenario: A feature module's dependency graph is resolved
 - **WHEN** the dependency graph of any `:feature:*` module is resolved
-- **THEN** no configuration includes `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, or `:core:data`
+- **THEN** no configuration includes `:core:network`, `:core:database`, `:core:preferences`, or `:core:data`
 
 #### Scenario: A ViewModel needs catalog data
 - **WHEN** a feature ViewModel is constructed
@@ -44,7 +44,7 @@ Functions that translate a `DomainError` or `Throwable` into a user-displayable 
 The allowed module dependency graph SHALL be enforced by a test that inspects the resolved Gradle dependency graph or configuration classpath for every `:core:*` and `:feature:*` module across all of that module's source sets. Source-file import-statement scanning limited to a single source set (e.g. `commonMain` only) SHALL NOT be the sole enforcement mechanism for a module-boundary rule.
 
 #### Scenario: A forbidden edge is introduced
-- **WHEN** a `:feature:*` module's `build.gradle.kts` adds a dependency on `:core:network`, `:core:database`, `:core:preferences`, or `:core:media`, or `:core:network` adds a dependency on `:core:database` or `:core:preferences`
+- **WHEN** a `:feature:*` module's `build.gradle.kts` adds a dependency on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data`, or `:core:network` adds a dependency on `:core:database` or `:core:preferences`
 - **THEN** the dependency-graph invariant test fails
 
 #### Scenario: A violation exists only in a non-commonMain source set

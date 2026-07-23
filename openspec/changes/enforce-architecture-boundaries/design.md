@@ -8,7 +8,7 @@ Goals:
 
 - `:core:network` owns HTTP transport and DTO-to-domain mapping only.
 - A new `:core:data` module owns repository/orchestration classes that combine transport, persistence, and preferences behind domain ports.
-- Feature modules depend only on `:core:model`, `:core:domain` (ports), and shared UI (`:core:ui`) — never on `:core:network`, `:core:database`, `:core:preferences`, or `:core:media` directly.
+- Feature modules depend only on `:core:model`, `:core:domain` (ports), and shared UI (`:core:ui`, `:core:media`) — never on `:core:network`, `:core:database`, `:core:preferences`, or `:core:data` directly. `:core:media` is a shared playback/UI-bridging module (not a concrete IO adapter) and stays a permitted direct dependency, e.g. for `:feature:player`.
 - The allowed dependency graph is enforced by an executable Gradle-graph test, not documentation or a source-import regex scan.
 - `:webApp` receives the same Spotless/Detekt policy as every other module.
 - Composition-root responsibility is documented.

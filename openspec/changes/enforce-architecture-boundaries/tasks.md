@@ -41,7 +41,7 @@
 
 ## 7. Add the dependency-graph invariant test
 
-- [ ] 7.1 Add a Gradle-API-driven JUnit test (in an existing or new `:testing:*` module) that resolves each `:feature:*` module's dependency configurations and fails if `:core:network`, `:core:database`, `:core:preferences`, `:core:media`, or `:core:data` appears; and resolves `:core:network`'s configurations and fails if `:core:database` or `:core:preferences` appears.
+- [ ] 7.1 Add a Gradle-API-driven JUnit test (in an existing or new `:testing:*` module) that resolves each `:feature:*` module's dependency configurations and fails if `:core:network`, `:core:database`, `:core:preferences`, or `:core:data` appears (`:core:media` is a permitted feature dependency — see design.md); and resolves `:core:network`'s configurations and fails if `:core:database` or `:core:preferences` appears.
 - [ ] 7.2 Add a fixture or test mutation that introduces a forbidden edge and proves the new test fails on it (then remove the mutation).
 - [ ] 7.3 `./gradlew :testing:<module>:test` (module name per task 7.1's placement).
 
