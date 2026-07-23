@@ -8,7 +8,7 @@ The system SHALL keep domain models and pure decisions in Kotlin core modules wi
 
 #### Scenario: Core imports are checked
 - **WHEN** architecture tests inspect `:core:model` and `:core:domain`
-- **THEN** Android shell, network implementation, and Compose runtime packages are absent from those modules across every source set (`commonMain`, `androidMain`, `jvmMain`, `wasmJsMain`), not only `commonMain`
+- **THEN** Android shell, network implementation, and Compose runtime packages are absent from those modules across every source set (`commonMain`, `androidMain`, `jvmMain`, `wasmJsMain`), not only `commonMain` — verified by `CoreModelArchitectureTest`'s source-import scan, a separate mechanism from the Executable Dependency Graph Invariants requirement below
 
 ### Requirement: Strong Domain Types
 The system SHALL model media, progress, library, download, quality, subtitle, availability, and expected error states with sealed ADTs, immutable values, and value classes.
@@ -325,7 +325,7 @@ code" rule applies and the field will be removed in review.
 - **AND** the corresponding "default is false" test is removed
 
 ### Requirement: Transport-Only Network Module
-`:core:network` SHALL depend only on `:core:model` and `:core:domain`. It SHALL NOT depend on `:core:database` or `:core:preferences`. Repository and orchestration classes that combine HTTP transport with persistence or preferences SHALL live in `:core:data`, which depends on `:core:network`, `:core:database`, and `:core:preferences` and implements the domain ports those repositories fulfill.
+`:core:network` SHALL depend only on `:core:model` and `:core:domain` as project-module dependencies (external libraries such as Ktor and kotlinx-serialization are unaffected by this rule). It SHALL NOT depend on `:core:database` or `:core:preferences` — this specific exclusion is what the executable dependency-graph test verifies; the broader "depend only on model and domain" claim is a documented convention, not independently enforced against arbitrary other project modules. Repository and orchestration classes that combine HTTP transport with persistence or preferences SHALL live in `:core:data`, which depends on `:core:network`, `:core:database`, and `:core:preferences` and implements the domain ports those repositories fulfill.
 
 #### Scenario: Network module has no persistence dependency
 - **WHEN** the dependency graph of `:core:network` is resolved
