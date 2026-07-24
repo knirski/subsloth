@@ -19,7 +19,7 @@ class InMemorySessionState(private val clock: kotlin.time.Clock = kotlin.time.Cl
 
     override fun current(): Session = _state.value
 
-    override fun open(credentials: Credentials): Outcome<Unit> {
+    override suspend fun open(credentials: Credentials): Outcome<Unit> {
         if (credentials.login.isBlank() || credentials.password.isBlank()) {
             return Outcome.Failure(AuthError.InvalidCredentials)
         }
@@ -35,12 +35,12 @@ class InMemorySessionState(private val clock: kotlin.time.Clock = kotlin.time.Cl
         return Outcome.Success(Unit)
     }
 
-    override fun close(): Outcome<Unit> {
+    override suspend fun close(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }
 
-    override fun invalidate(): Outcome<Unit> {
+    override suspend fun invalidate(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }

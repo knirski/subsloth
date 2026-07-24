@@ -6,11 +6,21 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="subsloth_encrypted_credentials.xml" />
+        <!-- Tink's wrapped keyset metadata for the EncryptedSharedPreferences master key
+             (androidx.security MasterKey default alias). Not itself recoverable without the
+             Keystore-resident key, but excluded for defense-in-depth consistency with the
+             credentials file above. -->
+        <exclude domain="sharedpref" path="_androidx_security_master_key_.xml" />
         <exclude domain="file" path="datastore/" />
         <exclude domain="file" path="downloads/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="subsloth_encrypted_credentials.xml" />
+        <!-- Tink's wrapped keyset metadata for the EncryptedSharedPreferences master key
+             (androidx.security MasterKey default alias). Not itself recoverable without the
+             Keystore-resident key, but excluded for defense-in-depth consistency with the
+             credentials file above. -->
+        <exclude domain="sharedpref" path="_androidx_security_master_key_.xml" />
         <exclude domain="file" path="datastore/" />
         <exclude domain="file" path="downloads/" />
     </device-transfer>

@@ -8,43 +8,69 @@ constructor parameters. `:feature:*` modules never construct adapters themselves
 This doc names each platform's composition root and states plainly whether it wires real
 adapters or falls back to a non-production default.
 
-## Android — partial production composition root
+## Android — production composition root
 
 `androidApp/src/main/java/net/subsloth/AppContainer.kt`'s `AppContainer` class is the reference
-composition root for **data and catalog** adapters. Initialised once in
-`SubSlothApplication.onCreate` and exposed via the `Application` instance so it survives
-configuration changes and Activity recreation, it constructs:
+composition root for **session, credential, data/catalog, library, downloads, settings, and
+player** adapters. Initialised once in `SubSlothApplication.onCreate` and exposed via the
+`Application` instance so it survives configuration changes and Activity recreation, it
+constructs:
 
 - `dataStore` / `userPreferences` — DataStore-backed `UserPreferences`.
-- `database` / `cachedCatalogDao` — the Room `SubSlothDatabase`.
-- `api` — a `ClientFactory`-built Ktor `Api` client (created without credentials; no BasicAuth
-  is configured yet).
-- `catalogRepository` — a `CatalogRepository` combining the API client, Room cache, and
-  preferences.
+- `database` — the Room `SubSlothDatabase`, backing `cachedCatalogDao`, `favoriteDao`,
+  `localLibraryRecordDao`, `downloadedMediaDao`/`downloadedSubtitleDao`/
+  `offlineDisplayMetadataDao`, `accountPlaybackProgressDao`, `seasonQueueDao`, and the other
+  profile-scoped library DAOs.
+- `accountProfileStore` — an `AccountProfileStore` (`core/preferences`) reusing `dataStore`,
+  deriving the non-reversible HMAC-SHA256 account profile key every session/library/settings
+  adapter below uses to scope per-account data. No adapter derives a profile key any other way
+  (in particular, none use a raw or partially-reversible fragment of the login).
+- `sessionPort` — an `AndroidSessionState` (`androidApp/.../AndroidSessionState.kt`): a real,
+  Keystore-backed `SessionPort` implementation. It persists credentials via
+  `CredentialsStoreAdapter`/`CredentialStore` (Android Keystore-backed `EncryptedSharedPreferences`,
+  API 26+), validates them using the Kodi-compatible startup request (`Api.listMovies`, not a
+  dedicated auth-only probe) rather than accepting any non-blank pair, derives `Session.Authenticated.userId`
+  via `accountProfileStore`, and performs cold-start recovery (`recover()`, invoked exactly once
+  from `AppContainer`'s `init`) — attempting silent re-authentication from persisted credentials
+  before falling back to the login screen, clearing credentials only on a genuine rejection (not
+  on a transient network/timeout failure).
+- `api` / `catalogRepository` — an authenticated (or, before login, unauthenticated) `Api`/
+  `CatalogRepository` pair that rebuilds itself whenever `sessionPort`'s credentials change
+  (login, logout, account switch), closing the superseded Ktor `HttpClient` on each rebuild.
+- `libraryPortAdapter` (wrapping `favoriteDao`/`localLibraryRecordDao`/`sessionPort`),
+  `downloadController` (wrapping `DownloadStorageManager`/`StorageProvider`/`ConnectivityChecker`
+  and the download-related DAOs), and `seasonQueueController` — real, session-scoped `LibraryPort`/
+  `DownloadsPort` adapters, previously built (in the archived `offline-downloads` change) but never
+  constructed by any composition root until now.
 - `clock` — a `kotlin.time.Clock` (not an adapter in the port/adapter sense, but listed here
   since it's still a container-owned dependency other constructed objects consume).
 
-`MainActivity` reads `container.userPreferences` from `SubSlothApplication` and passes it into
-`LoginViewModel`, and a `HomeViewModelFactory` injects `catalogRepository` into `HomeViewModel` —
-this part of the composition root is genuinely production-grade, real-adapter wiring.
+`MainActivity` builds `RootContainerViewModel` via a `ViewModelProvider.Factory` injecting
+`container.sessionPort` (replacing the bare default factory that used to fall back to the
+in-memory session). `SubSlothNavHost`'s authenticated back stack starts at `CatalogKey` (not the
+dead `LoginKey` placeholder it used to), and every reachable nav entry — catalog, movie/show
+detail, auth repair, library, downloads, settings, player — constructs its ViewModel from a real
+`AppContainer` adapter rather than a no-op/default port binding.
 
-**Session/auth is the exception.** `MainActivity` constructs its `RootContainerViewModel` with
-the bare default factory (`val root: RootContainerViewModel = viewModel()`), which falls back to
-`RootContainerViewModel`'s in-memory `SessionPort` default (see below) — identically to Desktop
-and Web. `AppContainer` does not currently construct or inject a persistent-backed `SessionPort`
-implementation anywhere. Wiring Android's production session/auth adapter is `Change 2`
-(`wire-android-production-runtime`)'s scope, not this change's.
+**One narrow, known-and-documented gap remains.** `core/domain/.../PlaybackPort` (stream-source
+resolution and playback control) has no implementation anywhere in the tree — `PlayerViewModel`'s
+`fetchVideoSource`/`refreshStreamUrl` stay on their safe no-op defaults. Building a real adapter
+means inventing Kodi-compatible stream-URL resolution and quality/DRM selection from scratch, which
+is out of proportion for a session/runtime-wiring change and is left for a future change scoped to
+the `playback` capability. Everything else `PlayerViewModel` needs (episode listing, playback
+progress, playback speed/subtitle-language preferences, auth-failure handling) is wired to real
+adapters.
 
 ## Desktop and Web — no composition root yet
 
 `desktopApp/src/main/kotlin/net/subsloth/desktop/Main.kt` and
 `webApp/src/wasmJsMain/kotlin/net/subsloth/web/Main.kt` both construct their root composable the
-same way as Android's session wiring: `val root: RootContainerViewModel = viewModel()`. Neither
-platform has an `AppContainer`-equivalent class constructing real network/database/preferences
-adapters at all — `:webApp`'s `commonMain.dependencies` block does depend directly on
-`:core:network` (a platform app is expected to depend on concrete adapters; that's what a
-composition root does), but nothing in `Main.kt` currently constructs or wires an `Api`,
-database, or preferences instance into a ViewModel.
+same way Android's session wiring used to, before this change: `val root: RootContainerViewModel =
+viewModel()`. Neither platform has an `AppContainer`-equivalent class constructing real
+network/database/preferences adapters at all — `:webApp`'s `commonMain.dependencies` block does
+depend directly on `:core:network` (a platform app is expected to depend on concrete adapters;
+that's what a composition root does), but nothing in `Main.kt` currently constructs or wires an
+`Api`, database, or preferences instance into a ViewModel.
 
 Building Desktop's real composition root — following the same "construct concrete adapters,
 inject ports into feature ViewModels" pattern `AppContainer` already demonstrates for Android's
@@ -67,18 +93,21 @@ open class RootContainerViewModel(sessionPort: SessionPort? = null) : ViewModel(
 }
 ```
 
-When constructed via the platform-default `viewModel()` factory (as all three platforms do
-today), the `sessionPort` parameter is `null`, so every platform currently falls back to
-`InMemorySessionState()` —
+When constructed via the platform-default `viewModel()` factory with a `null` `sessionPort`
+argument, this falls back to `InMemorySessionState()` —
 `core/domain/src/commonMain/kotlin/net/subsloth/core/domain/port/InMemorySessionState.kt`'s own
 doc comment states plainly: "Production wires a persistent-backed implementation; this is the
 no-frills reference for tests, the screenshot suite, and the dev/demo build flavour." It accepts
 any non-blank login/password pair and never persists session state across process restarts.
+Desktop and Web still construct `RootContainerViewModel` this way today (falling back to this
+default); Android no longer does — `MainActivity` now passes `container.sessionPort` (the real
+`AndroidSessionState`) explicitly, so `InMemorySessionState` is unreachable from Android's
+production startup path.
 
 ## Summary
 
 | Platform | Data/catalog adapters | Session/auth adapter |
 |---|---|---|
-| Android | Real (`AppContainer`) | In-memory default (Change 2 scope) |
+| Android | Real (`AppContainer`) | Real (`AndroidSessionState`, Change 2) |
 | Desktop | None yet (Change 3A scope) | In-memory default (Change 3A scope) |
 | Web | None yet (Change 3B scope) | In-memory default (Change 3B scope) |

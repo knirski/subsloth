@@ -96,6 +96,14 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:media"))
 
+    // kotlinx-collections-immutable — AppContainer/SubSlothNavHost reference
+    // ImmutableList directly when wiring LibraryViewModel/DownloadsViewModel
+    // to DownloadController/SeasonQueueController (both already expose it in
+    // their public API; :core:media/:feature:library only expose it
+    // transitively via `implementation`, not `api`, so androidApp needs its
+    // own compile-time dependency).
+    implementation(libs.kotlinx.collections.immutable)
+
     // Room and SQLite — needed for SubSlothDatabase access
     implementation(libs.room3.runtime)
     implementation(libs.sqlite.bundled)
@@ -172,6 +180,8 @@ dependencies {
     testImplementation(project(":testing:tv-focus-harness"))
 
     androidTestImplementation(libs.kotlinx.collections.immutable)
+    androidTestImplementation(libs.ktor.client.mock)
+    androidTestImplementation(libs.coroutines.test)
 
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(platform(libs.androidx.compose.bom))

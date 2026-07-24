@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -16,13 +17,16 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import kotlinx.coroutines.flow.map
+import net.subsloth.core.domain.port.DownloadCommandOutcome
+import net.subsloth.core.domain.port.Session
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.LibraryKey
-import net.subsloth.core.ui.LoginKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -32,14 +36,21 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.auth.AuthRepairScreen
+import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.details.MovieDetailScreen
+import net.subsloth.details.MovieDetailViewModel
+import net.subsloth.details.SeriesDetailScreen
+import net.subsloth.details.ShowDetailViewModel
 import net.subsloth.library.DownloadsScreen
 import net.subsloth.library.DownloadsViewModel
 import net.subsloth.library.LibraryScreen
 import net.subsloth.library.LibraryViewModel
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
+import net.subsloth.preferences.UserPreferences
 import net.subsloth.settings.DiagnosticsScreen
 import net.subsloth.settings.DiagnosticsViewModel
 import net.subsloth.settings.SettingsScreen
@@ -57,11 +68,12 @@ import net.subsloth.settings.SettingsViewModel
  *   Each entry receives its typed [AppNavKey] which carries route
  *   arguments (e.g. [MovieDetailKey.movieId]).
  */
+@Suppress("CyclomaticComplexMethod") // One flat entryProvider branch per route, by design.
 @Composable
 fun SubSlothNavHost(
     modifier: Modifier = Modifier,
 ) {
-    val backStack = rememberNavBackStack(LoginKey)
+    val backStack = rememberNavBackStack(CatalogKey)
 
     NavDisplay(
         modifier = modifier,
@@ -72,16 +84,12 @@ fun SubSlothNavHost(
                 rememberSaveableStateHolderNavEntryDecorator(),
             ),
         entryProvider = entryProvider {
-            entry<LoginKey> {
-                // Login screen — wired in auth-persistence-shell
-            }
-
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
-                    factory = HomeViewModelFactory(container.catalogRepository),
+                    factory = HomeViewModelFactory { container.catalogRepository },
                 )
                 HomeScreen(
                     viewModel = viewModel,
@@ -92,11 +100,51 @@ fun SubSlothNavHost(
             }
 
             entry<MovieDetailKey> { key ->
-                // Movie detail — wired in catalog-details
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val movieId = parseMediaId(key.movieId, "movie") as? Media.MediaId.Movie ?: return@entry
+                val viewModel: MovieDetailViewModel = viewModel(
+                    key = "movie_detail_${key.movieId}",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(
+                                modelClass.cast(
+                                    MovieDetailViewModel(
+                                        mediaId = movieId,
+                                        // Read container.catalogRepository live on every call
+                                        // (not captured once) since AppContainer rebuilds it
+                                        // whenever the session's credentials change.
+                                        getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                    ),
+                                ),
+                            )
+                    },
+                )
+                MovieDetailScreen(viewModel = viewModel, modifier = Modifier)
             }
 
             entry<ShowDetailKey> { key ->
-                // Show/series detail — wired in catalog-details
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val showId = parseMediaId(key.showId, "show") as? Media.MediaId.Show ?: return@entry
+                val viewModel: ShowDetailViewModel = viewModel(
+                    key = "show_detail_${key.showId}",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(
+                                modelClass.cast(
+                                    ShowDetailViewModel(
+                                        mediaId = showId,
+                                        // Read container.catalogRepository live on every call
+                                        // (not captured once) since AppContainer rebuilds it
+                                        // whenever the session's credentials change.
+                                        getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                    ),
+                                ),
+                            )
+                    },
+                )
+                SeriesDetailScreen(viewModel = viewModel, modifier = Modifier)
             }
 
             entry<PlayerKey> { key ->
@@ -117,6 +165,8 @@ fun SubSlothNavHost(
                     }
                 }
 
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: PlayerViewModel = viewModel(
                     key = "player_${key.contentId}",
                     factory = object : ViewModelProvider.Factory {
@@ -126,6 +176,21 @@ fun SubSlothNavHost(
                                     PlayerViewModel(
                                         mediaId = parseMediaId(key.contentId, key.contentType)
                                             ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
+                                        // fetchVideoSource/refreshStreamUrl intentionally left on
+                                        // their safe no-op defaults: PlaybackPort (the port these
+                                        // conceptually map to) has zero implementations anywhere in
+                                        // the tree today. Building one means inventing stream-URL
+                                        // resolution and quality/DRM selection from scratch — out
+                                        // of proportion for this change. See this task's report.
+                                        fetchEpisodes = { showId -> container.fetchEpisodesForShow(showId) },
+                                        saveProgress = { mediaId, positionSeconds, durationSeconds ->
+                                            container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds)
+                                        },
+                                        onAuthFailure = container::invalidateSession,
+                                        savePlaybackSpeed = container::savePlaybackSpeed,
+                                        loadPlaybackSpeed = container::loadPlaybackSpeed,
+                                        loadPreferredLanguage = container::loadPreferredLanguage,
+                                        resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                                     ),
                                 ),
                             )
@@ -140,11 +205,30 @@ fun SubSlothNavHost(
             }
 
             entry<LibraryKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: LibraryViewModel = viewModel(
                     key = "library",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(LibraryViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    LibraryViewModel(
+                                        libraryPort = container.libraryPortAdapter::listLibrary,
+                                        downloadsPort = container.downloadController::listDownloads,
+                                        listMovies = container::listMovies,
+                                        listShows = container::listShows,
+                                        // listProgress: only the account-scoped DAO has a clean
+                                        // mapping to PlaybackProgress (see AppContainer's doc on
+                                        // listAccountPlaybackProgress); this is that mapping.
+                                        listProgress = container::listAccountPlaybackProgress,
+                                        isLoggedIn = { container.sessionPort.current() is Session.Authenticated },
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 LibraryScreen(
@@ -156,11 +240,42 @@ fun SubSlothNavHost(
             }
 
             entry<DownloadsKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: DownloadsViewModel = viewModel(
                     key = "downloads",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(DownloadsViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    DownloadsViewModel(
+                                        listDownloads = container.downloadController::listDownloads,
+                                        listSeasonQueues = container::listSeasonQueues,
+                                        // listProgress intentionally left on its safe default here:
+                                        // the shared offline_playback_progress table has no
+                                        // contentType column, so a contentId alone can't
+                                        // disambiguate movie vs. episode ids (see AppContainer's
+                                        // listAccountPlaybackProgress doc for the full reasoning).
+                                        pauseDownload = { localId ->
+                                            container.downloadController.pause(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        resumeDownload = { localId ->
+                                            container.downloadController.resume(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        cancelDownload = { localId ->
+                                            container.downloadController.cancel(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        retryDownload = container::retryDownload,
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 DownloadsScreen(
@@ -170,11 +285,37 @@ fun SubSlothNavHost(
             }
 
             entry<SettingsKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: SettingsViewModel = viewModel(
                     key = "settings",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(SettingsViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    SettingsViewModel(
+                                        profileKey = container::currentProfileKey,
+                                        readSubtitleEnabled = { key -> container.userPreferences.subtitleEnabled(key) },
+                                        readSubtitleLanguage = { key ->
+                                            container.userPreferences.subtitleLanguage(key)
+                                        },
+                                        readQuality = { key -> container.userPreferences.quality(key) },
+                                        readPlaybackSpeed = { key -> container.userPreferences.playbackSpeed(key) },
+                                        readDownloadsWifiOnly = { key ->
+                                            container.userPreferences.downloadsWifiOnly(key)
+                                        },
+                                        writeSubtitleEnabled = container::writeSubtitleEnabled,
+                                        writeSubtitleLanguage = container::writeSubtitleLanguage,
+                                        writeQuality = container::writeQuality,
+                                        writePlaybackSpeed = container::writePlaybackSpeed,
+                                        writeDownloadsWifiOnly = container::writeDownloadsWifiOnly,
+                                        deleteAllDownloads = container::deleteAllDownloads,
+                                        clearPreferences = container::clearPreferences,
+                                        clearLibrary = container::clearLibrary,
+                                        clearCredentials = container::clearCredentials,
+                                    ),
+                                ),
+                            )
                     },
                 )
                 SettingsScreen(
@@ -199,15 +340,81 @@ fun SubSlothNavHost(
             }
 
             entry<AuthRepairKey> {
-                // Auth repair — wired in auth-persistence-shell
+                // Self-contained: this entry builds its own LoginViewModel
+                // (same DI pattern as MainActivity's `login` slot, sharing
+                // the same container.sessionPort) rather than depending on
+                // one threaded down from MainActivity. That keeps
+                // PlayerScreen's existing onNavigateToAuthRepair callback
+                // working as a standalone in-app screen regardless of
+                // SessionGate's current route — see MainActivity.kt's
+                // `login` slot for the complementary path: once a session
+                // is actually invalidated, SessionGate stops rendering this
+                // nav host entirely and shows LoginScreen (which itself
+                // now renders AuthRepairScreen while uiState is AuthRepair).
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val viewModel: LoginViewModel = viewModel(
+                    key = "auth_repair",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(
+                                modelClass.cast(
+                                    LoginViewModel(
+                                        sessionPort = container.sessionPort,
+                                        readApiBaseUrl = {
+                                            container.userPreferences.apiBaseUrl().map { url ->
+                                                if (url == UserPreferences.DEFAULT_API_BASE_URL &&
+                                                    BuildConfig.SUBSLOTH_API_BASE_URL.isNotEmpty()
+                                                ) {
+                                                    BuildConfig.SUBSLOTH_API_BASE_URL
+                                                } else {
+                                                    url
+                                                }
+                                            }
+                                        },
+                                        saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
+                                    ),
+                                ),
+                            )
+                    },
+                )
+                // PlayerScreen navigated here because it already detected an
+                // auth failure, so force this fresh instance straight into
+                // AuthRepair rather than whatever checkInitialState() computed.
+                LaunchedEffect(viewModel) {
+                    viewModel.retryAuth()
+                }
+                AuthRepairScreen(
+                    viewModel = viewModel,
+                    onRepaired = { backStack.removeLastOrNull() },
+                )
             }
 
             entry<OfflineLibraryKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: LibraryViewModel = viewModel(
                     key = "offline_library",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(LibraryViewModel(isLoggedIn = { false })))
+                            requireNotNull(
+                                modelClass.cast(
+                                    LibraryViewModel(
+                                        libraryPort = container.libraryPortAdapter::listLibrary,
+                                        downloadsPort = container.downloadController::listDownloads,
+                                        listMovies = container::listMovies,
+                                        listShows = container::listShows,
+                                        // listProgress left on its default: there is no session at
+                                        // all on this screen (reached from the logged-out state),
+                                        // so the account-scoped progress DAO isn't applicable —
+                                        // same reasoning as DownloadsViewModel's listProgress above.
+                                        isLoggedIn = { false },
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 LibraryScreen(

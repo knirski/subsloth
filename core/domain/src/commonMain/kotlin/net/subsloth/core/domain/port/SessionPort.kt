@@ -41,14 +41,14 @@ interface SessionPort {
      * [Outcome.Failure] if the credentials are rejected by the upstream
      * API.
      */
-    fun open(credentials: Credentials): Outcome<Unit>
+    suspend fun open(credentials: Credentials): Outcome<Unit>
 
     /**
      * Close the current session (logout). The [state] StateFlow emits
      * [Session.Anonymous]. Idempotent: calling [close] on an anonymous
      * session is a no-op.
      */
-    fun close(): Outcome<Unit>
+    suspend fun close(): Outcome<Unit>
 
     /**
      * Invalidate the current session (e.g. on a 401 from the upstream
@@ -56,5 +56,5 @@ interface SessionPort {
      * the failure that triggered the invalidation (or `Outcome.Success(Unit)`
      * if there was no active session).
      */
-    fun invalidate(): Outcome<Unit>
+    suspend fun invalidate(): Outcome<Unit>
 }

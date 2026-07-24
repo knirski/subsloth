@@ -170,9 +170,9 @@ private class FailingSessionPort : SessionPort {
 
     override fun current(): Session = Session.Anonymous
 
-    override fun open(credentials: Credentials): Outcome<Unit> = Outcome.Failure(AuthError.InvalidCredentials)
+    override suspend fun open(credentials: Credentials): Outcome<Unit> = Outcome.Failure(AuthError.InvalidCredentials)
 
-    override fun close(): Outcome<Unit> = Outcome.Success(Unit)
+    override suspend fun close(): Outcome<Unit> = Outcome.Success(Unit)
 
-    override fun invalidate(): Outcome<Unit> = Outcome.Success(Unit)
+    override suspend fun invalidate(): Outcome<Unit> = Outcome.Success(Unit)
 }

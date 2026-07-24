@@ -61,6 +61,26 @@ val ResponseValidationPlugin =
                 )
             }
 
+            // 3b. Check for 401 Unauthorized (invalid/expired credentials).
+            //
+            // Ktor's `HttpClient` in this project does not set
+            // `expectSuccess = true` (see `ClientFactory`), so a non-2xx
+            // status alone never throws a `ResponseException` — the engine
+            // just returns the response normally, and `.body<T>()` only
+            // fails later (and only incidentally) if the payload doesn't
+            // happen to match the requested type. Without this explicit
+            // check, a 401 response is never surfaced as
+            // `NetworkError.HttpError(401, ...)`, which is what callers
+            // like `AndroidSessionState`/`LoginViewModel` rely on to detect
+            // `AuthError.InvalidCredentials` / `UiError.AuthRequired`.
+            if (response.status.value == 401) {
+                InterceptorLogger.w("ResponseValidationPlugin", "[$url] HTTP 401 — unauthorized")
+                throw ResponseValidationException(
+                    error = NetworkError.HttpError(401, "Unauthorized"),
+                    message = "HTTP 401 Unauthorized",
+                )
+            }
+
             // 4. For successful responses, check Content-Type indicates JSON
             if (response.status.value in 200..299 && contentType != null) {
                 val ct = contentType.toString()

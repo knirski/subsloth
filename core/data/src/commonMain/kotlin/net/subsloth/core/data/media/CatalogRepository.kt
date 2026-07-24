@@ -10,8 +10,10 @@ import kotlinx.coroutines.flow.map
 import net.subsloth.core.domain.policy.CatalogSyncPolicy
 import net.subsloth.core.domain.port.CachedCatalogItem
 import net.subsloth.core.domain.port.CatalogCachePort
+import net.subsloth.core.domain.port.CatalogPort
 import net.subsloth.core.domain.port.CatalogSyncPort
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.identifier.ExternalId
@@ -19,6 +21,7 @@ import net.subsloth.core.model.identifier.ExternalIdSource
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.ShowSummary
@@ -35,7 +38,8 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
- * Implements [CatalogCachePort] and [CatalogSyncPort] for catalog synchronization.
+ * Implements [CatalogCachePort], [CatalogSyncPort], and [CatalogPort] for
+ * catalog synchronization and detail lookups.
  *
  * Coordinates API fetching, Room database caching, and DataStore timestamp tracking.
  * The catalog is account-agnostic — the same data exists for all users.
@@ -46,7 +50,8 @@ class CatalogRepository(
     private val userPreferences: UserPreferences,
     private val clock: Clock,
 ) : CatalogCachePort,
-    CatalogSyncPort {
+    CatalogSyncPort,
+    CatalogPort {
 
     private val log = Logger.withTag("CatalogRepository")
 
@@ -106,6 +111,53 @@ class CatalogRepository(
     override suspend fun isStale(): Boolean {
         val timestamp = userPreferences.globalCatalogCacheTimestamp().first()
         return CatalogSyncPolicy.isStale(timestamp, clock.now().toEpochMilliseconds())
+    }
+
+    // ── CatalogPort ──────────────────────────────────────────────────────
+
+    override suspend fun listCatalog(): Outcome<List<Media>> = try {
+        val items = catalogItems("movie")
+            .combine(catalogItems("show")) { movies, shows -> movies + shows }
+            .first()
+        Outcome.Success(items)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
+    }
+
+    override suspend fun getDetails(id: Media.MediaId): Outcome<MediaDetails> = when (id) {
+        is Media.MediaId.Movie -> fetchMovieDetails(id.value.value)
+
+        is Media.MediaId.Show -> fetchShowDetails(id.value.value)
+
+        // Episodes aren't top-level catalog entries — there's no episode
+        // detail screen in this app, so navigation never reaches this
+        // branch via MovieDetailKey/ShowDetailKey. Report a typed failure
+        // rather than throwing, since getDetails is still a total function.
+        is Media.MediaId.Episode -> Outcome.Failure(MediaError.NotFound)
+    }
+
+    private suspend fun fetchMovieDetails(movieId: Int): Outcome<MediaDetails> = try {
+        when (val result = Mapper.mapMovieDetails(api.getMovie(movieId))) {
+            is Outcome.Success -> Outcome.Success(result.value)
+            is Outcome.Failure -> Outcome.Failure(result.error)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
+    }
+
+    private suspend fun fetchShowDetails(showId: Int): Outcome<MediaDetails> = try {
+        when (val result = Mapper.mapShowDetails(api.getShow(showId))) {
+            is Outcome.Success -> Outcome.Success(result.value)
+            is Outcome.Failure -> Outcome.Failure(result.error)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
     }
 
     // ── Pagination ───────────────────────────────────────────────────────

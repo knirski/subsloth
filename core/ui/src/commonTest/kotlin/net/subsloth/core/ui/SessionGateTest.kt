@@ -2,6 +2,7 @@ package net.subsloth.core.ui
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.test.runTest
 import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
@@ -27,7 +28,7 @@ class SessionGateTest {
     }
 
     @Test
-    fun sessionPort_state_reflects_open_and_invalidate() {
+    fun sessionPort_state_reflects_open_and_invalidate() = runTest {
         val fake = FakeSessionPort()
         val state: StateFlow<Session> = fake.state
         val first = sessionName(state.value)
@@ -40,7 +41,7 @@ class SessionGateTest {
     }
 
     @Test
-    fun fakeSessionPort_open_emits_Authenticated() {
+    fun fakeSessionPort_open_emits_Authenticated() = runTest {
         val fake = FakeSessionPort()
         val result = fake.open(Credentials("alice@x.com", "pw"))
         assertEquals(Outcome.Success(Unit), result)
@@ -50,7 +51,7 @@ class SessionGateTest {
     }
 
     @Test
-    fun fakeSessionPort_invalidate_returns_to_Anonymous() {
+    fun fakeSessionPort_invalidate_returns_to_Anonymous() = runTest {
         val fake = FakeSessionPort()
         fake.open(Credentials("alice@x.com", "pw"))
         fake.invalidate()
@@ -67,7 +68,7 @@ private class FakeSessionPort : SessionPort {
     private val _state = MutableStateFlow<Session>(Session.Anonymous)
     override val state: StateFlow<Session> = _state
     override fun current(): Session = _state.value
-    override fun open(credentials: Credentials): Outcome<Unit> {
+    override suspend fun open(credentials: Credentials): Outcome<Unit> {
         if (credentials.login.isBlank() || credentials.password.isBlank()) {
             return Outcome.Failure(net.subsloth.core.model.error.AuthError.InvalidCredentials)
         }
@@ -78,11 +79,11 @@ private class FakeSessionPort : SessionPort {
         )
         return Outcome.Success(Unit)
     }
-    override fun close(): Outcome<Unit> {
+    override suspend fun close(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }
-    override fun invalidate(): Outcome<Unit> {
+    override suspend fun invalidate(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }

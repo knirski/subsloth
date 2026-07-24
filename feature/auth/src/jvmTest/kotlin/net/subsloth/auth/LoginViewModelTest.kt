@@ -147,6 +147,36 @@ class LoginViewModelTest {
         assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoginForm::class.java)
     }
 
+    @Test
+    fun `external session invalidation while logged in routes to login form`() = runTest(testDispatcher) {
+        val session = FakeSessionPort(startAuthenticated = true)
+        val viewModel = LoginViewModel(sessionPort = session)
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoggedIn::class.java)
+
+        // Simulate an external trigger (e.g. logout initiated elsewhere, or a
+        // future 401-triggered invalidate()) flipping the session directly,
+        // NOT via viewModel.logout().
+        session.invalidate()
+
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoginForm::class.java)
+    }
+
+    @Test
+    fun `external session invalidation does not clobber AuthRepair`() = runTest(testDispatcher) {
+        val session = FakeSessionPort(startAuthenticated = true)
+        val viewModel = LoginViewModel(sessionPort = session)
+        viewModel.retryAuth()
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
+
+        // The session is still Authenticated here (retryAuth only touches
+        // uiState), so this invalidate() is a genuine Authenticated -> Anonymous
+        // emission -- not a same-value replay -- and must not undo the
+        // deliberate AuthRepair state reached via retryAuth().
+        session.invalidate()
+
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
+    }
+
     // ── API Base URL ──────────────────────────────────────────────────────
 
     @Test
@@ -226,7 +256,7 @@ private class FakeSessionPort(
     var openCalls: Int = 0
         private set
     override fun current(): Session = _state.value
-    override fun open(credentials: Credentials): Outcome<Unit> {
+    override suspend fun open(credentials: Credentials): Outcome<Unit> {
         if (trackOpen) openCalls += 1
         if (rejectLogin) {
             return Outcome.Failure(net.subsloth.core.model.error.AuthError.InvalidCredentials)
@@ -238,11 +268,11 @@ private class FakeSessionPort(
         )
         return Outcome.Success(Unit)
     }
-    override fun close(): Outcome<Unit> {
+    override suspend fun close(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }
-    override fun invalidate(): Outcome<Unit> {
+    override suspend fun invalidate(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }

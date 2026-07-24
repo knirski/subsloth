@@ -37,14 +37,10 @@ import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.auth.generated.resources.Res
 import subsloth.feature.auth.generated.resources.api_base_url_label
 import subsloth.feature.auth.generated.resources.app_title
-import subsloth.feature.auth.generated.resources.cancel
 import subsloth.feature.auth.generated.resources.login_label
 import subsloth.feature.auth.generated.resources.offline_library
 import subsloth.feature.auth.generated.resources.password_label
-import subsloth.feature.auth.generated.resources.session_expired
-import subsloth.feature.auth.generated.resources.session_expired_message
 import subsloth.feature.auth.generated.resources.sign_in
-import subsloth.feature.auth.generated.resources.sign_in_again
 
 /**
  * Login screen with standard Autofill/password-manager support.
@@ -80,8 +76,14 @@ fun LoginScreen(
 
     when (uiState) {
         is LoginUiState.AuthRepair -> {
-            /* AuthRepairScreen is rendered by the navigation layer.
-               LoginScreen shows nothing until the user returns to login. */
+            // This is the path a *genuine* session invalidation takes:
+            // SessionGate stops rendering the authenticated nav host (so
+            // any AuthRepairKey entry living inside it disappears too) and
+            // falls back to whichever composable hosts this LoginScreen.
+            // Rendering AuthRepairScreen here — using the same viewModel,
+            // not a separate instance — is what actually makes
+            // LoginUiState.AuthRepair visible for that flow.
+            AuthRepairScreen(viewModel = viewModel, onRepaired = {}, modifier = modifier)
         }
 
         is LoginUiState.LoggedIn -> {
@@ -110,51 +112,6 @@ fun LoginScreen(
                 },
                 onNavigateToOfflineLibrary = onNavigateToOfflineLibrary,
             )
-        }
-    }
-}
-
-/**
- * Auth repair screen shown when credentials expire or unexpected service
- * state is returned (redirect, HTML, non-JSON).
- */
-@Composable
-fun AuthRepairScreen(viewModel: LoginViewModel, modifier: Modifier = Modifier, onDismiss: () -> Unit = {}) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(Res.string.session_expired),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(Res.string.session_expired_message),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.dismissNeedsAuthRepair() },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(Res.string.sign_in_again))
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedButton(
-            onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(Res.string.cancel))
         }
     }
 }

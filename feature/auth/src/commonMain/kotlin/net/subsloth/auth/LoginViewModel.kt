@@ -68,6 +68,7 @@ class LoginViewModel(
     init {
         checkInitialState()
         loadApiBaseUrl()
+        observeSessionState()
     }
 
     private fun loadApiBaseUrl() {
@@ -99,6 +100,57 @@ class LoginViewModel(
         }
     }
 
+    /**
+     * Keeps [uiState] in sync with [SessionPort.state] for the lifetime of this
+     * ViewModel instance, not just at construction time.
+     *
+     * This matters because Compose can cache and reuse the same [LoginViewModel]
+     * instance across a `SessionGate`'s `login`/`authenticated` slots (they share a
+     * `ViewModelStoreOwner` with no nested back-stack scoping). Without this
+     * subscription, only [checkInitialState] (a one-shot read of
+     * [SessionPort.current]) and this VM's own [logout] would ever move [uiState]
+     * off [LoginUiState.LoggedIn], so any *external* trigger that flips the
+     * session to [Session.Anonymous] (e.g. a logout initiated elsewhere, or a
+     * future 401-triggered `invalidate()`) would leave a cached, already-`LoggedIn`
+     * instance stuck showing stale state.
+     *
+     * The guards below exist so this collector composes cleanly with the rest of
+     * the class rather than fighting it:
+     *  - It only reacts to `Anonymous` by moving *out of* [LoginUiState.LoggedIn].
+     *    It deliberately leaves [LoginUiState.AuthRepair] alone: that state already
+     *    implies an anonymous session and is a deliberate, more specific state
+     *    reached only via [retryAuth] — collapsing it back to [LoginUiState.LoginForm]
+     *    on the same `Anonymous` emission that led to it would undo the user's
+     *    explicit repair flow. It also leaves [LoginUiState.Loading] alone, since a
+     *    session flip during [login] is [login]'s own transition to react to.
+     *  - It only reacts to `Authenticated` by moving *out of* non-[LoginUiState.LoggedIn]
+     *    states, so it can't stomp anything (and setting [LoginUiState.LoggedIn] when
+     *    already there is a same-value no-op).
+     *  - On subscription, [kotlinx.coroutines.flow.StateFlow.collect] immediately
+     *    replays the current session value. That first emission always agrees with
+     *    whatever [checkInitialState] just computed synchronously, so both guards
+     *    above make this replay a no-op rather than a redundant/conflicting write.
+     */
+    private fun observeSessionState() {
+        viewModelScope.launch {
+            sessionPort.state.collect { session ->
+                when (session) {
+                    is Session.Anonymous -> {
+                        if (_uiState.value is LoginUiState.LoggedIn) {
+                            _uiState.value = LoginUiState.LoginForm(hasOfflineLibrary = hasPlayableDownloads())
+                        }
+                    }
+
+                    is Session.Authenticated -> {
+                        if (_uiState.value !is LoginUiState.LoggedIn) {
+                            _uiState.value = LoginUiState.LoggedIn
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun login(login: String, password: String) {
         log.d { "Login attempt" }
         viewModelScope.launch {
@@ -123,7 +175,9 @@ class LoginViewModel(
 
     fun logout() {
         onLogout()
-        sessionPort.close()
+        viewModelScope.launch {
+            sessionPort.close()
+        }
         _uiState.value = LoginUiState.LoginForm(
             hasOfflineLibrary = hasPlayableDownloads(),
         )

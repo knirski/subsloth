@@ -15,9 +15,16 @@ kotlin {
             api(libs.coroutines.core)
         }
 
+        commonTest.dependencies {
+            // InMemorySessionStateTest exercises SessionPort's suspend
+            // functions (open/close/invalidate) and needs runTest; this
+            // is commonTest (not jvmTest) because the test file is
+            // compiled for every target (jvm, wasmJs).
+            implementation(libs.coroutines.test)
+        }
+
         jvmTest.dependencies {
             implementation(project(":testing:assertions"))
-            implementation(libs.coroutines.test)
             implementation(libs.junit.jupiter.params)
         }
     }

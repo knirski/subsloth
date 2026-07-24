@@ -1,8 +1,17 @@
 plugins {
-    id("subsloth.kmp.library")
+    id("subsloth.kmp.android.library")
 }
 
 kotlin {
+    android {
+        namespace = "net.subsloth.preferences"
+
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            execution = "HOST"
+        }
+    }
+
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
@@ -19,6 +28,18 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.datastore.preferences)
             implementation(libs.datastore.core.okio)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.datastore.preferences)
+            implementation(libs.datastore.core.okio)
+            implementation(libs.androidx.security.crypto)
+        }
+
+        getByName("androidDeviceTest").dependencies {
+            implementation("androidx.test:runner:1.6.2")
+            implementation(libs.androidx.test.ext.junit)
+            implementation(libs.coroutines.test)
         }
 
         // iosMain.dependencies {
