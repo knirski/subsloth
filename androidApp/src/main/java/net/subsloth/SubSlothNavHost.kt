@@ -22,7 +22,6 @@ import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.LibraryKey
-import net.subsloth.core.ui.LoginKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -61,7 +60,7 @@ import net.subsloth.settings.SettingsViewModel
 fun SubSlothNavHost(
     modifier: Modifier = Modifier,
 ) {
-    val backStack = rememberNavBackStack(LoginKey)
+    val backStack = rememberNavBackStack(CatalogKey)
 
     NavDisplay(
         modifier = modifier,
@@ -72,16 +71,12 @@ fun SubSlothNavHost(
                 rememberSaveableStateHolderNavEntryDecorator(),
             ),
         entryProvider = entryProvider {
-            entry<LoginKey> {
-                // Login screen — wired in auth-persistence-shell
-            }
-
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
-                    factory = HomeViewModelFactory(container.catalogRepository),
+                    factory = HomeViewModelFactory { container.catalogRepository },
                 )
                 HomeScreen(
                     viewModel = viewModel,

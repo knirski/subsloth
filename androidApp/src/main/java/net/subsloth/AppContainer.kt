@@ -168,14 +168,22 @@ class AppContainer(context: Context) {
 
 /**
  * [ViewModelProvider.Factory] for [HomeViewModel] that receives its
- * [CatalogRepository] dependency explicitly rather than capturing it
- * from the composable scope.
+ * [CatalogRepository] dependency as a supplier rather than a pre-resolved
+ * value: [AppContainer.catalogRepository] is rebuilt asynchronously
+ * whenever the session's credentials change (login, logout, account
+ * switch), so resolving it eagerly at factory-construction time risks
+ * permanently capturing a stale (anonymous or previous-account) instance
+ * if construction happens before an in-flight rebuild completes.
+ * Reading [catalogRepositoryProvider] here in [create] instead ensures
+ * each [HomeViewModel] construction sees whichever [CatalogRepository]
+ * is current at that moment.
  */
 internal class HomeViewModelFactory(
-    private val catalogRepository: CatalogRepository,
+    private val catalogRepositoryProvider: () -> CatalogRepository,
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        requireNotNull(
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val catalogRepository = catalogRepositoryProvider()
+        return requireNotNull(
             modelClass.cast(
                 HomeViewModel(
                     catalogItems = { contentType -> catalogRepository.catalogItems(contentType) },
@@ -184,4 +192,5 @@ internal class HomeViewModelFactory(
                 ),
             ),
         )
+    }
 }
