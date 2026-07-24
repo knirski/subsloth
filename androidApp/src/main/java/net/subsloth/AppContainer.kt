@@ -435,8 +435,15 @@ class AppContainer(context: Context) {
      * task's report for the full reasoning.
      */
     fun clearLibrary() {
+        // Captured synchronously, before scheduling the cleanup coroutine —
+        // not read from inside `launch { }` — so this can't race
+        // `clearCredentials()`'s independent `containerScope.launch`, which
+        // may flip `sessionPort` to `Anonymous` (and thus this profile key's
+        // derivation to the anonymous default) before an async read here
+        // would otherwise land. Mirrors `clearPreferences(profileKey: ...)`,
+        // which gets the same guarantee by taking its key as a parameter.
+        val key = currentProfileKey().value
         containerScope.launch {
-            val key = currentProfileKey().value
             database.favoriteDao().deleteAllForProfile(key)
             database.watchLaterDao().deleteAllForProfile(key)
             database.watchedStateDao().deleteAllForProfile(key)
