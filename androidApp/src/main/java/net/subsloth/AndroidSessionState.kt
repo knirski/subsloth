@@ -1,6 +1,7 @@
 package net.subsloth
 
 import co.touchlab.kermit.Logger
+import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,11 +51,17 @@ import kotlin.time.Clock
  *   than relying on `ClientFactory`'s internal default.
  * @param clock source of the authenticated session's `openedAtEpochSeconds`
  *   timestamp; mirrors the pattern used by `InMemorySessionState`.
+ * @param engineOverride test-support-only hook to inject a custom
+ *   [HttpClientEngine] (e.g. Ktor's `MockEngine`) into the validation
+ *   client instead of the real network engine. Defaults to `null`, in
+ *   which case [ClientFactory.create] picks its normal engine; production
+ *   callers must not pass this.
  */
 class AndroidSessionState(
     private val credentialsPort: CredentialsPort,
     private val baseUrlProvider: suspend () -> String,
     private val clock: Clock = Clock.System,
+    private val engineOverride: HttpClientEngine? = null,
 ) : SessionPort {
 
     private val log = Logger.withTag("AndroidSessionState")
@@ -155,6 +162,7 @@ class AndroidSessionState(
             login = credentials.login,
             password = credentials.password,
             baseUrl = baseUrlProvider(),
+            engine = engineOverride,
         )
         return try {
             Api(client).listMovies(page = 1, perPage = 1)

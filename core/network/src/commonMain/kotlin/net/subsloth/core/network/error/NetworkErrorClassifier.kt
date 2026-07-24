@@ -46,7 +46,7 @@ object NetworkErrorClassifier {
             }
         }
 
-        is ResponseValidationException -> NetworkError.UnexpectedResponse
+        is ResponseValidationException -> throwable.error
 
         else -> NetworkError.NoConnectivity
     }
