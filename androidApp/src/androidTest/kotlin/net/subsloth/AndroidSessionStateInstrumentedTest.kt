@@ -20,6 +20,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
@@ -101,6 +102,19 @@ class AndroidSessionStateInstrumentedTest {
                 status = HttpStatusCode.Unauthorized,
                 headers = headersOf(HttpHeaders.ContentType, "text/plain"),
             )
+        }
+
+    /**
+     * Simulates a transient, non-auth validation failure (e.g. no
+     * connectivity) by throwing an [IOException] from the engine itself,
+     * rather than returning any HTTP response. [NetworkErrorClassifier]'s
+     * catch-all branch classifies this as [net.subsloth.core.model.error.NetworkError.NoConnectivity] —
+     * deliberately *not* an HTTP 401 — so it must not be mistaken for
+     * [AuthError.InvalidCredentials] by [AndroidSessionState.recover].
+     */
+    private fun transientFailureEngine(): MockEngine =
+        MockEngine {
+            throw IOException("Simulated no connectivity")
         }
 
     @Test
@@ -193,5 +207,33 @@ class AndroidSessionStateInstrumentedTest {
             val persisted = CredentialsStoreAdapter(CredentialStore()).read()
             assertIs<Outcome.Success<Credentials?>>(persisted)
             assertNull(persisted.value)
+        }
+
+    @Test
+    fun coldStart_recoversAsAuthenticatedOnTransientValidationFailure() =
+        runTest {
+            val credentials = Credentials("offline@test.com", "offlinepass")
+            adapter.save(credentials.login, credentials.password)
+
+            val freshSessionState =
+                AndroidSessionState(
+                    credentialsPort = CredentialsStoreAdapter(CredentialStore()),
+                    baseUrlProvider = { "http://localhost/" },
+                    accountProfileStore = accountProfileStore,
+                    engineOverride = transientFailureEngine(),
+                )
+
+            freshSessionState.recover()
+
+            // Transient failure (no connectivity here): the previously-saved
+            // credentials are trusted rather than treated as rejected.
+            assertIs<Session.Authenticated>(freshSessionState.state.value)
+
+            // Credentials must still be persisted -- a transient failure must
+            // not clear them, unlike a genuine AuthError.InvalidCredentials
+            // rejection (see coldStart_clearsRejectedPersistedCredentialsFromRealStorage).
+            val persisted = CredentialsStoreAdapter(CredentialStore()).read()
+            assertIs<Outcome.Success<Credentials?>>(persisted)
+            assertEquals(credentials, persisted.value)
         }
 }

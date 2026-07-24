@@ -101,12 +101,19 @@ class AndroidSessionState(
      *   stored credentials can still reach their profile-scoped library data
      *   (favorites, playback progress, ...) instead of being locked out
      *   merely because validation couldn't complete. Trusting locally-stored
-     *   credentials here isn't an indefinite/unbounded trust: any subsequent
-     *   *real* network call that gets an actual 401 already routes through
-     *   the existing Auth Failure Repair flow (see [AuthError.InvalidCredentials]
-     *   handling elsewhere and `AuthRepairScreen`), so the credentials are
-     *   still re-validated the next time a genuine request is made — this
-     *   merely avoids treating "couldn't check" the same as "was rejected."
+     *   credentials here isn't meant as indefinite/unbounded trust: the
+     *   *player* path already routes a genuine 401 through the existing Auth
+     *   Failure Repair flow (`PlayerViewModel.onAuthFailure` →
+     *   `AppContainer.invalidateSession()` → [SessionPort.invalidate], see
+     *   also [AuthError.InvalidCredentials] and `AuthRepairScreen`) once
+     *   [net.subsloth.core.domain.policy.PlaybackErrorClassifier] detects
+     *   a [PlaybackError.AuthFailure][net.subsloth.core.domain.policy.PlaybackError.AuthFailure]
+     *   during playback. Other authenticated paths (catalog sync, library,
+     *   downloads) do not yet re-validate or clear the
+     *   session on a real 401 — closing that broader gap is out of scope for
+     *   this fix; this note only avoids overstating coverage that isn't
+     *   there yet, and still avoids treating "couldn't check" the same as
+     *   "was rejected."
      *
      * Bounded by whatever timeout [ClientFactory]'s `HttpTimeout` plugin
      * already configures (currently a 30s request timeout) — no separate
