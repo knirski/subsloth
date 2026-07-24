@@ -391,11 +391,30 @@ fun SubSlothNavHost(
             }
 
             entry<OfflineLibraryKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: LibraryViewModel = viewModel(
                     key = "offline_library",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(LibraryViewModel(isLoggedIn = { false })))
+                            requireNotNull(
+                                modelClass.cast(
+                                    LibraryViewModel(
+                                        libraryPort = container.libraryPortAdapter::listLibrary,
+                                        downloadsPort = container.downloadController::listDownloads,
+                                        listMovies = container::listMovies,
+                                        listShows = container::listShows,
+                                        // listProgress left on its default: there is no session at
+                                        // all on this screen (reached from the logged-out state),
+                                        // so the account-scoped progress DAO isn't applicable —
+                                        // same reasoning as DownloadsViewModel's listProgress above.
+                                        isLoggedIn = { false },
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 LibraryScreen(

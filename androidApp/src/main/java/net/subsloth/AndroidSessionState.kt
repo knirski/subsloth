@@ -93,9 +93,20 @@ class AndroidSessionState(
      *   i.e. an HTTP 401): they are cleared via [CredentialsPort.clear] and
      *   [state] stays [Session.Anonymous].
      * - Validation fails for any other reason (timeout, no connectivity,
-     *   5xx, unexpected response, ...): credentials are left in place so a
-     *   later retry can succeed once connectivity returns, and [state]
-     *   stays [Session.Anonymous].
+     *   5xx, unexpected response, ...): credentials are left in place *and*
+     *   [state] becomes [Session.Authenticated] built from the stored,
+     *   previously-saved credentials, rather than staying [Session.Anonymous].
+     *   This is a deliberate "offline mode with lazy re-validation" pattern:
+     *   an offline (or backend-degraded) user with valid-but-unverifiable
+     *   stored credentials can still reach their profile-scoped library data
+     *   (favorites, playback progress, ...) instead of being locked out
+     *   merely because validation couldn't complete. Trusting locally-stored
+     *   credentials here isn't an indefinite/unbounded trust: any subsequent
+     *   *real* network call that gets an actual 401 already routes through
+     *   the existing Auth Failure Repair flow (see [AuthError.InvalidCredentials]
+     *   handling elsewhere and `AuthRepairScreen`), so the credentials are
+     *   still re-validated the next time a genuine request is made — this
+     *   merely avoids treating "couldn't check" the same as "was rejected."
      *
      * Bounded by whatever timeout [ClientFactory]'s `HttpTimeout` plugin
      * already configures (currently a 30s request timeout) — no separate
@@ -123,10 +134,20 @@ class AndroidSessionState(
                 if (result.error is AuthError.InvalidCredentials) {
                     log.i { "Persisted credentials rejected during recovery; clearing" }
                     credentialsPort.clear()
+                    // Genuine rejection: state stays Anonymous.
                 } else {
-                    log.w { "Recovery validation failed transiently, keeping credentials: ${result.error}" }
+                    log.w { "Recovery validation failed transiently, trusting stored credentials offline: ${result.error}" }
+                    // Transient failure (timeout, no connectivity, 5xx, ...): trust the
+                    // stored, previously-saved credentials so the user isn't locked out
+                    // of profile-scoped data merely because validation couldn't
+                    // complete. See recover()'s KDoc for the full "offline mode with
+                    // lazy re-validation" rationale.
+                    _state.value = Session.Authenticated(
+                        userId = deriveUserId(stored.login),
+                        openedAtEpochSeconds = clock.now().epochSeconds,
+                        credentials = stored,
+                    )
                 }
-                // Either way, the initial state stays Anonymous.
             }
         }
     }
