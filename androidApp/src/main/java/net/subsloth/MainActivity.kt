@@ -9,6 +9,8 @@ import androidx.compose.material3.Surface
 import net.subsloth.core.ui.theme.SubSlothTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.flowOf
@@ -27,14 +29,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             SubSlothTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val root: RootContainerViewModel = viewModel()
-                    val sessionPort = root.sessionPort
                     val app = LocalContext.current.applicationContext
                     val container = (app as? SubSlothApplication)?.container
                     val userPreferences = container?.userPreferences ?: run {
                         Logger.withTag("MainActivity").e { "SubSlothApplication container not found" }
                         null
                     }
+                    val root: RootContainerViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                                requireNotNull(modelClass.cast(RootContainerViewModel(container?.sessionPort)))
+                        },
+                    )
+                    val sessionPort = root.sessionPort
                     SessionGate(
                         sessionPort = sessionPort,
                         login = {
