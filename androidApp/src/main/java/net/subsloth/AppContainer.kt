@@ -45,7 +45,12 @@ import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.database.LibraryPortAdapter
 import net.subsloth.database.SubSlothDatabase
 import net.subsloth.database.createSubSlothDatabase
+import net.subsloth.database.dao.CachedCatalogDao
 import net.subsloth.database.entity.AccountPlaybackProgressEntity
+import net.subsloth.database.entity.CachedCatalogCountryEntity
+import net.subsloth.database.entity.CachedCatalogGenreEntity
+import net.subsloth.database.entity.CachedCatalogItemEntity
+import net.subsloth.database.entity.CachedCatalogItemWithMetadata
 import net.subsloth.preferences.AccountProfileStore
 import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
@@ -116,6 +121,36 @@ class AppContainer(context: Context) {
     val cachedCatalogDao by lazy { database.cachedCatalogDao() }
 
     /**
+     * Delegates every [CachedCatalogDao] call through to [cachedCatalogDao],
+     * resolved lazily at call time rather than when this property itself is
+     * constructed. [buildCatalogRepository] passes this instead of
+     * [cachedCatalogDao] directly so building a [CatalogRepository] — including
+     * [currentCatalogRepository]'s eager initial value, assigned as part of
+     * [AppContainer]'s own constructor running on the caller's thread (the main
+     * thread, per `SubSlothApplication.onCreate`) — never forces [database]'s
+     * lazy Room initialization onto that thread. Room only actually opens once a
+     * DAO method is invoked, and every real call site reaches these methods via
+     * a suspend function or a collected [kotlinx.coroutines.flow.Flow], already
+     * off the main thread.
+     */
+    private val deferredCachedCatalogDao: CachedCatalogDao = object : CachedCatalogDao {
+        override fun getAllByType(contentType: String) = cachedCatalogDao.getAllByType(contentType)
+        override fun getAllGenres() = cachedCatalogDao.getAllGenres()
+        override fun getAllCountries() = cachedCatalogDao.getAllCountries()
+        override suspend fun upsertAll(items: List<CachedCatalogItemEntity>) = cachedCatalogDao.upsertAll(items)
+        override suspend fun deleteAll() = cachedCatalogDao.deleteAll()
+        override suspend fun count() = cachedCatalogDao.count()
+        override suspend fun deleteAllGenres() = cachedCatalogDao.deleteAllGenres()
+        override suspend fun upsertAllGenres(items: List<CachedCatalogGenreEntity>) =
+            cachedCatalogDao.upsertAllGenres(items)
+        override suspend fun deleteAllCountries() = cachedCatalogDao.deleteAllCountries()
+        override suspend fun upsertAllCountries(items: List<CachedCatalogCountryEntity>) =
+            cachedCatalogDao.upsertAllCountries(items)
+        override suspend fun replaceAll(items: List<CachedCatalogItemWithMetadata>) =
+            cachedCatalogDao.replaceAll(items)
+    }
+
+    /**
      * Production session port. Persists credentials via the Keystore-backed
      * [CredentialsStoreAdapter]/[CredentialStore] and validates them against
      * the same API base URL resolution [resolveApiBaseUrl] uses.
@@ -146,7 +181,14 @@ class AppContainer(context: Context) {
     @Volatile
     private var currentApi: Api = Api(ClientFactory.create())
 
-    /** Catalog repository combining API sync with Room caching. */
+    /**
+     * Catalog repository combining API sync with Room caching. Its initial
+     * value is built eagerly, same as [currentApi] — safe despite [database]
+     * being Room-backed, because [buildCatalogRepository] routes DAO access
+     * through [deferredCachedCatalogDao], which never actually touches
+     * [database] until a query genuinely runs (see its doc for why that
+     * matters here specifically).
+     */
     @Volatile
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
@@ -253,7 +295,7 @@ class AppContainer(context: Context) {
 
     private fun buildCatalogRepository(api: Api): CatalogRepository = CatalogRepository(
         api = api,
-        catalogDao = cachedCatalogDao,
+        catalogDao = deferredCachedCatalogDao,
         userPreferences = userPreferences,
         clock = clock,
     )
