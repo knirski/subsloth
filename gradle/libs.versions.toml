@@ -45,6 +45,7 @@ androidxTestExt = "1.3.0"
 androidxTestRunner = "1.7.0"
 androidxTestUiautomator = "2.4.0"
 concurrentFutures = "1.2.0"
+androidxSecurityCrypto = "1.1.0"
 
 [libraries]
 
@@ -107,6 +108,9 @@ room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room
 sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqliteKmp" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteKmp" }
 sqlite-web = { module = "androidx.sqlite:sqlite-web", version.ref = "sqliteKmp" }
+
+# Security (Keystore-backed EncryptedSharedPreferences)
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidxSecurityCrypto" }
 
 # DataStore
 datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
