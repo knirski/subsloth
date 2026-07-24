@@ -30,7 +30,8 @@ Every promotion requirement above is backed by either a named, currently-runnabl
 | Core/shared JVM tests | CI job `☕ JVM / 🖥️ Desktop` (JVM tests step) | Passing, required |
 | Android assemble + unit tests | CI job `🟢 Android` | Passing, required |
 | Android instrumented smoke | CI job `📱 Instrumented` | Passing, required |
-| Android production runtime has no in-memory/no-op binding | `AndroidSessionStateInstrumentedTest`/`LogoutCleanupInstrumentedTest` assert `AppContainer.sessionPort is AndroidSessionState` and `!is InMemorySessionState`; production startup wires real session, library, downloads, and settings adapters | Change 2, done |
+| Android session/data runtime has no in-memory/no-op binding | `AndroidSessionStateInstrumentedTest`/`LogoutCleanupInstrumentedTest` assert `AppContainer.sessionPort is AndroidSessionState` and `!is InMemorySessionState`; production startup wires real session, library, downloads, and settings adapters. Player stream-source resolution remains on its no-op default (no `PlaybackPort` implementation exists) — not covered by this check, tracked separately below | Change 2, done for session/data adapters |
+| Android player stream-source resolution is production-wired | No automated check yet — `PlayerViewModel`'s `fetchVideoSource`/`refreshStreamUrl` remain on their safe no-op defaults; `core/domain/.../PlaybackPort` has no implementation anywhere in the tree | Owned by a future `playback`-scoped change |
 | Desktop compiles | CI job `☕ JVM / 🖥️ Desktop` (desktop compilation step) | Passing, required |
 | Desktop real composition root and routes (no placeholders) | No automated check yet — no test asserts absence of placeholder navigation or the in-memory session | Owned by Change 3A |
 | Desktop unit/UI tests run in CI | No automated check yet — `:desktopApp:test` is not invoked anywhere in `.github/workflows/ci.yml` | Owned by Change 5 |

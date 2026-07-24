@@ -68,9 +68,9 @@ Two significant, previously-unknown gaps surfaced and fixed while writing these 
 
 ## 11. Spec and verification
 
-- [ ] 11.1 Write `specs/auth-security/spec.md` and `specs/architecture/spec.md` deltas (already drafted; adjust if implementation details diverge).
-- [ ] 11.2 `openspec validate wire-android-production-runtime --strict`
-- [ ] 11.3 `./gradlew spotlessApply spotlessCheck detekt`
-- [ ] 11.4 `./gradlew test`
-- [ ] 11.5 `./gradlew :androidApp:assembleDebug :androidApp:connectedDebugAndroidTest`
-- [ ] 11.6 `openspec validate --all --strict`
+- [x] 11.1 Write `specs/auth-security/spec.md` and `specs/architecture/spec.md` deltas (already drafted; adjust if implementation details diverge).
+- [x] 11.2 `openspec validate wire-android-production-runtime --strict`
+- [x] 11.3 `./gradlew spotlessApply spotlessCheck detekt`
+- [x] 11.4 `./gradlew test`
+- [x] 11.5 `./gradlew :androidApp:assembleDebug :androidApp:connectedDebugAndroidTest`
+- [x] 11.6 `openspec validate --all --strict`

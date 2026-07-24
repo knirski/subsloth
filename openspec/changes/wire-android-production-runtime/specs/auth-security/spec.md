@@ -23,15 +23,19 @@ Credentials SHALL be stored separately from preferences using Android Keystore-b
 - **THEN** `CredentialsPort` is backed by an `androidMain` implementation using `android.security.keystore`-generated key material, not a generic file-backed `KeyStore` or an in-memory default
 
 ### Requirement: Auth Failure Repair
-The app SHALL route to auth repair when normal authenticated requests return `401` or an equivalent auth failure.
+The app SHALL clear cached auth state and route to the login screen when normal authenticated requests return `401` or an equivalent auth failure. A dedicated auth repair screen SHALL be reachable and SHALL NOT be a placeholder navigation entry, but reaching it is an explicit, user-initiated action rather than an automatic consequence of every auth failure — see the scenarios below for the currently-implemented, tested paths.
 
 #### Scenario: Auth expires
 - **WHEN** a normal request reports unauthorized
-- **THEN** cached auth state is cleared, offline downloads/progress and local account data remain intact, and the user is routed to repair login
+- **THEN** cached auth state is cleared, offline downloads/progress and local account data remain intact, the session transitions to `Anonymous`, and the session gate switches to the ordinary login screen (`LoginForm`)
 
 #### Scenario: Auth repair screen is reachable
-- **WHEN** the user is routed to auth repair
+- **WHEN** the user explicitly retries authentication (e.g. via the login screen's repair path, or a screen-level "sign in again" action taken before the session gate has switched away)
 - **THEN** a real screen (not a placeholder navigation entry) offers retry-login and dismiss actions backed by the existing repair state machine
+
+#### Scenario: Known rough edge — player-initiated repair navigation can race the automatic session switch
+- **WHEN** a playback auth failure both invalidates the session (routing to the ordinary login screen per the "Auth expires" scenario) and offers a screen-level "sign in again" button that separately navigates to the dedicated repair screen
+- **THEN** the button's navigation can race against the session gate already switching away from the screen that button lives on; this is a known, documented gap for a future change to resolve (e.g. by having the player-driven path route directly to auth repair instead of triggering both reactions independently), not a claim that it is already unified today
 
 ## ADDED Requirements
 
