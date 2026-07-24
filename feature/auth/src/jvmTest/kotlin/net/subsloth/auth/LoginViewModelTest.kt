@@ -163,14 +163,15 @@ class LoginViewModelTest {
 
     @Test
     fun `external session invalidation does not clobber AuthRepair`() = runTest(testDispatcher) {
-        val session = FakeSessionPort(startAuthenticated = false)
+        val session = FakeSessionPort(startAuthenticated = true)
         val viewModel = LoginViewModel(sessionPort = session)
         viewModel.retryAuth()
         assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
 
-        // The session is already Anonymous here, but re-emitting Anonymous
-        // (e.g. a redundant invalidate()) must not undo the deliberate
-        // AuthRepair state reached via retryAuth().
+        // The session is still Authenticated here (retryAuth only touches
+        // uiState), so this invalidate() is a genuine Authenticated -> Anonymous
+        // emission -- not a same-value replay -- and must not undo the
+        // deliberate AuthRepair state reached via retryAuth().
         session.invalidate()
 
         assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
