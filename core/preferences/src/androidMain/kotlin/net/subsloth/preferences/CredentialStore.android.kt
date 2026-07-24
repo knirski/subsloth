@@ -40,10 +40,18 @@ actual class CredentialStore {
 
     actual suspend fun save(login: String, password: String) {
         withContext(Dispatchers.IO) {
-            prefs.edit()
+            val committed = prefs.edit()
                 .putString(KEY_LOGIN, login)
                 .putString(KEY_PASSWORD, password)
                 .commit()
+            // SharedPreferences.Editor.commit() (and EncryptedSharedPreferences's
+            // implementation of it) can return false to indicate the write was
+            // NOT persisted, without throwing. Left unchecked, a failed commit
+            // would silently look like success to every caller up the chain
+            // (CredentialsStoreAdapter -> CredentialsPort -> AndroidSessionState).
+            // Throwing here lets CredentialsStoreAdapter's existing try/catch map
+            // it to Outcome.Failure instead.
+            check(committed) { "Failed to persist encrypted credentials: commit() returned false" }
         }
     }
 
@@ -55,10 +63,15 @@ actual class CredentialStore {
 
     actual suspend fun clear() {
         withContext(Dispatchers.IO) {
-            prefs.edit()
+            val committed = prefs.edit()
                 .remove(KEY_LOGIN)
                 .remove(KEY_PASSWORD)
                 .commit()
+            // See save()'s comment: commit() can fail silently (return false)
+            // without throwing. Throwing surfaces the failure via
+            // CredentialsStoreAdapter's existing try/catch -> Outcome.Failure
+            // mapping, instead of every caller treating a failed clear as success.
+            check(committed) { "Failed to clear encrypted credentials: commit() returned false" }
         }
     }
 
