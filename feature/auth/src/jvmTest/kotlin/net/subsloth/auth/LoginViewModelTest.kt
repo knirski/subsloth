@@ -147,6 +147,35 @@ class LoginViewModelTest {
         assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoginForm::class.java)
     }
 
+    @Test
+    fun `external session invalidation while logged in routes to login form`() = runTest(testDispatcher) {
+        val session = FakeSessionPort(startAuthenticated = true)
+        val viewModel = LoginViewModel(sessionPort = session)
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoggedIn::class.java)
+
+        // Simulate an external trigger (e.g. logout initiated elsewhere, or a
+        // future 401-triggered invalidate()) flipping the session directly,
+        // NOT via viewModel.logout().
+        session.invalidate()
+
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.LoginForm::class.java)
+    }
+
+    @Test
+    fun `external session invalidation does not clobber AuthRepair`() = runTest(testDispatcher) {
+        val session = FakeSessionPort(startAuthenticated = false)
+        val viewModel = LoginViewModel(sessionPort = session)
+        viewModel.retryAuth()
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
+
+        // The session is already Anonymous here, but re-emitting Anonymous
+        // (e.g. a redundant invalidate()) must not undo the deliberate
+        // AuthRepair state reached via retryAuth().
+        session.invalidate()
+
+        assertThat(viewModel.uiState.value).isInstanceOf(LoginUiState.AuthRepair::class.java)
+    }
+
     // ── API Base URL ──────────────────────────────────────────────────────
 
     @Test
