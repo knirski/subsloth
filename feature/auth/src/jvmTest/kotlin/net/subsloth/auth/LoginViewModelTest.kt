@@ -226,7 +226,7 @@ private class FakeSessionPort(
     var openCalls: Int = 0
         private set
     override fun current(): Session = _state.value
-    override fun open(credentials: Credentials): Outcome<Unit> {
+    override suspend fun open(credentials: Credentials): Outcome<Unit> {
         if (trackOpen) openCalls += 1
         if (rejectLogin) {
             return Outcome.Failure(net.subsloth.core.model.error.AuthError.InvalidCredentials)
@@ -238,11 +238,11 @@ private class FakeSessionPort(
         )
         return Outcome.Success(Unit)
     }
-    override fun close(): Outcome<Unit> {
+    override suspend fun close(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }
-    override fun invalidate(): Outcome<Unit> {
+    override suspend fun invalidate(): Outcome<Unit> {
         _state.value = Session.Anonymous
         return Outcome.Success(Unit)
     }

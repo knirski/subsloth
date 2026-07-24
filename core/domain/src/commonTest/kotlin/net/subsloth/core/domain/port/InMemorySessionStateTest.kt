@@ -1,5 +1,6 @@
 package net.subsloth.core.domain.port
 
+import kotlinx.coroutines.test.runTest
 import net.subsloth.core.model.error.AuthError
 import net.subsloth.core.model.error.Outcome
 import kotlin.test.Test
@@ -15,7 +16,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun open_transitions_to_authenticated() {
+    fun open_transitions_to_authenticated() = runTest {
         val session = InMemorySessionState()
         val result = session.open(Credentials(login = "user@example.com", password = "secret"))
         assertEquals(Outcome.Success(Unit), result)
@@ -27,7 +28,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun open_synthesises_userId_from_email() {
+    fun open_synthesises_userId_from_email() = runTest {
         val session = InMemorySessionState()
         session.open(Credentials(login = "alice@subsloth.app", password = "pw"))
         val state = session.current()
@@ -36,7 +37,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun open_with_email_no_local_part_uses_userId_user() {
+    fun open_with_email_no_local_part_uses_userId_user() = runTest {
         val session = InMemorySessionState()
         session.open(Credentials(login = "@nope.com", password = "pw"))
         val state = session.current()
@@ -45,7 +46,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun open_with_blank_password_returns_InvalidCredentials() {
+    fun open_with_blank_password_returns_InvalidCredentials() = runTest {
         val session = InMemorySessionState()
         val result = session.open(Credentials(login = "alice@x.com", password = ""))
         assertEquals(Outcome.Failure(AuthError.InvalidCredentials), result)
@@ -53,7 +54,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun open_with_blank_login_returns_InvalidCredentials() {
+    fun open_with_blank_login_returns_InvalidCredentials() = runTest {
         val session = InMemorySessionState()
         val result = session.open(Credentials(login = "", password = "pw"))
         assertEquals(Outcome.Failure(AuthError.InvalidCredentials), result)
@@ -61,7 +62,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun close_returns_to_anonymous() {
+    fun close_returns_to_anonymous() = runTest {
         val session = InMemorySessionState()
         session.open(Credentials(login = "user@example.com", password = "pw"))
         session.close()
@@ -69,7 +70,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun close_on_anonymous_is_idempotent() {
+    fun close_on_anonymous_is_idempotent() = runTest {
         val session = InMemorySessionState()
         val result = session.close()
         assertEquals(Outcome.Success(Unit), result)
@@ -77,7 +78,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun invalidate_returns_to_anonymous() {
+    fun invalidate_returns_to_anonymous() = runTest {
         val session = InMemorySessionState()
         session.open(Credentials(login = "user@example.com", password = "pw"))
         session.invalidate()
@@ -85,7 +86,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun consecutive_open_calls_update_credentials() {
+    fun consecutive_open_calls_update_credentials() = runTest {
         val session = InMemorySessionState()
         session.open(Credentials(login = "alice@x.com", password = "pw1"))
         session.open(Credentials(login = "bob@x.com", password = "pw2"))
@@ -96,7 +97,7 @@ class InMemorySessionStateTest {
     }
 
     @Test
-    fun state_is_observable_via_StateFlow() {
+    fun state_is_observable_via_StateFlow() = runTest {
         val session = InMemorySessionState()
         // Initial value is Anonymous; subsequent transitions are
         // observed via the StateFlow value after each mutation.

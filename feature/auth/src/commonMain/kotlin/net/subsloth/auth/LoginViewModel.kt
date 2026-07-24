@@ -123,7 +123,9 @@ class LoginViewModel(
 
     fun logout() {
         onLogout()
-        sessionPort.close()
+        viewModelScope.launch {
+            sessionPort.close()
+        }
         _uiState.value = LoginUiState.LoginForm(
             hasOfflineLibrary = hasPlayableDownloads(),
         )

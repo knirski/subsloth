@@ -26,6 +26,13 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.compose.multiplatform.ui.tooling.preview)
         }
+        commonTest.dependencies {
+            // SessionGateTest exercises SessionPort's suspend functions
+            // (open/close/invalidate) and needs runTest; this is
+            // commonTest (not jvmTest) because the test file is
+            // compiled for every target (jvm, wasmJs).
+            implementation(libs.coroutines.test)
+        }
     }
 }
 
