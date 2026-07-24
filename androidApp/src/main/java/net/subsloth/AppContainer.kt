@@ -26,12 +26,18 @@ import net.subsloth.core.media.download.SeasonQueueController
 import net.subsloth.core.media.download.StorageProvider
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.error.MediaError
+import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
+import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.media.api.Api
@@ -59,6 +65,7 @@ import kotlin.time.Instant
  * (no DI framework) — only dependencies that need to outlive a
  * screen or Activity live here.
  */
+@Suppress("TooManyFunctions") // Composition root: one small function per port callback, by design.
 class AppContainer(context: Context) {
     private val log = Logger.withTag("AppContainer")
 
@@ -346,6 +353,214 @@ class AppContainer(context: Context) {
             requested = existing.quality.resolution,
         ).onFailure { log.e(it) { "retry enqueue failed for localId=$localId" } }
             .getOrDefault(EnqueueOutcome.Queued)
+    }
+
+    // ── Account profile key ─────────────────────────────────────────────
+
+    /**
+     * Derives the active [AccountProfileKey] from the current session,
+     * matching [LibraryPortAdapter]'s established session-derived
+     * profile-key pattern (see its private `profileKey()`, which returns
+     * the plain [Session.Authenticated.userId] string): the session's
+     * `userId` when logged in, the same `"default"` fallback
+     * [net.subsloth.settings.SettingsViewModel]'s constructor and
+     * [LibraryPortAdapter] both already use for anonymous sessions.
+     */
+    fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
+        is Session.Authenticated -> AccountProfileKey(session.userId)
+        Session.Anonymous -> AccountProfileKey(DEFAULT_PROFILE_KEY)
+    }
+
+    // ── Settings wiring (net.subsloth.settings.SettingsViewModel) ───────
+
+    fun writeSubtitleEnabled(enabled: Boolean) {
+        containerScope.launch { userPreferences.setSubtitleEnabled(currentProfileKey(), enabled) }
+    }
+
+    fun writeSubtitleLanguage(language: String?) {
+        containerScope.launch { userPreferences.setSubtitleLanguage(currentProfileKey(), language) }
+    }
+
+    fun writeQuality(quality: String?) {
+        containerScope.launch { userPreferences.setQuality(currentProfileKey(), quality) }
+    }
+
+    fun writePlaybackSpeed(speed: Float) {
+        containerScope.launch { userPreferences.setPlaybackSpeed(currentProfileKey(), speed) }
+    }
+
+    fun writeDownloadsWifiOnly(wifiOnly: Boolean) {
+        containerScope.launch { userPreferences.setDownloadsWifiOnly(currentProfileKey(), wifiOnly) }
+    }
+
+    /**
+     * Deletes every locally-downloaded media item. [downloadController]'s
+     * backing DAOs carry no profile key (downloads are shared across
+     * accounts and logged-out state — see [downloadController]'s doc), so
+     * this is necessarily a full wipe regardless of which account is
+     * active; that matches the "delete downloads" logout-cleanup
+     * checkbox's intended scope (there is no per-account download data to
+     * narrow it to).
+     */
+    fun deleteAllDownloads() {
+        containerScope.launch {
+            downloadController.listDownloads()
+                .onFailure { log.e(it) { "listDownloads failed while deleting all downloads" } }
+                .getOrNull()
+                ?.forEach { state ->
+                    downloadController.remove(state.localId)
+                        .onFailure { log.e(it) { "remove failed for ${state.localId} while deleting all downloads" } }
+                }
+        }
+    }
+
+    /** Clears every persisted preference for [profileKey]. */
+    fun clearPreferences(profileKey: AccountProfileKey) {
+        containerScope.launch { userPreferences.clearProfilePreferences(profileKey) }
+    }
+
+    /**
+     * Clears every active-profile library scope named by the
+     * `auth-security` spec's "Logout Cleanup Scopes": favorites, watch
+     * later, watched state, subscriptions/server mirrors, local-only
+     * library records, and account-scoped playback progress.
+     *
+     * Deliberately does NOT touch [cachedCatalogDao]: cached
+     * catalog/detail metadata has no profile-key column at all — it is a
+     * single shared cache (see [net.subsloth.database.dao.CachedCatalogDao]) —
+     * so its only clear operation
+     * ([net.subsloth.database.dao.CachedCatalogDao.deleteAll]) would wipe
+     * the cache for every account, not just the active one, which is
+     * out of scope for an "only active-profile" cleanup action. See this
+     * task's report for the full reasoning.
+     */
+    fun clearLibrary() {
+        containerScope.launch {
+            val key = currentProfileKey().value
+            database.favoriteDao().deleteAllForProfile(key)
+            database.watchLaterDao().deleteAllForProfile(key)
+            database.watchedStateDao().deleteAllForProfile(key)
+            database.subscriptionDao().deleteAllForProfile(key)
+            database.localLibraryRecordDao().deleteAllForProfile(key)
+            database.accountPlaybackProgressDao().deleteAllForProfile(key)
+        }
+    }
+
+    /**
+     * Clears persisted credentials and ends the current session. Grouped
+     * alongside [deleteAllDownloads]/[clearPreferences]/[clearLibrary] as
+     * one of the independently-selectable logout-cleanup actions in
+     * `SettingsViewModel.performLogoutCleanup` — but unlike those three,
+     * this also flips [sessionPort]'s state to `Anonymous`, which drops
+     * `SessionGate` out of the authenticated content entirely (including
+     * this very Settings screen). See this task's report for why this
+     * interpretation was chosen over a narrower one.
+     */
+    fun clearCredentials() {
+        containerScope.launch { sessionPort.close() }
+    }
+
+    // ── Player wiring (net.subsloth.player.PlayerViewModel) ─────────────
+
+    /**
+     * Flattens a [ShowDetails]'s seasons into a single episode list for
+     * [net.subsloth.player.PlayerViewModel]'s "next episode" lookup. Reads
+     * [catalogRepository] live (not captured) for the same
+     * anti-stale-capture reason documented on [listMovies].
+     */
+    suspend fun fetchEpisodesForShow(showId: Media.MediaId.Show): Outcome<List<Episode>> =
+        when (val result = catalogRepository.getDetails(showId)) {
+            is Outcome.Success -> {
+                val details = result.value as? ShowDetails
+                if (details != null) {
+                    Outcome.Success(details.seasons.flatMap { it.episodes })
+                } else {
+                    Outcome.Failure(MediaError.NotFound)
+                }
+            }
+
+            is Outcome.Failure -> Outcome.Failure(result.error)
+        }
+
+    /**
+     * Persists online playback progress for the active profile.
+     * [net.subsloth.database.dao.AccountPlaybackProgressDao.upsert] already
+     * replaces on conflict, keyed by `(profileKey, contentId)`.
+     */
+    suspend fun savePlaybackProgress(mediaId: Media.MediaId, positionSeconds: Long, durationSeconds: Long) {
+        database.accountPlaybackProgressDao().upsert(
+            AccountPlaybackProgressEntity(
+                profileKey = currentProfileKey().value,
+                contentId = mediaId.toContentId(),
+                contentType = mediaId.toContentType(),
+                positionSeconds = positionSeconds,
+                durationSeconds = durationSeconds,
+                updatedAtEpochSeconds = clock.now().epochSeconds,
+            ),
+        )
+    }
+
+    suspend fun savePlaybackSpeed(speed: Float) {
+        userPreferences.setPlaybackSpeed(currentProfileKey(), speed)
+    }
+
+    suspend fun loadPlaybackSpeed(): Float = userPreferences.playbackSpeed(currentProfileKey()).first()
+
+    suspend fun loadPreferredLanguage(): LanguageCode =
+        LanguageCode(userPreferences.subtitleLanguage(currentProfileKey()).first() ?: DEFAULT_LANGUAGE)
+
+    /**
+     * Resolves an episode's parent show id via a single `/episodes/{id}`
+     * lookup ([Api.getEpisode]) so
+     * [net.subsloth.player.PlayerViewModel] can populate its "next
+     * episode" prompt when playback started directly on an episode
+     * (rather than navigating in from a show's season list). Returns null
+     * on any failure (not found, network error) — this is a minor
+     * nice-to-have (next-episode navigation), not core functionality, so
+     * it degrades silently like every other best-effort port call in this
+     * container.
+     */
+    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as AndroidSessionState.validate.
+    suspend fun resolveShowIdForEpisode(episodeId: EpisodeId): ShowId? = try {
+        api.getEpisode(episodeId.value).showId?.let { ShowId(it) }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log.e(e) { "resolveShowIdForEpisode failed for $episodeId" }
+        null
+    }
+
+    /**
+     * Ends the current session in response to a playback-detected auth
+     * failure (401). Complementary to, not redundant with, `PlayerScreen`'s
+     * existing `onNavigateToAuthRepair` callback: this invalidates
+     * [sessionPort] as soon as `PlayerViewModel` classifies a playback
+     * error as [net.subsloth.core.model.playback.PlaybackError.AuthFailure],
+     * while `onNavigateToAuthRepair` only fires when the user taps "Sign
+     * in again" on the resulting error screen — by then the session
+     * should already be invalidated, so `SessionGate`/`AuthRepairScreen`
+     * start from a clean, already-logged-out state rather than fighting a
+     * stale `Authenticated` session.
+     */
+    fun invalidateSession() {
+        containerScope.launch { sessionPort.invalidate() }
+    }
+
+    private fun Media.MediaId.toContentId(): String = when (this) {
+        is Media.MediaId.Movie -> value.value.toString()
+        is Media.MediaId.Show -> value.value.toString()
+        is Media.MediaId.Episode -> value.value.toString()
+    }
+
+    private fun Media.MediaId.toContentType(): String = when (this) {
+        is Media.MediaId.Movie -> "movie"
+        is Media.MediaId.Show -> "show"
+        is Media.MediaId.Episode -> "episode"
+    }
+
+    private companion object {
+        private const val DEFAULT_PROFILE_KEY = "default"
+        private const val DEFAULT_LANGUAGE = "en"
     }
 }
 

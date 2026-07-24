@@ -68,6 +68,7 @@ import net.subsloth.settings.SettingsViewModel
  *   Each entry receives its typed [AppNavKey] which carries route
  *   arguments (e.g. [MovieDetailKey.movieId]).
  */
+@Suppress("CyclomaticComplexMethod") // One flat entryProvider branch per route, by design.
 @Composable
 fun SubSlothNavHost(
     modifier: Modifier = Modifier,
@@ -164,6 +165,8 @@ fun SubSlothNavHost(
                     }
                 }
 
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: PlayerViewModel = viewModel(
                     key = "player_${key.contentId}",
                     factory = object : ViewModelProvider.Factory {
@@ -173,6 +176,21 @@ fun SubSlothNavHost(
                                     PlayerViewModel(
                                         mediaId = parseMediaId(key.contentId, key.contentType)
                                             ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
+                                        // fetchVideoSource/refreshStreamUrl intentionally left on
+                                        // their safe no-op defaults: PlaybackPort (the port these
+                                        // conceptually map to) has zero implementations anywhere in
+                                        // the tree today. Building one means inventing stream-URL
+                                        // resolution and quality/DRM selection from scratch — out
+                                        // of proportion for this change. See this task's report.
+                                        fetchEpisodes = { showId -> container.fetchEpisodesForShow(showId) },
+                                        saveProgress = { mediaId, positionSeconds, durationSeconds ->
+                                            container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds)
+                                        },
+                                        onAuthFailure = container::invalidateSession,
+                                        savePlaybackSpeed = container::savePlaybackSpeed,
+                                        loadPlaybackSpeed = container::loadPlaybackSpeed,
+                                        loadPreferredLanguage = container::loadPreferredLanguage,
+                                        resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                                     ),
                                 ),
                             )
@@ -267,11 +285,37 @@ fun SubSlothNavHost(
             }
 
             entry<SettingsKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: SettingsViewModel = viewModel(
                     key = "settings",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(SettingsViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    SettingsViewModel(
+                                        profileKey = container::currentProfileKey,
+                                        readSubtitleEnabled = { key -> container.userPreferences.subtitleEnabled(key) },
+                                        readSubtitleLanguage = { key ->
+                                            container.userPreferences.subtitleLanguage(key)
+                                        },
+                                        readQuality = { key -> container.userPreferences.quality(key) },
+                                        readPlaybackSpeed = { key -> container.userPreferences.playbackSpeed(key) },
+                                        readDownloadsWifiOnly = { key ->
+                                            container.userPreferences.downloadsWifiOnly(key)
+                                        },
+                                        writeSubtitleEnabled = container::writeSubtitleEnabled,
+                                        writeSubtitleLanguage = container::writeSubtitleLanguage,
+                                        writeQuality = container::writeQuality,
+                                        writePlaybackSpeed = container::writePlaybackSpeed,
+                                        writeDownloadsWifiOnly = container::writeDownloadsWifiOnly,
+                                        deleteAllDownloads = container::deleteAllDownloads,
+                                        clearPreferences = container::clearPreferences,
+                                        clearLibrary = container::clearLibrary,
+                                        clearCredentials = container::clearCredentials,
+                                    ),
+                                ),
+                            )
                     },
                 )
                 SettingsScreen(
