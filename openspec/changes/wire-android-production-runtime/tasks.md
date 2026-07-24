@@ -32,7 +32,8 @@
 ## 6. Fix the authenticated nav host's start destination
 
 - [ ] 6.1 In `SubSlothNavHost.kt`, change `rememberNavBackStack(LoginKey)` to `rememberNavBackStack(CatalogKey)` and remove the now-dead `entry<LoginKey> { }` body.
-- [ ] 6.2 `./gradlew :androidApp:assembleDebug`
+- [ ] 6.2 Fix the stale-capture race task 4's review surfaced: `entry<CatalogKey>`'s `HomeViewModelFactory(container.catalogRepository)` reads `container.catalogRepository` once at Compose `viewModel()` factory-invocation time, but `AppContainer` now rebuilds `catalogRepository` asynchronously in response to session changes (task 4). If `CatalogKey` composes before a fresh login's rebuild finishes, `HomeViewModel` permanently captures a stale (anonymous or previous-account) `CatalogRepository` for the rest of that `ViewModelStoreOwner`'s lifetime. Fix by having the factory read `container.catalogRepository` at `create()`-time (inside `HomeViewModelFactory.create()`, not captured in its constructor) so each ViewModel construction sees the current value — construction still only happens once per key/owner, so this doesn't fully eliminate a race against an in-flight rebuild, but it removes the guaranteed-stale-forever failure mode where the factory was built before login and never re-reads afterward. If a stronger guarantee is needed (e.g. blocking `CatalogKey`'s composition until any in-flight rebuild completes), note it as an open concern rather than over-engineering a fix beyond this task's scope.
+- [ ] 6.3 `./gradlew :androidApp:assembleDebug`
 
 ## 7. Wire detail and auth-repair nav entries
 
