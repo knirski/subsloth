@@ -167,6 +167,7 @@ class AndroidSessionState(
      * dedicated auth-only probe. The client is closed after the call since
      * it exists only to validate [credentials], not to serve app traffic.
      */
+    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as AppContainer.resolveShowIdForEpisode.
     private suspend fun validate(credentials: Credentials): Outcome<Unit> {
         val client = ClientFactory.create(
             login = credentials.login,
@@ -188,7 +189,7 @@ class AndroidSessionState(
 
     private fun Exception.toValidationError(): DomainError {
         val networkError = NetworkErrorClassifier.classifyToNetwork(this)
-        return if (networkError is NetworkError.HttpError && networkError.code == 401) {
+        return if (networkError is NetworkError.HttpError && networkError.code == HTTP_UNAUTHORIZED) {
             AuthError.InvalidCredentials
         } else {
             networkError
@@ -196,4 +197,8 @@ class AndroidSessionState(
     }
 
     private suspend fun deriveUserId(login: String): String = accountProfileStore.deriveProfileKey(login).value
+
+    private companion object {
+        private const val HTTP_UNAUTHORIZED = 401
+    }
 }

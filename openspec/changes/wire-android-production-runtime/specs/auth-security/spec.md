@@ -1,5 +1,16 @@
 ## MODIFIED Requirements
 
+### Requirement: Account Profile Key Derivation
+The active local account profile key SHALL be a non-reversible HMAC-SHA256 of the normalized login and app-local profile salt.
+
+#### Scenario: Login is normalized
+- **WHEN** a login value is trimmed, Unicode-normalized to NFC, and lowercased for email-style logins
+- **THEN** the app derives the same profile key for the same account without storing the raw login/email as a Room identifier, DataStore key, download path component, diagnostic field, or log value
+
+#### Scenario: The real Android session chain uses the HMAC derivation
+- **WHEN** the Android session adapter opens or recovers a session
+- **THEN** `Session.Authenticated.userId` is the HMAC-SHA256-derived profile key from the existing `AccountProfileStore`, not a directly-recoverable fragment of the raw login, and every profile-scoped Room table and DataStore key is scoped by that same derived value
+
 ### Requirement: Credential Storage Protection
 Credentials SHALL be stored separately from preferences using Android Keystore-backed encryption compatible with API 26 and excluded from Android Auto Backup and device-to-device transfer.
 

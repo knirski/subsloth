@@ -48,25 +48,29 @@ import kotlin.test.assertTrue
  */
 @RunWith(AndroidJUnit4::class)
 class LogoutCleanupInstrumentedTest {
-
     private val container: AppContainer
         get() = (ApplicationProvider.getApplicationContext<SubSlothApplication>()).container
 
     private val prefsTestProfileKey = AccountProfileKey("logout-cleanup-test-prefs")
 
     @After
-    fun tearDown() = runBlocking {
-        // Best-effort cleanup regardless of where an assertion failure left
-        // things, so this test can't bleed into any other test sharing the
-        // same production AppContainer/storage.
-        container.userPreferences.clearProfilePreferences(prefsTestProfileKey)
-        val libraryKey = container.currentProfileKey().value
-        container.database.favoriteDao().getAllForProfile(libraryKey).first().forEach {
-            container.database.favoriteDao().delete(it)
+    fun tearDown() =
+        runBlocking {
+            // Best-effort cleanup regardless of where an assertion failure left
+            // things, so this test can't bleed into any other test sharing the
+            // same production AppContainer/storage.
+            container.userPreferences.clearProfilePreferences(prefsTestProfileKey)
+            val libraryKey = container.currentProfileKey().value
+            container.database.favoriteDao().getAllForProfile(libraryKey).first().forEach {
+                container.database.favoriteDao().delete(it)
+            }
         }
-    }
 
-    private suspend fun awaitUntil(timeoutMs: Long = 5_000, intervalMs: Long = 50, condition: suspend () -> Boolean) {
+    private suspend fun awaitUntil(
+        timeoutMs: Long = 5_000,
+        intervalMs: Long = 50,
+        condition: suspend () -> Boolean,
+    ) {
         val deadlineMillis = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadlineMillis) {
             if (condition()) return
@@ -76,80 +80,97 @@ class LogoutCleanupInstrumentedTest {
     }
 
     @Test
-    fun clearPreferences_onlyClearsPreferencesScope_leavesLibraryUntouched() = runBlocking {
-        // Seed a preference value under the test profile key.
-        container.userPreferences.setQuality(prefsTestProfileKey, "1080p")
-        assertEquals("1080p", container.userPreferences.quality(prefsTestProfileKey).first())
+    fun clearPreferences_onlyClearsPreferencesScope_leavesLibraryUntouched() =
+        runBlocking {
+            // Seed a preference value under the test profile key.
+            container.userPreferences.setQuality(prefsTestProfileKey, "1080p")
+            assertEquals("1080p", container.userPreferences.quality(prefsTestProfileKey).first())
 
-        // Seed a cross-scope control row under the SAME profile key, in the
-        // library scope, that clearPreferences must NOT touch.
-        val controlFavorite = FavoriteEntity(
-            profileKey = prefsTestProfileKey.value,
-            contentId = "9001",
-            contentType = "movie",
-        )
-        container.database.favoriteDao().upsert(controlFavorite)
+            // Seed a cross-scope control row under the SAME profile key, in the
+            // library scope, that clearPreferences must NOT touch.
+            val controlFavorite =
+                FavoriteEntity(
+                    profileKey = prefsTestProfileKey.value,
+                    contentId = "9001",
+                    contentType = "movie",
+                )
+            container.database.favoriteDao().upsert(controlFavorite)
 
-        container.clearPreferences(prefsTestProfileKey)
+            container.clearPreferences(prefsTestProfileKey)
 
-        awaitUntil { container.userPreferences.quality(prefsTestProfileKey).first() == null }
-        assertNull(container.userPreferences.quality(prefsTestProfileKey).first())
+            awaitUntil { container.userPreferences.quality(prefsTestProfileKey).first() == null }
+            assertNull(container.userPreferences.quality(prefsTestProfileKey).first())
 
-        // Library scope for the same profile key is untouched.
-        val remainingFavorites = container.database.favoriteDao().getAllForProfile(prefsTestProfileKey.value).first()
-        assertTrue(remainingFavorites.any { it.contentId == "9001" }, "clearPreferences must not touch library scope")
+            // Library scope for the same profile key is untouched.
+            val remainingFavorites =
+                container.database
+                    .favoriteDao()
+                    .getAllForProfile(prefsTestProfileKey.value)
+                    .first()
+            assertTrue(
+                remainingFavorites.any { it.contentId == "9001" },
+                "clearPreferences must not touch library scope",
+            )
 
-        // Cleanup the control row this test seeded. `controlFavorite` is the
-        // local object passed to `upsert()` above, whose `id` is still the
-        // @PrimaryKey(autoGenerate = true) default of 0 (never refreshed with
-        // the real autogenerated id) — Room's @Delete matches by primary key,
-        // so deleting that local object directly would silently do nothing.
-        // Re-fetch the persisted row by its natural key first, as
-        // AccountSwitchingInstrumentedTest already does elsewhere.
-        val persistedControlFavorite = container.database.favoriteDao()
-            .getByProfileAndContentId(controlFavorite.profileKey, controlFavorite.contentId)
-        if (persistedControlFavorite != null) {
-            container.database.favoriteDao().delete(persistedControlFavorite)
+            // Re-fetch by natural key before deleting (id is unset on the local object).
+            val favoriteDao = container.database.favoriteDao()
+            val persisted = favoriteDao.getByProfileAndContentId(controlFavorite.profileKey, controlFavorite.contentId)
+            if (persisted != null) {
+                favoriteDao.delete(persisted)
+            }
         }
-    }
 
     @Test
-    fun clearLibrary_onlyClearsLibraryScope_leavesPreferencesUntouched() = runBlocking {
-        // clearLibrary() has no profileKey parameter — it derives the active
-        // profile from the container's current session, so this test reads
-        // that same key rather than assuming "default".
-        val libraryKey = AccountProfileKey(container.currentProfileKey().value)
+    fun clearLibrary_onlyClearsLibraryScope_leavesPreferencesUntouched() =
+        runBlocking {
+            // clearLibrary() has no profileKey parameter — it derives the active
+            // profile from the container's current session, so this test reads
+            // that same key rather than assuming "default".
+            val libraryKey = AccountProfileKey(container.currentProfileKey().value)
 
-        val favorite = FavoriteEntity(
-            profileKey = libraryKey.value,
-            contentId = "9002",
-            contentType = "movie",
-        )
-        container.database.favoriteDao().upsert(favorite)
-        assertTrue(
-            container.database.favoriteDao().getAllForProfile(libraryKey.value).first().any { it.contentId == "9002" },
-        )
+            val favorite =
+                FavoriteEntity(
+                    profileKey = libraryKey.value,
+                    contentId = "9002",
+                    contentType = "movie",
+                )
+            container.database.favoriteDao().upsert(favorite)
+            assertTrue(
+                container.database
+                    .favoriteDao()
+                    .getAllForProfile(libraryKey.value)
+                    .first()
+                    .any { it.contentId == "9002" },
+            )
 
-        // Seed a cross-scope control preference under the SAME profile key
-        // that clearLibrary must NOT touch.
-        container.userPreferences.setQuality(libraryKey, "720p")
-        assertEquals("720p", container.userPreferences.quality(libraryKey).first())
+            // Seed a cross-scope control preference under the SAME profile key
+            // that clearLibrary must NOT touch.
+            container.userPreferences.setQuality(libraryKey, "720p")
+            assertEquals("720p", container.userPreferences.quality(libraryKey).first())
 
-        container.clearLibrary()
+            container.clearLibrary()
 
-        awaitUntil {
-            container.database.favoriteDao().getAllForProfile(libraryKey.value).first().none { it.contentId == "9002" }
+            awaitUntil {
+                container.database
+                    .favoriteDao()
+                    .getAllForProfile(libraryKey.value)
+                    .first()
+                    .none { it.contentId == "9002" }
+            }
+            assertFalse(
+                container.database
+                    .favoriteDao()
+                    .getAllForProfile(libraryKey.value)
+                    .first()
+                    .any { it.contentId == "9002" },
+            )
+
+            // Preferences scope for the same profile key is untouched.
+            assertEquals("720p", container.userPreferences.quality(libraryKey).first())
+
+            // Cleanup the control preference this test seeded.
+            container.userPreferences.setQuality(libraryKey, null)
         }
-        assertFalse(
-            container.database.favoriteDao().getAllForProfile(libraryKey.value).first().any { it.contentId == "9002" },
-        )
-
-        // Preferences scope for the same profile key is untouched.
-        assertEquals("720p", container.userPreferences.quality(libraryKey).first())
-
-        // Cleanup the control preference this test seeded.
-        container.userPreferences.setQuality(libraryKey, null)
-    }
 
     /**
      * Task 9.2: proves production Android startup constructs a real
