@@ -18,6 +18,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import kotlinx.coroutines.flow.map
+import net.subsloth.core.domain.port.DownloadCommandOutcome
+import net.subsloth.core.domain.port.Session
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
@@ -184,11 +187,30 @@ fun SubSlothNavHost(
             }
 
             entry<LibraryKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: LibraryViewModel = viewModel(
                     key = "library",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(LibraryViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    LibraryViewModel(
+                                        libraryPort = container.libraryPortAdapter::listLibrary,
+                                        downloadsPort = container.downloadController::listDownloads,
+                                        listMovies = container::listMovies,
+                                        listShows = container::listShows,
+                                        // listProgress: only the account-scoped DAO has a clean
+                                        // mapping to PlaybackProgress (see AppContainer's doc on
+                                        // listAccountPlaybackProgress); this is that mapping.
+                                        listProgress = container::listAccountPlaybackProgress,
+                                        isLoggedIn = { container.sessionPort.current() is Session.Authenticated },
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 LibraryScreen(
@@ -200,11 +222,42 @@ fun SubSlothNavHost(
             }
 
             entry<DownloadsKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: DownloadsViewModel = viewModel(
                     key = "downloads",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(DownloadsViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    DownloadsViewModel(
+                                        listDownloads = container.downloadController::listDownloads,
+                                        listSeasonQueues = container::listSeasonQueues,
+                                        // listProgress intentionally left on its safe default here:
+                                        // the shared offline_playback_progress table has no
+                                        // contentType column, so a contentId alone can't
+                                        // disambiguate movie vs. episode ids (see AppContainer's
+                                        // listAccountPlaybackProgress doc for the full reasoning).
+                                        pauseDownload = { localId ->
+                                            container.downloadController.pause(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        resumeDownload = { localId ->
+                                            container.downloadController.resume(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        cancelDownload = { localId ->
+                                            container.downloadController.cancel(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                        retryDownload = container::retryDownload,
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(LocalMediaIdentifier(localId))
+                                                .getOrDefault(DownloadCommandOutcome.NoOp)
+                                        },
+                                    ),
+                                ),
+                            )
                     },
                 )
                 DownloadsScreen(
