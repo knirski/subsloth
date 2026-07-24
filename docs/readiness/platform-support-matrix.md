@@ -4,14 +4,14 @@ This is the single authoritative statement of each platform's release-readiness 
 
 Tiers are adopted from `docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`'s promotion-gates table and are not re-derived here.
 
-Last reconciled: 2026-07-23, against `origin/main` at `d51dbec`.
+Last reconciled: 2026-07-24, against `feat/wire-android-production-runtime` after Change 2 (`wire-android-production-runtime`).
 
 ## Tiers
 
 | Platform | Current tier | Promotion requirement | Owning change | Evidence today |
 |---|---|---|---|---|
-| Android | **Internal beta** | Change 2 (`wire-android-production-runtime`) complete: real session/credential adapter, authenticated clients, wired ViewModels, single authenticated start destination | Change 2 | `InMemorySessionState` is still the wired default; navigation restarts a `LoginKey` stack after authentication (see remediation plan gap table) |
-| Android | Internal beta → next tier | Required platform tests green (Change 5) | Change 5 | CI job "📱 Instrumented" runs; TV focus traversal tests do not exist yet (harness unused — see disposition ledger) |
+| Android | **Internal beta** | Change 2 (`wire-android-production-runtime`) complete: real session/credential adapter, authenticated clients, wired ViewModels, single authenticated start destination | Change 2 | Done. `AndroidSessionState` (Keystore-backed, HMAC profile-key derivation, cold-start recovery, typed auth errors) replaces `InMemorySessionState` on Android's production path; `SubSlothNavHost` starts at `CatalogKey`; library/downloads/settings/player/detail/auth-repair all wired to real adapters. One documented, deliberately out-of-scope gap: `PlayerViewModel`'s stream-source resolution (`fetchVideoSource`/`refreshStreamUrl`) has no `PlaybackPort` implementation anywhere in the tree yet — left on its safe no-op default pending a future change scoped to the `playback` capability. |
+| Android | Internal beta → next tier | Required platform tests green (Change 5) | Change 5 | CI job "📱 Instrumented" runs (93 tests as of Change 2, including new session/library/account-switching coverage); TV focus traversal tests do not exist yet (harness unused — see disposition ledger) |
 | Android | Internal beta → next tier | Baseline profile consumed by release build (Change 6) | Change 6 | No `baseline-prof.txt` is committed anywhere in the tree |
 | Android | Internal beta → next tier | Release pipeline hardened (Change 8) | Change 8 | Release currently publishes before verifying artifact build order across platforms |
 | Desktop | **Preview** | Real composition root and routes replacing placeholders and in-memory session (Change 3A) | Change 3A | Desktop has placeholder navigation and an in-memory session per the remediation plan's known gaps |
@@ -30,7 +30,7 @@ Every promotion requirement above is backed by either a named, currently-runnabl
 | Core/shared JVM tests | CI job `☕ JVM / 🖥️ Desktop` (JVM tests step) | Passing, required |
 | Android assemble + unit tests | CI job `🟢 Android` | Passing, required |
 | Android instrumented smoke | CI job `📱 Instrumented` | Passing, required |
-| Android production runtime has no in-memory/no-op binding | No automated check yet — no test asserts production startup excludes `InMemorySessionState` or no-op ViewModels; `InMemorySessionState` remains the wired default today | Owned by Change 2 |
+| Android production runtime has no in-memory/no-op binding | `AndroidSessionStateInstrumentedTest`/`LogoutCleanupInstrumentedTest` assert `AppContainer.sessionPort is AndroidSessionState` and `!is InMemorySessionState`; production startup wires real session, library, downloads, and settings adapters | Change 2, done |
 | Desktop compiles | CI job `☕ JVM / 🖥️ Desktop` (desktop compilation step) | Passing, required |
 | Desktop real composition root and routes (no placeholders) | No automated check yet — no test asserts absence of placeholder navigation or the in-memory session | Owned by Change 3A |
 | Desktop unit/UI tests run in CI | No automated check yet — `:desktopApp:test` is not invoked anywhere in `.github/workflows/ci.yml` | Owned by Change 5 |
