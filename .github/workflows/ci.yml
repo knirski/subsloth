@@ -193,8 +193,8 @@ jobs:
         run: ./gradlew :webApp:wasmJsBrowserTest
 
   # ─── Android instrumented tests (emulator) ──────────────────────────
-  # Runs :core:database device checks and :androidApp UI instrumented
-  # tests on a single emulator to minimise boot overhead.
+  # Runs :core:database and :core:preferences device checks and :androidApp
+  # UI instrumented tests on a single emulator to minimise boot overhead.
   # Path-gated the same as build-android (shared or android changes).
   #
   # Runs in parallel with build-android — the Gradle setup action uses
@@ -240,4 +240,4 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -cache-size 512
           disable-animations: true
           emulator-boot-timeout: 600
-          script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx1g" :core:database:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
+          script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx1g" :core:database:connectedAndroidDeviceTest :core:preferences:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
