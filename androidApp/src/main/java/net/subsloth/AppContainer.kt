@@ -117,9 +117,13 @@ class AppContainer(context: Context) {
         // access or poll for changes.
         containerScope.launch {
             sessionPort.state.collect { session ->
+                val previousApi = currentApi
                 val newApi = buildApi(session)
                 currentApi = newApi
                 currentCatalogRepository = buildCatalogRepository(newApi)
+                // Close the superseded client only after the new one is fully
+                // swapped in, so nothing still references it as "current".
+                previousApi.close()
             }
         }
     }

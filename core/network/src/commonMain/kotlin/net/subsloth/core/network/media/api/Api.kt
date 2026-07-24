@@ -77,4 +77,13 @@ class Api(private val client: HttpClient) {
     suspend fun getShow(id: Int): Show = client.get("shows/$id").body()
 
     suspend fun getEpisode(id: Int): Episode = client.get("episodes/$id").body()
+
+    /**
+     * Closes the underlying [HttpClient], releasing its engine resources
+     * (e.g. the CIO engine's [io.ktor.util.network.SelectorManager] thread).
+     * Callers that rebuild an [Api] instance — such as
+     * `AppContainer` reacting to session changes — must call this on the
+     * superseded instance to avoid leaking a client per rebuild.
+     */
+    fun close() = client.close()
 }
