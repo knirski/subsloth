@@ -46,6 +46,7 @@ import net.subsloth.database.LibraryPortAdapter
 import net.subsloth.database.SubSlothDatabase
 import net.subsloth.database.createSubSlothDatabase
 import net.subsloth.database.entity.AccountPlaybackProgressEntity
+import net.subsloth.preferences.AccountProfileStore
 import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
 import net.subsloth.preferences.UserPreferences
@@ -94,6 +95,18 @@ class AppContainer(context: Context) {
         UserPreferences(dataStore)
     }
 
+    /**
+     * Derives non-reversible [AccountProfileKey]s from logins via
+     * HMAC-SHA256 and an app-local, per-install salt (see its own doc).
+     * Shares [dataStore] rather than opening a second `DataStore` against
+     * the same backing file, which would throw at runtime (see
+     * `LogoutCleanupInstrumentedTest`'s doc for why this project never
+     * opens two `DataStore` instances over one file within a process).
+     */
+    private val accountProfileStore: AccountProfileStore by lazy {
+        AccountProfileStore(dataStore)
+    }
+
     /** Room database for cached catalog, library, and playback state. */
     val database: SubSlothDatabase by lazy {
         createSubSlothDatabase("subsloth_db")
@@ -115,6 +128,7 @@ class AppContainer(context: Context) {
     private val androidSessionState = AndroidSessionState(
         credentialsPort = CredentialsStoreAdapter(CredentialStore()),
         baseUrlProvider = { resolveApiBaseUrl() },
+        accountProfileStore = accountProfileStore,
         clock = clock,
     )
 

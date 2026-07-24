@@ -17,6 +17,7 @@ import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.network.error.NetworkErrorClassifier
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.preferences.AccountProfileStore
 import kotlin.time.Clock
 
 /**
@@ -49,6 +50,14 @@ import kotlin.time.Clock
  *   (see how `MainActivity`'s `readApiBaseUrl` and `UserPreferences.apiBaseUrl()`
  *   resolve it, with a `BuildConfig.SUBSLOTH_API_BASE_URL` override) rather
  *   than relying on `ClientFactory`'s internal default.
+ * @param accountProfileStore derives [Session.Authenticated.userId] via
+ *   [AccountProfileStore.deriveProfileKey] — a non-reversible HMAC-SHA256 of
+ *   the normalized login and an app-local, per-install salt, per the
+ *   `auth-security` spec's "Account Profile Key Derivation" requirement.
+ *   Unlike `InMemorySessionState`'s doc-labeled test/demo shortcut
+ *   (`login.substringBefore('@')`), this never lets a directly recoverable
+ *   fragment of the real login reach Room columns, DataStore keys, or any
+ *   other persisted/logged surface.
  * @param clock source of the authenticated session's `openedAtEpochSeconds`
  *   timestamp; mirrors the pattern used by `InMemorySessionState`.
  * @param engineOverride test-support-only hook to inject a custom
@@ -60,6 +69,7 @@ import kotlin.time.Clock
 class AndroidSessionState(
     private val credentialsPort: CredentialsPort,
     private val baseUrlProvider: suspend () -> String,
+    private val accountProfileStore: AccountProfileStore,
     private val clock: Clock = Clock.System,
     private val engineOverride: HttpClientEngine? = null,
 ) : SessionPort {
@@ -185,5 +195,5 @@ class AndroidSessionState(
         }
     }
 
-    private fun deriveUserId(login: String): String = login.substringBefore('@').ifBlank { "user" }
+    private suspend fun deriveUserId(login: String): String = accountProfileStore.deriveProfileKey(login).value
 }

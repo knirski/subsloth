@@ -13,6 +13,7 @@ import net.subsloth.core.domain.port.Credentials
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.model.error.AuthError
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.preferences.AccountProfileStore
 import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
 import org.junit.After
@@ -41,19 +42,27 @@ import kotlin.test.assertNull
  * persists across test methods within this instrumented test process, so
  * [tearDown] clears the shared storage after every test to keep tests
  * independent.
+ *
+ * [accountProfileStore] wraps the process-wide [AppContainer.dataStore]
+ * instance (via [SubSlothApplication]'s already-constructed container)
+ * rather than opening a second `DataStore` against the same
+ * `subsloth.preferences_pb` file, which throws at runtime — see
+ * `LogoutCleanupInstrumentedTest`'s doc for the same constraint.
  */
 @RunWith(AndroidJUnit4::class)
 class AndroidSessionStateInstrumentedTest {
 
     private lateinit var adapter: CredentialsStoreAdapter
+    private lateinit var accountProfileStore: AccountProfileStore
 
     @Before
     fun setUp() {
         // Ensures a real Context is available and the app's Application
         // (which initialises the preferences module's AndroidContext
         // singleton that CredentialStore relies on) has run.
-        ApplicationProvider.getApplicationContext<Context>()
+        val context = ApplicationProvider.getApplicationContext<SubSlothApplication>()
         adapter = CredentialsStoreAdapter(CredentialStore())
+        accountProfileStore = AccountProfileStore(context.container.dataStore)
     }
 
     @After
@@ -98,6 +107,7 @@ class AndroidSessionStateInstrumentedTest {
         val sessionState = AndroidSessionState(
             credentialsPort = adapter,
             baseUrlProvider = { "http://localhost/" },
+            accountProfileStore = accountProfileStore,
             engineOverride = validLoginEngine(),
         )
 
@@ -118,6 +128,7 @@ class AndroidSessionStateInstrumentedTest {
         val sessionState = AndroidSessionState(
             credentialsPort = adapter,
             baseUrlProvider = { "http://localhost/" },
+            accountProfileStore = accountProfileStore,
             engineOverride = invalidLoginEngine(),
         )
 
@@ -144,6 +155,7 @@ class AndroidSessionStateInstrumentedTest {
         val freshSessionState = AndroidSessionState(
             credentialsPort = CredentialsStoreAdapter(CredentialStore()),
             baseUrlProvider = { "http://localhost/" },
+            accountProfileStore = accountProfileStore,
             engineOverride = validLoginEngine(),
         )
 
@@ -160,6 +172,7 @@ class AndroidSessionStateInstrumentedTest {
         val freshSessionState = AndroidSessionState(
             credentialsPort = CredentialsStoreAdapter(CredentialStore()),
             baseUrlProvider = { "http://localhost/" },
+            accountProfileStore = accountProfileStore,
             engineOverride = invalidLoginEngine(),
         )
 

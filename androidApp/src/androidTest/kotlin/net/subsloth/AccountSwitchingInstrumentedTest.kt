@@ -21,6 +21,7 @@ import net.subsloth.database.LibraryPortAdapter
 import net.subsloth.database.SubSlothDatabase
 import net.subsloth.database.AndroidContext as DatabaseAndroidContext
 import net.subsloth.database.createSubSlothDatabase
+import net.subsloth.preferences.AccountProfileStore
 import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
 import org.junit.After
@@ -48,6 +49,12 @@ import kotlin.time.Instant
  * production database/DataStore instances (see
  * [LogoutCleanupInstrumentedTest]'s doc for why a *second* full
  * `AppContainer`/DataStore isn't constructed in this suite either).
+ *
+ * The [AndroidSessionState] under test derives `userId` via a real
+ * [AccountProfileStore], wrapping the process-wide [AppContainer.dataStore]
+ * instance (through [SubSlothApplication]'s already-constructed container)
+ * rather than opening a second `DataStore` against the same
+ * `subsloth.preferences_pb` file, which throws at runtime.
  */
 @RunWith(AndroidJUnit4::class)
 class AccountSwitchingInstrumentedTest {
@@ -69,9 +76,13 @@ class AccountSwitchingInstrumentedTest {
 
         database = createSubSlothDatabase(dbName)
         credentialsAdapter = CredentialsStoreAdapter(CredentialStore())
+        val accountProfileStore = AccountProfileStore(
+            ApplicationProvider.getApplicationContext<SubSlothApplication>().container.dataStore,
+        )
         sessionState = AndroidSessionState(
             credentialsPort = credentialsAdapter,
             baseUrlProvider = { "http://localhost/" },
+            accountProfileStore = accountProfileStore,
             engineOverride = validLoginEngine(),
         )
         libraryPortAdapter = LibraryPortAdapter(
