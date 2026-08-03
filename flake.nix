@@ -433,6 +433,7 @@
           nodejs
           yarn
           binaryen
+          chromium
 
           # Utilities (not provided by stdenv)
           act

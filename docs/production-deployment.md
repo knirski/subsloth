@@ -1,5 +1,17 @@
 # Production Deployment
 
+## GitHub Pages deployment
+
+The GitHub Pages workflow deploys a stateless, fixture-backed Web demo. It does
+not provide an authenticated runtime, request Media credentials, or call a live
+Media API. The demo label is part of the UI contract and must remain visible in
+the deployed composition.
+
+GitHub Pages is therefore a static demonstration host, not the production Web
+deployment target. An authenticated Web runtime requires a separately approved
+API/auth boundary, verified CORS policy, safe browser credential handling, and
+a host that can provide the cross-origin isolation headers below.
+
 ## Cross-Origin Isolation Headers
 
 The web app uses `@sqlite.org/sqlite-wasm` with Origin Private File System (OPFS)

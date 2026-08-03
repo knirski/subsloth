@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -168,7 +169,15 @@ private val fixtureShowDetail =
 private val movieDetailPath = Regex("/api/v2/movies/\\d+")
 private val showDetailPath = Regex("/api/v2/shows/\\d+")
 
-fun createMockClient(): HttpClient = HttpClient(MockEngine) {
+fun createMockClient(
+    login: String? = null,
+    password: String? = null,
+    baseUrl: String = "http://localhost:8080/api/v2/",
+    enableHttpLogging: Boolean = false,
+): HttpClient = HttpClient(MockEngine) {
+    defaultRequest {
+        url(baseUrl)
+    }
     engine {
         addHandler { request ->
             val path = request.url.encodedPath

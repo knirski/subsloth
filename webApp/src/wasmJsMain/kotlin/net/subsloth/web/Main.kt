@@ -1,36 +1,32 @@
 package net.subsloth.web
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeViewport
-import androidx.lifecycle.viewmodel.compose.viewModel
-import net.subsloth.auth.LoginScreen
-import net.subsloth.auth.LoginViewModel
-import net.subsloth.core.network.media.client.ClientConfig
-import net.subsloth.core.ui.RootContainerViewModel
-import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    ClientConfig.useMock = true
     ComposeViewport(content = {
         SubSlothTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                val root: RootContainerViewModel = viewModel()
-                val sessionPort = root.sessionPort
-                SessionGate(
-                    sessionPort = sessionPort,
-                    login = {
-                        val viewModel: LoginViewModel = viewModel {
-                            LoginViewModel(sessionPort = sessionPort)
-                        }
-                        LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
-                    },
-                    authenticated = { WebNavHost() },
-                )
+                val app = remember { createWebDemoApp() }
+                DisposableEffect(app) {
+                    onDispose { app.close() }
+                }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WebDemoBanner(text = app.bannerText)
+                    WebNavHost(
+                        runtime = app.runtime,
+                        startDestination = app.startDestination,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     })

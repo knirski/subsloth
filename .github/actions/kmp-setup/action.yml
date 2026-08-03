@@ -3,8 +3,11 @@ description: "Set up JDK 17 + Gradle + Kotlin/Native cache for KMP builds"
 
 outputs:
   playwright-cache-hit:
-    description: "Whether the Playwright Chromium cache was restored"
+    description: "Whether the Playwright browser cache was restored"
     value: ${{ steps.cache-playwright.outputs.cache-hit }}
+  playwright-version:
+    description: "Pinned Playwright CLI version used for browser setup"
+    value: ${{ steps.playwright-version.outputs.version }}
 
 runs:
   using: "composite"
@@ -37,6 +40,11 @@ runs:
           ~/.konan
         key: ${{ runner.os }}-konan-${{ steps.kotlin-version.outputs.version }}
 
+    - name: Set Playwright version
+      id: playwright-version
+      shell: bash
+      run: echo "version=1.62.1" >> "$GITHUB_OUTPUT"
+
     # Node.js distribution + npm package cache for KMP wasmJs targets.
     # Kotlin's wasmJs plugin downloads Node.js to ~/.gradle/nodejs/ and runs
     # npm install for dependencies declared with `npm(...)`. Without this
@@ -57,12 +65,12 @@ runs:
 
     # Playwright browsers cache for Kotlin/Wasm browser tests.
     # https://playwright.dev/docs/browsers lists the default install path.
-    - name: Cache Playwright Chromium
+    - name: Cache Playwright browsers
       id: cache-playwright
       uses: actions/cache@v6
       with:
         path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-${{ runner.arch }}-playwright-chromium
+        key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6

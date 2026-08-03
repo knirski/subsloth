@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec "${KARMA_FIREFOX_REAL_BIN:?KARMA_FIREFOX_REAL_BIN must be set}" --headless "$@"

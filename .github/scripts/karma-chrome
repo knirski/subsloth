@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec "${KARMA_CHROME_REAL_BIN:?KARMA_CHROME_REAL_BIN must be set}" --no-sandbox "$@"

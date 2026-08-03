@@ -11,6 +11,12 @@ plugins {
 kotlin {
     wasmJs {
         browser {
+            testTask {
+                useKarma {
+                    useFirefox()
+                    useChromeHeadless()
+                }
+            }
             commonWebpackConfig {
                 outputFileName = "subsloth-web.js"
             }
@@ -37,6 +43,7 @@ kotlin {
             implementation(project(":feature:library"))
             implementation(project(":feature:auth"))
 
+            implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.lifecycle.runtime.compose)
@@ -49,6 +56,12 @@ kotlin {
 
             implementation(npm("@sqlite.org/sqlite-wasm", "3.51.2-build5"))
             implementation(npm("sqlite-wasm-worker", "file:${project.projectDir}/sqlite-wasm-worker"))
+        }
+
+        wasmJsTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.coroutines.test)
+            implementation(libs.kotlinx.browser)
         }
     }
 }
