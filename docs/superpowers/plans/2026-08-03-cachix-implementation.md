@@ -50,7 +50,7 @@
 - [ ] On main pushes only, push `devshell-profile` with `cachix push knirski-subsloth devshell-profile`; manual dispatch remains pull-only.
 - [ ] Leave all existing Gradle jobs unchanged.
 - [ ] Run `nix run nixpkgs#actionlint -- .github/workflows/ci.yml`.
-- [ ] Confirm `rg -n 'CACHIX_AUTH_TOKEN|authToken|knirski-subsloth' .github flake.nix` contains no literal token.
+- [ ] Run `./.github/scripts/check-invariants.sh` to scan for credentials and sensitive artifacts without printing secret values.
 - [ ] Commit with `ci: publish devShell to Cachix on main`.
 
 ### Task 4: Final verification
