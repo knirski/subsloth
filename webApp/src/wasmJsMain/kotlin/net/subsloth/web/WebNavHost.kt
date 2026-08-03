@@ -21,7 +21,6 @@ import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.AppNavKey
-import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
@@ -94,7 +93,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                     contentId = key.contentId,
                     contentType = key.contentType,
                     onNavigateBack = { backStack.removeLastOrNull() },
-                    onNavigateToAuthRepair = { backStack += AuthRepairKey },
+                    onNavigateToAuthRepair = {},
                 )
             }
 
@@ -117,10 +116,6 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 
             entry<DiagnosticsKey> {
                 DiagnosticsContent()
-            }
-
-            entry<AuthRepairKey> {
-                // Auth repair — wired in auth-persistence-shell
             }
 
             entry<OfflineLibraryKey> {
