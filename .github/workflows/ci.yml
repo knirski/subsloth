@@ -183,9 +183,18 @@ jobs:
       - id: kmp-setup
         uses: ./.github/actions/kmp-setup
 
-      - name: Install Chromium for WasmJS browser tests
+      - name: Install Chromium and Firefox for WasmJS browser tests
         if: steps.kmp-setup.outputs.playwright-cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Select browsers for Karma
+        run: |
+          CHROME_BIN=$(find "$HOME/.cache/ms-playwright" -type f -name chrome -perm -u+x -print -quit)
+          FIREFOX_BIN=$(find "$HOME/.cache/ms-playwright" -type f -name firefox -perm -u+x -print -quit)
+          test -n "$CHROME_BIN"
+          test -n "$FIREFOX_BIN"
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+          echo "FIREFOX_BIN=$FIREFOX_BIN" >> "$GITHUB_ENV"
 
       - run: ./gradlew :webApp:compileKotlinWasmJs
 

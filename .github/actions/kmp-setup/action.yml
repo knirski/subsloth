@@ -57,12 +57,12 @@ runs:
 
     # Playwright browsers cache for Kotlin/Wasm browser tests.
     # https://playwright.dev/docs/browsers lists the default install path.
-    - name: Cache Playwright Chromium
+    - name: Cache Playwright browsers
       id: cache-playwright
       uses: actions/cache@v6
       with:
         path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-${{ runner.arch }}-playwright-chromium
+        key: ${{ runner.os }}-${{ runner.arch }}-playwright-browsers
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6

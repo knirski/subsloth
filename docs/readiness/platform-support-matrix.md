@@ -4,7 +4,7 @@ This is the single authoritative statement of each platform's release-readiness 
 
 Tiers are adopted from `docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`'s promotion-gates table and are not re-derived here.
 
-Last reconciled: 2026-07-24, against `feat/wire-android-production-runtime` after Change 2 (`wire-android-production-runtime`).
+Last reconciled: 2026-08-02, against `feat/define-web-runtime-tier` after the Web demo runtime change.
 
 ## Tiers
 
@@ -17,7 +17,7 @@ Last reconciled: 2026-07-24, against `feat/wire-android-production-runtime` afte
 | Desktop | **Preview** | Real composition root and routes replacing placeholders and in-memory session (Change 3A) | Change 3A | Desktop has placeholder navigation and an in-memory session per the remediation plan's known gaps |
 | Desktop | Preview → next tier | Desktop tests required in CI (Change 5) | Change 5 | CI job "☕ JVM / 🖥️ Desktop" only runs `:desktopApp:compileKotlin` — no `:desktopApp:test` step exists |
 | Desktop | Preview → next tier | Keyring/session policy verified on every supported OS (Change 3A) | Change 3A | Only Linux (`ubuntu-latest`) is built in the release workflow; macOS/Windows rows are commented out pending a macOS runner |
-| Web on GitHub Pages | **Stateless demo** | Explicit mock/demo labelling in UI and docs; no credential persistence; meaningful browser smoke tests (Change 3B, 5) | Change 3B, Change 5 | The Pages deploy step is named "Build web distribution with mock data"; `webApp/src` contains no test files, causing the CI job "🌐 Web / wasmJs" to report a vacuous pass for `wasmJsBrowserTest`. |
+| Web on GitHub Pages | **Stateless demo** | Explicit mock/demo labelling in UI and docs; no credential persistence; meaningful browser smoke tests (Change 3B, 5) | Change 3B, Change 5 | The Pages deploy step is named "Build stateless Web demo with mock data only"; `WebDemoBanner` is always rendered; `WebDemoRuntime` uses the WASM mock transport; Nix-provided Chromium 150.0.0.0 and Firefox 153.0 browser tests cover mock startup and seeded credential-key preservation. |
 | Web production | **Not yet granted** | Approved auth/CORS architecture; COOP/COEP-capable host; persistence reload test; real adapters; production browser suite (Change 3B) | Change 3B | GitHub Pages does not set `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy`; per `docs/production-deployment.md`, without these headers OPFS-backed SQLite silently falls back to in-memory storage |
 
 ## Readiness checklist
@@ -36,10 +36,10 @@ Every promotion requirement above is backed by either a named, currently-runnabl
 | Desktop real composition root and routes (no placeholders) | No automated check yet — no test asserts absence of placeholder navigation or the in-memory session | Owned by Change 3A |
 | Desktop unit/UI tests run in CI | No automated check yet — `:desktopApp:test` is not invoked anywhere in `.github/workflows/ci.yml` | Owned by Change 5 |
 | Desktop credential support matrix verified per OS | Manual acceptance record — none exists yet; only Linux is built | Owned by Change 3A |
-| Web compiles + browser test task runs | CI job `🌐 Web / wasmJs` | Passing, but the test task has no test files to exercise |
-| Web has meaningful browser tests | No automated check yet — `webApp/src` contains no test sources | Owned by Change 5 |
-| Web demo mode is explicitly labelled and requests no production credentials | No automated check yet — no UI/test asserts the demo-mode label or absence of a production credential prompt | Owned by Change 3B |
-| Web credentials absent from local storage | No automated check yet — no test asserts this today | Owned by Change 3B |
+| Web compiles + browser test task runs | CI job `🌐 Web / wasmJs` | Passing, with the Pages build explicitly using mock data only |
+| Web has meaningful browser tests | `./gradlew :webApp:wasmJsBrowserTest` | Passing; Nix-provided Chromium 150.0.0.0 and Firefox 153.0 each execute five Web runtime tests |
+| Web demo mode is explicitly labelled and requests no production credentials | `WebDemoBanner` plus `WebRuntimeModeTest.demoBannerExplainsDataAndCredentialBoundary` | Done for the stateless demo |
+| Web credentials absent from local storage | `WebRuntimeModeTest.demoStartupDoesNotUseCredentialStorage` | Done for the stateless demo; authenticated promotion remains open |
 | Web production auth/CORS architecture decision recorded | No automated check yet — decision record not yet written | Owned by Change 3B |
 | Web COOP/COEP-capable production host selected | No automated check yet — decision record not yet written | Owned by Change 3B |
 | Web OPFS persistence survives a page reload | No automated check yet — no reload-persistence test exists; GitHub Pages lacks COOP/COEP so OPFS falls back to in-memory storage today | Owned by Change 3B |

@@ -177,7 +177,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 |--------|----------------|
 | **Environment** | Nix flake (`flake.nix` + `flake.lock`) — pinned JDK 25/17, Android SDK command-line tools, Android Studio, Node/Yarn/Binaryen for Wasm |
 | **Gradle** | Wrapper and `compileSdk`/`targetSdk`/AGP/Kotlin versions per `gradle/wrapper/gradle-wrapper.properties` and `gradle/libs.versions.toml` (see `docs/readiness/platform-support-matrix.md` — do not duplicate the numbers here, they drift) + `build-logic` convention plugins |
-| **CI** | GitHub Actions (offline-only) — formatting/detekt/invariant pre-checks + per-platform assemble/test jobs (Android, JVM/Desktop compile, Web); manual API drift workflow via `workflow_dispatch`; Desktop has no dedicated test job yet, and Web's test job has no test files to run (see readiness matrix) |
+| **CI** | GitHub Actions (offline-only) — formatting/detekt/invariant pre-checks + per-platform assemble/test jobs (Android, JVM/Desktop compile, Web); manual API drift workflow via `workflow_dispatch`; Desktop has no dedicated test job yet (see readiness matrix) |
 | **Release** | semantic-release (conventional commit PR titles) → GitHub Release, tag-derived version, debug APK/Desktop/Web artifacts uploaded after the release is created — not `release-please` (see `docs/release.md`) |
 | **Invariants** | `.github/scripts/check-invariants.sh` — scans for credentials, signed URLs, HAR files, traces |
 

@@ -1,14 +1,10 @@
 package net.subsloth.web
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -24,12 +20,12 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.LibraryKey
-import net.subsloth.core.ui.LoginKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -59,8 +55,8 @@ import net.subsloth.settings.SettingsViewModel
  * Feature screens are the same KMP composables shared across all platforms.
  */
 @Composable
-fun WebNavHost(modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(subslothNavConfig, LoginKey)
+fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDestination: AppNavKey = CatalogKey) {
+    val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
     NavDisplay(
         modifier = modifier,
@@ -71,18 +67,9 @@ fun WebNavHost(modifier: Modifier = Modifier) {
             rememberSaveableStateHolderNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<LoginKey> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "SubSloth",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-
             entry<CatalogKey> {
                 CatalogContent(
+                    runtime = runtime,
                     onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                     onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                 )
@@ -91,14 +78,14 @@ fun WebNavHost(modifier: Modifier = Modifier) {
             entry<MovieDetailKey> { key ->
                 val movieId = key.movieId.toIntOrNull()?.let { Media.MediaId.Movie(MovieId(it)) }
                 if (movieId != null) {
-                    MovieDetailContent(movieId = movieId)
+                    MovieDetailContent(runtime = runtime, movieId = movieId)
                 }
             }
 
             entry<ShowDetailKey> { key ->
                 val showId = key.showId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
                 if (showId != null) {
-                    ShowDetailContent(showId = showId)
+                    ShowDetailContent(runtime = runtime, showId = showId)
                 }
             }
 
@@ -147,7 +134,11 @@ fun WebNavHost(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CatalogContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowClick: (Media.MediaId.Show) -> Unit) {
+private fun CatalogContent(
+    runtime: WebDemoRuntime,
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
     val storeOwner = remember("catalog_home") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -157,7 +148,7 @@ private fun CatalogContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowCl
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: HomeViewModel = viewModel(key = "catalog_home") { HomeViewModel() }
+        val vm: HomeViewModel = viewModel(key = "catalog_home") { runtime.createHomeViewModel() }
         HomeScreen(
             viewModel = vm,
             onMovieClick = onMovieClick,
@@ -167,7 +158,7 @@ private fun CatalogContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowCl
 }
 
 @Composable
-private fun MovieDetailContent(movieId: Media.MediaId.Movie) {
+private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.Movie) {
     val storeOwner = remember(movieId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -178,14 +169,14 @@ private fun MovieDetailContent(movieId: Media.MediaId.Movie) {
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
-            MovieDetailViewModel(mediaId = movieId)
+            MovieDetailViewModel(mediaId = movieId, getDetails = runtime::getDetails)
         }
         MovieDetailScreen(viewModel = vm)
     }
 }
 
 @Composable
-private fun ShowDetailContent(showId: Media.MediaId.Show) {
+private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Show) {
     val storeOwner = remember(showId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -196,7 +187,7 @@ private fun ShowDetailContent(showId: Media.MediaId.Show) {
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value.value}") {
-            ShowDetailViewModel(mediaId = showId)
+            ShowDetailViewModel(mediaId = showId, getDetails = runtime::getDetails)
         }
         SeriesDetailScreen(viewModel = vm)
     }

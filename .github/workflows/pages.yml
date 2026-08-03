@@ -26,7 +26,7 @@ jobs:
 
       - uses: ./.github/actions/kmp-setup
 
-      - name: Build web distribution with mock data
+      - name: Build stateless Web demo with mock data only
         run: ./gradlew :webApp:wasmJsBrowserDistribution
 
       - name: Upload to Pages
