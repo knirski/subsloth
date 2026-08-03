@@ -444,6 +444,7 @@
           nodejs
           yarn
           binaryen
+          chromium
 
           # Utilities (not provided by stdenv)
           act
@@ -470,6 +471,9 @@
         KOTLIN_NODEJS_HOME = "${pkgs.nodejs}";
         KOTLIN_YARN_HOME = "${pkgs.yarn}";
         KOTLIN_BINARYEN_HOME = "${pkgs.binaryen}";
+        # Kotlin/Wasm's Karma runner uses ChromeHeadless. Point it at the
+        # Nix-provided browser so local tests do not depend on a host install.
+        CHROME_BIN = "${pkgs.chromium}/bin/chromium";
 
         shellHook = ''
           # Desktop GL runtime (Skiko/Compose)
