@@ -7,7 +7,7 @@
 
   nixConfig = {
     extra-substituters = [
-      "cache.nixos.org"
+      "https://cache.nixos.org"
       "https://knirski-subsloth.cachix.org"
     ];
     extra-trusted-public-keys = [
