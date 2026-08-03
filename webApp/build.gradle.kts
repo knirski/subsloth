@@ -14,7 +14,7 @@ kotlin {
             testTask {
                 useKarma {
                     useFirefox()
-                    useChrome()
+                    useChromeHeadless()
                 }
             }
             commonWebpackConfig {

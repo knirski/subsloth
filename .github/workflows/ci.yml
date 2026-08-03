@@ -183,9 +183,12 @@ jobs:
       - id: kmp-setup
         uses: ./.github/actions/kmp-setup
 
+      - name: Install browser OS dependencies
+        run: npx --yes playwright@${{ steps.kmp-setup.outputs.playwright-version }} install-deps chromium firefox
+
       - name: Install Chromium and Firefox for WasmJS browser tests
         if: steps.kmp-setup.outputs.playwright-cache-hit != 'true'
-        run: npx playwright install --with-deps chromium firefox
+        run: npx --yes playwright@${{ steps.kmp-setup.outputs.playwright-version }} install chromium firefox
 
       - name: Select browsers for Karma
         run: |
@@ -193,8 +196,13 @@ jobs:
           FIREFOX_BIN=$(find "$HOME/.cache/ms-playwright" -type f -name firefox -perm -u+x -print -quit)
           test -n "$CHROME_BIN"
           test -n "$FIREFOX_BIN"
-          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
-          echo "FIREFOX_BIN=$FIREFOX_BIN" >> "$GITHUB_ENV"
+          chmod +x .github/scripts/karma-chrome .github/scripts/karma-firefox
+          {
+            echo "KARMA_CHROME_REAL_BIN=$CHROME_BIN"
+            echo "KARMA_FIREFOX_REAL_BIN=$FIREFOX_BIN"
+            echo "CHROME_BIN=$GITHUB_WORKSPACE/.github/scripts/karma-chrome"
+            echo "FIREFOX_BIN=$GITHUB_WORKSPACE/.github/scripts/karma-firefox"
+          } >> "$GITHUB_ENV"
 
       - run: ./gradlew :webApp:compileKotlinWasmJs
 
