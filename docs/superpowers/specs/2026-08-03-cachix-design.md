@@ -21,9 +21,10 @@ passed only for a `main` push, never for pull requests or fork builds.
 
 The CI workflow will add an independent `cache-devshell` job. It will run on
 `main` pushes and manual dispatches, install Nix through the composite action,
-build/push `.#devShells.x86_64-linux.default`, and remain separate from the
-existing Gradle jobs so the current Android, desktop, web, and test behavior is
-unchanged.
+realize the complete `.#devShells.x86_64-linux.default` closure into a profile,
+and push that profile only on trusted `main` pushes. Manual dispatch remains
+pull-only and still realizes the profile for verification. The job remains
+separate from the existing Gradle jobs so their behavior is unchanged.
 
 ## Security and compatibility
 

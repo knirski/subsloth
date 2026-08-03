@@ -29,11 +29,13 @@ jobs:
         with:
           cachix-auth-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
 
-      - name: Push devShell to Cachix
+      - name: Build devShell profile
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: nix develop .#devShells.x86_64-linux.default --profile devshell-profile --command true
+
+      - name: Push devShell profile to Cachix
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          DEV_SHELL=$(nix build --no-link --print-out-paths .#devShells.x86_64-linux.default)
-          cachix push knirski-subsloth "$DEV_SHELL"
+        run: cachix push knirski-subsloth devshell-profile
 
   # ─── Path filtering ──────────────────────────────────────────────────────
   changes:

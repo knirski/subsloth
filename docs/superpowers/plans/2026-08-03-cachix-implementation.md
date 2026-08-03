@@ -46,8 +46,9 @@
 - [ ] Add `workflow_dispatch` while retaining existing pull-request and main-push triggers.
 - [ ] Add independent job `cache-devshell` on `ubuntu-latest`.
 - [ ] Check out with `persist-credentials: false`, invoke `./.github/actions/setup-nix`, and pass the secret only when `github.event_name == 'push' && github.ref == 'refs/heads/main'`.
-- [ ] On main pushes only, realize the devShell with `DEV_SHELL=$(nix build --no-link --print-out-paths .#devShells.x86_64-linux.default)` and push the resulting store path with `cachix push knirski-subsloth "$DEV_SHELL"`.
-- [ ] Keep manual dispatch pull-only and leave all existing Gradle jobs unchanged.
+- [ ] On main pushes and manual dispatches, realize the complete devShell closure with `nix develop .#devShells.x86_64-linux.default --profile devshell-profile --command true`.
+- [ ] On main pushes only, push `devshell-profile` with `cachix push knirski-subsloth devshell-profile`; manual dispatch remains pull-only.
+- [ ] Leave all existing Gradle jobs unchanged.
 - [ ] Run `nix run nixpkgs#actionlint -- .github/workflows/ci.yml`.
 - [ ] Confirm `rg -n 'CACHIX_AUTH_TOKEN|authToken|knirski-subsloth' .github flake.nix` contains no literal token.
 - [ ] Commit with `ci: publish devShell to Cachix on main`.
