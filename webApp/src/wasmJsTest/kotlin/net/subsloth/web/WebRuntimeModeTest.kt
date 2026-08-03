@@ -35,7 +35,7 @@ class WebRuntimeModeTest {
     }
 
     @Test
-    fun demoStartupDoesNotUseCredentialStorage() {
+    fun demoStartupPreservesCredentialStorage() {
         localStorage.setItem(DEMO_CREDENTIAL_DATA_KEY, "seeded-data")
         localStorage.setItem(DEMO_CREDENTIAL_KEY_KEY, "seeded-key")
 

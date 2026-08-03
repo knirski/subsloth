@@ -39,7 +39,7 @@ Every promotion requirement above is backed by either a named, currently-runnabl
 | Web compiles + browser test task runs | CI job `🌐 Web / wasmJs` | Passing, with the Pages build explicitly using mock data only |
 | Web has meaningful browser tests | `./gradlew :webApp:wasmJsBrowserTest` | Passing; Nix-provided Chromium 150.0.0.0 and Firefox 153.0 each execute five Web runtime tests |
 | Web demo mode is explicitly labelled and requests no production credentials | `WebDemoBanner` plus `WebRuntimeModeTest.demoBannerExplainsDataAndCredentialBoundary` | Done for the stateless demo |
-| Web credentials absent from local storage | `WebRuntimeModeTest.demoStartupDoesNotUseCredentialStorage` | Done for the stateless demo; authenticated promotion remains open |
+| Web credential storage remains unchanged during demo startup | `WebRuntimeModeTest.demoStartupPreservesCredentialStorage` | Passing; verifies seeded credential-key values remain unchanged, but does not instrument credential-store reads; authenticated promotion remains open |
 | Web production auth/CORS architecture decision recorded | No automated check yet — decision record not yet written | Owned by Change 3B |
 | Web COOP/COEP-capable production host selected | No automated check yet — decision record not yet written | Owned by Change 3B |
 | Web OPFS persistence survives a page reload | No automated check yet — no reload-persistence test exists; GitHub Pages lacks COOP/COEP so OPFS falls back to in-memory storage today | Owned by Change 3B |
