@@ -39,15 +39,20 @@ class WebRuntimeModeTest {
         localStorage.setItem(DEMO_CREDENTIAL_DATA_KEY, "seeded-data")
         localStorage.setItem(DEMO_CREDENTIAL_KEY_KEY, "seeded-key")
 
-        val app = createWebDemoApp()
-
-        assertEquals(WebRuntimeMode.Demo, app.mode)
-        assertEquals(CatalogKey, app.startDestination)
-        assertEquals(DEMO_BANNER_TEXT, app.bannerText)
-        assertEquals("seeded-data", localStorage.getItem(DEMO_CREDENTIAL_DATA_KEY))
-        assertEquals("seeded-key", localStorage.getItem(DEMO_CREDENTIAL_KEY_KEY))
-        app.close()
-        localStorage.removeItem(DEMO_CREDENTIAL_DATA_KEY)
-        localStorage.removeItem(DEMO_CREDENTIAL_KEY_KEY)
+        try {
+            val app = createWebDemoApp()
+            try {
+                assertEquals(WebRuntimeMode.Demo, app.mode)
+                assertEquals(CatalogKey, app.startDestination)
+                assertEquals(DEMO_BANNER_TEXT, app.bannerText)
+                assertEquals("seeded-data", localStorage.getItem(DEMO_CREDENTIAL_DATA_KEY))
+                assertEquals("seeded-key", localStorage.getItem(DEMO_CREDENTIAL_KEY_KEY))
+            } finally {
+                app.close()
+            }
+        } finally {
+            localStorage.removeItem(DEMO_CREDENTIAL_DATA_KEY)
+            localStorage.removeItem(DEMO_CREDENTIAL_KEY_KEY)
+        }
     }
 }
