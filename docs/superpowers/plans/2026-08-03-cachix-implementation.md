@@ -49,6 +49,7 @@
 - [ ] On main pushes and manual dispatches, realize the complete devShell closure with `nix develop .#devShells.x86_64-linux.default --profile devshell-profile --command true`.
 - [ ] On main pushes only, push `devshell-profile` with `cachix push knirski-subsloth devshell-profile`; manual dispatch remains pull-only.
 - [ ] Leave all existing Gradle jobs unchanged.
+- [ ] In the Wasm browser-test job, export `CHROME_BIN` from the cached Playwright Chromium executable before running browser tests outside the Nix devShell.
 - [ ] Run `nix run nixpkgs#actionlint -- .github/workflows/ci.yml`.
 - [ ] Run `./.github/scripts/check-invariants.sh` to scan for credentials and sensitive artifacts without printing secret values.
 - [ ] Commit with `ci: publish devShell to Cachix on main`.

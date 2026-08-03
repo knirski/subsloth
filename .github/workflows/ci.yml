@@ -208,6 +208,17 @@ jobs:
         if: steps.kmp-setup.outputs.playwright-cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Configure ChromeHeadless for WasmJS tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_BIN=$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux*/chrome' -executable -print -quit)
+          if [[ -z "$CHROME_BIN" ]]; then
+            echo "Playwright Chromium executable was not found" >&2
+            exit 1
+          fi
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+
       - run: ./gradlew :webApp:compileKotlinWasmJs
 
       - name: WasmJS browser tests
