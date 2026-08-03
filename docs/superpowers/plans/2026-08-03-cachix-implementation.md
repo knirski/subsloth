@@ -23,7 +23,7 @@
 
 **Files:** Modify `flake.nix` after `inputs` and before `outputs`.
 
-- [ ] Add `nixConfig.extra-substituters` entries for `cache.nixos.org` and `https://knirski-subsloth.cachix.org`.
+- [ ] Add `nixConfig.extra-substituters` entries for `https://cache.nixos.org` and `https://knirski-subsloth.cachix.org`.
 - [ ] Add the NixOS trusted key and `knirski-subsloth.cachix.org-1:3Dn6262rKxqcVYqNA9OJansYszD3OsgI7SEJvn+JQQ4=` to `extra-trusted-public-keys`.
 - [ ] Run `nix flake show --json`; expect valid JSON containing `devShells.x86_64-linux.default`.
 - [ ] Commit with `ci: configure SubSloth Cachix substituter`.
