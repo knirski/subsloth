@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - "**"
@@ -16,6 +17,26 @@ permissions:
   contents: read
 
 jobs:
+  cache-devshell:
+    name: Cache devShell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-nix
+        with:
+          cachix-auth-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
+
+      - name: Build devShell profile
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: nix develop .#devShells.x86_64-linux.default --profile devshell-profile --command true
+
+      - name: Push devShell profile to Cachix
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cachix push knirski-subsloth devshell-profile
+
   # ─── Path filtering ──────────────────────────────────────────────────────
   changes:
     runs-on: ubuntu-latest
@@ -203,6 +224,17 @@ jobs:
             echo "CHROME_BIN=$GITHUB_WORKSPACE/.github/scripts/karma-chrome"
             echo "FIREFOX_BIN=$GITHUB_WORKSPACE/.github/scripts/karma-firefox"
           } >> "$GITHUB_ENV"
+
+      - name: Configure ChromeHeadless for WasmJS tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_BIN=$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux*/chrome' -executable -print -quit)
+          if [[ -z "$CHROME_BIN" ]]; then
+            echo "Playwright Chromium executable was not found" >&2
+            exit 1
+          fi
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
 
       - run: ./gradlew :webApp:compileKotlinWasmJs
 

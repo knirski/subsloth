@@ -5,6 +5,17 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.nixos.org"
+      "https://knirski-subsloth.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "knirski-subsloth.cachix.org-1:3Dn6262rKxqcVYqNA9OJansYszD3OsgI7SEJvn+JQQ4="
+    ];
+  };
+
   outputs =
     { nixpkgs, ... }:
     let
@@ -460,6 +471,9 @@
         KOTLIN_NODEJS_HOME = "${pkgs.nodejs}";
         KOTLIN_YARN_HOME = "${pkgs.yarn}";
         KOTLIN_BINARYEN_HOME = "${pkgs.binaryen}";
+        # Kotlin/Wasm's Karma runner uses ChromeHeadless. Point it at the
+        # nixpkgs chromium package so tests do not depend on a host install.
+        CHROME_BIN = "${pkgs.chromium}/bin/chromium";
 
         shellHook = ''
           # Desktop GL runtime (Skiko/Compose)
