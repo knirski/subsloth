@@ -17,7 +17,9 @@ import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.QualityDescriptor
@@ -185,6 +187,38 @@ object Mapper {
                 premiereDateEpochSeconds = dto.premiereDate?.toInstant(),
             ),
         )
+    }
+
+    /**
+     * Episode detail page (fetched via `GET /episodes/{id}`): maps to the
+     * [EpisodeDetails] branch of [MediaDetails]. Unlike embedded episode
+     * rows, a detail response may omit `available` while still carrying a
+     * playable URL (`url`/`download_url`) — treat that as available
+     * instead of defaulting to upcoming. `show_id` is optional (the live
+     * API omits it in some captures), so the parent-show link is nullable.
+     */
+    fun mapEpisodeDetails(dto: DtoEpisode): Outcome<MediaDetails> = when (val episode = mapEpisode(dto)) {
+        is Outcome.Success -> Outcome.Success(
+            EpisodeDetails(
+                id = Media.MediaId.Episode(episode.value.id),
+                title = episode.value.title,
+                plot = episode.value.plot,
+                description = dto.description,
+                availability = when {
+                    dto.available != null -> episode.value.availability
+                    dto.url != null || dto.downloadUrl != null -> Availability.Available
+                    else -> episode.value.availability
+                },
+                durationMinutes = dto.duration,
+                qualities = episode.value.qualities,
+                subtitles = episode.value.subtitles,
+                showId = dto.showId?.let { ShowId(it) },
+                seasonNumber = episode.value.seasonNumber,
+                episodeNumber = episode.value.episodeNumber,
+            ),
+        )
+
+        is Outcome.Failure -> Outcome.Failure(episode.error)
     }
 
     // ── Availability ─────────────────────────────────────────────────────

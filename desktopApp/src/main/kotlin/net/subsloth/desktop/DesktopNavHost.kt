@@ -32,6 +32,7 @@ import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
+import net.subsloth.core.ui.EpisodeDetailKey
 import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
@@ -40,6 +41,8 @@ import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.subslothNavConfig
+import net.subsloth.details.EpisodeDetailScreen
+import net.subsloth.details.EpisodeDetailViewModel
 import net.subsloth.details.MovieDetailScreen
 import net.subsloth.details.MovieDetailViewModel
 import net.subsloth.details.SeriesDetailScreen
@@ -159,6 +162,33 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 backStack += PlayerKey(
                                     contentId = showId.value.value.toString(),
                                     contentType = "show",
+                                )
+                            },
+                            onEpisodeClick = { episode ->
+                                backStack += EpisodeDetailKey(episode.id.value.toString())
+                            },
+                        )
+                    }
+                }
+            }
+
+            entry<EpisodeDetailKey> { key ->
+                val episodeId = key.episodeId.toIntOrNull()?.let { Media.MediaId.Episode(EpisodeId(it)) }
+                if (episodeId != null) {
+                    ScopedViewModel(key = "episode_detail_${key.episodeId}") {
+                        val vm: EpisodeDetailViewModel = viewModel(key = "episode_detail_${key.episodeId}") {
+                            EpisodeDetailViewModel(
+                                mediaId = episodeId,
+                                getDetails = { id -> container.catalogRepository.getDetails(id) },
+                            )
+                        }
+                        EpisodeDetailScreen(
+                            viewModel = vm,
+                            onNavigateBack = { backStack.removeLastOrNull() },
+                            onPlayClick = { details ->
+                                backStack += PlayerKey(
+                                    contentId = details.id.value.value.toString(),
+                                    contentType = "episode",
                                 )
                             },
                         )

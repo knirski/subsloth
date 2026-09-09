@@ -33,6 +33,10 @@ data class MovieDetailKey(val movieId: String) : AppNavKey
 @Serializable
 data class ShowDetailKey(val showId: String) : AppNavKey
 
+/** Episode detail. */
+@Serializable
+data class EpisodeDetailKey(val episodeId: String) : AppNavKey
+
 /** Video player. */
 @Serializable
 data class PlayerKey(val contentId: String, val contentType: String) : AppNavKey

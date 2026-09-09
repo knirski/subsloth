@@ -45,6 +45,15 @@ data object LoginKey : AppNavKey
 data class MovieDetailKey(val movieId: String) : AppNavKey
 
 @Serializable
+data class ShowDetailKey(val showId: String) : AppNavKey
+
+@Serializable
+data class EpisodeDetailKey(val episodeId: String) : AppNavKey
+
+@Serializable
+data object SearchKey : AppNavKey
+
+@Serializable
 data class PlayerKey(val contentId: String, val contentType: String) : AppNavKey
 ```
 

@@ -131,11 +131,10 @@ class CatalogRepository(
 
         is Media.MediaId.Show -> fetchShowDetails(id.value.value)
 
-        // Episodes aren't top-level catalog entries — there's no episode
-        // detail screen in this app, so navigation never reaches this
-        // branch via MovieDetailKey/ShowDetailKey. Report a typed failure
-        // rather than throwing, since getDetails is still a total function.
-        is Media.MediaId.Episode -> Outcome.Failure(MediaError.NotFound)
+        // Episodes aren't top-level catalog entries, but the episode
+        // detail page fetches them via GET /episodes/{id} — same
+        // detail-response pipeline as movies/shows.
+        is Media.MediaId.Episode -> fetchEpisodeDetails(id.value.value)
     }
 
     private suspend fun fetchMovieDetails(movieId: Int): Outcome<MediaDetails> = try {
@@ -151,6 +150,17 @@ class CatalogRepository(
 
     private suspend fun fetchShowDetails(showId: Int): Outcome<MediaDetails> = try {
         when (val result = Mapper.mapShowDetails(api.getShow(showId))) {
+            is Outcome.Success -> Outcome.Success(result.value)
+            is Outcome.Failure -> Outcome.Failure(result.error)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
+    }
+
+    private suspend fun fetchEpisodeDetails(episodeId: Int): Outcome<MediaDetails> = try {
+        when (val result = Mapper.mapEpisodeDetails(api.getEpisode(episodeId))) {
             is Outcome.Success -> Outcome.Success(result.value)
             is Outcome.Failure -> Outcome.Failure(result.error)
         }
