@@ -159,6 +159,10 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                     contentType = key.contentType,
                     onNavigateBack = ::popHistory,
                     onNavigateToAuthRepair = {},
+                    onNavigateToNextEpisode = { nextId ->
+                        val rawId = (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
+                        if (rawId != null) navigate(PlayerKey(contentId = rawId, contentType = "episode"))
+                    },
                 )
             }
 
@@ -434,6 +438,7 @@ private fun PlayerContent(
     contentType: String,
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
+    onNavigateToNextEpisode: (Media.MediaId) -> Unit,
 ) {
     val mediaId = parseMediaId(contentId, contentType) ?: return
     val storeOwner = remember(contentId) {
@@ -449,6 +454,7 @@ private fun PlayerContent(
             PlayerViewModel(
                 mediaId = mediaId,
                 fetchVideoSource = runtime::fetchVideoSource,
+                onNavigateToNextEpisode = onNavigateToNextEpisode,
             )
         }
         PlayerScreen(

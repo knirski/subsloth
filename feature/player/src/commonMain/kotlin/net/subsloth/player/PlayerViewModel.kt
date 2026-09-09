@@ -8,8 +8,10 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +29,7 @@ import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.PlayCommand
 import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.media.SubtitleMapper
+import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.EpisodeId
@@ -57,6 +60,7 @@ sealed interface PlayerUiState {
         val selectedQualityLabel: String?,
         val nextEpisode: Episode?,
         val showNextEpisodePrompt: Boolean,
+        val nextEpisodeCountdownSeconds: Int? = null,
         val playbackError: PlaybackError?,
         val playbackMode: PlaybackMode,
         val qualityFallbackNotice: Notice?,
@@ -101,7 +105,7 @@ class PlayerViewModel(
     private val fetchEpisodes: suspend (Media.MediaId.Show) -> Outcome<List<Episode>> = {
         Outcome.Success(emptyList())
     },
-    private val saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
+    private val saveProgress: suspend (Media.MediaId, Long, Long, PlaybackMode) -> Unit = { _, _, _, _ -> },
     private val onAuthFailure: () -> Unit = {},
     private val onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
     private val refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
@@ -121,6 +125,9 @@ class PlayerViewModel(
 
     private val _playCommands = Channel<PlayCommand>(Channel.UNLIMITED)
     val playCommands: Flow<PlayCommand> = _playCommands.receiveAsFlow()
+
+    /** Active next-episode countdown tick job; null when not counting. */
+    private var countdownJob: Job? = null
 
     init {
         loadContent()
@@ -235,7 +242,7 @@ class PlayerViewModel(
         val nextCount = (_uiState.value as? PlayerUiState.Content)?.snapshotCountSinceSave ?: 0
 
         if (nextCount % 60 == 0 && mediaId != null) {
-            viewModelScope.launch { saveProgress(mediaId, snapshot.positionSeconds, dur) }
+            viewModelScope.launch { saveProgress(mediaId, snapshot.positionSeconds, dur, stateBefore.playbackMode) }
         }
 
         if (dur > 0L &&
@@ -264,14 +271,65 @@ class PlayerViewModel(
 
     private fun showNextEpisodePrompt(state: PlayerUiState.Content) {
         state.mediaId?.let { id ->
-            viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds) }
+            viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds, state.playbackMode) }
         }
         val nextEp = state.nextEpisode
         if (nextEp != null) {
+            // Auto-advance only for a *available* next episode; the prompt
+            // itself still shows for an unavailable one (Play stays a
+            // no-op there), but without a countdown.
+            val autoPlay = nextEp.availability is Availability.Available
             _uiState.update { current ->
-                (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = true) ?: current
+                (current as? PlayerUiState.Content)?.copy(
+                    showNextEpisodePrompt = true,
+                    nextEpisodeCountdownSeconds = if (autoPlay) NEXT_EPISODE_COUNTDOWN_SECONDS else null,
+                ) ?: current
             }
+            if (autoPlay) startNextEpisodeCountdown()
         }
+    }
+
+    /**
+     * Ticks the next-episode countdown from [NEXT_EPISODE_COUNTDOWN_SECONDS]
+     * down to 1, then auto-plays the next episode. Interrupted by
+     * [dismissNextEpisode] (user Cancel) or by leaving the prompt state.
+     */
+    private fun startNextEpisodeCountdown() {
+        countdownJob?.cancel()
+        countdownJob = viewModelScope.launch {
+            var seconds = NEXT_EPISODE_COUNTDOWN_SECONDS
+            while (seconds > 0) {
+                _uiState.update { current ->
+                    (current as? PlayerUiState.Content)?.copy(nextEpisodeCountdownSeconds = seconds) ?: current
+                }
+                delay(1_000)
+                seconds--
+            }
+            playNextEpisode()
+        }
+    }
+
+    private fun cancelNextEpisodeCountdown() {
+        countdownJob?.cancel()
+        countdownJob = null
+    }
+
+    fun dismissNextEpisode() {
+        cancelNextEpisodeCountdown()
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)?.copy(
+                showNextEpisodePrompt = false,
+                nextEpisodeCountdownSeconds = null,
+            ) ?: current
+        }
+    }
+
+    fun playNextEpisode() {
+        cancelNextEpisodeCountdown()
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        val nextEp = state.nextEpisode ?: return
+        dismissNextEpisode()
+        onNavigateToNextEpisode(Media.MediaId.Episode(nextEp.id))
     }
 
     private fun populateNextEpisode(source: VideoSource) {
@@ -338,19 +396,6 @@ class PlayerViewModel(
         }
     }
 
-    fun dismissNextEpisode() {
-        _uiState.update { current ->
-            (current as? PlayerUiState.Content)?.copy(showNextEpisodePrompt = false) ?: current
-        }
-    }
-
-    fun playNextEpisode() {
-        val state = _uiState.value as? PlayerUiState.Content ?: return
-        val nextEp = state.nextEpisode ?: return
-        dismissNextEpisode()
-        onNavigateToNextEpisode(Media.MediaId.Episode(nextEp.id))
-    }
-
     fun retryPlayback() {
         loadContent()
     }
@@ -404,7 +449,12 @@ class PlayerViewModel(
         if (state != null) {
             viewModelScope.launch {
                 withContext(NonCancellable) {
-                    saveProgress(state.mediaId ?: return@withContext, state.positionSeconds, state.durationSeconds)
+                    saveProgress(
+                        state.mediaId ?: return@withContext,
+                        state.positionSeconds,
+                        state.durationSeconds,
+                        state.playbackMode,
+                    )
                 }
             }
         }
@@ -429,5 +479,7 @@ class PlayerViewModel(
         // message. The player bridge is not coupled to the network
         // shell so we recover the status code from the message.
         val HTTP_STATUS_REGEX = Regex("""\b(40[0-9]|41[0-9]|42[0-9]|43[0-9]|44[0-9]|45[0-9])\b""")
+
+        const val NEXT_EPISODE_COUNTDOWN_SECONDS = 10
     }
 }

@@ -3,6 +3,7 @@ package net.subsloth.details
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,6 +54,7 @@ fun EpisodeDetailScreen(
 
             is EpisodeDetailUiState.Content -> EpisodeDetailContent(
                 details = s.details,
+                isWatched = s.isWatched,
                 modifier = Modifier.fillMaxSize(),
                 onNavigateBack = onNavigateBack,
                 onPlayClick = onPlayClick,
@@ -65,6 +67,7 @@ fun EpisodeDetailScreen(
 @Composable
 private fun EpisodeDetailContent(
     details: EpisodeDetails,
+    isWatched: Boolean,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
     onPlayClick: (EpisodeDetails) -> Unit,
@@ -95,10 +98,20 @@ private fun EpisodeDetailContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = details.title,
-                style = MaterialTheme.typography.headlineSmall,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = details.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                if (isWatched) {
+                    Text(
+                        text = "✓ Watched",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
 
             Text(
                 text = details.availability.label(),

@@ -138,6 +138,7 @@ fun PlayerOverlay(
 
         if (state.showNextEpisodePrompt) {
             NextEpisodePrompt(
+                countdownSeconds = state.nextEpisodeCountdownSeconds,
                 onPlay = onPlayNextEpisode,
                 onDismiss = onDismissNextEpisode,
             )
@@ -439,7 +440,7 @@ private fun AutoQualityNotice(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
+private fun NextEpisodePrompt(countdownSeconds: Int?, onPlay: () -> Unit, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f)),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -450,6 +451,16 @@ private fun NextEpisodePrompt(onPlay: () -> Unit, onDismiss: () -> Unit) {
             style = MaterialTheme.typography.headlineSmall,
             color = Color.White,
         )
+        countdownSeconds?.let { seconds ->
+            Spacer(modifier = Modifier.height(8.dp))
+            // Counts down from 10 to 1; auto-plays the next episode at 0
+            // unless the user cancels.
+            Text(
+                text = stringResource(Res.string.player_next_episode_countdown, seconds),
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.8f),
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onPlay, modifier = Modifier.width(200.dp)) {
             Text(stringResource(Res.string.player_play))

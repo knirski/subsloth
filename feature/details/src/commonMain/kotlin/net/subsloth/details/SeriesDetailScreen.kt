@@ -260,7 +260,11 @@ private fun ShowDetailWideLayout(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 season.episodes.forEach { episode ->
-                    EpisodeRow(episode = episode, onClick = { onEpisodeClick(episode) })
+                    EpisodeRow(
+                        episode = episode,
+                        isWatched = state.watchedEpisodeIds.contains(episode.id.value),
+                        onClick = { onEpisodeClick(episode) },
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -386,7 +390,11 @@ private fun ShowDetailCompactLayout(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 season.episodes.forEach { episode ->
-                    EpisodeRow(episode = episode, onClick = { onEpisodeClick(episode) })
+                    EpisodeRow(
+                        episode = episode,
+                        isWatched = state.watchedEpisodeIds.contains(episode.id.value),
+                        onClick = { onEpisodeClick(episode) },
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -497,7 +505,7 @@ private fun SeasonSelector(
 }
 
 @Composable
-fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, isWatched: Boolean = false, onClick: () -> Unit = {}) {
     val isUpcoming = episode.availability is Availability.Upcoming
 
     Card(
@@ -523,6 +531,13 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, onClick: () -> U
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (isWatched) {
+                    Text(
+                        text = "✓",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 if (isUpcoming) {
                     Text(
                         text = stringResource(Res.string.show_upcoming),

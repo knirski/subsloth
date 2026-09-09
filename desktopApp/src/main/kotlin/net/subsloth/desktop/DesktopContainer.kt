@@ -48,6 +48,7 @@ import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.error.NetworkErrorClassifier
 import net.subsloth.core.network.media.api.Api
@@ -63,6 +64,8 @@ import net.subsloth.database.entity.CachedCatalogCountryEntity
 import net.subsloth.database.entity.CachedCatalogGenreEntity
 import net.subsloth.database.entity.CachedCatalogItemEntity
 import net.subsloth.database.entity.CachedCatalogItemWithMetadata
+import net.subsloth.database.entity.OfflinePlaybackProgressEntity
+import net.subsloth.database.entity.WatchedStateEntity
 import net.subsloth.preferences.AccountProfileStore
 import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
@@ -551,19 +554,73 @@ class DesktopContainer(dataDirOverride: File? = null) {
             is Outcome.Failure -> Outcome.Failure(result.error)
         }
 
-    /** Persists online playback progress for the active profile. */
-    suspend fun savePlaybackProgress(mediaId: Media.MediaId, positionSeconds: Long, durationSeconds: Long) {
-        database.accountPlaybackProgressDao().upsert(
-            AccountPlaybackProgressEntity(
+    /**
+     * Persists playback progress for the active profile. Online progress
+     * goes to the account-scoped table (and marks the item watched once
+     * the completion threshold is crossed); offline playback goes to the
+     * shared offline table — [PlayerViewModel] passes its mode through.
+     */
+    suspend fun savePlaybackProgress(
+        mediaId: Media.MediaId,
+        positionSeconds: Long,
+        durationSeconds: Long,
+        playbackMode: PlaybackMode = PlaybackMode.ONLINE,
+    ) {
+        when (playbackMode) {
+            PlaybackMode.OFFLINE -> database.offlinePlaybackProgressDao().upsert(
+                OfflinePlaybackProgressEntity(
+                    contentId = mediaId.toContentId(),
+                    positionSeconds = positionSeconds,
+                    durationSeconds = durationSeconds,
+                    updatedAtEpochSeconds = clock.now().epochSeconds,
+                ),
+            )
+
+            PlaybackMode.ONLINE -> {
+                database.accountPlaybackProgressDao().upsert(
+                    AccountPlaybackProgressEntity(
+                        profileKey = currentProfileKey().value,
+                        contentId = mediaId.toContentId(),
+                        contentType = mediaId.toContentType(),
+                        positionSeconds = positionSeconds,
+                        durationSeconds = durationSeconds,
+                        updatedAtEpochSeconds = clock.now().epochSeconds,
+                    ),
+                )
+                if (durationSeconds > 0 &&
+                    positionSeconds.toDouble() / durationSeconds > CompletionPolicy.WATCHED_THRESHOLD
+                ) {
+                    markWatched(mediaId)
+                }
+            }
+        }
+    }
+
+    /** Marks [mediaId] watched for the active profile (watched_state table). */
+    suspend fun markWatched(mediaId: Media.MediaId) {
+        database.watchedStateDao().upsert(
+            WatchedStateEntity(
                 profileKey = currentProfileKey().value,
                 contentId = mediaId.toContentId(),
                 contentType = mediaId.toContentType(),
-                positionSeconds = positionSeconds,
-                durationSeconds = durationSeconds,
-                updatedAtEpochSeconds = clock.now().epochSeconds,
+                isWatched = true,
+                watchedAtEpochSeconds = clock.now().epochSeconds,
             ),
         )
     }
+
+    /** Content ids marked watched for the active profile (series rows, detail badges). */
+    suspend fun listWatchedContentIds(): Set<String> = database.watchedStateDao()
+        .getAllForProfile(currentProfileKey().value)
+        .first()
+        .filter { it.isWatched }
+        .map { it.contentId }
+        .toSet()
+
+    /** Watched state for a single media item, for the active profile. */
+    suspend fun isWatched(mediaId: Media.MediaId): Boolean = database.watchedStateDao()
+        .getByProfileAndContentId(currentProfileKey().value, mediaId.toContentId())
+        ?.isWatched == true
 
     suspend fun savePlaybackSpeed(speed: Float) {
         userPreferences.setPlaybackSpeed(currentProfileKey(), speed)

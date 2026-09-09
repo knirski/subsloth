@@ -4,6 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +56,7 @@ sealed interface ShowDetailUiState {
         val isWatchLater: Boolean = false,
         val isDownloaded: Boolean = false,
         val progressFraction: Double? = null,
+        val watchedEpisodeIds: ImmutableList<Int> = persistentListOf(),
     ) : ShowDetailUiState
 
     @Immutable
@@ -130,6 +134,7 @@ class ShowDetailViewModel(
     private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
         Result.success(emptyList())
     },
+    private val listWatchedIds: suspend () -> Set<String> = { emptySet() },
     private val savedState: Map<String, String> = mapOf("selectedSeason" to ""),
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ShowDetailUiState>(ShowDetailUiState.Loading)
@@ -146,6 +151,7 @@ class ShowDetailViewModel(
                 is Outcome.Success -> {
                     val details = detailsResult.value
                     if (details is ShowDetails) {
+                        val watchedIds = runCatching { listWatchedIds() }.getOrDefault(emptySet())
                         val library = when (val lib = listLibrary()) {
                             is Outcome.Success -> lib.value
                             is Outcome.Failure -> emptyList()
@@ -162,6 +168,11 @@ class ShowDetailViewModel(
                                 isDownloaded = downloads.any {
                                     it.mediaId == mediaId && it is DownloadState.Completed
                                 },
+                                watchedEpisodeIds = details.seasons
+                                    .flatMap { season -> season.episodes }
+                                    .filter { episode -> watchedIds.contains(episode.id.value.toString()) }
+                                    .map { episode -> episode.id.value }
+                                    .toImmutableList(),
                             )
                     } else {
                         _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
@@ -193,7 +204,7 @@ sealed interface EpisodeDetailUiState {
     data object Loading : EpisodeDetailUiState
 
     @Immutable
-    data class Content(val details: EpisodeDetails) : EpisodeDetailUiState
+    data class Content(val details: EpisodeDetails, val isWatched: Boolean = false) : EpisodeDetailUiState
 
     @Immutable
     data class Error(val error: UiError) : EpisodeDetailUiState
@@ -209,6 +220,7 @@ class EpisodeDetailViewModel(
     private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
         Outcome.Failure(DecodeError.SerializationFailed)
     },
+    private val isWatched: suspend (Media.MediaId) -> Boolean = { false },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<EpisodeDetailUiState>(EpisodeDetailUiState.Loading)
     val uiState: StateFlow<EpisodeDetailUiState> = _uiState.asStateFlow()
@@ -224,7 +236,10 @@ class EpisodeDetailViewModel(
                 is Outcome.Success -> {
                     val details = detailsResult.value
                     if (details is EpisodeDetails) {
-                        _uiState.value = EpisodeDetailUiState.Content(details)
+                        _uiState.value = EpisodeDetailUiState.Content(
+                            details = details,
+                            isWatched = runCatching { isWatched(mediaId) }.getOrDefault(false),
+                        )
                     } else {
                         _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }

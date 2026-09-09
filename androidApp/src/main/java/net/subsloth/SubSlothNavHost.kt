@@ -180,6 +180,7 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds it
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        listWatchedIds = { container.listWatchedContentIds() },
                                     ),
                                 ),
                             )
@@ -214,6 +215,7 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds
                                         // it whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        isWatched = { container.isWatched(it) },
                                     ),
                                 ),
                             )
@@ -264,8 +266,15 @@ fun SubSlothNavHost(
                                         fetchVideoSource = { mediaId -> container.playbackPort.prepareSource(mediaId) },
                                         refreshStreamUrl = { mediaId -> container.playbackPort.refreshStreamUrl(mediaId) },
                                         fetchEpisodes = { showId -> container.fetchEpisodesForShow(showId) },
-                                        saveProgress = { mediaId, positionSeconds, durationSeconds ->
-                                            container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds)
+                                        saveProgress = { mediaId, positionSeconds, durationSeconds, playbackMode ->
+                                            container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds, playbackMode)
+                                        },
+                                        onNavigateToNextEpisode = { nextId ->
+                                            val rawId =
+                                                (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
+                                            if (rawId != null) {
+                                                backStack += PlayerKey(contentId = rawId, contentType = "episode")
+                                            }
                                         },
                                         onAuthFailure = container::invalidateSession,
                                         savePlaybackSpeed = container::savePlaybackSpeed,
