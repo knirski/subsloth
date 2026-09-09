@@ -94,8 +94,11 @@ session via `SessionGate`; login is no longer a nav route.
 `typealias AndroidSessionState = ValidatingSessionState` so its call sites and instrumented
 tests are unchanged. Known desktop omissions (deliberate):
 
-- **Build-config base URL** — desktop has no `SUBSLOTH_API_BASE_URL` build-config field;
-  the persisted `UserPreferences.apiBaseUrl` value is used as-is.
+- **API base URL** — desktop has no build-config field; the persisted
+  `UserPreferences.apiBaseUrl` value is used, overridden by the
+  `SUBSLOTH_API_BASE_URL` environment variable while it is still the
+  default (same precedence as Android's `BuildConfig.SUBSLOTH_API_BASE_URL`
+  — see `DesktopContainer.resolveApiBaseUrl`/`apiBaseUrlFlow`).
 - The platform-neutral helper subset of `AppContainer` (catalog lambdas, settings writers,
   playback-progress persistence) is mirrored into `DesktopContainer` rather than extracted
   into a shared runtime; consolidating the two containers is a future refactor.

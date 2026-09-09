@@ -31,6 +31,20 @@ import kotlin.coroutines.cancellation.CancellationException
 
 /** Duration of the bundled mock film, in seconds. */
 private const val MOCK_FILM_DURATION_SECONDS = 45L
+private const val MOCK_MOVIE2_DURATION_SECONDS = 8L
+private const val MOCK_SERIES_DURATION_SECONDS = 8L
+
+/** Bundled demo assets: each maps to a small mp4 + EN/PL SRT sidecars. */
+private enum class MockVideoAsset(
+    val videoPath: String,
+    val subtitleEnPath: String,
+    val subtitlePlPath: String,
+    val durationSeconds: Long,
+) {
+    Film("files/mock_film.mp4", "files/mock_film.srt", "files/mock_film_pl.srt", MOCK_FILM_DURATION_SECONDS),
+    Movie2("files/mock_movie2.mp4", "files/mock_movie2.srt", "files/mock_movie2_pl.srt", MOCK_MOVIE2_DURATION_SECONDS),
+    Series("files/mock_series.mp4", "files/mock_series.srt", "files/mock_series_pl.srt", MOCK_SERIES_DURATION_SECONDS),
+}
 
 /** The fixture-backed runtime used by the publicly deployed GitHub Pages demo. */
 class WebDemoRuntime internal constructor(private val api: Api) {
@@ -51,7 +65,7 @@ class WebDemoRuntime internal constructor(private val api: Api) {
         when (mediaId) {
             is Media.MediaId.Movie -> Mapper.mapMovieDetails(api.getMovie(mediaId.value.value))
             is Media.MediaId.Show -> Mapper.mapShowDetails(api.getShow(mediaId.value.value))
-            is Media.MediaId.Episode -> Outcome.Failure(DecodeError.SerializationFailed)
+            is Media.MediaId.Episode -> Mapper.mapEpisodeDetails(api.getEpisode(mediaId.value.value))
         }
     } catch (exception: CancellationException) {
         throw exception
@@ -67,12 +81,23 @@ class WebDemoRuntime internal constructor(private val api: Api) {
         )
     }
 
-    /** Returns the bundled mock film so the Pages demo can exercise real playback. */
+    /**
+     * Returns a bundled mock asset for the requested media so the Pages
+     * demo can exercise real playback. Assets are per-kind (movies →
+     * mock_film/mock_movie2, series episodes → mock_series), each with
+     * EN/PL subtitle tracks and the asset's own duration.
+     */
     suspend fun fetchVideoSource(mediaId: Media.MediaId): Outcome<VideoSource> {
         val displayName = listCatalog().fold(
             onSuccess = { media -> media.firstOrNull { it.id == mediaId }?.title },
             onFailure = { null },
         )
+        val asset = when (mediaId) {
+            is Media.MediaId.Movie ->
+                if (mediaId.value.value == 1379) MockVideoAsset.Movie2 else MockVideoAsset.Film
+
+            is Media.MediaId.Episode, is Media.MediaId.Show -> MockVideoAsset.Series
+        }
         val quality = Quality(
             info = QualityDescriptor(
                 resolution = Resolution(480, 270),
@@ -80,21 +105,21 @@ class WebDemoRuntime internal constructor(private val api: Api) {
                 bitrate = null,
                 mimeType = "video/mp4",
             ),
-            url = Res.getUri("files/mock_film.mp4"),
+            url = Res.getUri(asset.videoPath),
             downloadUrl = null,
         )
         val subtitles = persistentListOf(
             Subtitle(
                 language = LanguageCode("en"),
                 languageDisplayName = "English",
-                url = Res.getUri("files/mock_film.srt"),
+                url = Res.getUri(asset.subtitleEnPath),
                 downloadUrl = null,
                 format = SubtitleFormat.SRT,
             ),
             Subtitle(
                 language = LanguageCode("pl"),
                 languageDisplayName = "Polski",
-                url = Res.getUri("files/mock_film_pl.srt"),
+                url = Res.getUri(asset.subtitlePlPath),
                 downloadUrl = null,
                 format = SubtitleFormat.SRT,
             ),
@@ -102,11 +127,11 @@ class WebDemoRuntime internal constructor(private val api: Api) {
         return Outcome.Success(
             VideoSource(
                 mediaId = mediaId,
-                streamUrl = Res.getUri("files/mock_film.mp4"),
+                streamUrl = Res.getUri(asset.videoPath),
                 selectedQuality = quality,
                 availableQualities = persistentListOf(quality),
                 availableSubtitles = subtitles,
-                durationSeconds = MOCK_FILM_DURATION_SECONDS,
+                durationSeconds = asset.durationSeconds,
                 displayName = displayName,
             ),
         )
