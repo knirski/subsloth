@@ -92,8 +92,12 @@ class DesktopContainer(dataDirOverride: File? = null) {
      */
     private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** App data directory (`~/.local/share/subsloth` on Linux/macOS, `%APPDATA%\subsloth` on Windows). */
-    private val dataDir: File = dataDirOverride ?: resolveAppDataDir()
+    /**
+     * App data directory (`~/.local/share/subsloth` on Linux/macOS, `%APPDATA%\subsloth` on
+     * Windows). Created eagerly: SQLite does not create missing parent directories, so the
+     * first database operation would fail on a fresh install otherwise.
+     */
+    private val dataDir: File = (dataDirOverride ?: resolveAppDataDir()).apply { mkdirs() }
 
     private val dataStore: DataStore<Preferences> by lazy {
         createDataStorePreferences(name = "subsloth", scope = containerScope)
