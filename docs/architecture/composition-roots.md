@@ -111,10 +111,21 @@ user's Wi-Fi-only preference is the only transfer gate there (documented caveat 
 `seasonQueueController`, `listSeasonQueues`, `retryDownload`, and `deleteAllDownloads` mirror
 `AppContainer`'s helpers; `DesktopNavHost`'s downloads, library, offline-library, and settings
 entries consume them. `listProgress` on the downloads entry stays on its safe default for the
-same reason as Android (the shared progress table has no `contentType` column). Byte-transfer
-(download workers) remains Android-only: `DownloadForegroundService` has no desktop
-counterpart, so enqueued desktop downloads reach queued/paused state but no background
-transfer runs yet.
+same reason as Android (the shared progress table has no `contentType` column).
+
+**Byte transfers run on both desktop and Android.** `DownloadTransferCoordinator`
+(`core/media/.../download/DownloadTransferCoordinator.kt`, in `:core:media`'s jvm-shared
+source set) watches the `downloaded_media` table for QUEUED rows and streams each through
+`DownloadTransferer` (Ktor → staged `.part` file → rename) with progress events on a
+`SharedFlow`. Policy is enforced per transfer: a metered network defers the item as
+PAUSED (NeedsWifi, Wi-Fi-only contract), the stream URL is re-resolved per transfer against
+the session-scoped `Api` (progressive `download_url` only — `.m3u8` playlists are rejected),
+and a pause/remove mid-transfer aborts the stream without overwriting the persisted status.
+There is no ranged resume: aborted or failed transfers restart from scratch. Android's
+`AppContainer` runs the watcher for the process lifetime and surfaces progress through
+`DownloadForegroundService` (started on first transfer, stopped when idle);
+`DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer is not
+wired yet — subtitle rows stay metadata-only.
 
 ## Web — no composition root (demo tier)
 

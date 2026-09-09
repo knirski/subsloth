@@ -16,25 +16,25 @@ import java.util.UUID
  */
 class DesktopDownloadStore(private val filesDir: File) :
     DownloadFileStore,
-    OfflineAssetFiles {
+    OfflineAssetFiles,
+    DownloadTransferStore {
 
     init {
         filesDir.mkdirs()
     }
 
-    fun allocatePath(
-        contentId: String,
-        extension: String,
-        fileName: String = UUID.randomUUID().toString(),
-    ): OfflineRelativePath {
+    override fun allocatePath(contentId: String, extension: String): OfflineRelativePath =
+        allocatePath(contentId, extension, UUID.randomUUID().toString())
+
+    private fun allocatePath(contentId: String, extension: String, fileName: String): OfflineRelativePath {
         val dir = filesDir.resolve(contentId).also { it.mkdirs() }
         val relative = "$contentId/$fileName$extension"
         return OfflineRelativePath.safe(relative)
     }
 
-    fun stageFile(relativePath: OfflineRelativePath): File = File(filesDir, "${relativePath.value}.part")
+    override fun stageFile(relativePath: OfflineRelativePath): File = File(filesDir, "${relativePath.value}.part")
 
-    fun finalFile(relativePath: OfflineRelativePath): File = File(filesDir, relativePath.value)
+    override fun finalFile(relativePath: OfflineRelativePath): File = File(filesDir, relativePath.value)
 
     fun storeStream(inputStream: java.io.InputStream, targetFile: File): Long {
         targetFile.parentFile?.mkdirs()
@@ -43,7 +43,7 @@ class DesktopDownloadStore(private val filesDir: File) :
         }
     }
 
-    fun finalizeDownload(staged: File, target: File): Boolean {
+    override fun finalizeDownload(staged: File, target: File): Boolean {
         target.parentFile?.mkdirs()
         return staged.renameTo(target)
     }
