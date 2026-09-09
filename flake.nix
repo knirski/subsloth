@@ -40,7 +40,7 @@
         # read-only Nix store and fails. 36 is inert (only satisfies the
         # bootstrap check); actual compilation uses 37.
         buildToolsVersions = [ "37.0.0" "36.0.0" ];
-        platformToolsVersion = "37.0.0";
+        platformToolsVersion = "37.0.1";
       };
 
       androidSdk = androidPackages.androidsdk;
