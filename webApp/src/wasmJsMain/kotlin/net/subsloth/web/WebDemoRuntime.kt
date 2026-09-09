@@ -1,5 +1,6 @@
 package net.subsloth.web
 
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import net.subsloth.catalog.HomeViewModel
@@ -20,13 +21,16 @@ import kotlin.coroutines.cancellation.CancellationException
 
 /** The fixture-backed runtime used by the publicly deployed GitHub Pages demo. */
 class WebDemoRuntime internal constructor(private val api: Api) {
+    private val log = Logger.withTag("WebDemoRuntime")
+
     suspend fun listCatalog(): Outcome<List<Media>> = try {
         val movies = Mapper.mapMovies(api.listMovies().movies).items
         val shows = Mapper.mapShows(api.listShows().shows).items
         Outcome.Success(movies + shows)
     } catch (exception: CancellationException) {
         throw exception
-    } catch (_: Exception) {
+    } catch (exception: Exception) {
+        log.e(exception) { "listCatalog failed" }
         Outcome.Failure(DecodeError.SerializationFailed)
     }
 
@@ -38,7 +42,8 @@ class WebDemoRuntime internal constructor(private val api: Api) {
         }
     } catch (exception: CancellationException) {
         throw exception
-    } catch (_: Exception) {
+    } catch (exception: Exception) {
+        log.e(exception) { "getDetails failed for $mediaId" }
         Outcome.Failure(DecodeError.SerializationFailed)
     }
 
