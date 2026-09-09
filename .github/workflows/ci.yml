@@ -205,7 +205,15 @@ jobs:
         uses: ./.github/actions/kmp-setup
 
       - name: Install browser OS dependencies
-        run: npx --yes playwright@${{ steps.kmp-setup.outputs.playwright-version }} install-deps chromium firefox
+        run: |
+          # Playwright's internal `apt-get update` hits the runner's preinstalled
+          # Google Chrome apt repo, whose CDN intermittently serves an index that
+          # does not match its Release file (hash sum mismatch), failing the step.
+          # Playwright downloads its own browser builds and never installs
+          # chrome from apt, so dropping the third-party repo makes this step
+          # immune to that outage.
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          npx --yes playwright@${{ steps.kmp-setup.outputs.playwright-version }} install-deps chromium firefox
 
       - name: Install Chromium and Firefox for WasmJS browser tests
         if: steps.kmp-setup.outputs.playwright-cache-hit != 'true'
