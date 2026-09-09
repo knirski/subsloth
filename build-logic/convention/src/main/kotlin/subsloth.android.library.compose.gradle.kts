@@ -11,6 +11,6 @@ android {
 
 composeCompiler {
     stabilityConfigurationFiles.add(
-        rootProject.layout.projectDirectory.file("config/compose_stability.conf"),
+        layout.settingsDirectory.file("config/compose_stability.conf"),
     )
 }

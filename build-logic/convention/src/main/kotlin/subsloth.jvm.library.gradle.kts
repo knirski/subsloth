@@ -57,9 +57,9 @@ spotless {
 }
 
 detekt {
-    config.setFrom(file("${rootProject.layout.projectDirectory}/config/detekt.yml"))
-    basePath = rootProject.layout.projectDirectory.asFile
-    baseline.set(file("${rootProject.layout.projectDirectory}/config/detekt-baseline.xml"))
+    config.setFrom(file("${rootDir}/config/detekt.yml"))
+    basePath = rootDir
+    baseline.set(file("${rootDir}/config/detekt-baseline.xml"))
 }
 
 dependencies {

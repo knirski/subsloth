@@ -4,17 +4,17 @@
 
 | Component | Version |
 |---|---|
-| AGP | 9.3.1 |
+| AGP | 9.4.0 |
 | Gradle | 9.6.1 |
-| Kotlin | 2.4.10 |
-| KSP | 2.3.10 |
-| Compose BOM | 2026.06.01 |
+| Kotlin | 2.4.20 |
+| KSP | 2.3.11 |
+| Compose BOM | 2026.08.00 |
 | compileSdk / targetSdk | 36 |
 | minSdk | 26 |
 | JDK (compile) | 17 (via `jvmToolchain(17)`) |
 | JDK (daemon) | 25 (Nix flake `JAVA_HOME`) |
-| Detekt | 2.0.0-alpha.5 |
-| Spotless | 8.9.0 |
+| Detekt | 2.0.0-alpha.6 |
+| Spotless | 8.10.2 |
 
 ## Convention Plugins (6)
 
