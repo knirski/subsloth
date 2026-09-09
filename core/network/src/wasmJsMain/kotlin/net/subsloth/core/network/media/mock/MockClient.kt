@@ -122,15 +122,7 @@ private val fixtureShowDetail =
       "backdrop_url": "https://media.subsloth.invalid/uploads/show/backdrop/1/x.jpg",
       "poster_thumb": "https://media.subsloth.invalid/uploads/show/poster/1/thumb_x.jpg",
       "slug": "breaking-bad",
-      "seasons": [
-        {
-          "id": 1,
-          "show_id": 1,
-          "season_number": 1,
-          "name": "Season 1",
-          "episode_count": 7
-        }
-      ],
+      "seasons": 1,
       "episodes": [
         {
           "id": 1,
