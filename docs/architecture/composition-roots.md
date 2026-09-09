@@ -52,14 +52,20 @@ dead `LoginKey` placeholder it used to), and every reachable nav entry — catal
 detail, auth repair, library, downloads, settings, player — constructs its ViewModel from a real
 `AppContainer` adapter rather than a no-op/default port binding.
 
-**One narrow, known-and-documented gap remains.** `core/domain/.../PlaybackPort` (stream-source
-resolution and playback control) has no implementation anywhere in the tree — `PlayerViewModel`'s
-`fetchVideoSource`/`refreshStreamUrl` stay on their safe no-op defaults. Building a real adapter
-means inventing Kodi-compatible stream-URL resolution and quality/DRM selection from scratch, which
-is out of proportion for a session/runtime-wiring change and is left for a future change scoped to
-the `playback` capability. Everything else `PlayerViewModel` needs (episode listing, playback
-progress, playback speed/subtitle-language preferences, auth-failure handling) is wired to real
-adapters.
+**Playback is wired.** `AppContainer.playbackPort` exposes an `ApiPlaybackPort`
+(`core/network/.../playback/ApiPlaybackPort.kt`), rebuilt together with the session-scoped
+`Api`/`CatalogRepository` pair on every session change. It resolves stream sources for movies,
+episodes, and shows (a show resolves to its first available episode, re-fetched via
+`Api.getEpisode` to obtain the signed URL), mapping the signed top-level HLS URL (or the item's
+`qualities` variants, selected via `QualityPolicy`) into `VideoSource` with subtitle tracks and
+duration. `SubSlothNavHost`'s player entry passes `prepareSource`/`refreshStreamUrl` as
+`PlayerViewModel`'s `fetchVideoSource`/`refreshStreamUrl` lambdas, so HTTP 401s during stream
+resolution now route through `PlaybackErrorClassifier` into the auth-repair flow. Renderer-level
+transport control (play/pause/seek) remains owned by the platform player bridge in `:core:media`;
+the port's `play`/`pause`/`seek` methods are documented no-ops in `ApiPlaybackPort` until a
+remote-control consumer exists. Offline (`PlaybackMode.OFFLINE`) playback is not wired yet:
+`PlayerViewModel` handles the mode, but no composition root builds offline sources from
+`DownloadController`'s stored assets — a deliberate follow-up, not part of this adapter.
 
 ## Desktop and Web — no composition root yet
 
@@ -106,8 +112,8 @@ production startup path.
 
 ## Summary
 
-| Platform | Data/catalog adapters | Session/auth adapter |
-|---|---|---|
-| Android | Real (`AppContainer`) | Real (`AndroidSessionState`, Change 2) |
-| Desktop | None yet (Change 3A scope) | In-memory default (Change 3A scope) |
-| Web | None yet (Change 3B scope) | In-memory default (Change 3B scope) |
+| Platform | Data/catalog adapters | Session/auth adapter | Playback adapter |
+|---|---|---|---|
+| Android | Real (`AppContainer`) | Real (`AndroidSessionState`, Change 2) | Real (`ApiPlaybackPort`) |
+| Desktop | None yet (Change 3A scope) | In-memory default (Change 3A scope) | None (in-port no-op default) |
+| Web | None yet (Change 3B scope) | In-memory default (Change 3B scope) | Demo mock (`WebDemoRuntime`) |
