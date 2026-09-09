@@ -7,7 +7,7 @@
     <string name="settings_subtitle_language">Subtitle language</string>
     <string name="settings_quality_playback_section">Quality &amp; Playback</string>
     <string name="settings_preferred_quality">Preferred quality</string>
-    <string name="settings_playback_speed">Playback speed: %sx</string>
+    <string name="settings_playback_speed">Playback speed: %1$sx</string>
     <string name="settings_downloads_section">Downloads</string>
     <string name="settings_downloads_wifi_only">Downloads on Wi-Fi only</string>
     <string name="settings_diagnostics">Diagnostics</string>
