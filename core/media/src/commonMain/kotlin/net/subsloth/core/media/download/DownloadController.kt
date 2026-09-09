@@ -29,7 +29,7 @@ import net.subsloth.database.entity.DownloadedSubtitleEntity
 import kotlin.time.Instant
 
 class DownloadController(
-    private val storageManager: DownloadStorageManager,
+    private val storageManager: DownloadFileStore,
     private val storageProvider: StoragePort,
     private val connectivityChecker: ConnectivityPort,
     private val downloadedMediaDao: DownloadedMediaDao,

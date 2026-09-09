@@ -89,15 +89,27 @@ session via `SessionGate`; login is no longer a nav route.
 `typealias AndroidSessionState = ValidatingSessionState` so its call sites and instrumented
 tests are unchanged. Known desktop omissions (deliberate):
 
-- **Downloads** — `DownloadController` and its `Context`-backed storage shell
-  (`DownloadStorageManager`/`StorageProvider`/`ConnectivityChecker`) are androidMain-only,
-  so `DownloadsViewModel` and the downloads controls stay on their safe empty/no-op
-  defaults until a JVM storage shell exists.
 - **Build-config base URL** — desktop has no `SUBSLOTH_API_BASE_URL` build-config field;
   the persisted `UserPreferences.apiBaseUrl` value is used as-is.
 - The platform-neutral helper subset of `AppContainer` (catalog lambdas, settings writers,
   playback-progress persistence) is mirrored into `DesktopContainer` rather than extracted
   into a shared runtime; consolidating the two containers is a future refactor.
+
+**Downloads are wired on desktop.** `DesktopContainer.downloadController` mirrors
+`AppContainer`'s adapter: `DownloadController` (now in `:core:media`'s commonMain, since it is
+platform-neutral) runs with the JVM storage shell from `:core:media`'s `jvmMain` —
+`DesktopDownloadStore` (implements the `DownloadFileStore` port under `<dataDir>/downloads`),
+`DesktopStorageProvider` (`StoragePort` over the same directory's disk space), and
+`DesktopConnectivityChecker` (`ConnectivityPort`). The desktop connectivity checker has no
+portable metered-network API and reports the flat desktop model (online, unmetered) — the
+user's Wi-Fi-only preference is the only transfer gate there (documented caveat on the class).
+`seasonQueueController`, `listSeasonQueues`, `retryDownload`, and `deleteAllDownloads` mirror
+`AppContainer`'s helpers; `DesktopNavHost`'s downloads, library, offline-library, and settings
+entries consume them. `listProgress` on the downloads entry stays on its safe default for the
+same reason as Android (the shared progress table has no `contentType` column). Byte-transfer
+(download workers) remains Android-only: `DownloadForegroundService` has no desktop
+counterpart, so enqueued desktop downloads reach queued/paused state but no background
+transfer runs yet.
 
 ## Web — no composition root (demo tier)
 
