@@ -3,6 +3,8 @@ package net.subsloth.desktop
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import co.touchlab.kermit.Logger
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,14 +14,24 @@ import kotlinx.coroutines.launch
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
 import net.subsloth.core.domain.policy.CompletionPolicy
+import net.subsloth.core.domain.port.ConnectivityPort
 import net.subsloth.core.domain.port.PlaybackPort
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
+import net.subsloth.core.domain.port.StoragePort
+import net.subsloth.core.media.download.DesktopConnectivityChecker
+import net.subsloth.core.media.download.DesktopDownloadStore
+import net.subsloth.core.media.download.DesktopStorageProvider
+import net.subsloth.core.media.download.DownloadController
+import net.subsloth.core.media.download.SeasonQueueController
+import net.subsloth.core.model.download.EnqueueOutcome
+import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
@@ -64,12 +76,16 @@ private const val DEFAULT_PROFILE_KEY = "default"
  * changes, exactly like Android does.
  *
  * Deliberate omissions (see `docs/architecture/composition-roots.md`):
- * - **Downloads** — `DownloadController` and its `Context`-backed storage
- *   collaborators are androidMain-only, so `DownloadsPort` stays on its
- *   safe empty-list defaults on desktop until a JVM storage shell exists.
  * - **Build-config base URL** — desktop has no `SUBSLOTH_API_BASE_URL`
  *   build-config field; the persisted [UserPreferences.apiBaseUrl] value
  *   is used as-is.
+ *
+ * Downloads are wired with the JVM storage shell (PR follow-up to #235):
+ * [DownloadController] runs with `DesktopDownloadStore`,
+ * `DesktopStorageProvider`, and `DesktopConnectivityChecker` from
+ * `:core:media`'s `jvmMain`, backed by Room in [dataDir]. See the class
+ * docs of the desktop collaborators for their platform semantics
+ * (notably the flat unmetered network model).
  *
  * The platform-neutral helper subset of AppContainer (catalog list/detail
  * lambdas, settings writers, playback-progress persistence) is mirrored
@@ -195,6 +211,37 @@ class DesktopContainer(dataDirOverride: File? = null) {
         )
     }
 
+    private val downloadStore: DesktopDownloadStore by lazy { DesktopDownloadStore(File(dataDir, "downloads")) }
+    private val storageProvider: StoragePort by lazy { DesktopStorageProvider(File(dataDir, "downloads")) }
+    private val connectivityChecker: ConnectivityPort by lazy { DesktopConnectivityChecker() }
+
+    /**
+     * Production [net.subsloth.core.domain.port.DownloadsPort] implementation
+     * (the desktop counterpart of `AppContainer`'s `downloadController`).
+     * Downloaded media is shared across accounts and logged-out state (its
+     * backing DAOs carry no profile key), so unlike [catalogRepository] this
+     * never needs to be rebuilt when the session changes.
+     */
+    val downloadController: DownloadController by lazy {
+        DownloadController(
+            storageManager = downloadStore,
+            storageProvider = storageProvider,
+            connectivityChecker = connectivityChecker,
+            downloadedMediaDao = database.downloadedMediaDao(),
+            downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
+        )
+    }
+
+    /** Season-level download queue orchestration, wrapping [downloadController]. */
+    private val seasonQueueController: SeasonQueueController by lazy {
+        SeasonQueueController(
+            downloadsPort = downloadController,
+            seasonQueueDao = database.seasonQueueDao(),
+            clock = clock,
+        )
+    }
+
     init {
         // Cold-start session recovery — invoked exactly once.
         containerScope.launch { sessionState.recover() }
@@ -292,6 +339,40 @@ class DesktopContainer(dataDirOverride: File? = null) {
         )
 
         else -> error("Unknown contentType: $contentType")
+    }
+
+    /**
+     * Adapts [SeasonQueueController.listQueues] (a plain suspend function
+     * returning a plain [List]) to `DownloadsViewModel`'s
+     * `Result`/[ImmutableList]-wrapped shape. Mirrors `AppContainer`'s
+     * `listSeasonQueues`.
+     */
+    suspend fun listSeasonQueues(): Result<ImmutableList<SeasonDownloadQueue>> = runCatching {
+        seasonQueueController.listQueues().toImmutableList()
+    }.onFailure { if (it is CancellationException) throw it }
+
+    /**
+     * Retries a previously-failed (or otherwise inactive) download by
+     * re-[DownloadController.enqueue]ing it with its last-known media id
+     * and quality. Mirrors `AppContainer`'s `retryDownload`; falls back to
+     * [EnqueueOutcome.Queued] on any failure, matching the downloads
+     * screen's log-and-fall-back-to-default pattern.
+     */
+    suspend fun retryDownload(localId: String): EnqueueOutcome {
+        val target = LocalMediaIdentifier(localId)
+        val existing = downloadController.listDownloads()
+            .onFailure { log.e(it) { "listDownloads failed while retrying $localId" } }
+            .getOrNull()
+            ?.firstOrNull { it.localId == target }
+        if (existing == null) {
+            log.e(null) { "retryDownload: no download found for localId=$localId" }
+            return EnqueueOutcome.Queued
+        }
+        return downloadController.enqueue(
+            mediaId = existing.mediaId,
+            requested = existing.quality.resolution,
+        ).onFailure { log.e(it) { "retry enqueue failed for localId=$localId" } }
+            .getOrDefault(EnqueueOutcome.Queued)
     }
 
     /** Flattens [ShowDetails]'s seasons into a single episode list for the "next episode" lookup. */
@@ -413,6 +494,25 @@ class DesktopContainer(dataDirOverride: File? = null) {
     /** Clears persisted credentials and ends the current session. */
     fun clearCredentials() {
         containerScope.launch { sessionPort.close() }
+    }
+
+    /**
+     * Deletes every locally-downloaded media item. Mirrors `AppContainer`'s
+     * `deleteAllDownloads`: [downloadController]'s backing DAOs carry no
+     * profile key (downloads are shared across accounts and logged-out
+     * state — see [downloadController]'s doc), so this is necessarily a
+     * full wipe regardless of which account is active.
+     */
+    fun deleteAllDownloads() {
+        containerScope.launch {
+            downloadController.listDownloads()
+                .onFailure { log.e(it) { "listDownloads failed while deleting all downloads" } }
+                .getOrNull()
+                ?.forEach { state ->
+                    downloadController.remove(state.localId)
+                        .onFailure { log.e(it) { "remove failed for ${state.localId} while deleting all downloads" } }
+                }
+        }
     }
 
     private fun Media.MediaId.toContentId(): String = when (this) {

@@ -18,8 +18,10 @@ import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
@@ -156,10 +158,14 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     val vm: LibraryViewModel = viewModel(key = "library") {
                         LibraryViewModel(
                             libraryPort = container.libraryPortAdapter::listLibrary,
+                            downloadsPort = container.downloadController::listDownloads,
                             listMovies = container::listMovies,
                             listShows = container::listShows,
                             listProgress = container::listAccountPlaybackProgress,
                             isLoggedIn = { container.sessionPort.current() is Session.Authenticated },
+                            removeDownload = { localId ->
+                                container.downloadController.remove(LocalMediaIdentifier(localId))
+                            },
                         )
                     }
                     LibraryScreen(
@@ -171,12 +177,35 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
             }
 
             entry<DownloadsKey> {
-                // Downloads stay on their safe empty-list defaults on desktop:
-                // DownloadController and its Context-backed storage shell are
-                // androidMain-only (see DesktopContainer's doc). The screen
-                // renders an empty state until a JVM storage shell exists.
                 ScopedViewModel(key = "downloads") {
-                    val vm: DownloadsViewModel = viewModel(key = "downloads") { DownloadsViewModel() }
+                    val vm: DownloadsViewModel = viewModel(key = "downloads") {
+                        DownloadsViewModel(
+                            listDownloads = container.downloadController::listDownloads,
+                            listSeasonQueues = container::listSeasonQueues,
+                            // listProgress intentionally left on its safe default here:
+                            // the shared offline_playback_progress table has no
+                            // contentType column, so a contentId alone can't
+                            // disambiguate movie vs. episode ids — same reasoning as
+                            // Android's DownloadsViewModel wiring.
+                            pauseDownload = { localId ->
+                                container.downloadController.pause(LocalMediaIdentifier(localId))
+                                    .getOrDefault(DownloadCommandOutcome.NoOp)
+                            },
+                            resumeDownload = { localId ->
+                                container.downloadController.resume(LocalMediaIdentifier(localId))
+                                    .getOrDefault(DownloadCommandOutcome.NoOp)
+                            },
+                            cancelDownload = { localId ->
+                                container.downloadController.cancel(LocalMediaIdentifier(localId))
+                                    .getOrDefault(DownloadCommandOutcome.NoOp)
+                            },
+                            retryDownload = container::retryDownload,
+                            removeDownload = { localId ->
+                                container.downloadController.remove(LocalMediaIdentifier(localId))
+                                    .getOrDefault(DownloadCommandOutcome.NoOp)
+                            },
+                        )
+                    }
                     DownloadsScreen(viewModel = vm)
                 }
             }
@@ -199,6 +228,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             clearPreferences = container::clearPreferences,
                             clearLibrary = container::clearLibrary,
                             clearCredentials = container::clearCredentials,
+                            deleteAllDownloads = container::deleteAllDownloads,
                         )
                     }
                     SettingsScreen(
@@ -239,12 +269,16 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     val vm: LibraryViewModel = viewModel(key = "offline_library") {
                         LibraryViewModel(
                             libraryPort = container.libraryPortAdapter::listLibrary,
+                            downloadsPort = container.downloadController::listDownloads,
                             listMovies = container::listMovies,
                             listShows = container::listShows,
                             // No session at all on this screen (reached from the
                             // logged-out state), so the account-scoped progress
                             // DAO isn't applicable — same reasoning as Android.
                             isLoggedIn = { false },
+                            removeDownload = { localId ->
+                                container.downloadController.remove(LocalMediaIdentifier(localId))
+                            },
                         )
                     }
                     LibraryScreen(

@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:data"))
     implementation(project(":core:preferences"))
+    implementation(project(":core:media"))
     implementation(project(":core:ui"))
     implementation(project(":feature:catalog"))
     implementation(project(":feature:details"))
