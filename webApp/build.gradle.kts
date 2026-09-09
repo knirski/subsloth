@@ -35,6 +35,10 @@ kotlin {
             implementation(project(":core:model"))
             implementation(project(":core:domain"))
             implementation(project(":core:network"))
+            implementation(project(":core:database"))
+            implementation(project(":core:data"))
+            implementation(project(":core:preferences"))
+            implementation(project(":core:media"))
             implementation(project(":core:ui"))
             implementation(project(":feature:catalog"))
             implementation(project(":feature:details"))
@@ -47,6 +51,10 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kermit)
+            // WebProductionContainer's surface mirrors DesktopContainer:
+            // DataStore/Room types appear through the persistence adapters.
+            implementation(libs.datastore.preferences.core)
+            implementation(libs.room3.runtime)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.androidx.navigation3.runtime)

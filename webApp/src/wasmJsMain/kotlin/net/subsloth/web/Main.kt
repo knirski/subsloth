@@ -8,6 +8,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeViewport
+import androidx.lifecycle.viewmodel.compose.viewModel
+import net.subsloth.auth.LoginScreen
+import net.subsloth.auth.LoginViewModel
+import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -15,17 +19,45 @@ fun main() {
     ComposeViewport(content = {
         SubSlothTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                val app = remember { createWebDemoApp() }
+                val app = remember { createWebApp() }
                 DisposableEffect(app) {
                     onDispose { app.close() }
                 }
                 Column(modifier = Modifier.fillMaxSize()) {
-                    WebDemoBanner(text = app.bannerText)
-                    WebNavHost(
-                        runtime = app.runtime,
-                        startDestination = app.startDestination,
-                        modifier = Modifier.weight(1f),
-                    )
+                    if (app.showBanner) {
+                        WebDemoBanner(text = app.bannerText)
+                    }
+                    when (app.mode) {
+                        WebRuntimeMode.Demo -> WebNavHost(
+                            runtime = app.runtime,
+                            startDestination = app.startDestination,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        // Production gates the nav host on the session exactly
+                        // like desktop (`SessionGate`): login first, then the
+                        // full navigation graph against the real adapters.
+                        WebRuntimeMode.Production -> SessionGate(
+                            sessionPort = app.runtime.sessionPort,
+                            login = {
+                                val viewModel: LoginViewModel = viewModel {
+                                    LoginViewModel(
+                                        sessionPort = app.runtime.sessionPort,
+                                        readApiBaseUrl = { app.runtime.apiBaseUrlFlow() },
+                                        saveApiBaseUrl = { url -> app.runtime.saveApiBaseUrl(url) },
+                                    )
+                                }
+                                LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
+                            },
+                            authenticated = {
+                                WebNavHost(
+                                    runtime = app.runtime,
+                                    startDestination = app.startDestination,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -46,7 +46,17 @@ import net.subsloth.core.network.media.api.model.Show as DtoShow
  * methods exist for future remote-control flows and are accepted as
  * successful no-ops here.
  */
-class ApiPlaybackPort(private val api: Api, private val isTvDevice: Boolean = false) : PlaybackPort {
+class ApiPlaybackPort(
+    private val api: Api,
+    private val isTvDevice: Boolean = false,
+    /**
+     * When true, prefers the item's top-level progressive `download_url`
+     * (a plain media file) over the signed HLS playlist. Web browsers
+     * cannot play HLS natively (no hls.js integration in the player
+     * bridge), so the web production runtime sets this.
+     */
+    private val preferProgressiveDownload: Boolean = false,
+) : PlaybackPort {
 
     private val log = Logger.withTag("ApiPlaybackPort")
 
@@ -134,7 +144,10 @@ class ApiPlaybackPort(private val api: Api, private val isTvDevice: Boolean = fa
         }
         val selected = QualityPolicy.selectDefault(effectiveQualities, isTvDevice)
             ?: return Outcome.Failure(MediaError.Unavailable)
-        val stream = selected.url ?: payload.streamUrl ?: return Outcome.Failure(MediaError.Unavailable)
+        val stream = when {
+            preferProgressiveDownload && payload.downloadUrl != null -> payload.downloadUrl
+            else -> selected.url ?: payload.streamUrl
+        } ?: return Outcome.Failure(MediaError.Unavailable)
         return Outcome.Success(
             VideoSource(
                 mediaId = mediaId,

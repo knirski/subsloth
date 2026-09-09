@@ -12,8 +12,8 @@ import kotlin.test.assertTrue
 
 class WebRuntimeModeTest {
     @Test
-    fun demoIsTheOnlyPagesRuntimeMode() {
-        assertEquals(listOf(WebRuntimeMode.Demo), WebRuntimeMode.entries)
+    fun demoAndProductionAreTheRuntimeModes() {
+        assertEquals(listOf(WebRuntimeMode.Demo, WebRuntimeMode.Production), WebRuntimeMode.entries)
     }
 
     @Test
@@ -41,16 +41,17 @@ class WebRuntimeModeTest {
     }
 
     @Test
-    fun demoStartupPreservesCredentialStorage() {
+    fun startupSelectsDemoWhenNoBuildTimeBaseUrlIsInjected() = runTest {
         localStorage.setItem(DEMO_CREDENTIAL_DATA_KEY, "seeded-data")
         localStorage.setItem(DEMO_CREDENTIAL_KEY_KEY, "seeded-key")
 
         try {
-            val app = createWebDemoApp()
+            val app = createWebApp()
             try {
                 assertEquals(WebRuntimeMode.Demo, app.mode)
                 assertEquals(CatalogKey, app.startDestination)
                 assertEquals(DEMO_BANNER_TEXT, app.bannerText)
+                assertTrue(app.showBanner)
                 assertEquals("seeded-data", localStorage.getItem(DEMO_CREDENTIAL_DATA_KEY))
                 assertEquals("seeded-key", localStorage.getItem(DEMO_CREDENTIAL_KEY_KEY))
             } finally {
