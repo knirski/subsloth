@@ -45,6 +45,7 @@ fun MovieDetailScreen(
     viewModel: MovieDetailViewModel,
     modifier: Modifier = Modifier,
     onNavigateBack: (() -> Unit)? = null,
+    onPlayClick: () -> Unit = {},
 ) {
     val state: MovieDetailUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -69,7 +70,7 @@ fun MovieDetailScreen(
             }
 
             is MovieDetailUiState.Content -> {
-                MovieDetailContent(state = s, modifier = Modifier.weight(1f))
+                MovieDetailContent(state = s, modifier = Modifier.weight(1f), onPlayClick = onPlayClick)
             }
 
             is MovieDetailUiState.Error -> {
@@ -89,16 +90,20 @@ fun MovieDetailScreen(
 }
 
 @Composable
-fun MovieDetailContent(state: MovieDetailUiState.Content, modifier: Modifier = Modifier) {
+fun MovieDetailContent(
+    state: MovieDetailUiState.Content,
+    modifier: Modifier = Modifier,
+    onPlayClick: () -> Unit = {},
+) {
     if (isLandscapeWideScreen()) {
-        MovieDetailWideLayout(state = state, modifier = modifier)
+        MovieDetailWideLayout(state = state, modifier = modifier, onPlayClick = onPlayClick)
     } else {
-        MovieDetailCompactLayout(state = state, modifier = modifier)
+        MovieDetailCompactLayout(state = state, modifier = modifier, onPlayClick = onPlayClick)
     }
 }
 
 @Composable
-private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: Modifier) {
+private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: Modifier, onPlayClick: () -> Unit) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
@@ -199,7 +204,7 @@ private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: M
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
-                onPlayClick = { },
+                onPlayClick = onPlayClick,
                 onFavoriteClick = { },
                 onWatchLaterClick = { },
                 onDownloadClick = { },
@@ -252,7 +257,7 @@ private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: M
 }
 
 @Composable
-private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier: Modifier) {
+private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier: Modifier, onPlayClick: () -> Unit) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
@@ -343,7 +348,7 @@ private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
-                onPlayClick = { },
+                onPlayClick = onPlayClick,
                 onFavoriteClick = { },
                 onWatchLaterClick = { },
                 onDownloadClick = { },

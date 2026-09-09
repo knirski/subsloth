@@ -15,4 +15,6 @@ data class VideoSource(
     val durationSeconds: Long,
     val playbackMode: PlaybackMode = PlaybackMode.ONLINE,
     val localId: LocalMediaIdentifier? = null,
+    /** Human-readable title for the player screen; falls back to the media id. */
+    val displayName: String? = null,
 )

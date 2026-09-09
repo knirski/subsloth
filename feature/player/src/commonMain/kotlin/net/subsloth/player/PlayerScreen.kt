@@ -117,8 +117,12 @@ fun PlayerOverlay(
     var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
+    // No background here: the video surface renders behind the Compose
+    // canvas (e.g. zIndex -1 on web), so the overlay must stay transparent
+    // for frames to show through. Error and prompt screens draw their own
+    // opaque backgrounds.
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier.fillMaxSize(),
     ) {
         if (state.playbackError != null) {
             ErrorContent(
@@ -468,7 +472,12 @@ private fun ErrorContent(
 ) {
     val isAuthError = playbackError is PlaybackError.AuthFailure
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            // The video renders behind the Compose canvas, so the error
+            // screen needs its own surface to stay readable over frames.
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

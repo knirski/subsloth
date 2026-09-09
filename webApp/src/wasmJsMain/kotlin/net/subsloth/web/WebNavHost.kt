@@ -96,19 +96,34 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
             entry<MovieDetailKey> { key ->
                 val movieId = key.movieId.toIntOrNull()?.let { Media.MediaId.Movie(MovieId(it)) }
                 if (movieId != null) {
-                    MovieDetailContent(runtime = runtime, movieId = movieId, onNavigateBack = ::popHistory)
+                    MovieDetailContent(
+                        runtime = runtime,
+                        movieId = movieId,
+                        onNavigateBack = ::popHistory,
+                        onPlayClick = {
+                            navigate(PlayerKey(contentId = movieId.value.value.toString(), contentType = "movie"))
+                        },
+                    )
                 }
             }
 
             entry<ShowDetailKey> { key ->
                 val showId = key.showId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
                 if (showId != null) {
-                    ShowDetailContent(runtime = runtime, showId = showId, onNavigateBack = ::popHistory)
+                    ShowDetailContent(
+                        runtime = runtime,
+                        showId = showId,
+                        onNavigateBack = ::popHistory,
+                        onPlayClick = {
+                            navigate(PlayerKey(contentId = showId.value.value.toString(), contentType = "show"))
+                        },
+                    )
                 }
             }
 
             entry<PlayerKey> { key ->
                 PlayerContent(
+                    runtime = runtime,
                     contentId = key.contentId,
                     contentType = key.contentType,
                     onNavigateBack = ::popHistory,
@@ -172,7 +187,12 @@ private fun CatalogContent(
 }
 
 @Composable
-private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.Movie, onNavigateBack: () -> Unit) {
+private fun MovieDetailContent(
+    runtime: WebDemoRuntime,
+    movieId: Media.MediaId.Movie,
+    onNavigateBack: () -> Unit,
+    onPlayClick: () -> Unit,
+) {
     val storeOwner = remember(movieId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -185,12 +205,21 @@ private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.M
         val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
             MovieDetailViewModel(mediaId = movieId, getDetails = runtime::getDetails)
         }
-        MovieDetailScreen(viewModel = vm, onNavigateBack = onNavigateBack)
+        MovieDetailScreen(
+            viewModel = vm,
+            onNavigateBack = onNavigateBack,
+            onPlayClick = onPlayClick,
+        )
     }
 }
 
 @Composable
-private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Show, onNavigateBack: () -> Unit) {
+private fun ShowDetailContent(
+    runtime: WebDemoRuntime,
+    showId: Media.MediaId.Show,
+    onNavigateBack: () -> Unit,
+    onPlayClick: () -> Unit,
+) {
     val storeOwner = remember(showId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -203,7 +232,11 @@ private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Sho
         val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value.value}") {
             ShowDetailViewModel(mediaId = showId, getDetails = runtime::getDetails)
         }
-        SeriesDetailScreen(viewModel = vm, onNavigateBack = onNavigateBack)
+        SeriesDetailScreen(
+            viewModel = vm,
+            onNavigateBack = onNavigateBack,
+            onPlayClick = onPlayClick,
+        )
     }
 }
 
@@ -305,6 +338,7 @@ private fun OfflineLibraryContent(
 
 @Composable
 private fun PlayerContent(
+    runtime: WebDemoRuntime,
     contentId: String,
     contentType: String,
     onNavigateBack: () -> Unit,
@@ -321,7 +355,10 @@ private fun PlayerContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: PlayerViewModel = viewModel(key = contentId) {
-            PlayerViewModel(mediaId = mediaId)
+            PlayerViewModel(
+                mediaId = mediaId,
+                fetchVideoSource = runtime::fetchVideoSource,
+            )
         }
         PlayerScreen(
             viewModel = vm,

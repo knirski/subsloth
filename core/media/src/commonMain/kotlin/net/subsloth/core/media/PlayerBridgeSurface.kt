@@ -17,6 +17,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.isActive
+
+/** Poll interval mirroring the underlying player's ~250 ms position updates. */
+private const val SNAPSHOT_POLL_INTERVAL_MS = 250L
 
 @Composable
 fun PlayerBridgeSurface(
@@ -35,15 +39,22 @@ fun PlayerBridgeSurface(
     playerState.subtitleBackgroundColor = subtitleBackground
 
     LaunchedEffect(playerState) {
-        snapshotFlow {
-            PlayerSnapshot(
+        var previous: PlayerSnapshot? = null
+        while (isActive) {
+            // The web player implementation backs currentTime/duration with
+            // plain vars, so snapshotFlow would never re-emit. Poll instead
+            // and forward only actual changes.
+            val snapshot = PlayerSnapshot(
                 positionSeconds = playerState.currentTime.toLong(),
                 durationSeconds = playerState.duration.toLong(),
                 isPlaying = playerState.isPlaying,
                 isLoading = playerState.isLoading,
             )
-        }.collect { snapshot ->
-            currentOnEvent.value(PlayerEvent.Snapshot(snapshot))
+            if (snapshot != previous) {
+                previous = snapshot
+                currentOnEvent.value(PlayerEvent.Snapshot(snapshot))
+            }
+            delay(SNAPSHOT_POLL_INTERVAL_MS)
         }
     }
 

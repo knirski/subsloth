@@ -54,6 +54,7 @@ fun SeriesDetailScreen(
     viewModel: ShowDetailViewModel,
     modifier: Modifier = Modifier,
     onNavigateBack: (() -> Unit)? = null,
+    onPlayClick: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -82,6 +83,7 @@ fun SeriesDetailScreen(
                     state = s,
                     onSeasonSelect = { viewModel.selectSeason(it) },
                     modifier = Modifier.weight(1f),
+                    onPlayClick = onPlayClick,
                 )
             }
 
@@ -106,24 +108,32 @@ fun ShowDetailContent(
     state: ShowDetailUiState.Content,
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},
+    onPlayClick: () -> Unit = {},
 ) {
     if (isLandscapeWideScreen()) {
         ShowDetailWideLayout(
             state = state,
             onSeasonSelect = onSeasonSelect,
             modifier = modifier,
+            onPlayClick = onPlayClick,
         )
     } else {
         ShowDetailCompactLayout(
             state = state,
             onSeasonSelect = onSeasonSelect,
             modifier = modifier,
+            onPlayClick = onPlayClick,
         )
     }
 }
 
 @Composable
-private fun ShowDetailWideLayout(state: ShowDetailUiState.Content, modifier: Modifier, onSeasonSelect: (Int) -> Unit) {
+private fun ShowDetailWideLayout(
+    state: ShowDetailUiState.Content,
+    modifier: Modifier,
+    onSeasonSelect: (Int) -> Unit,
+    onPlayClick: () -> Unit,
+) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
@@ -219,7 +229,7 @@ private fun ShowDetailWideLayout(state: ShowDetailUiState.Content, modifier: Mod
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
-                onPlayClick = { },
+                onPlayClick = onPlayClick,
                 onFavoriteClick = { },
                 onWatchLaterClick = { },
                 onDownloadClick = { },
@@ -257,6 +267,7 @@ private fun ShowDetailCompactLayout(
     state: ShowDetailUiState.Content,
     modifier: Modifier,
     onSeasonSelect: (Int) -> Unit,
+    onPlayClick: () -> Unit,
 ) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
@@ -343,7 +354,7 @@ private fun ShowDetailCompactLayout(
                 isWatchLater = state.isWatchLater,
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
-                onPlayClick = { },
+                onPlayClick = onPlayClick,
                 onFavoriteClick = { },
                 onWatchLaterClick = { },
                 onDownloadClick = { },
