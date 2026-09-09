@@ -163,18 +163,15 @@ moved to an `androidMain` source set (requires `androidTarget()` in convention).
 
 ## 9. Android detail-screen Play is not wired
 
-**Status:** Open
+**Status:** Resolved ✅
 
 `SubSlothNavHost`'s `MovieDetailKey` and `ShowDetailKey` entries call
 `MovieDetailScreen`/`SeriesDetailScreen` without `onPlayClick`, so the Play
-control on Android detail screens does nothing. Desktop wires both callbacks
-to `PlayerKey` (PR #235); Android never did — flagged during the PR #235
-review and recorded in the [platform support matrix](readiness/platform-support-matrix.md).
-
-**To close:**
-- Pass `onPlayClick` from both Android detail entries, appending
-  `PlayerKey(contentId = <movieId|showId>, contentType = "movie"|"show")`
-  (mirroring `WebNavHost`'s wiring)
+control on Android detail screens did nothing. Both entries now append
+`PlayerKey(contentId = <movieId|showId>, contentType = "movie"|"show")`,
+mirroring the desktop (`DesktopNavHost`, PR #235) and web (`WebNavHost`)
+wiring. The player entry already wires `PlayerViewModel` to the production
+`ApiPlaybackPort` (PR #234), so Play is end-to-end on Android.
 
 ---
 

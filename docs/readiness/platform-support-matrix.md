@@ -4,13 +4,13 @@ This is the single authoritative statement of each platform's release-readiness 
 
 Tiers are adopted from `docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`'s promotion-gates table and are not re-derived here.
 
-Last reconciled: 2026-09-09, against `main` after PR #234 (real `PlaybackPort` adapter wired on Android) and PR #235 (desktop production runtime: `DesktopContainer`, all nav routes, persisted session).
+Last reconciled: 2026-09-09, against `main` after PR #234 (real `PlaybackPort` adapter wired on Android) and PR #235 (desktop production runtime: `DesktopContainer`, all nav routes, persisted session). Android detail-screen Play wiring closed the gap in [known-gaps item 9](../known-gaps.md#9-android-detail-screen-play-is-not-wired).
 
 ## Tiers
 
 | Platform | Current tier | Promotion requirement | Owning change | Evidence today |
 |---|---|---|---|---|
-| Android | **Internal beta** | Change 2 (`wire-android-production-runtime`) complete: real session/credential adapter, authenticated clients, wired ViewModels, single authenticated start destination | Change 2 | Done. `AndroidSessionState` (typealias over the shared `ValidatingSessionState` in `:core:data`) replaces `InMemorySessionState`. `SubSlothNavHost` starts at `CatalogKey`; library/downloads/settings/player/detail/auth-repair are wired to real adapters. Stream-source resolution is production-wired via `ApiPlaybackPort` (PR #234). Detail-screen Play is not wired on Android — see [known gaps, item 9](../known-gaps.md#9-android-detail-screen-play-is-not-wired). |
+| Android | **Internal beta** | Change 2 (`wire-android-production-runtime`) complete: real session/credential adapter, authenticated clients, wired ViewModels, single authenticated start destination | Change 2 | Done. `AndroidSessionState` (typealias over the shared `ValidatingSessionState` in `:core:data`) replaces `InMemorySessionState`. `SubSlothNavHost` starts at `CatalogKey`; library/downloads/settings/player/detail/auth-repair are wired to real adapters. Stream-source resolution is production-wired via `ApiPlaybackPort` (PR #234). Detail-screen Play is wired on Android (both detail entries append `PlayerKey`, mirroring desktop/web wiring). |
 | Android | Internal beta → next tier | Required platform tests green (Change 5) | Change 5 | CI job "📱 Instrumented" runs (93 tests as of Change 2, including new session/library/account-switching coverage); TV focus traversal tests do not exist yet (harness unused — see disposition ledger) |
 | Android | Internal beta → next tier | Baseline profile consumed by release build (Change 6) | Change 6 | No `baseline-prof.txt` is committed anywhere in the tree |
 | Android | Internal beta → next tier | Release pipeline hardened (Change 8) | Change 8 | Release currently publishes before verifying artifact build order across platforms |
