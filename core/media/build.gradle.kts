@@ -44,7 +44,22 @@ kotlin {
             implementation(project(":core:database"))
             implementation(libs.coroutines.test)
             implementation(libs.turbine)
+            implementation(libs.ktor.client.mock)
         }
+
+        // Intermediate source set shared by the two JVM targets
+        // (androidMain + jvmMain). The download byte-transfer worker lives
+        // here: it uses java.io, so it cannot be in commonMain (wasmJs
+        // compiles commonMain), and duplicating it across androidMain/
+        // jvmMain would be worse. The wasmJs target never depends on it.
+        val jvmSharedMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.ktor.client.core)
+            }
+        }
+        androidMain.get().dependsOn(jvmSharedMain)
+        jvmMain.get().dependsOn(jvmSharedMain)
     }
 }
 

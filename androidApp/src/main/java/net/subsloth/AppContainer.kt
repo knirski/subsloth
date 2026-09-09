@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.domain.policy.CompletionPolicy
+import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
 import net.subsloth.core.domain.port.PlaybackPort
 import net.subsloth.core.domain.port.Session
@@ -22,9 +23,15 @@ import net.subsloth.core.domain.port.SessionPort
 import net.subsloth.core.domain.port.StoragePort
 import net.subsloth.core.media.download.ConnectivityChecker
 import net.subsloth.core.media.download.DownloadController
+import net.subsloth.core.media.download.DownloadForegroundService
+import net.subsloth.core.media.download.parseResolution
 import net.subsloth.core.media.download.DownloadStorageManager
+import net.subsloth.core.media.download.DownloadTarget
+import net.subsloth.core.media.download.DownloadTransferCoordinator
+import net.subsloth.core.media.download.DownloadTransferer
 import net.subsloth.core.media.download.SeasonQueueController
 import net.subsloth.core.media.download.StorageProvider
+import net.subsloth.core.media.download.TransferEvent
 import net.subsloth.core.media.playback.OfflineFirstPlaybackPort
 import net.subsloth.core.media.playback.OfflineSourceResolver
 import net.subsloth.core.model.download.EnqueueOutcome
@@ -40,11 +47,13 @@ import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
+import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.core.network.media.mapper.Mapper
 import net.subsloth.core.network.media.playback.ApiPlaybackPort
 import net.subsloth.database.LibraryPortAdapter
 import net.subsloth.database.SubSlothDatabase
@@ -277,10 +286,76 @@ class AppContainer(context: Context) {
         )
     }
 
+    /**
+     * Byte-transfer client for downloads. Deliberately a bare anonymous
+     * client: download URLs are server-signed (`wmsAuthSign`), so no
+     * auth headers are needed, and a session-scoped client would go stale
+     * when the session rebuilds (the resolver below reads [api] live
+     * instead).
+     */
+    private val downloadTransferer: DownloadTransferer by lazy {
+        DownloadTransferer(
+            client = ClientFactory.create(),
+            store = downloadStorageManager,
+        )
+    }
+
+    /**
+     * Drives real byte transfers for queued downloads (see
+     * [DownloadTransferCoordinator]). The download-URL resolver reads the
+     * session-scoped [api] live on every call, so transfers always use
+     * current credentials despite the coordinator itself being
+     * session-independent.
+     */
+    val downloadTransferCoordinator: DownloadTransferCoordinator by lazy {
+        DownloadTransferCoordinator(
+            downloadedMediaDao = database.downloadedMediaDao(),
+            store = downloadStorageManager,
+            transferer = downloadTransferer,
+            connectivityChecker = connectivityChecker,
+            clock = clock,
+            resolveDownloadUrl = ::resolveDownloadTarget,
+        )
+    }
+
+
     init {
         // Cold-start session recovery — invoked exactly once, unconditionally,
         // as part of container construction.
         containerScope.launch { androidSessionState.recover() }
+
+        // Drive real download byte transfers for the process lifetime and
+        // surface progress through the foreground service. The app is in
+        // the foreground whenever a download is enqueued (user action), so
+        // the foreground-service start satisfies the background-start
+        // restriction.
+        containerScope.launch { downloadTransferCoordinator.runWatcher() }
+        containerScope.launch {
+            val active = mutableSetOf<String>()
+            val appContext = context.applicationContext
+            downloadTransferCoordinator.events.collect { event ->
+                when (event) {
+                    is TransferEvent.Progress -> {
+                        if (active.add(event.localId.value)) DownloadForegroundService.start(appContext)
+                        val percent = event.totalBytes?.takeIf { it > 0 }
+                            ?.let { total -> event.bytesWritten * 100 / total }
+                            ?.toInt()
+                            ?: 0
+                        DownloadForegroundService.updateProgress(appContext, active.size, percent)
+                    }
+
+                    is TransferEvent.Completed -> {
+                        active.remove(event.localId.value)
+                        if (active.isEmpty()) DownloadForegroundService.stop(appContext)
+                    }
+
+                    is TransferEvent.Failed -> {
+                        active.remove(event.localId.value)
+                        if (active.isEmpty()) DownloadForegroundService.stop(appContext)
+                    }
+                }
+            }
+        }
 
         // Rebuild the authenticated client (and the repository wrapping it)
         // whenever the session's credentials actually change. StateFlow only
@@ -301,6 +376,61 @@ class AppContainer(context: Context) {
                 previousApi.close()
             }
         }
+    }
+
+    /**
+     * Resolves a progressive (single-file) download URL for [mediaId],
+     * preferring the item's top-level `download_url`, falling back to the
+     * quality variant matching the requested label. HLS playlists
+     * (`.m3u8`) are not single files and are rejected here. Returns null
+     * on any failure (the coordinator marks the download FAILED).
+     */
+    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as playback resolution.
+    private suspend fun resolveDownloadTarget(
+        mediaId: Media.MediaId,
+        qualityLabel: String?,
+    ): DownloadTarget? = try {
+        when (mediaId) {
+            is Media.MediaId.Movie -> api.getMovie(mediaId.value.value).let { dto ->
+                pickDownloadTarget(dto.downloadUrl, Mapper.mapQualities(dto.qualities), qualityLabel)
+            }
+
+            is Media.MediaId.Episode -> api.getEpisode(mediaId.value.value).let { dto ->
+                pickDownloadTarget(dto.downloadUrl, Mapper.mapQualities(dto.qualities), qualityLabel)
+            }
+
+            is Media.MediaId.Show -> null
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log.e(e) { "Download URL resolution failed for $mediaId" }
+        null
+    }
+
+    private fun pickDownloadTarget(
+        topDownloadUrl: String?,
+        qualities: List<Quality>,
+        qualityLabel: String?,
+    ): DownloadTarget? {
+        val url = topDownloadUrl
+            ?: qualityLabel?.let { label ->
+                val preferred = parseResolution(label)
+                val descriptor = DownloadPolicy.selectFallbackQuality(
+                    available = qualities.map { it.info },
+                    preferred = preferred,
+                )
+                qualities.firstOrNull { it.info == descriptor }?.url
+            }
+            ?.takeIf { candidate -> !candidate.substringBefore('?').endsWith(".m3u8") }
+            ?: return null
+        return DownloadTarget(url = url, extension = downloadExtension(url))
+    }
+
+    private fun downloadExtension(url: String): String {
+        val path = url.substringBefore('?').substringAfterLast('/')
+        val extension = path.substringAfterLast('.', "")
+        return extension.ifBlank { "mp4" }.filter { it.isLetterOrDigit() }.ifBlank { "mp4" }
     }
 
     /**

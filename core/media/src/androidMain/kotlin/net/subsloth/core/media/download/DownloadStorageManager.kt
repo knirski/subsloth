@@ -7,27 +7,26 @@ import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.media.Media
 import java.io.File
 import java.io.InputStream
-import java.util.UUID
 
 class DownloadStorageManager(private val context: Context) :
     DownloadFileStore,
-    OfflineAssetFiles {
+    OfflineAssetFiles,
+    DownloadTransferStore {
     private val storageDir: File
         get() = context.noBackupFilesDir.resolve("downloads").also { it.mkdirs() }
 
-    fun allocatePath(
-        contentId: String,
-        extension: String,
-        fileName: String = UUID.randomUUID().toString(),
-    ): OfflineRelativePath {
+    override fun allocatePath(contentId: String, extension: String): OfflineRelativePath =
+        allocatePath(contentId, extension, java.util.UUID.randomUUID().toString())
+
+    private fun allocatePath(contentId: String, extension: String, fileName: String): OfflineRelativePath {
         val dir = storageDir.resolve(contentId).also { it.mkdirs() }
         val relative = "$contentId/$fileName$extension"
         return OfflineRelativePath.safe(relative)
     }
 
-    fun stageFile(relativePath: OfflineRelativePath): File = File(storageDir, "${relativePath.value}.part")
+    override fun stageFile(relativePath: OfflineRelativePath): File = File(storageDir, "${relativePath.value}.part")
 
-    fun finalFile(relativePath: OfflineRelativePath): File = File(storageDir, relativePath.value)
+    override fun finalFile(relativePath: OfflineRelativePath): File = File(storageDir, relativePath.value)
 
     fun storeStream(inputStream: InputStream, targetFile: File): Long {
         targetFile.parentFile?.mkdirs()
@@ -36,7 +35,7 @@ class DownloadStorageManager(private val context: Context) :
         }
     }
 
-    fun finalizeDownload(staged: File, target: File): Boolean {
+    override fun finalizeDownload(staged: File, target: File): Boolean {
         target.parentFile?.mkdirs()
         return staged.renameTo(target)
     }
