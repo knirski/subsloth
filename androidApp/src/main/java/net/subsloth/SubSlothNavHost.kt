@@ -120,7 +120,13 @@ fun SubSlothNavHost(
                             )
                     },
                 )
-                MovieDetailScreen(viewModel = viewModel, modifier = Modifier)
+                MovieDetailScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onPlayClick = {
+                        backStack += PlayerKey(contentId = key.movieId, contentType = "movie")
+                    },
+                )
             }
 
             entry<ShowDetailKey> { key ->
@@ -144,7 +150,13 @@ fun SubSlothNavHost(
                             )
                     },
                 )
-                SeriesDetailScreen(viewModel = viewModel, modifier = Modifier)
+                SeriesDetailScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onPlayClick = {
+                        backStack += PlayerKey(contentId = key.showId, contentType = "show")
+                    },
+                )
             }
 
             entry<PlayerKey> { key ->
