@@ -5,10 +5,14 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
+import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.EpisodeId
@@ -232,7 +236,7 @@ class PlayerViewModelTest {
             fetchVideoSource = {
                 Outcome.Failure(net.subsloth.core.model.error.NetworkError.HttpError(401, "Unauthorized"))
             },
-            saveProgress = { id, pos, dur ->
+            saveProgress = { id, pos, dur, _ ->
                 savedProgress = Triple(id, pos, dur)
             },
             onAuthFailure = { authFailureCalled = true },
@@ -416,6 +420,117 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.nextEpisode).isNotNull()
         assertThat(state.nextEpisode!!.id).isEqualTo(EpisodeId(2))
+    }
+
+    @Test
+    fun `playback end starts a countdown when the next episode is available`() = runTest(testDispatcher) {
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+            durationSeconds = 100L,
+        )
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), episode2)) },
+        )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 98L, durationSeconds = 100L))
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.showNextEpisodePrompt).isTrue()
+        assertThat(state.nextEpisodeCountdownSeconds).isEqualTo(10)
+    }
+
+    @Test
+    fun `countdown auto-plays the next episode after ten seconds`() = runTest(testDispatcher) {
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+            durationSeconds = 100L,
+        )
+        val navigatedTo = mutableListOf<Media.MediaId>()
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), episode2)) },
+            onNavigateToNextEpisode = { navigatedTo.add(it) },
+        )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 98L, durationSeconds = 100L))
+        runCurrent()
+        assertThat(navigatedTo).isEmpty()
+
+        // Nine seconds in: countdown at 1, not yet navigated.
+        advanceTimeBy(9_000)
+        runCurrent()
+        val late = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(late.nextEpisodeCountdownSeconds).isEqualTo(1)
+        assertThat(navigatedTo).isEmpty()
+
+        // Final second elapses: auto-play fires.
+        advanceTimeBy(1_000)
+        runCurrent()
+        assertThat(navigatedTo).hasSize(1)
+        val expected = navigatedTo.first() as Media.MediaId.Episode
+        assertThat(expected.value).isEqualTo(EpisodeId(2))
+        val finalState = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(finalState.showNextEpisodePrompt).isFalse()
+    }
+
+    @Test
+    fun `cancel interrupts the countdown and prevents auto-play`() = runTest(testDispatcher) {
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+            durationSeconds = 100L,
+        )
+        val navigatedTo = mutableListOf<Media.MediaId>()
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), episode2)) },
+            onNavigateToNextEpisode = { navigatedTo.add(it) },
+        )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 98L, durationSeconds = 100L))
+        runCurrent()
+
+        viewModel.dismissNextEpisode()
+        advanceTimeBy(15_000)
+        runCurrent()
+
+        assertThat(navigatedTo).isEmpty()
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.showNextEpisodePrompt).isFalse()
+    }
+
+    @Test
+    fun `countdown does not auto-play when the next episode is unavailable`() = runTest(testDispatcher) {
+        val unavailableNext = createEpisode(id = 2).copy(availability = Availability.Expired)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+            durationSeconds = 100L,
+        )
+        val navigatedTo = mutableListOf<Media.MediaId>()
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), unavailableNext)) },
+            onNavigateToNextEpisode = { navigatedTo.add(it) },
+        )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 98L, durationSeconds = 100L))
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.showNextEpisodePrompt).isTrue()
+        assertThat(state.nextEpisodeCountdownSeconds).isNull()
+
+        advanceTimeBy(15_000)
+        runCurrent()
+        assertThat(navigatedTo).isEmpty()
     }
 
     @Test
@@ -638,7 +753,8 @@ class PlayerViewModelTest {
             Outcome.Success(emptyList())
         },
         onAuthFailure: () -> Unit = {},
-        saveProgress: suspend (Media.MediaId, Long, Long) -> Unit = { _, _, _ -> },
+        onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
+        saveProgress: suspend (Media.MediaId, Long, Long, PlaybackMode) -> Unit = { _, _, _, _ -> },
         refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
             Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
         },
@@ -651,6 +767,7 @@ class PlayerViewModelTest {
         fetchVideoSource = fetchVideoSource,
         fetchEpisodes = fetchEpisodes,
         onAuthFailure = onAuthFailure,
+        onNavigateToNextEpisode = onNavigateToNextEpisode,
         saveProgress = saveProgress,
         refreshStreamUrl = refreshStreamUrl,
         savePlaybackSpeed = savePlaybackSpeed,
@@ -697,6 +814,13 @@ class PlayerViewModelTest {
         url = "https://example.com/sub-es.srt",
         downloadUrl = null,
         format = SubtitleFormat.SRT,
+    )
+
+    private fun createSnapshot(positionSeconds: Long, durationSeconds: Long): PlayerSnapshot = PlayerSnapshot(
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        isPlaying = true,
+        isLoading = false,
     )
 
     private fun createEpisode(id: Int = 1, showId: Int = 1, seasonNumber: Int = 1, episodeNumber: Int = 1): Episode =

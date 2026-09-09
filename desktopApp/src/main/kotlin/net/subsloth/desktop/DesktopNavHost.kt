@@ -203,6 +203,12 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     contentType = key.contentType,
                     onNavigateBack = { backStack.removeLastOrNull() },
                     onNavigateToAuthRepair = { backStack += AuthRepairKey },
+                    onNavigateToNextEpisode = { nextId ->
+                        val rawId = (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
+                        if (rawId != null) {
+                            backStack += PlayerKey(contentId = rawId, contentType = "episode")
+                        }
+                    },
                 )
             }
 
@@ -370,6 +376,7 @@ private fun PlayerContent(
     contentType: String,
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
+    onNavigateToNextEpisode: (Media.MediaId) -> Unit,
 ) {
     val mediaId = parseMediaId(contentId, contentType)
     if (mediaId == null) {
@@ -383,9 +390,10 @@ private fun PlayerContent(
                 fetchVideoSource = { id -> container.playbackPort.prepareSource(id) },
                 refreshStreamUrl = { id -> container.playbackPort.refreshStreamUrl(id) },
                 fetchEpisodes = { showId -> container.fetchEpisodesForShow(showId) },
-                saveProgress = { id, positionSeconds, durationSeconds ->
-                    container.savePlaybackProgress(id, positionSeconds, durationSeconds)
+                saveProgress = { id, positionSeconds, durationSeconds, playbackMode ->
+                    container.savePlaybackProgress(id, positionSeconds, durationSeconds, playbackMode)
                 },
+                onNavigateToNextEpisode = onNavigateToNextEpisode,
                 onAuthFailure = container::invalidateSession,
                 savePlaybackSpeed = container::savePlaybackSpeed,
                 loadPlaybackSpeed = container::loadPlaybackSpeed,

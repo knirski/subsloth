@@ -6,6 +6,7 @@
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_next_episode">Next episode</string>
+    <string name="player_next_episode_countdown">Playing next in %1$d s</string>
     <string name="player_cancel">Cancel</string>
     <string name="player_session_expired">Session Expired</string>
     <string name="player_stream_expired">Stream URL expired</string>
