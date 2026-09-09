@@ -21,6 +21,10 @@ data object LoginKey : AppNavKey
 @Serializable
 data object CatalogKey : AppNavKey
 
+/** Catalog search (client-side filter over the loaded catalog). */
+@Serializable
+data object SearchKey : AppNavKey
+
 /** Movie detail. */
 @Serializable
 data class MovieDetailKey(val movieId: String) : AppNavKey

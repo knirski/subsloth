@@ -18,6 +18,8 @@ import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.catalog.SearchScreen
+import net.subsloth.catalog.SearchViewModel
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.model.identifier.EpisodeId
@@ -34,6 +36,7 @@ import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
+import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.subslothNavConfig
@@ -88,6 +91,26 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                         )
                     }
                     HomeScreen(
+                        viewModel = vm,
+                        onSearchClick = { backStack += SearchKey },
+                        onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
+                        onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
+                    )
+                }
+            }
+
+            entry<SearchKey> {
+                ScopedViewModel(key = "catalog_search") {
+                    val vm: SearchViewModel = viewModel(key = "catalog_search") {
+                        SearchViewModel(
+                            listCatalog = { container.listAllMedia() },
+                            // Read catalogRepository live on every call so
+                            // session rebuilds never leave a stale adapter
+                            // captured — same discipline as every entry.
+                            getDetails = { id -> container.catalogRepository.getDetails(id) },
+                        )
+                    }
+                    SearchScreen(
                         viewModel = vm,
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },

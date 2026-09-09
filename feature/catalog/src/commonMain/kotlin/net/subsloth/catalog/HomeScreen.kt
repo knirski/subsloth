@@ -44,6 +44,7 @@ import net.subsloth.core.model.media.ShowSummary
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
+    onSearchClick: () -> Unit = {},
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
@@ -76,6 +77,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("SubSloth") },
                 actions = {
+                    IconButton(onClick = onSearchClick) {
+                        Text("🔍", style = MaterialTheme.typography.titleLarge)
+                    }
                     if (isSyncing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
