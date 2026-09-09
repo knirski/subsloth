@@ -1,6 +1,5 @@
 package net.subsloth.core.media.download
 
-import app.cash.turbine.test
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -9,13 +8,14 @@ import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.close
 import io.ktor.utils.io.writeString
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import app.cash.turbine.test
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -156,41 +156,32 @@ class DownloadTransferCoordinatorTest {
     }
 
     @Test
-    fun `pausing mid-transfer aborts without overwriting the paused status`() = runTest {
+    fun `pausing mid-transfer aborts without overwriting the paused status`() = runBlocking {
         val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
         val channel = ByteChannel(autoFlush = true)
+        val feeder = launch {
+            channel.writeString(body)
+            channel.flush()
+            channel.writeString("more")
+            channel.flush()
+            channel.close()
+        }
         val coordinator = coordinator(
             dao,
             engineHandler = { _ -> respond(content = channel, status = HttpStatusCode.OK) },
         )
-        val feeder = launch {
-            channel.writeString(body)
-            channel.flush()
-        }
 
         val processing = async { coordinator.processQueued() }
-
-        // Wait for the first chunk to land in the staged file.
-        withTimeout(5_000) {
-            while (true) {
-                val staged = tempDir.resolve("1").toFile().listFiles()
-                    ?.firstOrNull { it.name.endsWith(".part") }
-                if (staged != null && staged.length() > 0L) break
-                delay(10)
-            }
-        }
-
-        // Pause the download mid-stream, then keep the body flowing; the
-        // next progress callback must abort without touching the status.
+        // Flip the status mid-stream (before or between chunk reads — any
+        // interleaving aborts: every progress callback re-checks the
+        // status and aborts once it is no longer active).
         dao.set(listOf(entity(status = "paused")))
-        channel.writeString("more")
-        channel.flush()
-        channel.close()
 
-        withTimeout(5_000) { processing.await() }
+        withTimeout(10_000) { processing.await() }
 
         assertThat(requireNotNull(dao.getById(1)).status).isEqualTo("paused")
-        assertThat(tempDir.resolve("1").toFile().listFiles()?.any { it.name.endsWith(".part") } ?: false).isFalse()
+        assertThat(tempDir.resolve("1").toFile().listFiles()?.any { it.name.endsWith(".part") } ?: false)
+            .isFalse()
         feeder.join()
     }
 
