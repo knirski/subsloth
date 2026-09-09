@@ -3,6 +3,8 @@ package net.subsloth.web
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.test.runTest
 import net.subsloth.core.model.error.getOrNull
+import net.subsloth.core.model.media.MovieSummary
+import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.ui.CatalogKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,9 +31,13 @@ class WebRuntimeModeTest {
 
     @Test
     fun demoRuntimeUsesMockTransport() = runTest {
-        val catalog = createWebDemoRuntime().listCatalog()
+        val catalog = createWebDemoRuntime().listCatalog().getOrNull().orEmpty()
 
-        assertEquals(3, catalog.getOrNull()?.size)
+        // 4 movies (Shooter, Highlander, Night of the Living Dead, Sleuth) +
+        // 2 shows (Breaking Bad, Better Call Saul).
+        assertEquals(6, catalog.size)
+        assertEquals(4, catalog.count { it is MovieSummary })
+        assertEquals(2, catalog.count { it is ShowSummary })
     }
 
     @Test
