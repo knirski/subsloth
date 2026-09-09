@@ -195,6 +195,12 @@ jobs:
       - name: Desktop compilation
         run: ./gradlew :desktopApp:compileKotlin
 
+      # Compose Desktop UI tests need an X server; CI runners are headless,
+      # so run under Xvfb (provided by the nix devshell).
+      - name: Desktop tests
+        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true' || github.event_name == 'workflow_dispatch'
+        run: xvfb-run -a ./gradlew :desktopApp:test
+
       # Linux bundling: the unpacked app image (input for the flake's
       # packages.x86_64-linux.subsloth wrapper) and the .deb via jpackage.
       # dpkg-deb ships preinstalled on ubuntu runners, so the deb type
