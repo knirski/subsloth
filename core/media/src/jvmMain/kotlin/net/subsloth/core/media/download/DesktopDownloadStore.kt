@@ -1,5 +1,6 @@
 package net.subsloth.core.media.download
 
+import net.subsloth.core.media.playback.OfflineAssetFiles
 import net.subsloth.core.model.download.OfflineRelativePath
 import java.io.File
 import java.util.UUID
@@ -13,7 +14,9 @@ import java.util.UUID
  * Same staging contract: writes land in a `.part` sibling and are
  * renamed into place on finalization.
  */
-class DesktopDownloadStore(private val filesDir: File) : DownloadFileStore {
+class DesktopDownloadStore(private val filesDir: File) :
+    DownloadFileStore,
+    OfflineAssetFiles {
 
     init {
         filesDir.mkdirs()
@@ -53,8 +56,10 @@ class DesktopDownloadStore(private val filesDir: File) : DownloadFileStore {
         return deletedFile && deletedStaged
     }
 
-    fun verifyFile(localPath: OfflineRelativePath): Boolean {
+    override fun verifyFile(localPath: OfflineRelativePath): Boolean {
         val file = finalFile(localPath)
         return file.exists() && file.length() > 0L
     }
+
+    override fun fileUri(localPath: OfflineRelativePath): String = finalFile(localPath).toURI().toString()
 }

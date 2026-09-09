@@ -25,6 +25,8 @@ import net.subsloth.core.media.download.DownloadController
 import net.subsloth.core.media.download.DownloadStorageManager
 import net.subsloth.core.media.download.SeasonQueueController
 import net.subsloth.core.media.download.StorageProvider
+import net.subsloth.core.media.playback.OfflineFirstPlaybackPort
+import net.subsloth.core.media.playback.OfflineSourceResolver
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.MediaError
@@ -195,14 +197,34 @@ class AppContainer(context: Context) {
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
     /**
+     * Offline playback source resolution over [downloadController]'s stored
+     * assets, verified through [downloadStorageManager]. Session-independent
+     * (like [downloadController]); consumed by [currentPlaybackPort]'s
+     * [OfflineFirstPlaybackPort] wrapper.
+     */
+    private val offlineSourceResolver: OfflineSourceResolver by lazy {
+        OfflineSourceResolver(
+            offlineAssets = { downloadController.listOfflineAssets() },
+            files = downloadStorageManager,
+        )
+    }
+
+    /**
      * Production [net.subsloth.core.domain.port.PlaybackPort] implementation
-     * over the session's [Api]. Rebuilt together with [catalogRepository]
-     * whenever the session changes, so stream-URL resolution always uses the
-     * current credentials (signed stream URLs come from authenticated
-     * detail responses).
+     * over the session's [Api], wrapped by [OfflineFirstPlaybackPort] so a
+     * verified local download is played directly (offline mode, no network)
+     * before falling back to stream resolution. Rebuilt together with
+     * [catalogRepository] whenever the session changes, so stream-URL
+     * resolution always uses the current credentials (signed stream URLs
+     * come from authenticated detail responses); the offline resolver is
+     * session-independent (downloads are shared across accounts — see
+     * [downloadController]'s doc).
      */
     @Volatile
-    private var currentPlaybackPort: PlaybackPort = ApiPlaybackPort(currentApi)
+    private var currentPlaybackPort: PlaybackPort = OfflineFirstPlaybackPort(
+        offlineSourceResolver = offlineSourceResolver,
+        online = ApiPlaybackPort(currentApi),
+    )
 
     val api: Api get() = currentApi
 
@@ -270,7 +292,10 @@ class AppContainer(context: Context) {
                 val newApi = buildApi(session)
                 currentApi = newApi
                 currentCatalogRepository = buildCatalogRepository(newApi)
-                currentPlaybackPort = ApiPlaybackPort(newApi)
+                currentPlaybackPort = OfflineFirstPlaybackPort(
+                    offlineSourceResolver = offlineSourceResolver,
+                    online = ApiPlaybackPort(newApi),
+                )
                 // Close the superseded client only after the new one is fully
                 // swapped in, so nothing still references it as "current".
                 previousApi.close()

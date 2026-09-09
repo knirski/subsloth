@@ -63,9 +63,14 @@ duration. `SubSlothNavHost`'s player entry passes `prepareSource`/`refreshStream
 resolution now route through `PlaybackErrorClassifier` into the auth-repair flow. Renderer-level
 transport control (play/pause/seek) remains owned by the platform player bridge in `:core:media`;
 the port's `play`/`pause`/`seek` methods are documented no-ops in `ApiPlaybackPort` until a
-remote-control consumer exists. Offline (`PlaybackMode.OFFLINE`) playback is not wired yet:
-`PlayerViewModel` handles the mode, but no composition root builds offline sources from
-`DownloadController`'s stored assets — a deliberate follow-up, not part of this adapter.
+remote-control consumer exists. Offline playback is wired through the same port:
+`currentPlaybackPort` wraps `ApiPlaybackPort` in `OfflineFirstPlaybackPort`
+(`core/media/.../playback/OfflineFirstPlaybackPort.kt`), which resolves a verified
+local download (`DownloadController.listOfflineAssets()` + file verification via
+`OfflineAssetFiles`) into a `PlaybackMode.OFFLINE` `VideoSource` — no network
+access, and `refreshStreamUrl` returns the offline source unchanged per
+`StreamRefreshPolicy`. Media without a playable download resolves online exactly
+as before.
 
 ## Desktop — real composition root (`DesktopContainer`)
 

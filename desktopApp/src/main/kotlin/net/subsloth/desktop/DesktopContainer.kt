@@ -24,6 +24,8 @@ import net.subsloth.core.media.download.DesktopDownloadStore
 import net.subsloth.core.media.download.DesktopStorageProvider
 import net.subsloth.core.media.download.DownloadController
 import net.subsloth.core.media.download.SeasonQueueController
+import net.subsloth.core.media.playback.OfflineFirstPlaybackPort
+import net.subsloth.core.media.playback.OfflineSourceResolver
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.MediaError
@@ -189,8 +191,24 @@ class DesktopContainer(dataDirOverride: File? = null) {
     @Volatile
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
+    /**
+     * Offline playback source resolution over [downloadController]'s stored
+     * assets, verified through [downloadStore]. Session-independent (like
+     * [downloadController]); consumed by [currentPlaybackPort]'s
+     * [OfflineFirstPlaybackPort] wrapper.
+     */
+    private val offlineSourceResolver: OfflineSourceResolver by lazy {
+        OfflineSourceResolver(
+            offlineAssets = { downloadController.listOfflineAssets() },
+            files = downloadStore,
+        )
+    }
+
     @Volatile
-    private var currentPlaybackPort: PlaybackPort = ApiPlaybackPort(currentApi)
+    private var currentPlaybackPort: PlaybackPort = OfflineFirstPlaybackPort(
+        offlineSourceResolver = offlineSourceResolver,
+        online = ApiPlaybackPort(currentApi),
+    )
 
     val api: Api get() = currentApi
 
@@ -254,7 +272,10 @@ class DesktopContainer(dataDirOverride: File? = null) {
                 val newApi = buildApi(session)
                 currentApi = newApi
                 currentCatalogRepository = buildCatalogRepository(newApi)
-                currentPlaybackPort = ApiPlaybackPort(newApi)
+                currentPlaybackPort = OfflineFirstPlaybackPort(
+                    offlineSourceResolver = offlineSourceResolver,
+                    online = ApiPlaybackPort(newApi),
+                )
                 previousApi.close()
             }
         }

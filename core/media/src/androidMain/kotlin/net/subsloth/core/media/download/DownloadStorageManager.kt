@@ -2,13 +2,16 @@ package net.subsloth.core.media.download
 
 import android.content.Context
 import android.net.Uri
+import net.subsloth.core.media.playback.OfflineAssetFiles
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.media.Media
 import java.io.File
 import java.io.InputStream
 import java.util.UUID
 
-class DownloadStorageManager(private val context: Context) : DownloadFileStore {
+class DownloadStorageManager(private val context: Context) :
+    DownloadFileStore,
+    OfflineAssetFiles {
     private val storageDir: File
         get() = context.noBackupFilesDir.resolve("downloads").also { it.mkdirs() }
 
@@ -46,10 +49,12 @@ class DownloadStorageManager(private val context: Context) : DownloadFileStore {
         return deletedFile && deletedStaged
     }
 
-    fun verifyFile(localPath: OfflineRelativePath): Boolean {
+    override fun verifyFile(localPath: OfflineRelativePath): Boolean {
         val file = finalFile(localPath)
         return file.exists() && file.length() > 0L
     }
 
     fun getContentUri(localPath: OfflineRelativePath): Uri = Uri.fromFile(finalFile(localPath))
+
+    override fun fileUri(localPath: OfflineRelativePath): String = getContentUri(localPath).toString()
 }
