@@ -192,6 +192,22 @@ jobs:
       - name: Desktop compilation
         run: ./gradlew :desktopApp:compileKotlin
 
+      # Linux bundling: the unpacked app image (input for the flake's
+      # packages.x86_64-linux.subsloth wrapper) and the .deb via jpackage.
+      # dpkg-deb ships preinstalled on ubuntu runners, so the deb type
+      # resolves here even though the nix devshell lacks it.
+      - name: Desktop distributable (app image + .deb)
+        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true'
+        run: ./gradlew :desktopApp:packageDistributionForCurrentOS
+
+      - name: Upload desktop distributable
+        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-distributable-linux
+          path: desktopApp/build/compose/binaries/main/
+          if-no-files-found: error
+
   build-web:
     name: 🌐 Web / wasmJs
     needs: [changes]

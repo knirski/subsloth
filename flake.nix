@@ -417,6 +417,58 @@
       '';
     in
     {
+      # ── Desktop app package (Linux) ────────────────────────────────────
+      # Installs the pre-built Compose Desktop app image (the
+      # `:desktopApp:createDistributable` output) with a wrapper exporting
+      # `desktopLibPath` on LD_LIBRARY_PATH so Skiko resolves its dlopen'd
+      # native libraries (libGL, libX11, fontconfig, ...) against the Nix
+      # store instead of the host system.
+      #
+      # Gradle is deliberately NOT run inside `nix build` (network
+      # impurity): build the distributable first,
+      #
+      #   ./gradlew :desktopApp:createDistributable
+      #
+      # then package it:
+      #
+      #   nix build .#subsloth --impure
+      #
+      # The default source directory is resolved relative to the working
+      # directory at evaluation time; point SUBSLOTH_DISTRIBUTABLE_DIR at
+      # an unpacked app image (e.g. a CI artifact) to override it.
+      packages.${system}.subsloth =
+        let
+          distributableDir =
+            if builtins.getEnv "SUBSLOTH_DISTRIBUTABLE_DIR" != "" then
+              builtins.getEnv "SUBSLOTH_DISTRIBUTABLE_DIR"
+            else
+              builtins.getEnv "PWD" + "/desktopApp/build/compose/binaries/main/app/SubSloth";
+        in
+        if !builtins.pathExists (/. + distributableDir) then
+          abort ''
+            SubSloth distributable not found at ${distributableDir}.
+
+            Build it first (Gradle must run outside `nix build`):
+              ./gradlew :desktopApp:createDistributable
+
+            then run: nix build .#subsloth --impure
+          ''
+        else
+          pkgs.runCommand "subsloth-1.0.0"
+            {
+              nativeBuildInputs = [ pkgs.makeWrapper ];
+              meta = {
+                description = "SubSloth Media Browser (desktop)";
+                mainProgram = "subsloth";
+              };
+            }
+            ''
+              mkdir -p "$out/share" "$out/bin"
+              cp -r "${/. + distributableDir}" "$out/share/subsloth"
+              makeWrapper "$out/share/subsloth/bin/SubSloth" "$out/bin/subsloth" \
+                --prefix LD_LIBRARY_PATH : "${desktopLibPath}"
+            '';
+
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           # Development tooling
