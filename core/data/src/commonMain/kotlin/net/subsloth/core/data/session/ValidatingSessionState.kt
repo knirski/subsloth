@@ -163,29 +163,43 @@ class ValidatingSessionState(
     }
 
     override suspend fun open(credentials: Credentials): Outcome<Unit> = when (val result = validate(credentials)) {
-        is Outcome.Success -> {
-            val saveOutcome = credentialsPort.save(credentials.login, credentials.password)
-            if (saveOutcome is Outcome.Failure) {
-                log.w { "Failed to persist credentials after successful validation: ${saveOutcome.error}" }
+        is Outcome.Success ->
+            // Publish Authenticated only after credential persistence succeeds: recover()
+            // relies on persisted credentials for silent re-authentication, so returning
+            // success with an unpersisted login would silently break that contract. A
+            // save failure is a genuine local-storage error and is surfaced to the
+            // caller (login screen) instead.
+            when (val saveOutcome = credentialsPort.save(credentials.login, credentials.password)) {
+                is Outcome.Success -> {
+                    _state.value = Session.Authenticated(
+                        userId = deriveUserId(credentials.login),
+                        openedAtEpochSeconds = clock.now().epochSeconds,
+                        credentials = credentials,
+                    )
+                    Outcome.Success(Unit)
+                }
+
+                is Outcome.Failure -> {
+                    log.e { "Failed to persist credentials after successful validation: ${saveOutcome.error}" }
+                    saveOutcome
+                }
             }
-            _state.value = Session.Authenticated(
-                userId = deriveUserId(credentials.login),
-                openedAtEpochSeconds = clock.now().epochSeconds,
-                credentials = credentials,
-            )
-            Outcome.Success(Unit)
-        }
 
         is Outcome.Failure -> result
     }
 
     override suspend fun close(): Outcome<Unit> {
+        // The in-memory session is dropped unconditionally (logout intent must not
+        // strand a live session, and the player auth-repair path depends on
+        // invalidate() dropping it), but the persisted-clear outcome is returned
+        // as-is: reporting success while persisted credentials remain would let
+        // recover() silently re-authenticate on the next cold start.
         val clearOutcome = credentialsPort.clear()
         if (clearOutcome is Outcome.Failure) {
             log.w { "Failed to clear persisted credentials on close: ${clearOutcome.error}" }
         }
         _state.value = Session.Anonymous
-        return Outcome.Success(Unit)
+        return clearOutcome
     }
 
     override suspend fun invalidate(): Outcome<Unit> = close()
