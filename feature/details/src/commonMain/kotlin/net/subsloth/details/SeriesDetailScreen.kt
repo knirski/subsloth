@@ -55,6 +55,7 @@ fun SeriesDetailScreen(
     modifier: Modifier = Modifier,
     onNavigateBack: (() -> Unit)? = null,
     onPlayClick: () -> Unit = {},
+    onEpisodeClick: (Episode) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -84,6 +85,7 @@ fun SeriesDetailScreen(
                     onSeasonSelect = { viewModel.selectSeason(it) },
                     modifier = Modifier.weight(1f),
                     onPlayClick = onPlayClick,
+                    onEpisodeClick = onEpisodeClick,
                 )
             }
 
@@ -109,6 +111,7 @@ fun ShowDetailContent(
     modifier: Modifier = Modifier,
     onSeasonSelect: (Int) -> Unit = {},
     onPlayClick: () -> Unit = {},
+    onEpisodeClick: (Episode) -> Unit = {},
 ) {
     if (isLandscapeWideScreen()) {
         ShowDetailWideLayout(
@@ -116,6 +119,7 @@ fun ShowDetailContent(
             onSeasonSelect = onSeasonSelect,
             modifier = modifier,
             onPlayClick = onPlayClick,
+            onEpisodeClick = onEpisodeClick,
         )
     } else {
         ShowDetailCompactLayout(
@@ -123,6 +127,7 @@ fun ShowDetailContent(
             onSeasonSelect = onSeasonSelect,
             modifier = modifier,
             onPlayClick = onPlayClick,
+            onEpisodeClick = onEpisodeClick,
         )
     }
 }
@@ -133,6 +138,7 @@ private fun ShowDetailWideLayout(
     modifier: Modifier,
     onSeasonSelect: (Int) -> Unit,
     onPlayClick: () -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
 ) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
@@ -254,7 +260,7 @@ private fun ShowDetailWideLayout(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 season.episodes.forEach { episode ->
-                    EpisodeRow(episode = episode)
+                    EpisodeRow(episode = episode, onClick = { onEpisodeClick(episode) })
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -268,6 +274,7 @@ private fun ShowDetailCompactLayout(
     modifier: Modifier,
     onSeasonSelect: (Int) -> Unit,
     onPlayClick: () -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
 ) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
@@ -379,7 +386,7 @@ private fun ShowDetailCompactLayout(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 season.episodes.forEach { episode ->
-                    EpisodeRow(episode = episode)
+                    EpisodeRow(episode = episode, onClick = { onEpisodeClick(episode) })
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -490,10 +497,11 @@ private fun SeasonSelector(
 }
 
 @Composable
-fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier) {
+fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     val isUpcoming = episode.availability is Availability.Upcoming
 
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = if (isUpcoming) {
             CardDefaults.cardColors(

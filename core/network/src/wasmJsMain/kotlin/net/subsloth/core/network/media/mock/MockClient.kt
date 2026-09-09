@@ -158,7 +158,52 @@ private val fixtureShowDetail =
     }
     """.trimIndent()
 
+private val fixtureEpisode1 =
+    """
+    {
+      "id": 1,
+      "show_id": 1,
+      "show_name": "Breaking Bad",
+      "season": 1,
+      "episode": 1,
+      "title": "Pilot",
+      "plot": "Walter White turns to a life of crime.",
+      "available": true,
+      "duration": 58,
+      "resolution": "HD",
+      "url": "https://media.subsloth.invalid/episode/1/playlist.m3u8",
+      "subtitles": [
+        {"lang": "English", "url": "/uploads/subtitle/ep1/en.vtt", "format": "vtt"}
+      ]
+    }
+    """.trimIndent()
+
+private val fixtureEpisode2 =
+    """
+    {
+      "id": 2,
+      "show_id": 1,
+      "show_name": "Breaking Bad",
+      "season": 1,
+      "episode": 2,
+      "title": "Cat's in the Bag...",
+      "plot": "Walt and Jesse attempt to dispose of the bodies.",
+      "available": true,
+      "duration": 48,
+      "resolution": "HD",
+      "url": "https://media.subsloth.invalid/episode/2/playlist.m3u8",
+      "subtitles": [
+        {"lang": "English", "url": "/uploads/subtitle/ep2/en.vtt", "format": "vtt"}
+      ]
+    }
+    """.trimIndent()
+
 private val movieDetailPath = Regex("/api/v2/movies/\\d+")
+private val episodeDetailPath = Regex("/api/v2/episodes/\\d+")
+private val episodeById = mapOf(
+    1 to fixtureEpisode1,
+    2 to fixtureEpisode2,
+)
 private val showDetailPath = Regex("/api/v2/shows/\\d+")
 
 fun createMockClient(
@@ -186,6 +231,12 @@ fun createMockClient(
 
                     path.matches(showDetailPath) ->
                         fixtureShowDetail to HttpStatusCode.OK
+
+                    path.matches(episodeDetailPath) -> {
+                        val episodeId = path.substringAfterLast("/").toIntOrNull()
+                        val body = episodeById[episodeId] ?: """{"error": "not found"}"""
+                        body to HttpStatusCode.OK
+                    }
 
                     else -> """{"error": "not found"}""" to HttpStatusCode.NotFound
                 }

@@ -21,11 +21,13 @@ import net.subsloth.catalog.SearchViewModel
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
+import net.subsloth.core.ui.EpisodeDetailKey
 import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
@@ -34,6 +36,8 @@ import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.subslothNavConfig
+import net.subsloth.details.EpisodeDetailScreen
+import net.subsloth.details.EpisodeDetailViewModel
 import net.subsloth.details.MovieDetailScreen
 import net.subsloth.details.MovieDetailViewModel
 import net.subsloth.details.SeriesDetailScreen
@@ -128,6 +132,21 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                         onNavigateBack = ::popHistory,
                         onPlayClick = {
                             navigate(PlayerKey(contentId = showId.value.value.toString(), contentType = "show"))
+                        },
+                        onEpisodeClick = { episode -> navigate(EpisodeDetailKey(episode.id.value.toString())) },
+                    )
+                }
+            }
+
+            entry<EpisodeDetailKey> { key ->
+                val episodeId = key.episodeId.toIntOrNull()?.let { Media.MediaId.Episode(EpisodeId(it)) }
+                if (episodeId != null) {
+                    EpisodeDetailContent(
+                        runtime = runtime,
+                        episodeId = episodeId,
+                        onNavigateBack = ::popHistory,
+                        onPlayClick = {
+                            navigate(PlayerKey(contentId = episodeId.value.value.toString(), contentType = "episode"))
                         },
                     )
                 }
@@ -262,6 +281,7 @@ private fun ShowDetailContent(
     showId: Media.MediaId.Show,
     onNavigateBack: () -> Unit,
     onPlayClick: () -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
 ) {
     val storeOwner = remember(showId) {
         object : ViewModelStoreOwner {
@@ -279,6 +299,34 @@ private fun ShowDetailContent(
             viewModel = vm,
             onNavigateBack = onNavigateBack,
             onPlayClick = onPlayClick,
+            onEpisodeClick = onEpisodeClick,
+        )
+    }
+}
+
+@Composable
+private fun EpisodeDetailContent(
+    runtime: WebDemoRuntime,
+    episodeId: Media.MediaId.Episode,
+    onNavigateBack: () -> Unit,
+    onPlayClick: () -> Unit,
+) {
+    val storeOwner = remember(episodeId) {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: EpisodeDetailViewModel = viewModel(key = "episode_detail_${episodeId.value.value}") {
+            EpisodeDetailViewModel(mediaId = episodeId, getDetails = runtime::getDetails)
+        }
+        EpisodeDetailScreen(
+            viewModel = vm,
+            onNavigateBack = onNavigateBack,
+            onPlayClick = { onPlayClick() },
         )
     }
 }

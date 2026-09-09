@@ -15,6 +15,7 @@ import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
+import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieDetails
@@ -184,5 +185,55 @@ class ShowDetailViewModel(
         val parsed = saved.toIntOrNull()
         if (parsed != null && seasons.any { it.seasonNumber == parsed }) return parsed
         return seasons.minOfOrNull { it.seasonNumber } ?: 1
+    }
+}
+
+@Stable
+sealed interface EpisodeDetailUiState {
+    data object Loading : EpisodeDetailUiState
+
+    @Immutable
+    data class Content(val details: EpisodeDetails) : EpisodeDetailUiState
+
+    @Immutable
+    data class Error(val error: UiError) : EpisodeDetailUiState
+}
+
+/**
+ * Episode detail page (`EpisodeDetailKey`): fetches the episode via the
+ * same detail pipeline as movies/shows (`GET /episodes/{id}` mapped to
+ * [EpisodeDetails]).
+ */
+class EpisodeDetailViewModel(
+    private val mediaId: Media.MediaId.Episode,
+    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
+        Outcome.Failure(DecodeError.SerializationFailed)
+    },
+) : ViewModel() {
+    private val _uiState = MutableStateFlow<EpisodeDetailUiState>(EpisodeDetailUiState.Loading)
+    val uiState: StateFlow<EpisodeDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        loadDetails()
+    }
+
+    private fun loadDetails() {
+        viewModelScope.launch {
+            _uiState.value = EpisodeDetailUiState.Loading
+            when (val detailsResult = getDetails(mediaId)) {
+                is Outcome.Success -> {
+                    val details = detailsResult.value
+                    if (details is EpisodeDetails) {
+                        _uiState.value = EpisodeDetailUiState.Content(details)
+                    } else {
+                        _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))
+                    }
+                }
+
+                is Outcome.Failure -> {
+                    _uiState.value = EpisodeDetailUiState.Error(detailsResult.error.toUiError())
+                }
+            }
+        }
     }
 }

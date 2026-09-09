@@ -26,6 +26,7 @@ import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
+import net.subsloth.core.ui.EpisodeDetailKey
 import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
@@ -45,6 +46,8 @@ import net.subsloth.catalog.SearchScreen
 import net.subsloth.catalog.SearchViewModel
 import net.subsloth.details.MovieDetailScreen
 import net.subsloth.details.MovieDetailViewModel
+import net.subsloth.details.EpisodeDetailScreen
+import net.subsloth.details.EpisodeDetailViewModel
 import net.subsloth.details.SeriesDetailScreen
 import net.subsloth.details.ShowDetailViewModel
 import net.subsloth.library.DownloadsScreen
@@ -187,6 +190,44 @@ fun SubSlothNavHost(
                     modifier = Modifier,
                     onPlayClick = {
                         backStack += PlayerKey(contentId = key.showId, contentType = "show")
+                    },
+                    onEpisodeClick = { episode ->
+                        backStack += EpisodeDetailKey(episode.id.value.toString())
+                    },
+                )
+            }
+
+            entry<EpisodeDetailKey> { key ->
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val episodeId = parseMediaId(key.episodeId, "episode") as? Media.MediaId.Episode
+                    ?: return@entry
+                val viewModel: EpisodeDetailViewModel = viewModel(
+                    key = "episode_detail_${key.episodeId}",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(
+                                modelClass.cast(
+                                    EpisodeDetailViewModel(
+                                        mediaId = episodeId,
+                                        // Read catalogRepository live on every call
+                                        // (not captured once) since AppContainer rebuilds
+                                        // it whenever the session's credentials change.
+                                        getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                    ),
+                                ),
+                            )
+                    },
+                )
+                EpisodeDetailScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
+                    onPlayClick = { details ->
+                        backStack += PlayerKey(
+                            contentId = details.id.value.value.toString(),
+                            contentType = "episode",
+                        )
                     },
                 )
             }
