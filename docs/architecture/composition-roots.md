@@ -67,24 +67,45 @@ remote-control consumer exists. Offline (`PlaybackMode.OFFLINE`) playback is not
 `PlayerViewModel` handles the mode, but no composition root builds offline sources from
 `DownloadController`'s stored assets — a deliberate follow-up, not part of this adapter.
 
-## Desktop and Web — no composition root yet
+## Desktop — real composition root (`DesktopContainer`)
 
-`desktopApp/src/main/kotlin/net/subsloth/desktop/Main.kt` and
-`webApp/src/wasmJsMain/kotlin/net/subsloth/web/Main.kt` both construct their root composable the
-same way Android's session wiring used to, before this change: `val root: RootContainerViewModel =
-viewModel()`. Neither platform has an `AppContainer`-equivalent class constructing real
-network/database/preferences adapters at all — `:webApp`'s `commonMain.dependencies` block does
-depend directly on `:core:network` (a platform app is expected to depend on concrete adapters;
-that's what a composition root does), but nothing in `Main.kt` currently constructs or wires an
-`Api`, database, or preferences instance into a ViewModel.
+`desktopApp/src/main/kotlin/net/subsloth/desktop/DesktopContainer.kt` is the desktop
+composition root, mirroring `AppContainer`'s structure: DataStore-backed `UserPreferences`
+(`~/.local/share/subsloth` on Linux/macOS, `%APPDATA%\subsloth` on Windows), the
+machine-keyed AES-GCM `CredentialStore` JVM actual (`~/.subsloth`), `AccountProfileStore`,
+a Room `SubSlothDatabase` (BundledSQLiteDriver, next to the preferences file), and a
+`ValidatingSessionState` session port with cold-start `recover()`.
 
-Building Desktop's real composition root — following the same "construct concrete adapters,
-inject ports into feature ViewModels" pattern `AppContainer` already demonstrates for Android's
-data layer — is `Change 3A` (`wire-desktop-production-runtime`)'s scope, not this change's.
-`Change 3B` (`define-web-runtime-tier`) covers Web's production-connectivity decision record and
-demo/production mode separation, which may or may not include a full `AppContainer`-equivalent
-composition root depending on what that change decides — see that change's own scope, not this
-doc, for the authoritative plan.
+The session-scoped `Api`/`CatalogRepository`/`ApiPlaybackPort` trio is rebuilt on every
+session change exactly like Android (the previous `Api` is closed after the swap).
+`DesktopNavHost`'s entries — catalog, movie/show detail, player, library, settings,
+diagnostics, auth repair, offline library — construct their ViewModels from
+container-provided ports, reading `catalogRepository`/`playbackPort` live at call time so
+rebuilds never leave a stale adapter captured. `Main.kt` gates the nav host on the real
+session via `SessionGate`; login is no longer a nav route.
+
+`ValidatingSessionState` is platform-neutral and lives in `:core:data`
+(`core/data/.../session/ValidatingSessionState.kt`); androidApp keeps a
+`typealias AndroidSessionState = ValidatingSessionState` so its call sites and instrumented
+tests are unchanged. Known desktop omissions (deliberate):
+
+- **Downloads** — `DownloadController` and its `Context`-backed storage shell
+  (`DownloadStorageManager`/`StorageProvider`/`ConnectivityChecker`) are androidMain-only,
+  so `DownloadsViewModel` and the downloads controls stay on their safe empty/no-op
+  defaults until a JVM storage shell exists.
+- **Build-config base URL** — desktop has no `SUBSLOTH_API_BASE_URL` build-config field;
+  the persisted `UserPreferences.apiBaseUrl` value is used as-is.
+- The platform-neutral helper subset of `AppContainer` (catalog lambdas, settings writers,
+  playback-progress persistence) is mirrored into `DesktopContainer` rather than extracted
+  into a shared runtime; consolidating the two containers is a future refactor.
+
+## Web — no composition root (demo tier)
+
+`webApp/src/wasmJsMain/kotlin/net/subsloth/web/Main.kt` runs the fixture-backed
+`WebDemoRuntime` demo tier (`ClientConfig.useMock = true`), defined by the
+`define-web-runtime-tier` decision record: all screens are wired through demo-runtime
+lambdas, but no production composition root (real database/preferences/session) exists for
+web — that remains future scope for a web production tier.
 
 ## The shared non-production default
 
@@ -115,5 +136,5 @@ production startup path.
 | Platform | Data/catalog adapters | Session/auth adapter | Playback adapter |
 |---|---|---|---|
 | Android | Real (`AppContainer`) | Real (`AndroidSessionState`, Change 2) | Real (`ApiPlaybackPort`) |
-| Desktop | None yet (Change 3A scope) | In-memory default (Change 3A scope) | None (in-port no-op default) |
+| Desktop | Real (`DesktopContainer`) | Real (`ValidatingSessionState`) | Real (`ApiPlaybackPort`) |
 | Web | None yet (Change 3B scope) | In-memory default (Change 3B scope) | Demo mock (`WebDemoRuntime`) |

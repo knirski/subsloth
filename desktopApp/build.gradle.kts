@@ -16,6 +16,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
     implementation(project(":core:network"))
+    implementation(project(":core:database"))
+    implementation(project(":core:data"))
     implementation(project(":core:preferences"))
     implementation(project(":core:ui"))
     implementation(project(":feature:catalog"))
@@ -27,6 +29,15 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
+    // Composition-root runtime deps (same as androidApp's wiring set):
+    // DataStore/Room types appear in DesktopContainer's public surface, and
+    // the Ktor client is built through ClientFactory.
+    implementation(libs.datastore.preferences)
+    implementation(libs.room3.runtime)
+    implementation(libs.sqlite.bundled)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.kermit)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation3.runtime)
