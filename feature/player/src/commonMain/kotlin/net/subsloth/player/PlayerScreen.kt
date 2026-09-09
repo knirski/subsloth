@@ -472,7 +472,12 @@ private fun ErrorContent(
 ) {
     val isAuthError = playbackError is PlaybackError.AuthFailure
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            // The video renders behind the Compose canvas, so the error
+            // screen needs its own surface to stay readable over frames.
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
