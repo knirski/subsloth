@@ -103,7 +103,16 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
                             )
                         }
-                        MovieDetailScreen(viewModel = vm, onNavigateBack = { backStack.removeLastOrNull() })
+                        MovieDetailScreen(
+                            viewModel = vm,
+                            onNavigateBack = { backStack.removeLastOrNull() },
+                            onPlayClick = {
+                                backStack += PlayerKey(
+                                    contentId = movieId.value.value.toString(),
+                                    contentType = "movie",
+                                )
+                            },
+                        )
                     }
                 }
             }
@@ -118,7 +127,16 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
                             )
                         }
-                        SeriesDetailScreen(viewModel = vm, onNavigateBack = { backStack.removeLastOrNull() })
+                        SeriesDetailScreen(
+                            viewModel = vm,
+                            onNavigateBack = { backStack.removeLastOrNull() },
+                            onPlayClick = {
+                                backStack += PlayerKey(
+                                    contentId = showId.value.value.toString(),
+                                    contentType = "show",
+                                )
+                            },
+                        )
                     }
                 }
             }
