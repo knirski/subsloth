@@ -177,7 +177,10 @@ jobs:
   build-jvm-and-desktop:
     name: ☕ JVM / 🖥️ Desktop
     needs: [changes]
-    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.desktop == 'true'
+    if: |
+      needs.changes.outputs.shared == 'true' ||
+      needs.changes.outputs.desktop == 'true' ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -197,11 +200,11 @@ jobs:
       # dpkg-deb ships preinstalled on ubuntu runners, so the deb type
       # resolves here even though the nix devshell lacks it.
       - name: Desktop distributable (app image + .deb)
-        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true'
+        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true' || github.event_name == 'workflow_dispatch'
         run: ./gradlew :desktopApp:packageDistributionForCurrentOS
 
       - name: Upload desktop distributable
-        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true'
+        if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: desktop-distributable-linux
