@@ -1,7 +1,9 @@
 # web-runtime-tier Specification
 
 ## Purpose
-TBD - created by archiving change define-web-runtime-tier. Update Purpose after archive.
+Define the GitHub Pages Web runtime as a credential-free, mock-backed demo and
+the evidence required before any Web deployment may be promoted to an
+authenticated production tier.
 ## Requirements
 ### Requirement: GitHub Pages Demo Mode
 
