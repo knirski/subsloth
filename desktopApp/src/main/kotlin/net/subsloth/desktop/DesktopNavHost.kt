@@ -312,7 +312,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     val vm: LoginViewModel = viewModel(key = "auth_repair") {
                         LoginViewModel(
                             sessionPort = container.sessionPort,
-                            readApiBaseUrl = { container.userPreferences.apiBaseUrl() },
+                            readApiBaseUrl = { container.apiBaseUrlFlow() },
                             saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
                         )
                     }

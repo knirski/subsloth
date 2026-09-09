@@ -9,7 +9,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
@@ -89,10 +91,10 @@ private const val DEFAULT_PROFILE_KEY = "default"
  * [Api]/[CatalogRepository]/[PlaybackPort] trio whenever the session
  * changes, exactly like Android does.
  *
- * Deliberate omissions (see `docs/architecture/composition-roots.md`):
- * - **Build-config base URL** — desktop has no `SUBSLOTH_API_BASE_URL`
- *   build-config field; the persisted [UserPreferences.apiBaseUrl] value
- *   is used as-is.
+ * Base URL: desktop has no build-config field; the persisted
+ * [UserPreferences.apiBaseUrl] value is used, overridden by the
+ * `SUBSLOTH_API_BASE_URL` environment variable while it is still the
+ * default (see [resolveApiBaseUrl]).
  *
  * Downloads are wired with the JVM storage shell (PR follow-up to #235):
  * [DownloadController] runs with `DesktopDownloadStore`,
@@ -183,7 +185,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
      */
     private val sessionState = ValidatingSessionState(
         credentialsPort = CredentialsStoreAdapter(CredentialStore()),
-        baseUrlProvider = { userPreferences.apiBaseUrl().first() },
+        baseUrlProvider = { resolveApiBaseUrl() },
         accountProfileStore = accountProfileStore,
         clock = clock,
     )
@@ -402,16 +404,43 @@ class DesktopContainer(dataDirOverride: File? = null) {
         return extension.ifBlank { "mp4" }.filter { it.isLetterOrDigit() }.ifBlank { "mp4" }
     }
 
-    private suspend fun buildApi(session: Session): Api = when (session) {
-        is Session.Authenticated -> Api(
-            ClientFactory.create(
-                login = session.credentials.login,
-                password = session.credentials.password,
-                baseUrl = userPreferences.apiBaseUrl().first(),
-            ),
-        )
+    /**
+     * Resolves the API base URL with the same precedence Android's
+     * `AppContainer.resolveApiBaseUrl` uses: the persisted
+     * [UserPreferences.apiBaseUrl] value, unless it is still the default
+     * and the `SUBSLOTH_API_BASE_URL` environment variable is set
+     * (desktop's counterpart of Android's build-config field — CI
+     * provides it from the repo secret), in which case the environment
+     * variable wins. Public because the login flows (Main.kt's
+     * `LoginViewModel` and DesktopNavHost's auth-repair entry) display it.
+     */
+    suspend fun resolveApiBaseUrl(): String = apiBaseUrlFlow().first()
 
-        Session.Anonymous -> Api(ClientFactory.create(baseUrl = userPreferences.apiBaseUrl().first()))
+    /**
+     * The effective API base URL as a [Flow] (for the login screens,
+     * which expect a flow shape): the persisted
+     * [UserPreferences.apiBaseUrl] value, overridden by the
+     * `SUBSLOTH_API_BASE_URL` environment variable while it is still the
+     * default.
+     */
+    fun apiBaseUrlFlow(): Flow<String> = userPreferences.apiBaseUrl().map { stored ->
+        val fromEnv = System.getenv("SUBSLOTH_API_BASE_URL").orEmpty()
+        if (stored == UserPreferences.DEFAULT_API_BASE_URL && fromEnv.isNotEmpty()) fromEnv else stored
+    }
+
+    private suspend fun buildApi(session: Session): Api {
+        val baseUrl = resolveApiBaseUrl()
+        return when (session) {
+            is Session.Authenticated -> Api(
+                ClientFactory.create(
+                    login = session.credentials.login,
+                    password = session.credentials.password,
+                    baseUrl = baseUrl,
+                ),
+            )
+
+            Session.Anonymous -> Api(ClientFactory.create(baseUrl = baseUrl))
+        }
     }
 
     private fun buildCatalogRepository(api: Api): CatalogRepository = CatalogRepository(
