@@ -176,12 +176,8 @@ fun SubSlothNavHost(
                                     PlayerViewModel(
                                         mediaId = parseMediaId(key.contentId, key.contentType)
                                             ?: error("Invalid player key: ${key.contentId}/${key.contentType}"),
-                                        // fetchVideoSource/refreshStreamUrl intentionally left on
-                                        // their safe no-op defaults: PlaybackPort (the port these
-                                        // conceptually map to) has zero implementations anywhere in
-                                        // the tree today. Building one means inventing stream-URL
-                                        // resolution and quality/DRM selection from scratch — out
-                                        // of proportion for this change. See this task's report.
+                                        fetchVideoSource = { mediaId -> container.playbackPort.prepareSource(mediaId) },
+                                        refreshStreamUrl = { mediaId -> container.playbackPort.refreshStreamUrl(mediaId) },
                                         fetchEpisodes = { showId -> container.fetchEpisodesForShow(showId) },
                                         saveProgress = { mediaId, positionSeconds, durationSeconds ->
                                             container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds)

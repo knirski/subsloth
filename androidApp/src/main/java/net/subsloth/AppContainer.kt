@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
+import net.subsloth.core.domain.port.PlaybackPort
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
 import net.subsloth.core.domain.port.StoragePort
@@ -42,6 +43,7 @@ import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
+import net.subsloth.core.network.media.playback.ApiPlaybackPort
 import net.subsloth.database.LibraryPortAdapter
 import net.subsloth.database.SubSlothDatabase
 import net.subsloth.database.createSubSlothDatabase
@@ -192,9 +194,21 @@ class AppContainer(context: Context) {
     @Volatile
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
+    /**
+     * Production [net.subsloth.core.domain.port.PlaybackPort] implementation
+     * over the session's [Api]. Rebuilt together with [catalogRepository]
+     * whenever the session changes, so stream-URL resolution always uses the
+     * current credentials (signed stream URLs come from authenticated
+     * detail responses).
+     */
+    @Volatile
+    private var currentPlaybackPort: PlaybackPort = ApiPlaybackPort(currentApi)
+
     val api: Api get() = currentApi
 
     val catalogRepository: CatalogRepository get() = currentCatalogRepository
+
+    val playbackPort: PlaybackPort get() = currentPlaybackPort
 
     /**
      * Production [net.subsloth.core.domain.port.LibraryPort] implementation:
@@ -256,6 +270,7 @@ class AppContainer(context: Context) {
                 val newApi = buildApi(session)
                 currentApi = newApi
                 currentCatalogRepository = buildCatalogRepository(newApi)
+                currentPlaybackPort = ApiPlaybackPort(newApi)
                 // Close the superseded client only after the new one is fully
                 // swapped in, so nothing still references it as "current".
                 previousApi.close()
