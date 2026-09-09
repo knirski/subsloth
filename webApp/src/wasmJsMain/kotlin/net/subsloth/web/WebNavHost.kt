@@ -57,6 +57,25 @@ import net.subsloth.settings.SettingsViewModel
 fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDestination: AppNavKey = CatalogKey) {
     val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
+    // Browser back/forward buttons drive the in-app back stack. Each history
+    // entry records the back-stack depth it represents. A popstate to a
+    // shallower depth trims the stack; a forward entry deeper than the stack
+    // cannot be reconstructed (its screen was popped in-app), so the entry is
+    // realigned to the actual depth to keep later browser Back actions
+    // consistent with the app back stack.
+    rememberBrowserHistorySync { depth ->
+        if (backStack.size > depth + 1) {
+            while (backStack.size > depth + 1) backStack.removeLastOrNull()
+        } else if (backStack.size <= depth) {
+            replaceHistoryDepth(backStack.size - 1)
+        }
+    }
+
+    val navigate: (AppNavKey) -> Unit = { key ->
+        backStack += key
+        pushHistoryDepth(backStack.size - 1)
+    }
+
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
@@ -69,22 +88,22 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
             entry<CatalogKey> {
                 CatalogContent(
                     runtime = runtime,
-                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
+                    onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
+                    onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
             }
 
             entry<MovieDetailKey> { key ->
                 val movieId = key.movieId.toIntOrNull()?.let { Media.MediaId.Movie(MovieId(it)) }
                 if (movieId != null) {
-                    MovieDetailContent(runtime = runtime, movieId = movieId)
+                    MovieDetailContent(runtime = runtime, movieId = movieId, onNavigateBack = ::popHistory)
                 }
             }
 
             entry<ShowDetailKey> { key ->
                 val showId = key.showId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
                 if (showId != null) {
-                    ShowDetailContent(runtime = runtime, showId = showId)
+                    ShowDetailContent(runtime = runtime, showId = showId, onNavigateBack = ::popHistory)
                 }
             }
 
@@ -92,15 +111,15 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                 PlayerContent(
                     contentId = key.contentId,
                     contentType = key.contentType,
-                    onNavigateBack = { backStack.removeLastOrNull() },
+                    onNavigateBack = ::popHistory,
                     onNavigateToAuthRepair = {},
                 )
             }
 
             entry<LibraryKey> {
                 LibraryContent(
-                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
+                    onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
+                    onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
             }
 
@@ -110,7 +129,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 
             entry<SettingsKey> {
                 SettingsContent(
-                    onNavigateToDiagnostics = { backStack += DiagnosticsKey },
+                    onNavigateToDiagnostics = { navigate(DiagnosticsKey) },
                 )
             }
 
@@ -120,8 +139,8 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 
             entry<OfflineLibraryKey> {
                 OfflineLibraryContent(
-                    onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
+                    onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
+                    onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
             }
         },
@@ -153,7 +172,7 @@ private fun CatalogContent(
 }
 
 @Composable
-private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.Movie) {
+private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.Movie, onNavigateBack: () -> Unit) {
     val storeOwner = remember(movieId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -166,12 +185,12 @@ private fun MovieDetailContent(runtime: WebDemoRuntime, movieId: Media.MediaId.M
         val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
             MovieDetailViewModel(mediaId = movieId, getDetails = runtime::getDetails)
         }
-        MovieDetailScreen(viewModel = vm)
+        MovieDetailScreen(viewModel = vm, onNavigateBack = onNavigateBack)
     }
 }
 
 @Composable
-private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Show) {
+private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Show, onNavigateBack: () -> Unit) {
     val storeOwner = remember(showId) {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -184,7 +203,7 @@ private fun ShowDetailContent(runtime: WebDemoRuntime, showId: Media.MediaId.Sho
         val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value.value}") {
             ShowDetailViewModel(mediaId = showId, getDetails = runtime::getDetails)
         }
-        SeriesDetailScreen(viewModel = vm)
+        SeriesDetailScreen(viewModel = vm, onNavigateBack = onNavigateBack)
     }
 }
 

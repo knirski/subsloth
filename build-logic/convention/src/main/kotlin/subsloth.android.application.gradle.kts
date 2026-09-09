@@ -58,6 +58,7 @@ android {
         disable += "MissingApplicationIcon"
         disable += "NotShrinkingResources"
         disable += "GradleDependency"
+        disable += "AndroidGradlePluginVersion"
         disable += "InvalidPackage"
     }
 }

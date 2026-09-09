@@ -27,6 +27,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -49,37 +50,52 @@ import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 
 @Composable
-fun SeriesDetailScreen(viewModel: ShowDetailViewModel, modifier: Modifier = Modifier) {
+fun SeriesDetailScreen(
+    viewModel: ShowDetailViewModel,
+    modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val s = state) {
-        is ShowDetailUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            TextButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
             ) {
-                CircularProgressIndicator()
+                Text(stringResource(Res.string.detail_back))
             }
         }
 
-        is ShowDetailUiState.Content -> {
-            ShowDetailContent(
-                state = s,
-                onSeasonSelect = { viewModel.selectSeason(it) },
-                modifier = modifier,
-            )
-        }
+        when (val s = state) {
+            is ShowDetailUiState.Loading -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
 
-        is ShowDetailUiState.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize().padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = s.error.toUiErrorMessage().toDisplayString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
+            is ShowDetailUiState.Content -> {
+                ShowDetailContent(
+                    state = s,
+                    onSeasonSelect = { viewModel.selectSeason(it) },
+                    modifier = Modifier.weight(1f),
                 )
+            }
+
+            is ShowDetailUiState.Error -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = s.error.toUiErrorMessage().toDisplayString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }
