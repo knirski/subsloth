@@ -13,7 +13,6 @@ The repository uses one pinned Nix flake shell for local development.
 
 The default shell includes:
 
-- `openspec`
 - `git`
 - `java`
 - `./gradlew` wrapper execution support

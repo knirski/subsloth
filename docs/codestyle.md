@@ -1,6 +1,6 @@
 # SubSloth Codestyle
 
-Architectural and coding conventions for this repository. Follow these patterns unless the active OpenSpec change explicitly overrides them.
+Architectural and coding conventions for this repository. Follow these patterns for all code changes.
 
 ---
 

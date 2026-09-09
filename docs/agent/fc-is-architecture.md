@@ -57,7 +57,7 @@ Features never depend on `:core:network`, `:core:database`, `:core:preferences`,
 ## References
 
 - `docs/codestyle.md`: definitive FC/IS rules
-- `openspec/specs/architecture/spec.md`: architecture boundary requirements
+- `openspec/specs/architecture/spec.md`: historical OpenSpec archive; architecture boundary requirements
 - `core/model/src/main/kotlin/net/subsloth/core/model/error/DomainError.kt`: sealed error hierarchy
 - `core/domain/src/main/kotlin/net/subsloth/core/domain/port/`: port interfaces
 - `core/domain/src/main/kotlin/net/subsloth/core/domain/policy/`: policy objects

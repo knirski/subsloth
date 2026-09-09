@@ -1,20 +1,25 @@
 # Agent Instructions for `subsloth`
 
-**Mission**: deliver work matching the active OpenSpec change, pass its verification, and do not overwrite unrelated user state.
+**Mission**: deliver verified work and do not overwrite unrelated user state.
+
+> **Historical note (2026-09-09):** OpenSpec has been retired in this repository.
+> The `openspec/` directory is kept as a historical record of past requirements
+> and changes only. Do NOT create new OpenSpec changes, do NOT run `openspec`
+> validation as a commit or verification gate, and do NOT treat `openspec/`
+> specs as active requirements. Refer to `docs/agent/README.md` for the docs
+> that are actually in force.
 
 ## Policy Cascade
 
-1. User instructions > OpenSpec requirements. If conflict: surface it, stop.
-2. Active change specs (`openspec/changes/*/specs/`) > archive > `openspec/specs/`.
-3. `docs/agent/README.md` routes to the matching workflow doc.
+1. User instructions > repository docs (`docs/agent/README.md` routes to the matching doc).
+2. If conflict: surface it, stop.
 
 ## Bootstrap (run before every edit/write session)
 
 1. Read `AGENTS.md`, `best_practices.md`, `docs/agent/README.md`.
 2. `git status --short`. Confirm branch and worktree.
-3. Identify active OpenSpec change. Read its `proposal.md`, `design.md`, `specs/`, `tasks.md`.
-4. Choose verification from **Verification Selection** below.
-5. Unclear? Stop and report a blocker.
+3. Choose verification from **Verification Selection** below.
+4. Unclear? Stop and report a blocker.
 
 ## Format-Before-Commit Rule
 
@@ -41,15 +46,14 @@ One-liner: `./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotl
 
 | Situation | Command |
 |---|---|
-| One active change, code changed | `openspec validate <change-id> --strict` + task-specific checks |
-| Shared OpenSpec/specs/ changed | `openspec validate --all --strict` |
+| Code changed | `./gradlew test` (or narrower task-specific checks) |
 | Docs only | Narrowest docs validation or say so |
 | PR monitoring/review/merge | `gh` checks, no Gradle build |
-| Unsure which change owns work | Stop, report blocker |
+| Unsure which check applies | Say so in the final response |
 
 ## Stop Conditions
 
-- Request conflicts with OpenSpec, crosses change boundaries, or touches another PR owner's files.
+- Request touches files outside the agreed scope or another PR owner's files.
 - Dirty worktree affecting scope. Correct branch/base/worktree unclear.
 - Verification command unclear. Action is destructive without explicit approval.
 - Cannot determine authoritative doc.
@@ -61,7 +65,6 @@ One-liner: `./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotl
 - Format-before-commit (see above), then run pre-commit checks. Do not commit until they pass.
 - PR title must be conventional commit. Squash+merge only. Merge when CI is green and no "changes requested" review is active (approval not required).
 - Before merging: verify CI green, all review threads resolved, bot comments addressed, no stale CI.
-- `openspec archive <change-id>` only after completion, passing validation, and user confirmation.
 - When resolving review comments: reply explaining fix, then resolve thread.
 - Final response format:
   ```text
@@ -101,7 +104,6 @@ Every commit on `main` triggers a release via semantic-release. PR title must be
 
 - `./gradlew` only (no host gradle). Run inside pinned Nix flake environment.
 - Never commit: credentials, auth headers, signed media URLs, browser traces, HAR files, authenticated screenshots.
-- OpenSpec requirement statements and scenarios are authoritative. Do not infer from placeholder metadata.
 - `gh` CLI for GitHub. No browser.
 - `@Suppress` only for false positives with no cleaner fix. Narrowest scope.
 
@@ -121,7 +123,7 @@ When in doubt, run:
 
 ## Autonomy
 
-- Investigate first (`rg`, `find`, `openspec/` files). Act independently on implementation details.
-- Stop when: ambiguity changes outcome, action is irreversible, request conflicts with OpenSpec.
+- Investigate first (`rg`, `find`). Act independently on implementation details.
+- Stop when: ambiguity changes outcome, action is irreversible, request conflicts with repo docs.
 - When multiple reasonable approaches exist: choose smallest, most reversible. Explain in final response.
 - If blocked: do not edit, commit, or push. Report blocker with exact files, commands, and unclear rule.

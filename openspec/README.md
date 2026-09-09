@@ -1,5 +1,13 @@
 # OpenSpec
 
+> **RETIRED (2026-09-09).** OpenSpec is no longer used in this repository.
+> Everything in this directory is a historical record of past requirements
+> and changes. Do not create new changes, do not run `openspec` validation as
+> a gate, and do not treat these specs as active requirements. See
+> `docs/agent/README.md` for the docs currently in force.
+
+The content below describes how this directory used to be used.
+
 This repo uses OpenSpec as the source of truth for v1 product and engineering behavior.
 
 ## Workflow

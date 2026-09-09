@@ -9,6 +9,9 @@ They are retained for traceability only.
 
 ## Canonical Source
 
-The canonical accepted requirements live in `openspec/specs/`. New planning work should use OpenSpec changes under `openspec/changes/`.
+> **Historical note (2026-09-09):** OpenSpec has been retired in this
+> repository. The `openspec/` directory is kept as a historical record only;
+> it is no longer the canonical source for active requirements. New planning
+> work should use the docs routed from `docs/agent/README.md`.
 
-Do not edit these archived files to add, remove, or clarify requirements. If these archived files disagree with `openspec/specs/`, the OpenSpec specs win.
+Do not edit these archived files to add, remove, or clarify requirements.

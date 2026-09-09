@@ -44,8 +44,9 @@ reproduced via Nix.
   bytecode), the Android SDK, Node.js, Yarn, Binaryen, and even Android Studio.
   A single `direnv allow` is the entire setup.
 
-The [canonical architecture specification](openspec/specs/architecture/spec.md)
-records the decisions and trade-offs behind these rules.
+A historical
+[architecture specification](openspec/specs/architecture/spec.md) (retired
+OpenSpec archive) records the decisions and trade-offs behind these rules.
 
 ## Quick start
 
@@ -73,9 +74,9 @@ See [`docs/development.md`](docs/development.md) for detailed setup and
 
 ## Find your path
 
-- **Learn:** start with the [OpenSpec planning overview](openspec/README.md),
-  then read the [canonical specs](openspec/specs/) that define every v1
-  requirement.
+- **Learn:** browse the [historical OpenSpec archive](openspec/README.md)
+  (retired 2026-09-09) for past requirements, then read the docs routed from
+  [`docs/agent/README.md`](docs/agent/README.md) for what is in force.
 - **Build:** follow the [module structure guide](docs/module-structure.md) to
   understand the 24-module dependency graph, then the [convention plugins
   reference](docs/convention-plugins.md) for Gradle conventions.
