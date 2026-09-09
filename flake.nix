@@ -497,6 +497,10 @@
           binaryen
           chromium
 
+          # Headless X server for Compose Desktop UI tests (CI has no display)
+          xorg.xvfb
+          xorg.xorgserver
+
           # Utilities (not provided by stdenv)
           act
           curl
