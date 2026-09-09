@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
@@ -14,16 +15,22 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import net.subsloth.auth.AuthRepairScreen
+import net.subsloth.auth.LoginScreen
+import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.catalog.SearchScreen
 import net.subsloth.catalog.SearchViewModel
+import net.subsloth.core.domain.port.DownloadCommandOutcome
+import net.subsloth.core.domain.port.Session
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.AppNavKey
+import net.subsloth.core.ui.AuthRepairKey
 import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
@@ -61,7 +68,7 @@ import net.subsloth.settings.SettingsViewModel
  * Feature screens are the same KMP composables shared across all platforms.
  */
 @Composable
-fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDestination: AppNavKey = CatalogKey) {
+fun WebNavHost(runtime: WebRuntime, modifier: Modifier = Modifier, startDestination: AppNavKey = CatalogKey) {
     val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
     // Browser back/forward buttons drive the in-app back stack. Each history
@@ -158,7 +165,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                     contentId = key.contentId,
                     contentType = key.contentType,
                     onNavigateBack = ::popHistory,
-                    onNavigateToAuthRepair = {},
+                    onNavigateToAuthRepair = { navigate(AuthRepairKey) },
                     onNavigateToNextEpisode = { nextId ->
                         val rawId = (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
                         if (rawId != null) navigate(PlayerKey(contentId = rawId, contentType = "episode"))
@@ -166,19 +173,28 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
                 )
             }
 
+            entry<AuthRepairKey> {
+                AuthRepairContent(
+                    runtime = runtime,
+                    onRepaired = ::popHistory,
+                )
+            }
+
             entry<LibraryKey> {
                 LibraryContent(
+                    runtime = runtime,
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
             }
 
             entry<DownloadsKey> {
-                DownloadsContent()
+                DownloadsContent(runtime = runtime)
             }
 
             entry<SettingsKey> {
                 SettingsContent(
+                    runtime = runtime,
                     onNavigateToDiagnostics = { navigate(DiagnosticsKey) },
                 )
             }
@@ -189,6 +205,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 
             entry<OfflineLibraryKey> {
                 OfflineLibraryContent(
+                    runtime = runtime,
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
@@ -199,7 +216,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 
 @Composable
 private fun CatalogContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     onSearchClick: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
@@ -225,7 +242,7 @@ private fun CatalogContent(
 
 @Composable
 private fun SearchContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -254,7 +271,7 @@ private fun SearchContent(
 
 @Composable
 private fun MovieDetailContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     movieId: Media.MediaId.Movie,
     onNavigateBack: () -> Unit,
     onPlayClick: () -> Unit,
@@ -269,7 +286,7 @@ private fun MovieDetailContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
-            MovieDetailViewModel(mediaId = movieId, getDetails = runtime::getDetails)
+            MovieDetailViewModel(mediaId = movieId, getDetails = { runtime.getDetails(it) })
         }
         MovieDetailScreen(
             viewModel = vm,
@@ -281,7 +298,7 @@ private fun MovieDetailContent(
 
 @Composable
 private fun ShowDetailContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     showId: Media.MediaId.Show,
     onNavigateBack: () -> Unit,
     onPlayClick: () -> Unit,
@@ -297,7 +314,11 @@ private fun ShowDetailContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: ShowDetailViewModel = viewModel(key = "show_detail_${showId.value.value}") {
-            ShowDetailViewModel(mediaId = showId, getDetails = runtime::getDetails)
+            ShowDetailViewModel(
+                mediaId = showId,
+                getDetails = { runtime.getDetails(it) },
+                listWatchedIds = { runtime.listWatchedContentIds() },
+            )
         }
         SeriesDetailScreen(
             viewModel = vm,
@@ -310,7 +331,7 @@ private fun ShowDetailContent(
 
 @Composable
 private fun EpisodeDetailContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     episodeId: Media.MediaId.Episode,
     onNavigateBack: () -> Unit,
     onPlayClick: () -> Unit,
@@ -325,7 +346,11 @@ private fun EpisodeDetailContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: EpisodeDetailViewModel = viewModel(key = "episode_detail_${episodeId.value.value}") {
-            EpisodeDetailViewModel(mediaId = episodeId, getDetails = runtime::getDetails)
+            EpisodeDetailViewModel(
+                mediaId = episodeId,
+                getDetails = { runtime.getDetails(it) },
+                isWatched = { runtime.isWatched(it) },
+            )
         }
         EpisodeDetailScreen(
             viewModel = vm,
@@ -336,7 +361,39 @@ private fun EpisodeDetailContent(
 }
 
 @Composable
-private fun LibraryContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowClick: (Media.MediaId.Show) -> Unit) {
+private fun AuthRepairContent(runtime: WebRuntime, onRepaired: () -> Unit) {
+    val storeOwner = remember("auth_repair") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: LoginViewModel = viewModel(key = "auth_repair") {
+            LoginViewModel(
+                sessionPort = runtime.sessionPort,
+                readApiBaseUrl = { runtime.apiBaseUrlFlow() },
+                saveApiBaseUrl = { url -> runtime.saveApiBaseUrl(url) },
+            )
+        }
+        // PlayerScreen navigated here after detecting an auth failure, so
+        // force this instance straight into AuthRepair (same as the other
+        // platforms).
+        LaunchedEffect(vm) {
+            vm.retryAuth()
+        }
+        AuthRepairScreen(viewModel = vm, onRepaired = onRepaired)
+    }
+}
+
+@Composable
+private fun LibraryContent(
+    runtime: WebRuntime,
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
     val storeOwner = remember("library") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -346,7 +403,17 @@ private fun LibraryContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowCl
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: LibraryViewModel = viewModel(key = "library") { LibraryViewModel() }
+        val vm: LibraryViewModel = viewModel(key = "library") {
+            LibraryViewModel(
+                libraryPort = { runtime.listLibrary() },
+                downloadsPort = { runtime.listDownloads() },
+                listMovies = { runtime.listMovies() },
+                listShows = { runtime.listShows() },
+                listProgress = { runtime.listAccountPlaybackProgress() },
+                isLoggedIn = { runtime.sessionPort.current() is Session.Authenticated },
+                removeDownload = { localId -> runtime.removeDownload(localId) },
+            )
+        }
         LibraryScreen(
             viewModel = vm,
             onMovieClick = onMovieClick,
@@ -356,7 +423,7 @@ private fun LibraryContent(onMovieClick: (Media.MediaId.Movie) -> Unit, onShowCl
 }
 
 @Composable
-private fun DownloadsContent() {
+private fun DownloadsContent(runtime: WebRuntime) {
     val storeOwner = remember("downloads") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -366,13 +433,28 @@ private fun DownloadsContent() {
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: DownloadsViewModel = viewModel(key = "downloads") { DownloadsViewModel() }
+        val vm: DownloadsViewModel = viewModel(key = "downloads") {
+            DownloadsViewModel(
+                listDownloads = { runtime.listDownloads() },
+                listSeasonQueues = { runtime.listSeasonQueues() },
+                // listProgress stays on its safe default: the shared
+                // offline_playback_progress table has no contentType column
+                // (same reasoning as Android/desktop).
+                pauseDownload = { localId -> runtime.pauseDownload(localId) },
+                resumeDownload = { localId -> runtime.resumeDownload(localId) },
+                cancelDownload = { localId -> runtime.cancelDownload(localId) },
+                retryDownload = { localId -> runtime.retryDownload(localId) },
+                removeDownload = { localId ->
+                    runtime.removeDownload(localId).getOrDefault(DownloadCommandOutcome.NoOp)
+                },
+            )
+        }
         DownloadsScreen(viewModel = vm)
     }
 }
 
 @Composable
-private fun SettingsContent(onNavigateToDiagnostics: () -> Unit) {
+private fun SettingsContent(runtime: WebRuntime, onNavigateToDiagnostics: () -> Unit) {
     val storeOwner = remember("settings") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -382,7 +464,25 @@ private fun SettingsContent(onNavigateToDiagnostics: () -> Unit) {
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: SettingsViewModel = viewModel(key = "settings") { SettingsViewModel() }
+        val vm: SettingsViewModel = viewModel(key = "settings") {
+            SettingsViewModel(
+                profileKey = { runtime.currentProfileKey() },
+                readSubtitleEnabled = { key -> runtime.readSubtitleEnabled(key) },
+                readSubtitleLanguage = { key -> runtime.readSubtitleLanguage(key) },
+                readQuality = { key -> runtime.readQuality(key) },
+                readPlaybackSpeed = { key -> runtime.readPlaybackSpeed(key) },
+                readDownloadsWifiOnly = { key -> runtime.readDownloadsWifiOnly(key) },
+                writeSubtitleEnabled = { runtime.writeSubtitleEnabled(it) },
+                writeSubtitleLanguage = { runtime.writeSubtitleLanguage(it) },
+                writeQuality = { runtime.writeQuality(it) },
+                writePlaybackSpeed = { runtime.writePlaybackSpeed(it) },
+                writeDownloadsWifiOnly = { runtime.writeDownloadsWifiOnly(it) },
+                deleteAllDownloads = { runtime.deleteAllDownloads() },
+                clearPreferences = { runtime.clearPreferences() },
+                clearLibrary = { runtime.clearLibrary() },
+                clearCredentials = { runtime.clearCredentials() },
+            )
+        }
         SettingsScreen(
             viewModel = vm,
             onNavigateToDiagnostics = onNavigateToDiagnostics,
@@ -408,6 +508,7 @@ private fun DiagnosticsContent() {
 
 @Composable
 private fun OfflineLibraryContent(
+    runtime: WebRuntime,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -421,7 +522,14 @@ private fun OfflineLibraryContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: LibraryViewModel = viewModel(key = "offline_library") {
-            LibraryViewModel(isLoggedIn = { false })
+            LibraryViewModel(
+                libraryPort = { runtime.listLibrary() },
+                listMovies = { runtime.listMovies() },
+                listShows = { runtime.listShows() },
+                // No session on this screen (logged-out state) — same
+                // reasoning as the other platforms.
+                isLoggedIn = { false },
+            )
         }
         LibraryScreen(
             viewModel = vm,
@@ -433,7 +541,7 @@ private fun OfflineLibraryContent(
 
 @Composable
 private fun PlayerContent(
-    runtime: WebDemoRuntime,
+    runtime: WebRuntime,
     contentId: String,
     contentType: String,
     onNavigateBack: () -> Unit,
@@ -453,8 +561,18 @@ private fun PlayerContent(
         val vm: PlayerViewModel = viewModel(key = contentId) {
             PlayerViewModel(
                 mediaId = mediaId,
-                fetchVideoSource = runtime::fetchVideoSource,
+                fetchVideoSource = { runtime.fetchVideoSource(it) },
+                refreshStreamUrl = { runtime.playbackPort.refreshStreamUrl(it) },
+                fetchEpisodes = { showId -> runtime.fetchEpisodesForShow(showId.value) },
+                saveProgress = { mediaId, position, duration, mode ->
+                    runtime.savePlaybackProgress(mediaId, position, duration, mode)
+                },
                 onNavigateToNextEpisode = onNavigateToNextEpisode,
+                onAuthFailure = { runtime.invalidateSession() },
+                savePlaybackSpeed = { runtime.savePlaybackSpeed(it) },
+                loadPlaybackSpeed = { runtime.loadPlaybackSpeed() },
+                loadPreferredLanguage = { runtime.loadPreferredLanguage() },
+                resolveShowIdForEpisode = { runtime.resolveShowIdForEpisode(it) },
             )
         }
         PlayerScreen(

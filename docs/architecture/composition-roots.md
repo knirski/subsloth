@@ -130,13 +130,31 @@ There is no ranged resume: aborted or failed transfers restart from scratch. And
 `DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer is not
 wired yet — subtitle rows stay metadata-only.
 
-## Web — no composition root (demo tier)
+## Web — demo tier and production composition root
 
-`webApp/src/wasmJsMain/kotlin/net/subsloth/web/Main.kt` runs the fixture-backed
-`WebDemoRuntime` demo tier (`ClientConfig.useMock = true`), defined by the
-`define-web-runtime-tier` decision record: all screens are wired through demo-runtime
-lambdas, but no production composition root (real database/preferences/session) exists for
-web — that remains future scope for a web production tier.
+Web runs one of two tiers, selected at startup by `createWebApp()` from the build-injected
+API base URL (`SUBSLOTH_API_BASE_URL`, carried through `webApp/webpack.config.d/base-url.js`
+into a runtime global and read via `WebBaseUrl.kt`):
+
+- **Demo** (default; GitHub Pages): fixture-backed `WebDemoRuntime`
+  (`ClientConfig.useMock = true`), defined by the `define-web-runtime-tier` decision record;
+  every screen is wired through demo lambdas, and production-only members are safe no-ops.
+  A demo banner is always rendered.
+- **Production** (dispatch-gated CI build with the repo secret): `WebProductionContainer`
+  wires the real wasmJs adapters — localStorage DataStore preferences, the browser
+  credential store, the OPFS Room database (sqlite-wasm worker), and a
+  `ValidatingSessionState` session port. The session-scoped
+  `Api`/`CatalogRepository`/`ApiPlaybackPort` trio rebuilds on session change; playback
+  runs with `preferProgressiveDownload = true` (browsers cannot play HLS natively, so the
+  progressive `download_url` mp4 variant is preferred). `Main.kt` gates the nav host on
+  `SessionGate` (login first), and the full nav graph — including the previously missing
+  auth-repair entry — consumes a shared `WebRuntime` interface.
+
+Download **byte transfer** remains jvm-only (no browser equivalent of the staged-file
+worker): the web downloads port lists persisted state (empty until transfer lands) and its
+controls manage that state without moving bytes. Web production playback depends on the
+media exposing a progressive `download_url`; HLS-only items are not playable in browsers
+until hls.js support lands in the player bridge.
 
 ## The shared non-production default
 

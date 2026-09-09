@@ -303,6 +303,38 @@ jobs:
       - name: WasmJS browser tests
         run: ./gradlew :webApp:wasmJsBrowserTest
 
+  # Production web build (manual): injects SUBSLOTH_API_BASE_URL (repo
+  # secret) as the build-time base URL, which switches the app to the
+  # production runtime tier (real adapters; see WebProductionContainer).
+  # GitHub Pages deploys stay on the demo tier (no secret → mock runtime).
+  build-web-production:
+    name: 🌐 Web (production build)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/kmp-setup
+
+      - name: Production wasmJs distribution
+        env:
+          SUBSLOTH_API_BASE_URL: ${{ secrets.SUBSLOTH_API_BASE_URL }}
+        run: |
+          if [ -z "$SUBSLOTH_API_BASE_URL" ]; then
+            echo "SUBSLOTH_API_BASE_URL repository secret is required for the production web build."
+            exit 1
+          fi
+          ./gradlew :webApp:wasmJsBrowserDistribution
+
+      - name: Upload production web distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-distribution-production
+          path: webApp/build/dist/wasmJs/productionExecutable/*
+          if-no-files-found: error
+
   # ─── Android instrumented tests (emulator) ──────────────────────────
   # Runs :core:database and :core:preferences device checks and :androidApp
   # UI instrumented tests on a single emulator to minimise boot overhead.
