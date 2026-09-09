@@ -259,7 +259,7 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 |-----|---------|--------|
 | `README.md` | Project overview, architecture, getting started | ✅ Current |
 | `AGENTS.md` | Agent bootstrap, verification, commit rules | ✅ Authoritative |
-| `best_practices.md` | Port/adapter, errors, sealed types, collections, datetime, Compose | ✅ Normative |
+| `docs/best-practices.md` | Port/adapter, errors, sealed types, collections, datetime, Compose | ✅ Normative |
 | `docs/development.md` | Nix shell, test commands, live drift | ✅ Current |
 | `docs/known-gaps.md` | Deferred/blocked items with resolution path | ✅ Current — #2 resolved (PR #189) |
 | `docs/production-deployment.md` | COOP/COEP headers, Wasm MIME, SPA fallback | ✅ Current |

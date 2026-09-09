@@ -16,7 +16,7 @@
 
 ## Bootstrap (run before every edit/write session)
 
-1. Read `AGENTS.md`, `best_practices.md`, `docs/agent/README.md`.
+1. Read `AGENTS.md`, `docs/best-practices.md`, `docs/agent/README.md`.
 2. `git status --short`. Confirm branch and worktree.
 3. Choose verification from **Verification Selection** below.
 4. Unclear? Stop and report a blocker.

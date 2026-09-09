@@ -82,7 +82,7 @@ See [`docs/development.md`](docs/development.md) for detailed setup and
   reference](docs/convention-plugins.md) for Gradle conventions.
 - **Code:** read the [codestyle](docs/codestyle.md), the
   [FC/IS architecture](docs/agent/fc-is-architecture.md), and the
-  [best-practices quick reference](best_practices.md).
+  [best-practices quick reference](docs/best-practices.md).
 - **Test:** run [offline unit tests](docs/development.md#running-tests),
   [emulator instrumented tests](docs/agent/emulator-testing.md),
   [screenshot tests](docs/testing/screenshot-tests.md), or
