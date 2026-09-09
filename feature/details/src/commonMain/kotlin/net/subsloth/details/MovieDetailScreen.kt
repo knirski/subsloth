@@ -23,6 +23,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,33 +41,48 @@ import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 
 @Composable
-fun MovieDetailScreen(viewModel: MovieDetailViewModel, modifier: Modifier = Modifier) {
+fun MovieDetailScreen(
+    viewModel: MovieDetailViewModel,
+    modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
+) {
     val state: MovieDetailUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val s = state) {
-        is MovieDetailUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            TextButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
             ) {
-                CircularProgressIndicator()
+                Text(stringResource(Res.string.detail_back))
             }
         }
 
-        is MovieDetailUiState.Content -> {
-            MovieDetailContent(state = s, modifier = modifier)
-        }
+        when (val s = state) {
+            is MovieDetailUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
 
-        is MovieDetailUiState.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize().padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = s.error.toUiErrorMessage().toDisplayString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
+            is MovieDetailUiState.Content -> {
+                MovieDetailContent(state = s)
+            }
+
+            is MovieDetailUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = s.error.toUiErrorMessage().toDisplayString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }

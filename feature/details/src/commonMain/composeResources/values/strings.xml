@@ -13,6 +13,7 @@
     <string name="detail_downloaded">Downloaded</string>
     <string name="detail_resume_play">Resume %1$d%%</string>
     <string name="detail_poster_content_desc">Poster for %s</string>
+    <string name="detail_back">Back</string>
     <string name="detail_duration_format">%1$d min</string>
     <string name="detail_quality_format">Quality: %s</string>
     <string name="detail_episode_count_format">%1$d subtitles</string>
