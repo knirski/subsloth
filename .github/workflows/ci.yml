@@ -210,9 +210,13 @@ jobs:
           # Google Chrome apt repo, whose CDN intermittently serves an index that
           # does not match its Release file (hash sum mismatch), failing the step.
           # Playwright downloads its own browser builds and never installs
-          # chrome from apt, so dropping the third-party repo makes this step
-          # immune to that outage.
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          # chrome from apt, so dropping that repo makes this step immune to the
+          # outage. The file name differs across runner images (`.list` vs
+          # deb822 `.sources`), and the entry can also live inline in
+          # /etc/apt/sources.list — remove it wherever it is, but keep every
+          # other source (install-deps needs the Ubuntu archives).
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f -name '*chrome*' -delete
+          sudo sed -i '/dl\.google\.com/d' /etc/apt/sources.list
           npx --yes playwright@${{ steps.kmp-setup.outputs.playwright-version }} install-deps chromium firefox
 
       - name: Install Chromium and Firefox for WasmJS browser tests
