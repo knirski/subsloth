@@ -1,5 +1,10 @@
 # OpenSpec Workflows
 
+> **HISTORICAL (retired 2026-09-09).** OpenSpec has been sunset in this
+> repository. This document is kept as a record of the process that used to
+> apply. Do not create new OpenSpec changes, do not run `openspec` validation
+> as a gate, and do not treat `openspec/` specs as active requirements.
+
 Shared implementation reference for OpenSpec-driven work. Keep per-agent skills thin and point here.
 
 | Workflow | Use when | Required action |

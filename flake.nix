@@ -420,7 +420,6 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           # Development tooling
-          openspec
           git
           vacuum-go
 

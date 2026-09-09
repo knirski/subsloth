@@ -39,7 +39,6 @@ PR title rule is enforced in CI — treat as required check.
 
 ## Verification Selection
 
-- One active OpenSpec change: task-specific checks + `openspec validate <change-id> --strict`
-- Shared OpenSpec content: `openspec validate --all --strict`
+- Code changed: task-specific checks (`./gradlew test` or narrower)
 - Docs-only PR: narrowest meaningful verification; say explicitly if none exists
 - Minimum safe fallback: do not commit if verification unclear. Do not push if PR title, branch, or base is unclear. Report blocker with exact detail.
