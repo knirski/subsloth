@@ -58,11 +58,17 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
     val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
     // Browser back/forward buttons drive the in-app back stack. Each history
-    // entry records the back-stack depth it represents; a popstate trims the
-    // stack down to that depth (forward states deeper than the current stack
-    // cannot be reconstructed and are ignored).
+    // entry records the back-stack depth it represents. A popstate to a
+    // shallower depth trims the stack; a forward entry deeper than the stack
+    // cannot be reconstructed (its screen was popped in-app), so the entry is
+    // realigned to the actual depth to keep later browser Back actions
+    // consistent with the app back stack.
     rememberBrowserHistorySync { depth ->
-        while (backStack.size > depth + 1) backStack.removeLastOrNull()
+        if (backStack.size > depth + 1) {
+            while (backStack.size > depth + 1) backStack.removeLastOrNull()
+        } else if (backStack.size <= depth) {
+            replaceHistoryDepth(backStack.size - 1)
+        }
     }
 
     val navigate: (AppNavKey) -> Unit = { key ->

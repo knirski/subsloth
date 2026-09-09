@@ -19,8 +19,10 @@ import kotlin.js.toJsNumber
  * app back stack.
  *
  * Depth-only state means a browser refresh realigns to the start destination
- * (see [rememberBrowserHistorySync]) and the browser forward button only
- * restores entries that were left via browser back within the same page load.
+ * (see [rememberBrowserHistorySync]) and the browser forward button cannot
+ * reconstruct screens that were popped in-app; the host realigns such stale
+ * entries with [replaceHistoryDepth] so subsequent browser Back navigation
+ * stays consistent with the app back stack.
  */
 internal fun pushHistoryDepth(depth: Int) {
     window.history.pushState(depth.toJsNumber(), "")
@@ -30,6 +32,10 @@ internal fun popHistory() {
     if (window.history.state != null) {
         window.history.back()
     }
+}
+
+internal fun replaceHistoryDepth(depth: Int) {
+    window.history.replaceState(depth.toJsNumber(), "")
 }
 
 private fun historyDepth(): Int = when (val state = window.history.state) {
