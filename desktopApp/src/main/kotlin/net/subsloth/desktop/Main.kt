@@ -2,6 +2,8 @@ package net.subsloth.desktop
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -25,19 +27,37 @@ fun main() = application {
     ) {
         SubSlothTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                val root: RootContainerViewModel = viewModel()
-                val sessionPort = root.sessionPort
-                SessionGate(
-                    sessionPort = sessionPort,
-                    login = {
-                        val viewModel: LoginViewModel = viewModel {
-                            LoginViewModel(sessionPort = sessionPort)
-                        }
-                        LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
-                    },
-                    authenticated = { DesktopNavHost() },
-                )
+                DesktopRoot()
             }
         }
     }
+}
+
+/**
+ * Desktop root: owns the process-scoped [DesktopContainer] composition root
+ * (constructed once per window via [remember]) and gates the nav host on the
+ * real, persisted [net.subsloth.core.domain.port.SessionPort] state — the
+ * same structure as androidApp's `MainActivity` + `SubSlothApplication`.
+ */
+@Composable
+private fun DesktopRoot() {
+    val container = remember { DesktopContainer() }
+    val root: RootContainerViewModel = viewModel {
+        RootContainerViewModel(container.sessionPort)
+    }
+    val sessionPort = root.sessionPort
+    SessionGate(
+        sessionPort = sessionPort,
+        login = {
+            val viewModel: LoginViewModel = viewModel {
+                LoginViewModel(
+                    sessionPort = sessionPort,
+                    readApiBaseUrl = { container.userPreferences.apiBaseUrl() },
+                    saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
+                )
+            }
+            LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
+        },
+        authenticated = { DesktopNavHost(container) },
+    )
 }
