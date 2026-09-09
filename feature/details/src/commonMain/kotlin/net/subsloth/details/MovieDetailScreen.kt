@@ -61,7 +61,7 @@ fun MovieDetailScreen(
         when (val s = state) {
             is MovieDetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
@@ -69,12 +69,12 @@ fun MovieDetailScreen(
             }
 
             is MovieDetailUiState.Content -> {
-                MovieDetailContent(state = s)
+                MovieDetailContent(state = s, modifier = Modifier.weight(1f))
             }
 
             is MovieDetailUiState.Error -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

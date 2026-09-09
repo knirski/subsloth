@@ -70,7 +70,7 @@ fun SeriesDetailScreen(
         when (val s = state) {
             is ShowDetailUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
@@ -81,12 +81,13 @@ fun SeriesDetailScreen(
                 ShowDetailContent(
                     state = s,
                     onSeasonSelect = { viewModel.selectSeason(it) },
+                    modifier = Modifier.weight(1f),
                 )
             }
 
             is ShowDetailUiState.Error -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
