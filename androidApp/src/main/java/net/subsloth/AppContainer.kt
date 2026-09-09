@@ -51,6 +51,7 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
+import net.subsloth.core.network.error.NetworkErrorClassifier
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.core.network.media.mapper.Mapper
@@ -488,6 +489,29 @@ class AppContainer(context: Context) {
     suspend fun listShows(): Result<List<ShowSummary>> = runCatching {
         catalogRepository.catalogItems("show").first().filterIsInstance<ShowSummary>()
     }.onFailure { if (it is CancellationException) throw it }
+
+    /**
+     * Merged movie+show catalog for the search screen (`SearchViewModel`'s
+     * `listCatalog`): reads the same cached-catalog lists as [listMovies]/
+     * [listShows], wrapped in the `Outcome` shape the search ViewModel
+     * consumes. A failed side degrades to a failure (the search screen
+     * then renders no results rather than a partial list).
+     */
+    suspend fun listAllMedia(): Outcome<List<Media>> {
+        val movies = listMovies()
+        val shows = listShows()
+        return when {
+            movies.isSuccess && shows.isSuccess -> Outcome.Success(
+                movies.getOrThrow() + shows.getOrThrow(),
+            )
+
+            else -> {
+                val error = movies.exceptionOrNull() ?: shows.exceptionOrNull()
+                    ?: return Outcome.Success(emptyList())
+                Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(error))
+            }
+        }
+    }
 
     /**
      * Maps the active session's account-scoped playback progress into the

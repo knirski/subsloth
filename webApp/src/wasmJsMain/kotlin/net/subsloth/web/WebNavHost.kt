@@ -16,6 +16,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.catalog.SearchScreen
+import net.subsloth.catalog.SearchViewModel
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -28,6 +30,7 @@ import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
+import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.subslothNavConfig
@@ -87,6 +90,15 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
         entryProvider = entryProvider {
             entry<CatalogKey> {
                 CatalogContent(
+                    runtime = runtime,
+                    onSearchClick = { navigate(SearchKey) },
+                    onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
+                    onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
+                )
+            }
+
+            entry<SearchKey> {
+                SearchContent(
                     runtime = runtime,
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
@@ -165,6 +177,7 @@ fun WebNavHost(runtime: WebDemoRuntime, modifier: Modifier = Modifier, startDest
 @Composable
 private fun CatalogContent(
     runtime: WebDemoRuntime,
+    onSearchClick: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -179,6 +192,36 @@ private fun CatalogContent(
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: HomeViewModel = viewModel(key = "catalog_home") { runtime.createHomeViewModel() }
         HomeScreen(
+            viewModel = vm,
+            onSearchClick = onSearchClick,
+            onMovieClick = onMovieClick,
+            onShowClick = onShowClick,
+        )
+    }
+}
+
+@Composable
+private fun SearchContent(
+    runtime: WebDemoRuntime,
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+) {
+    val storeOwner = remember("catalog_search") {
+        object : ViewModelStoreOwner {
+            override val viewModelStore = ViewModelStore()
+        }
+    }
+    DisposableEffect(storeOwner) {
+        onDispose { storeOwner.viewModelStore.clear() }
+    }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+        val vm: SearchViewModel = viewModel(key = "catalog_search") {
+            SearchViewModel(
+                listCatalog = { runtime.listCatalog() },
+                getDetails = { id -> runtime.getDetails(id) },
+            )
+        }
+        SearchScreen(
             viewModel = vm,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,

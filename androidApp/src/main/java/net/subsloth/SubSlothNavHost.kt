@@ -30,6 +30,7 @@ import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
+import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.model.identifier.EpisodeId
@@ -40,6 +41,8 @@ import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.catalog.SearchScreen
+import net.subsloth.catalog.SearchViewModel
 import net.subsloth.details.MovieDetailScreen
 import net.subsloth.details.MovieDetailViewModel
 import net.subsloth.details.SeriesDetailScreen
@@ -92,6 +95,35 @@ fun SubSlothNavHost(
                     factory = HomeViewModelFactory { container.catalogRepository },
                 )
                 HomeScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier,
+                    onSearchClick = { backStack += SearchKey },
+                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
+                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                )
+            }
+
+            entry<SearchKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val viewModel: SearchViewModel = viewModel(
+                    key = "catalog_search",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(
+                                modelClass.cast(
+                                    SearchViewModel(
+                                        listCatalog = { container.listAllMedia() },
+                                        // Read catalogRepository live on every call
+                                        // (not captured once) since AppContainer rebuilds
+                                        // it whenever the session's credentials change.
+                                        getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                    ),
+                                ),
+                            )
+                    },
+                )
+                SearchScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
                     onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
