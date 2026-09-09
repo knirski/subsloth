@@ -117,8 +117,12 @@ fun PlayerOverlay(
     var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
+    // No background here: the video surface renders behind the Compose
+    // canvas (e.g. zIndex -1 on web), so the overlay must stay transparent
+    // for frames to show through. Error and prompt screens draw their own
+    // opaque backgrounds.
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier.fillMaxSize(),
     ) {
         if (state.playbackError != null) {
             ErrorContent(

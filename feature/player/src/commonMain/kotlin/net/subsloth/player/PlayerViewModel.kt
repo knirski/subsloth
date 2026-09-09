@@ -192,7 +192,7 @@ class PlayerViewModel(
         val previousRefreshUsed = previous?.session?.streamRefreshUsed == true
 
         _uiState.value = PlayerUiState.Content(
-            title = source.mediaId.toString(),
+            title = source.displayName ?: source.mediaId.toString(),
             positionSeconds = positionSeconds,
             durationSeconds = source.durationSeconds,
             isPlaying = true,
