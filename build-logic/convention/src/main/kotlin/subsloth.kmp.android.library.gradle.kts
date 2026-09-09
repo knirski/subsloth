@@ -22,6 +22,10 @@ kotlin {
 
     android {
         compileSdk = 37
+        // Pinned to the same SDK build-tools as the JVM-target Android
+        // conventions (`subsloth.android.library`/`.application`); without
+        // this, KMP modules build with the AGP default build-tools version.
+        buildToolsVersion = "37.0.0"
         minSdk = 26
 
         lint {
