@@ -5,7 +5,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import co.touchlab.kermit.Logger
+import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URI
+import java.net.URISyntaxException
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -523,15 +526,34 @@ class AppContainer(context: Context) {
     /**
      * Fetches subtitle document text for the player's Compose subtitle
      * layer. Subtitle URLs are ephemeral public streams (same trust level
-     * as the video stream URL), so a plain unauthenticated GET is used.
+     * as the video stream URL), so a plain unauthenticated GET is used,
+     * bounded by timeouts and a response-size cap.
      */
-    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as download URL resolution.
     suspend fun fetchSubtitleText(url: String): Outcome<String> = withContext(Dispatchers.IO) {
         try {
-            Outcome.Success(URI(url).toURL().readText())
+            val connection = URI(url).toURL().openConnection() as HttpURLConnection
+            connection.connectTimeout = SUBTITLE_TIMEOUT_MS
+            connection.readTimeout = SUBTITLE_TIMEOUT_MS
+            val bytes = connection.inputStream.use { input ->
+                val buffer = ByteArray(SUBTITLE_MAX_BYTES + 1)
+                var read = 0
+                while (read <= SUBTITLE_MAX_BYTES) {
+                    val count = input.read(buffer, read, buffer.size - read)
+                    if (count < 0) break
+                    read += count
+                }
+                if (read > SUBTITLE_MAX_BYTES) {
+                    throw IOException("Subtitle document from $url exceeds $SUBTITLE_MAX_BYTES bytes")
+                }
+                buffer.copyOf(read)
+            }
+            Outcome.Success(bytes.decodeToString())
         } catch (exception: CancellationException) {
             throw exception
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
+            log.e(exception) { "fetchSubtitleText failed for $url" }
+            Outcome.Failure(NetworkError.UnexpectedResponse)
+        } catch (exception: URISyntaxException) {
             log.e(exception) { "fetchSubtitleText failed for $url" }
             Outcome.Failure(NetworkError.UnexpectedResponse)
         }
@@ -897,6 +919,11 @@ class AppContainer(context: Context) {
     private companion object {
         private const val DEFAULT_PROFILE_KEY = "default"
         private const val DEFAULT_LANGUAGE = "en"
+
+        /** Subtitle documents are small text files; refuse larger ones. */
+        private const val SUBTITLE_MAX_BYTES = 2_000_000
+
+        private const val SUBTITLE_TIMEOUT_MS = 10_000
     }
 }
 

@@ -77,7 +77,10 @@ import net.subsloth.preferences.CredentialsStoreAdapter
 import net.subsloth.preferences.UserPreferences
 import net.subsloth.preferences.createDataStorePreferences
 import java.io.File
+import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URI
+import java.net.URISyntaxException
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -497,15 +500,34 @@ class DesktopContainer(dataDirOverride: File? = null) {
     /**
      * Fetches subtitle document text for the player's Compose subtitle
      * layer. Subtitle URLs are ephemeral public streams (same trust level
-     * as the video stream URL), so a plain unauthenticated GET is used.
+     * as the video stream URL), so a plain unauthenticated GET is used,
+     * bounded by timeouts and a response-size cap.
      */
-    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as download URL resolution.
     suspend fun fetchSubtitleText(url: String): Outcome<String> = withContext(Dispatchers.IO) {
         try {
-            Outcome.Success(URI(url).toURL().readText())
+            val connection = URI(url).toURL().openConnection() as HttpURLConnection
+            connection.connectTimeout = SUBTITLE_TIMEOUT_MS
+            connection.readTimeout = SUBTITLE_TIMEOUT_MS
+            val bytes = connection.inputStream.use { input ->
+                val buffer = ByteArray(SUBTITLE_MAX_BYTES + 1)
+                var read = 0
+                while (read <= SUBTITLE_MAX_BYTES) {
+                    val count = input.read(buffer, read, buffer.size - read)
+                    if (count < 0) break
+                    read += count
+                }
+                if (read > SUBTITLE_MAX_BYTES) {
+                    throw IOException("Subtitle document from $url exceeds $SUBTITLE_MAX_BYTES bytes")
+                }
+                buffer.copyOf(read)
+            }
+            Outcome.Success(bytes.decodeToString())
         } catch (exception: CancellationException) {
             throw exception
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
+            log.e(exception) { "fetchSubtitleText failed for $url" }
+            Outcome.Failure(NetworkError.UnexpectedResponse)
+        } catch (exception: URISyntaxException) {
             log.e(exception) { "fetchSubtitleText failed for $url" }
             Outcome.Failure(NetworkError.UnexpectedResponse)
         }
@@ -809,3 +831,8 @@ class DesktopContainer(dataDirOverride: File? = null) {
         }
     }
 }
+
+/** Subtitle documents are small text files; refuse larger ones. */
+private const val SUBTITLE_MAX_BYTES = 2_000_000
+
+private const val SUBTITLE_TIMEOUT_MS = 10_000

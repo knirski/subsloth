@@ -23,11 +23,16 @@ object SubtitleTextParser {
      */
     fun parse(text: String, format: SubtitleFormat): List<SubtitleCue> = parseCueBlocks(text)
 
+    private val VTT_METADATA_PREFIXES = setOf("NOTE", "STYLE", "REGION")
+
     private fun parseCueBlocks(text: String): List<SubtitleCue> = text
         .split(Regex("\\n\\s*\\n"))
         .mapNotNull { block -> block.lines().parseCueBlock() }
 
     private fun List<String>.parseCueBlock(): SubtitleCue? {
+        // VTT metadata blocks (NOTE/STYLE/REGION) may legitimately contain
+        // timing-looking text; they never carry cues.
+        if (first().trimStart().uppercase() in VTT_METADATA_PREFIXES) return null
         val timingIndex = indexOfFirst { it.contains("-->") }
         if (timingIndex < 0) return null
         val timing = parseTimingLine(this[timingIndex]) ?: return null

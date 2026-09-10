@@ -250,12 +250,15 @@ fun SubSlothNavHost(
                 DisposableEffect(activity) {
                     val originalOrientation = activity.requestedOrientation
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    // Fullscreen playback: hide system bars (immersive),
-                    // restore the original orientation and bars on dispose
-                    // so navigating back to the details screen recovers
-                    // the pre-player system UI state.
+                    // Fullscreen playback: hide system bars (immersive) —
+                    // but only record them as ours to restore when they
+                    // were visible before entry; bars hidden by someone
+                    // else stay hidden after leaving the player.
                     val window = activity.window
                     val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    val barsInitiallyVisible = WindowInsetsCompat
+                        .toWindowInsetsCompat(window.decorView.rootWindowInsets)
+                        .isVisible(WindowInsetsCompat.Type.systemBars())
                     val originalBehavior = insetsController.systemBarsBehavior
                     insetsController.systemBarsBehavior =
                         WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -263,7 +266,9 @@ fun SubSlothNavHost(
                     onDispose {
                         activity.requestedOrientation = originalOrientation
                         insetsController.systemBarsBehavior = originalBehavior
-                        insetsController.show(WindowInsetsCompat.Type.systemBars())
+                        if (barsInitiallyVisible) {
+                            insetsController.show(WindowInsetsCompat.Type.systemBars())
+                        }
                     }
                 }
 

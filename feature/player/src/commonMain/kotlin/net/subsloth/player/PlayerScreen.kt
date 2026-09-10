@@ -142,6 +142,9 @@ fun PlayerOverlay(
         ) {
             delay(CONTROLS_AUTO_HIDE_MS)
             controlsVisible = false
+        } else if (!state.isPlaying) {
+            // Paused playback always keeps the chrome on screen.
+            controlsVisible = true
         }
     }
 
@@ -240,7 +243,7 @@ fun PlayerOverlay(
                     ) {
                         Text(
                             text = state.title,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -253,7 +256,7 @@ fun PlayerOverlay(
 
                     Text(
                         text = formatTime(barDisplaySeconds),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyLarge,
                     )
 
@@ -274,7 +277,7 @@ fun PlayerOverlay(
 
                         Text(
                             text = formatTime(state.durationSeconds),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

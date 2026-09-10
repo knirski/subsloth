@@ -381,8 +381,12 @@ class PlayerViewModel(
     }
 
     fun selectSubtitle(subtitle: Subtitle?) {
+        // Drop the previous track's cues immediately: a slow fetch for the
+        // new selection must never render the old subtitle text.
         _uiState.update { current ->
-            (current as? PlayerUiState.Content)?.copy(selectedSubtitle = subtitle) ?: current
+            (current as? PlayerUiState.Content)
+                ?.copy(selectedSubtitle = subtitle, subtitleCues = persistentListOf())
+                ?: current
         }
         loadSubtitleCues(subtitle)
     }

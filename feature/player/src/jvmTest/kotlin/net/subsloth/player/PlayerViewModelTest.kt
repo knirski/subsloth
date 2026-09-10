@@ -2,6 +2,7 @@ package net.subsloth.player
 
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -462,6 +463,43 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.selectedSubtitle).isNotNull()
         assertThat(state.subtitleCues).isEmpty()
+    }
+
+    @Test
+    fun `selecting another subtitle clears the previous track's cues until it loads`() = runTest(testDispatcher) {
+        val enSubtitle = createSubtitle()
+        val esSubtitle = createSpanishSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
+        val esLoadGate = CompletableDeferred<Unit>()
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = { url ->
+                if (url.endsWith("sub.srt")) {
+                    Outcome.Success(srtDocument)
+                } else {
+                    esLoadGate.await()
+                    Outcome.Success(srtDocument)
+                }
+            },
+        )
+
+        runCurrent()
+        val initial = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(initial.selectedSubtitle?.language).isEqualTo(LanguageCode("en"))
+        assertThat(initial.subtitleCues).isNotEmpty()
+
+        viewModel.selectSubtitle(esSubtitle)
+        runCurrent()
+
+        val switched = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(switched.selectedSubtitle?.language).isEqualTo(LanguageCode("es"))
+        assertThat(switched.subtitleCues).isEmpty()
+
+        esLoadGate.complete(Unit)
+        runCurrent()
+
+        val loaded = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(loaded.subtitleCues).isNotEmpty()
     }
 
     // ── Next-episode flow (Fix 1) ──────────────────────────────────────────

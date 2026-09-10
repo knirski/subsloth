@@ -80,6 +80,26 @@ class SubtitleTextParserTest {
     }
 
     @Test
+    fun `skips NOTE blocks that contain timing-looking text`() {
+        val cues = SubtitleTextParser.parse(
+            text = """
+            WEBVTT
+
+            NOTE
+            Example: 00:00:01.000 --> 00:00:02.000
+
+            00:00:03.000 --> 00:00:04.000
+            Real cue.
+            """.trimIndent(),
+            format = SubtitleFormat.VTT,
+        )
+
+        assertThat(cues).hasSize(1)
+        assertThat(cues[0].startMs).isEqualTo(3_000L)
+        assertThat(cues[0].text).isEqualTo("Real cue.")
+    }
+
+    @Test
     fun `empty or header-only documents produce no cues`() {
         assertThat(SubtitleTextParser.parse("", SubtitleFormat.SRT)).isEmpty()
         assertThat(SubtitleTextParser.parse("WEBVTT\n", SubtitleFormat.VTT)).isEmpty()
