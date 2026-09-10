@@ -216,11 +216,38 @@ class AppContainer(context: Context) {
     @Volatile
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
+    private val downloadStorageManager: DownloadStorageManager by lazy { DownloadStorageManager(context) }
+    private val storageProvider: StoragePort by lazy { StorageProvider(context) }
+    private val connectivityChecker: ConnectivityPort by lazy { ConnectivityChecker(context) }
+
+    /**
+     * Production [net.subsloth.core.domain.port.DownloadsPort] implementation.
+     * Downloaded media is shared across accounts and logged-out state (its
+     * backing DAOs carry no profile key), so unlike [catalogRepository] this
+     * never needs to be rebuilt when the session changes.
+     */
+    val downloadController: DownloadController by lazy {
+        DownloadController(
+            storageManager = downloadStorageManager,
+            storageProvider = storageProvider,
+            connectivityChecker = connectivityChecker,
+            downloadedMediaDao = database.downloadedMediaDao(),
+            downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
+        )
+    }
+
     /**
      * Offline playback source resolution over [downloadController]'s stored
      * assets, verified through [downloadStorageManager]. Session-independent
      * (like [downloadController]); consumed by [currentPlaybackPort]'s
      * [OfflineFirstPlaybackPort] wrapper.
+     *
+     * Declared after its [lazy] dependencies on purpose: [currentPlaybackPort]
+     * below is an eager initializer that forces this lazy during construction,
+     * and a `lazy` delegate reading a property declared later in the class
+     * would hit a null delegate (Kotlin assigns delegate fields in
+     * declaration order — this ordering bug crashed both apps at startup).
      */
     private val offlineSourceResolver: OfflineSourceResolver by lazy {
         OfflineSourceResolver(
@@ -264,27 +291,6 @@ class AppContainer(context: Context) {
             favoriteDao = database.favoriteDao(),
             localLibraryDao = database.localLibraryRecordDao(),
             sessionPort = sessionPort,
-        )
-    }
-
-    private val downloadStorageManager: DownloadStorageManager by lazy { DownloadStorageManager(context) }
-    private val storageProvider: StoragePort by lazy { StorageProvider(context) }
-    private val connectivityChecker: ConnectivityPort by lazy { ConnectivityChecker(context) }
-
-    /**
-     * Production [net.subsloth.core.domain.port.DownloadsPort] implementation.
-     * Downloaded media is shared across accounts and logged-out state (its
-     * backing DAOs carry no profile key), so unlike [catalogRepository] this
-     * never needs to be rebuilt when the session changes.
-     */
-    val downloadController: DownloadController by lazy {
-        DownloadController(
-            storageManager = downloadStorageManager,
-            storageProvider = storageProvider,
-            connectivityChecker = connectivityChecker,
-            downloadedMediaDao = database.downloadedMediaDao(),
-            downloadedSubtitleDao = database.downloadedSubtitleDao(),
-            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
         )
     }
 

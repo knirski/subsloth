@@ -212,11 +212,40 @@ class DesktopContainer(dataDirOverride: File? = null) {
     @Volatile
     private var currentCatalogRepository: CatalogRepository = buildCatalogRepository(currentApi)
 
+    private val downloadStore: DesktopDownloadStore by lazy { DesktopDownloadStore(File(dataDir, "downloads")) }
+    private val storageProvider: StoragePort by lazy { DesktopStorageProvider(File(dataDir, "downloads")) }
+    private val connectivityChecker: ConnectivityPort by lazy { DesktopConnectivityChecker() }
+
+    /**
+     * Production [net.subsloth.core.domain.port.DownloadsPort] implementation
+     * (the desktop counterpart of `AppContainer`'s `downloadController`).
+     * Downloaded media is shared across accounts and logged-out state (its
+     * backing DAOs carry no profile key), so unlike [catalogRepository] this
+     * never needs to be rebuilt when the session changes.
+     */
+    val downloadController: DownloadController by lazy {
+        DownloadController(
+            storageManager = downloadStore,
+            storageProvider = storageProvider,
+            connectivityChecker = connectivityChecker,
+            downloadedMediaDao = database.downloadedMediaDao(),
+            downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
+        )
+    }
+
     /**
      * Offline playback source resolution over [downloadController]'s stored
      * assets, verified through [downloadStore]. Session-independent (like
      * [downloadController]); consumed by [currentPlaybackPort]'s
      * [OfflineFirstPlaybackPort] wrapper.
+     *
+     * Declared after its [lazy] dependencies on purpose: [currentPlaybackPort]
+     * below is an eager initializer that forces this lazy during construction,
+     * and a `lazy` delegate reading a property declared later in the class
+     * would hit a null delegate (Kotlin assigns delegate fields in
+     * declaration order — this ordering bug crashed the desktop app at
+     * startup).
      */
     private val offlineSourceResolver: OfflineSourceResolver by lazy {
         OfflineSourceResolver(
@@ -247,28 +276,6 @@ class DesktopContainer(dataDirOverride: File? = null) {
             favoriteDao = database.favoriteDao(),
             localLibraryDao = database.localLibraryRecordDao(),
             sessionPort = sessionPort,
-        )
-    }
-
-    private val downloadStore: DesktopDownloadStore by lazy { DesktopDownloadStore(File(dataDir, "downloads")) }
-    private val storageProvider: StoragePort by lazy { DesktopStorageProvider(File(dataDir, "downloads")) }
-    private val connectivityChecker: ConnectivityPort by lazy { DesktopConnectivityChecker() }
-
-    /**
-     * Production [net.subsloth.core.domain.port.DownloadsPort] implementation
-     * (the desktop counterpart of `AppContainer`'s `downloadController`).
-     * Downloaded media is shared across accounts and logged-out state (its
-     * backing DAOs carry no profile key), so unlike [catalogRepository] this
-     * never needs to be rebuilt when the session changes.
-     */
-    val downloadController: DownloadController by lazy {
-        DownloadController(
-            storageManager = downloadStore,
-            storageProvider = storageProvider,
-            connectivityChecker = connectivityChecker,
-            downloadedMediaDao = database.downloadedMediaDao(),
-            downloadedSubtitleDao = database.downloadedSubtitleDao(),
-            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
         )
     }
 
