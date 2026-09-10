@@ -47,8 +47,9 @@ import kotlin.time.Clock
  * @param credentialsPort persists and retrieves the user's login/password.
  * @param baseUrlProvider resolves the API base URL to validate against;
  *   callers should supply the same base URL the rest of the app uses
- *   (see how each platform's composition root resolves `UserPreferences.apiBaseUrl()`
- *   with any build-config override) rather
+ *   (each platform's composition root resolves `UserPreferences.storedApiBaseUrl()`
+ *   with its build-config/environment override via
+ *   `net.subsloth.core.domain.policy.ApiBaseUrlPolicy`) rather
  *   than relying on `ClientFactory`'s internal default.
  * @param accountProfileStore derives [Session.Authenticated.userId] via
  *   [AccountProfileStore.deriveProfileKey] — a non-reversible HMAC-SHA256 of

@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -232,9 +233,8 @@ class WebProductionContainer : WebRuntime {
 
     private suspend fun resolveApiBaseUrl(): String = apiBaseUrlFlow().first()
 
-    override fun apiBaseUrlFlow(): Flow<String> = userPreferences.apiBaseUrl().map { stored ->
-        val fromEnv = subslothApiBaseUrlEnv()
-        if (stored == UserPreferences.DEFAULT_API_BASE_URL && fromEnv.isNotEmpty()) fromEnv else stored
+    override fun apiBaseUrlFlow(): Flow<String> = userPreferences.storedApiBaseUrl().map { stored ->
+        ApiBaseUrlPolicy.resolve(stored = stored, configured = subslothApiBaseUrlEnv())
     }
 
     override suspend fun saveApiBaseUrl(url: String) {

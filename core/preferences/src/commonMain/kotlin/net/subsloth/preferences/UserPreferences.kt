@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import net.subsloth.core.domain.LoginDefaults
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.model.identifier.AccountProfileKey
 
 /**
@@ -149,8 +150,25 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
 
     private val apiBaseUrlKey = stringPreferencesKey("api_base_url")
 
-    fun apiBaseUrl(): Flow<String> = dataStore.data.map { prefs ->
-        prefs[apiBaseUrlKey] ?: DEFAULT_API_BASE_URL
+    /**
+     * The raw persisted API base URL, or `null` when the user has never
+     * saved one. This is the presence signal for base-URL resolution:
+     * callers combining the preference with a build-time override must use
+     * this instead of [apiBaseUrl], which cannot distinguish an absent
+     * value from the user deliberately saving [DEFAULT_API_BASE_URL].
+     */
+    fun storedApiBaseUrl(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[apiBaseUrlKey]
+    }
+
+    /**
+     * The API base URL normalized to a usable value: an absent or blank
+     * stored value falls back to [DEFAULT_API_BASE_URL]. Callers that have
+     * a build-time override should resolve [storedApiBaseUrl] with
+     * [net.subsloth.core.domain.policy.ApiBaseUrlPolicy] instead.
+     */
+    fun apiBaseUrl(): Flow<String> = storedApiBaseUrl().map { stored ->
+        ApiBaseUrlPolicy.resolve(stored = stored, configured = null)
     }
 
     suspend fun setApiBaseUrl(url: String) {

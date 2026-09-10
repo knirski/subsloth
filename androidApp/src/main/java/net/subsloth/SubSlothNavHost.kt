@@ -20,7 +20,6 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import kotlinx.coroutines.flow.map
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
@@ -59,7 +58,6 @@ import net.subsloth.library.LibraryScreen
 import net.subsloth.library.LibraryViewModel
 import net.subsloth.player.PlayerScreen
 import net.subsloth.player.PlayerViewModel
-import net.subsloth.preferences.UserPreferences
 import net.subsloth.settings.DiagnosticsScreen
 import net.subsloth.settings.DiagnosticsViewModel
 import net.subsloth.settings.SettingsScreen
@@ -472,17 +470,7 @@ fun SubSlothNavHost(
                                 modelClass.cast(
                                     LoginViewModel(
                                         sessionPort = container.sessionPort,
-                                        readApiBaseUrl = {
-                                            container.userPreferences.apiBaseUrl().map { url ->
-                                                if (url == UserPreferences.DEFAULT_API_BASE_URL &&
-                                                    BuildConfig.SUBSLOTH_API_BASE_URL.isNotEmpty()
-                                                ) {
-                                                    BuildConfig.SUBSLOTH_API_BASE_URL
-                                                } else {
-                                                    url
-                                                }
-                                            }
-                                        },
+                                        readApiBaseUrl = { container.apiBaseUrlFlow() },
                                         saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
                                     ),
                                 ),

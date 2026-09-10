@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -98,10 +99,11 @@ private const val DEFAULT_PROFILE_KEY = "default"
  * [Api]/[CatalogRepository]/[PlaybackPort] trio whenever the session
  * changes, exactly like Android does.
  *
- * Base URL: desktop has no build-config field; the persisted
- * [UserPreferences.apiBaseUrl] value is used, overridden by the
- * `SUBSLOTH_API_BASE_URL` environment variable while it is still the
- * default (see [resolveApiBaseUrl]).
+ * Base URL: desktop has no build-config field; a deliberately saved
+ * [UserPreferences.storedApiBaseUrl] value takes precedence, with the
+ * `SUBSLOTH_API_BASE_URL` environment variable as the fallback for an
+ * absent or blank preference (see [resolveApiBaseUrl] and
+ * [ApiBaseUrlPolicy]).
  *
  * Downloads are wired with the JVM storage shell (PR follow-up to #235):
  * [DownloadController] runs with `DesktopDownloadStore`,
@@ -419,27 +421,25 @@ class DesktopContainer(dataDirOverride: File? = null) {
     }
 
     /**
-     * Resolves the API base URL with the same precedence Android's
-     * `AppContainer.resolveApiBaseUrl` uses: the persisted
-     * [UserPreferences.apiBaseUrl] value, unless it is still the default
-     * and the `SUBSLOTH_API_BASE_URL` environment variable is set
-     * (desktop's counterpart of Android's build-config field — CI
-     * provides it from the repo secret), in which case the environment
-     * variable wins. Public because the login flows (Main.kt's
-     * `LoginViewModel` and DesktopNavHost's auth-repair entry) display it.
+     * Resolves the API base URL with the same presence-aware precedence as
+     * Android's `AppContainer.resolveApiBaseUrl` ([ApiBaseUrlPolicy]): a
+     * deliberately saved non-blank [UserPreferences.storedApiBaseUrl] value
+     * — including the default — wins over the non-blank
+     * `SUBSLOTH_API_BASE_URL` environment variable (desktop's counterpart
+     * of Android's build-config field; CI provides it from the repo
+     * secret). An absent or blank preference falls back to the environment
+     * variable, then to the default. Public because the login flows
+     * (Main.kt's `LoginViewModel` and DesktopNavHost's auth-repair entry)
+     * display it.
      */
     suspend fun resolveApiBaseUrl(): String = apiBaseUrlFlow().first()
 
     /**
-     * The effective API base URL as a [Flow] (for the login screens,
-     * which expect a flow shape): the persisted
-     * [UserPreferences.apiBaseUrl] value, overridden by the
-     * `SUBSLOTH_API_BASE_URL` environment variable while it is still the
-     * default.
+     * Flow form of [resolveApiBaseUrl] for the login screens, which
+     * expect a flow shape.
      */
-    fun apiBaseUrlFlow(): Flow<String> = userPreferences.apiBaseUrl().map { stored ->
-        val fromEnv = System.getenv("SUBSLOTH_API_BASE_URL").orEmpty()
-        if (stored == UserPreferences.DEFAULT_API_BASE_URL && fromEnv.isNotEmpty()) fromEnv else stored
+    fun apiBaseUrlFlow(): Flow<String> = userPreferences.storedApiBaseUrl().map { stored ->
+        ApiBaseUrlPolicy.resolve(stored = stored, configured = System.getenv("SUBSLOTH_API_BASE_URL"))
     }
 
     private suspend fun buildApi(session: Session): Api {
