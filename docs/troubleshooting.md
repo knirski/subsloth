@@ -59,6 +59,7 @@ Common build, test, emulator, IDE, and development issues and their fixes.
 | Gradle daemon timeout (cold start) | First run after entering shell | `./gradlew :core:model:classes` to warm up |
 | `No tests found for given includes` | Wrong task name | Use `:module:connectedDebugAndroidTest` not `:module:connectedAndroidTest` |
 | `Could not install APK` | App already installed with different signature | Uninstall first: `adb uninstall net.subsloth` |
+| `failed to report executionFinished for <test>` + `ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 0` from `com.android.tools.androidtest.listener.AndroidTestResultListener` | Known AGP 9 instrumented-test engine race (`android-test-engine-result-listener:1.0.1`): its host-side JUnit engine runs suites concurrently (ForkJoinPool) but the result listener is not thread-safe. The exception is caught and the run continues | Usually benign — the build stays green; the racing test's result may be missing from the connected-results XML (undercount). Re-run the task if the affected test's outcome matters; track upgrades of `android-test-engine` for a fix. A zero-test run (app crashed before instrumentation) is caught by `verifyAndroidAppConnectedTests` on `:androidApp` |
 
 ---
 
