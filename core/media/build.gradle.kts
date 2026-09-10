@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     id("subsloth.kmp.android.library")
@@ -7,6 +8,25 @@ plugins {
 }
 
 kotlin {
+    // Create the jvmShared intermediate source set through the default
+    // hierarchy template rather than manual dependsOn() edges: KGP warns when
+    // explicit edges are configured while the template is in use. The
+    // download byte-transfer worker lives here because it uses java.io, so it
+    // cannot be in commonMain (wasmJs compiles commonMain), and duplicating
+    // it across androidMain/jvmMain would be worse. The wasmJs target never
+    // depends on it.
+    applyDefaultHierarchyTemplate {
+        common {
+            group("jvmShared") {
+                withJvm()
+                // withAndroidTarget() only matches the legacy
+                // KotlinAndroidTarget, not the AGP `com.android.kotlin.
+                // multiplatform.library` target, so match by platform type.
+                withCompilations { it.target.platformType == KotlinPlatformType.androidJvm }
+            }
+        }
+    }
+
     android {
         namespace = "net.subsloth.core.media"
     }
@@ -47,19 +67,13 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
 
-        // Intermediate source set shared by the two JVM targets
-        // (androidMain + jvmMain). The download byte-transfer worker lives
-        // here: it uses java.io, so it cannot be in commonMain (wasmJs
-        // compiles commonMain), and duplicating it across androidMain/
-        // jvmMain would be worse. The wasmJs target never depends on it.
-        val jvmSharedMain by creating {
-            dependsOn(commonMain.get())
+        // jvmSharedMain is created by the hierarchy template above; only its
+        // dependencies are configured here.
+        val jvmSharedMain by getting {
             dependencies {
                 implementation(libs.ktor.client.core)
             }
         }
-        androidMain.get().dependsOn(jvmSharedMain)
-        jvmMain.get().dependsOn(jvmSharedMain)
     }
 }
 
