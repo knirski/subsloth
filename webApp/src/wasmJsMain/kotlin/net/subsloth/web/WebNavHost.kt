@@ -573,6 +573,7 @@ private fun PlayerContent(
                 loadPlaybackSpeed = { runtime.loadPlaybackSpeed() },
                 loadPreferredLanguage = { runtime.loadPreferredLanguage() },
                 resolveShowIdForEpisode = { runtime.resolveShowIdForEpisode(it) },
+                fetchSubtitleText = { runtime.fetchSubtitleText(it) },
             )
         }
         PlayerScreen(

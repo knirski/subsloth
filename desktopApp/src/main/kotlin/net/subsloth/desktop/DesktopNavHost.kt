@@ -399,6 +399,7 @@ private fun PlayerContent(
                 loadPlaybackSpeed = container::loadPlaybackSpeed,
                 loadPreferredLanguage = container::loadPreferredLanguage,
                 resolveShowIdForEpisode = container::resolveShowIdForEpisode,
+                fetchSubtitleText = container::fetchSubtitleText,
             )
         }
         PlayerScreen(

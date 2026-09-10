@@ -2,6 +2,7 @@ package net.subsloth.player
 
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -398,6 +399,109 @@ class PlayerViewModelTest {
         assertThat(state.subtitleFallbackNotice).isNotNull()
     }
 
+    // ── Subtitle cue loading ───────────────────────────────────────────────
+
+    private val srtDocument = """
+        1
+        00:00:01,000 --> 00:00:03,500
+        Hello world.
+
+        2
+        00:00:04,000 --> 00:00:06,000
+        Second cue.
+    """.trimIndent()
+
+    @Test
+    fun `initial subtitle loads parsed cues into state`() = runTest(testDispatcher) {
+        val subtitle = createSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = { Outcome.Success(srtDocument) },
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.subtitleCues).hasSize(2)
+        assertThat(state.subtitleCues[0].startMs).isEqualTo(1_000L)
+        assertThat(state.subtitleCues[0].endMs).isEqualTo(3_500L)
+        assertThat(state.subtitleCues[0].text).isEqualTo("Hello world.")
+        assertThat(state.subtitleCues[1].text).isEqualTo("Second cue.")
+    }
+
+    @Test
+    fun `selectSubtitle(null) clears cues`() = runTest(testDispatcher) {
+        val subtitle = createSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = { Outcome.Success(srtDocument) },
+        )
+
+        runCurrent()
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).subtitleCues).isNotEmpty()
+
+        viewModel.selectSubtitle(null)
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNull()
+        assertThat(state.subtitleCues).isEmpty()
+    }
+
+    @Test
+    fun `subtitle fetch failure leaves cues empty but keeps selection`() = runTest(testDispatcher) {
+        val subtitle = createSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNotNull()
+        assertThat(state.subtitleCues).isEmpty()
+    }
+
+    @Test
+    fun `selecting another subtitle clears the previous track's cues until it loads`() = runTest(testDispatcher) {
+        val enSubtitle = createSubtitle()
+        val esSubtitle = createSpanishSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(enSubtitle, esSubtitle))
+        val esLoadGate = CompletableDeferred<Unit>()
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = { url ->
+                if (url.endsWith("sub.srt")) {
+                    Outcome.Success(srtDocument)
+                } else {
+                    esLoadGate.await()
+                    Outcome.Success(srtDocument)
+                }
+            },
+        )
+
+        runCurrent()
+        val initial = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(initial.selectedSubtitle?.language).isEqualTo(LanguageCode("en"))
+        assertThat(initial.subtitleCues).isNotEmpty()
+
+        viewModel.selectSubtitle(esSubtitle)
+        runCurrent()
+
+        val switched = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(switched.selectedSubtitle?.language).isEqualTo(LanguageCode("es"))
+        assertThat(switched.subtitleCues).isEmpty()
+
+        esLoadGate.complete(Unit)
+        runCurrent()
+
+        val loaded = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(loaded.subtitleCues).isNotEmpty()
+    }
+
     // ── Next-episode flow (Fix 1) ──────────────────────────────────────────
 
     @Test
@@ -762,6 +866,9 @@ class PlayerViewModelTest {
         loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
         loadPreferredLanguage: suspend () -> LanguageCode = { LanguageCode("en") },
         resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
+        fetchSubtitleText: suspend (String) -> Outcome<String> = {
+            Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+        },
     ): PlayerViewModel = PlayerViewModel(
         mediaId = mediaId,
         fetchVideoSource = fetchVideoSource,
@@ -774,6 +881,7 @@ class PlayerViewModelTest {
         loadPlaybackSpeed = loadPlaybackSpeed,
         loadPreferredLanguage = loadPreferredLanguage,
         resolveShowIdForEpisode = resolveShowIdForEpisode,
+        fetchSubtitleText = fetchSubtitleText,
     )
 
     private fun createVideoSource(

@@ -3,6 +3,7 @@
 package net.subsloth.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,7 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,10 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
+import kotlinx.coroutines.delay
 import net.subsloth.core.domain.policy.PlaybackSpeed
 import net.subsloth.core.media.PlayerBridgeSurface
 import net.subsloth.core.media.PlayerEvent
@@ -116,13 +123,43 @@ fun PlayerOverlay(
     var showSubtitlePicker by remember { mutableStateOf(false) }
     var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
+    var controlsVisible by remember { mutableStateOf(true) }
+
+    // Auto-hide the chrome a few seconds into uninterrupted playback. Any
+    // user interaction (tap, drag, open picker) either re-shows the
+    // controls or changes a tracked key, restarting this timer; paused
+    // playback always keeps the controls on screen.
+    LaunchedEffect(
+        controlsVisible,
+        state.isPlaying,
+        showSpeedPicker,
+        showSubtitlePicker,
+        showQualityPicker,
+        draggingPosition,
+    ) {
+        if (controlsVisible && state.isPlaying && showSpeedPicker.not() && showSubtitlePicker.not() &&
+            showQualityPicker.not() && draggingPosition == null
+        ) {
+            delay(CONTROLS_AUTO_HIDE_MS)
+            controlsVisible = false
+        } else if (!state.isPlaying) {
+            // Paused playback always keeps the chrome on screen.
+            controlsVisible = true
+        }
+    }
 
     // No background here: the video surface renders behind the Compose
     // canvas (e.g. zIndex -1 on web), so the overlay must stay transparent
     // for frames to show through. Error and prompt screens draw their own
     // opaque backgrounds.
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                // Taps on the video toggle the chrome; taps on controls are
+                // consumed by their own handlers and never reach here.
+                detectTapGestures { controlsVisible = !controlsVisible }
+            },
     ) {
         if (state.playbackError != null) {
             ErrorContent(
@@ -157,13 +194,6 @@ fun PlayerOverlay(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = state.title,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-            )
-
             if (state.qualityFallbackNotice != null) {
                 Text(
                     text = state.qualityFallbackNotice.resolve(),
@@ -185,97 +215,158 @@ fun PlayerOverlay(
             // Push controls to the bottom of the screen
             Spacer(modifier = Modifier.weight(1f))
 
-            val displaySeconds = draggingPosition?.let {
-                (it / 1000f * state.durationSeconds).toLong()
-            } ?: state.positionSeconds
-            Text(
-                text = formatTime(displaySeconds),
-                color = Color.White,
-                style = MaterialTheme.typography.bodyLarge,
+            // Subtitles render above the control bar (or above a bottom
+            // margin when the controls are hidden), never under it.
+            SubtitleText(
+                cues = state.subtitleCues,
+                playerState = playerState,
+                durationSeconds = state.durationSeconds,
+                modifier = Modifier.padding(bottom = if (controlsVisible) 0.dp else 32.dp),
             )
 
-            if (state.durationSeconds > 0) {
-                Slider(
-                    value = draggingPosition ?: playerState.sliderPos,
-                    onValueChange = { value ->
-                        draggingPosition = value
-                        playerState.seekStart(value)
-                    },
-                    onValueChangeFinished = {
-                        playerState.seekFinished()
-                        draggingPosition = null
-                    },
-                    valueRange = 0f..1000f,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                )
-
-                Text(
-                    text = formatTime(state.durationSeconds),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PlaybackControls(
-                isPlaying = state.isPlaying,
-                onTogglePlayPause = {
-                    if (playerState.isPlaying) playerState.pause() else playerState.play()
-                },
-                onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
-                onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
-                onToggleQuality = { showQualityPicker = !showQualityPicker },
-            )
-
-            if (showSpeedPicker) {
-                SpeedPicker(
-                    currentSpeed = state.playbackSpeed,
-                    onSelect = { speed ->
-                        playerState.playbackSpeed = speed
-                        onSetPlaybackSpeed(speed)
-                        showSpeedPicker = false
-                    },
-                )
-            }
-
-            if (showSubtitlePicker) {
-                SubtitlePicker(
-                    subtitles = state.availableSubtitles,
-                    selected = state.selectedSubtitle,
-                    onSelect = { subtitle ->
-                        if (subtitle != null) {
-                            val track = SubtitleMapper.toSubtitleTrack(subtitle)
-                            if (track != null) {
-                                playerState.selectSubtitleTrack(track)
-                                onSelectSubtitle(subtitle)
-                            }
-                        } else {
-                            playerState.disableSubtitles()
-                            onSelectSubtitle(null)
+            if (controlsVisible) {
+                val barDisplaySeconds = draggingPosition?.let {
+                    (it / 1000f * state.durationSeconds).toLong()
+                } ?: state.positionSeconds
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Title and quit control live inside the bar and share
+                    // its auto-hide behavior.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            text = state.title,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onNavigateBack) {
+                            Text(stringResource(Res.string.player_close))
                         }
-                        showSubtitlePicker = false
-                    },
-                )
-            }
+                    }
 
-            if (showQualityPicker) {
-                val isAdaptive = state.availableQualities.none { it.url != null }
-                if (isAdaptive) {
-                    AutoQualityNotice(onDismiss = { showQualityPicker = false })
-                } else {
-                    QualityPicker(
-                        qualities = state.availableQualities,
-                        selectedLabel = state.selectedQualityLabel,
-                        onSelect = { label ->
-                            onSelectQuality(label)
-                            showQualityPicker = false
+                    Text(
+                        text = formatTime(barDisplaySeconds),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+
+                    if (state.durationSeconds > 0) {
+                        Slider(
+                            value = draggingPosition ?: playerState.sliderPos,
+                            onValueChange = { value ->
+                                draggingPosition = value
+                                playerState.seekStart(value)
+                            },
+                            onValueChangeFinished = {
+                                playerState.seekFinished()
+                                draggingPosition = null
+                            },
+                            valueRange = 0f..1000f,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        )
+
+                        Text(
+                            text = formatTime(state.durationSeconds),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    PlaybackControls(
+                        isPlaying = state.isPlaying,
+                        onTogglePlayPause = {
+                            if (playerState.isPlaying) playerState.pause() else playerState.play()
+                        },
+                        onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
+                        onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
+                        onToggleQuality = { showQualityPicker = !showQualityPicker },
+                    )
+                }
+
+                if (showSpeedPicker) {
+                    SpeedPicker(
+                        currentSpeed = state.playbackSpeed,
+                        onSelect = { speed ->
+                            playerState.playbackSpeed = speed
+                            onSetPlaybackSpeed(speed)
+                            showSpeedPicker = false
                         },
                     )
+                }
+
+                if (showSubtitlePicker) {
+                    SubtitlePicker(
+                        subtitles = state.availableSubtitles,
+                        selected = state.selectedSubtitle,
+                        onSelect = { subtitle ->
+                            onSelectSubtitle(subtitle)
+                            showSubtitlePicker = false
+                        },
+                    )
+                }
+
+                if (showQualityPicker) {
+                    val isAdaptive = state.availableQualities.none { it.url != null }
+                    if (isAdaptive) {
+                        AutoQualityNotice(onDismiss = { showQualityPicker = false })
+                    } else {
+                        QualityPicker(
+                            qualities = state.availableQualities,
+                            selectedLabel = state.selectedQualityLabel,
+                            onSelect = { label ->
+                                onSelectQuality(label)
+                                showQualityPicker = false
+                            },
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+/** Controls hide this long into uninterrupted playback; a tap brings them back. */
+private const val CONTROLS_AUTO_HIDE_MS = 4_000L
+
+/**
+ * Renders the active subtitle cue in Compose above the control bar,
+ * replacing the player library's native subtitle layer (which is drawn
+ * under our overlay).
+ */
+@Composable
+private fun SubtitleText(
+    cues: List<SubtitleCue>,
+    playerState: VideoPlayerState,
+    durationSeconds: Long,
+    modifier: Modifier = Modifier,
+) {
+    if (cues.isEmpty()) return
+    val durationMs = if (durationSeconds > 0) durationSeconds * 1000 else (playerState.duration * 1000).toLong()
+    if (durationMs <= 0) return
+    val positionMs = (playerState.sliderPos / 1000f * durationMs).toLong()
+    val activeCue = cues.firstOrNull { positionMs >= it.startMs && positionMs < it.endMs } ?: return
+    Text(
+        text = activeCue.text,
+        color = Color.White,
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .padding(horizontal = 32.dp)
+            .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    )
 }
 
 @Composable

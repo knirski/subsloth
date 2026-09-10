@@ -221,6 +221,8 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
         null
     }
 
+    override suspend fun fetchSubtitleText(url: String): Outcome<String> = fetchSubtitleTextViaBrowser(url)
+
     override suspend fun savePlaybackProgress(
         mediaId: Media.MediaId,
         positionSeconds: Long,

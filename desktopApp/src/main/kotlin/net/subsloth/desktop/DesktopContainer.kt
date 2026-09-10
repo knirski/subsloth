@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
 import net.subsloth.core.domain.policy.CompletionPolicy
@@ -37,7 +38,9 @@ import net.subsloth.core.media.playback.OfflineSourceResolver
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.MediaError
+import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
@@ -74,6 +77,10 @@ import net.subsloth.preferences.CredentialsStoreAdapter
 import net.subsloth.preferences.UserPreferences
 import net.subsloth.preferences.createDataStorePreferences
 import java.io.File
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URI
+import java.net.URISyntaxException
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -491,6 +498,42 @@ class DesktopContainer(dataDirOverride: File? = null) {
     // ── Player wiring (net.subsloth.player.PlayerViewModel) ─────────────
 
     /**
+     * Fetches subtitle document text for the player's Compose subtitle
+     * layer. Subtitle URLs are ephemeral public streams (same trust level
+     * as the video stream URL), so a plain unauthenticated GET is used,
+     * bounded by timeouts and a response-size cap.
+     */
+    suspend fun fetchSubtitleText(url: String): Outcome<String> = withContext(Dispatchers.IO) {
+        try {
+            val connection = URI(url).toURL().openConnection() as HttpURLConnection
+            connection.connectTimeout = SUBTITLE_TIMEOUT_MS
+            connection.readTimeout = SUBTITLE_TIMEOUT_MS
+            val bytes = connection.inputStream.use { input ->
+                val buffer = ByteArray(SUBTITLE_MAX_BYTES + 1)
+                var read = 0
+                while (read <= SUBTITLE_MAX_BYTES) {
+                    val count = input.read(buffer, read, buffer.size - read)
+                    if (count < 0) break
+                    read += count
+                }
+                if (read > SUBTITLE_MAX_BYTES) {
+                    throw IOException("Subtitle document from $url exceeds $SUBTITLE_MAX_BYTES bytes")
+                }
+                buffer.copyOf(read)
+            }
+            Outcome.Success(bytes.decodeToString())
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: IOException) {
+            log.e(exception) { "fetchSubtitleText failed for $url" }
+            Outcome.Failure(NetworkError.UnexpectedResponse)
+        } catch (exception: URISyntaxException) {
+            log.e(exception) { "fetchSubtitleText failed for $url" }
+            Outcome.Failure(NetworkError.UnexpectedResponse)
+        }
+    }
+
+    /**
      * Maps the active session's account-scoped playback progress into the
      * [PlaybackProgress] domain shape consumed by `LibraryViewModel`'s
      * "Continue Watching" row — same mapping as `AppContainer`'s
@@ -788,3 +831,8 @@ class DesktopContainer(dataDirOverride: File? = null) {
         }
     }
 }
+
+/** Subtitle documents are small text files; refuse larger ones. */
+private const val SUBTITLE_MAX_BYTES = 2_000_000
+
+private const val SUBTITLE_TIMEOUT_MS = 10_000
