@@ -17,8 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import net.subsloth.core.data.media.CatalogRepository
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -451,19 +454,23 @@ class AppContainer(context: Context) {
     }
 
     /**
-     * Resolves the API base URL with the same precedence
-     * `MainActivity.kt`'s `readApiBaseUrl` uses for [net.subsloth.auth.LoginViewModel]:
-     * the persisted [UserPreferences.apiBaseUrl] value, unless it is still
-     * the default and a non-empty [BuildConfig.SUBSLOTH_API_BASE_URL] override
-     * is configured, in which case the build-config value wins.
+     * Resolves the API base URL from preference *presence*
+     * ([ApiBaseUrlPolicy]): a deliberately saved non-blank
+     * [UserPreferences.storedApiBaseUrl] value — including the default —
+     * wins over a non-blank [BuildConfig.SUBSLOTH_API_BASE_URL]; an absent
+     * or blank preference falls back to the build-config value and then to
+     * the default. Shared by the session validation client, [buildApi], and
+     * the login screens ([apiBaseUrlFlow]).
      */
-    private suspend fun resolveApiBaseUrl(): String {
-        val stored = userPreferences.apiBaseUrl().first()
-        return if (stored == UserPreferences.DEFAULT_API_BASE_URL && BuildConfig.SUBSLOTH_API_BASE_URL.isNotEmpty()) {
-            BuildConfig.SUBSLOTH_API_BASE_URL
-        } else {
-            stored
-        }
+    private suspend fun resolveApiBaseUrl(): String = apiBaseUrlFlow().first()
+
+    /**
+     * Flow form of [resolveApiBaseUrl] for `LoginViewModel`'s
+     * `readApiBaseUrl`, so the login form and [ClientFactory] always agree
+     * on the effective URL.
+     */
+    fun apiBaseUrlFlow(): Flow<String> = userPreferences.storedApiBaseUrl().map { stored ->
+        ApiBaseUrlPolicy.resolve(stored = stored, configured = BuildConfig.SUBSLOTH_API_BASE_URL)
     }
 
     private suspend fun buildApi(session: Session): Api {

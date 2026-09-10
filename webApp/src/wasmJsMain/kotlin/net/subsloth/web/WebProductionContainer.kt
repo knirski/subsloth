@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.data.session.ValidatingSessionState
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -84,9 +85,6 @@ private const val DEFAULT_LANGUAGE = "en"
 
 /** Fallback profile key for anonymous sessions, mirroring the other containers. */
 private const val DEFAULT_PROFILE_KEY = "default"
-
-/** Base URL used before preferences/session resolve; equals ClientFactory's default. */
-private const val DEFAULT_BASE_URL = "http://localhost:8080/api/v2/"
 
 /**
  * Production web composition root — the wasmJs counterpart of
@@ -211,10 +209,10 @@ class WebProductionContainer : WebRuntime {
 
     val catalogRepository: CatalogRepository get() = currentCatalogRepository
 
-    private fun initialBaseUrl(): String {
-        val fromEnv = subslothApiBaseUrlEnv()
-        return if (fromEnv.isNotEmpty()) fromEnv else DEFAULT_BASE_URL
-    }
+    private fun initialBaseUrl(): String = ApiBaseUrlPolicy.resolve(
+        stored = null,
+        configured = subslothApiBaseUrlEnv(),
+    )
 
     private suspend fun buildClient(session: Session = sessionPort.current()): io.ktor.client.HttpClient =
         ClientFactory.create(
@@ -232,9 +230,8 @@ class WebProductionContainer : WebRuntime {
 
     private suspend fun resolveApiBaseUrl(): String = apiBaseUrlFlow().first()
 
-    override fun apiBaseUrlFlow(): Flow<String> = userPreferences.apiBaseUrl().map { stored ->
-        val fromEnv = subslothApiBaseUrlEnv()
-        if (stored == UserPreferences.DEFAULT_API_BASE_URL && fromEnv.isNotEmpty()) fromEnv else stored
+    override fun apiBaseUrlFlow(): Flow<String> = userPreferences.storedApiBaseUrl().map { stored ->
+        ApiBaseUrlPolicy.resolve(stored = stored, configured = subslothApiBaseUrlEnv())
     }
 
     override suspend fun saveApiBaseUrl(url: String) {

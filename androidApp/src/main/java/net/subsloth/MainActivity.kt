@@ -14,12 +14,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
+import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
-import net.subsloth.preferences.UserPreferences
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,18 +48,13 @@ class MainActivity : ComponentActivity() {
                                 LoginViewModel(
                                     sessionPort = sessionPort,
                                     readApiBaseUrl = {
-                                                    (userPreferences?.apiBaseUrl() ?: flowOf(
-                                                        UserPreferences.DEFAULT_API_BASE_URL,
-                                                    )).map { url ->
-                                                        if (url == UserPreferences.DEFAULT_API_BASE_URL &&
-                                                            BuildConfig.SUBSLOTH_API_BASE_URL.isNotEmpty()
-                                                        ) {
-                                                            BuildConfig.SUBSLOTH_API_BASE_URL
-                                                        } else {
-                                                            url
-                                                        }
-                                                    }
-                                                },
+                                        container?.apiBaseUrlFlow() ?: flowOf(
+                                            ApiBaseUrlPolicy.resolve(
+                                                stored = null,
+                                                configured = BuildConfig.SUBSLOTH_API_BASE_URL,
+                                            ),
+                                        )
+                                    },
                                     saveApiBaseUrl = { url ->
                                         userPreferences?.setApiBaseUrl(url)
                                     },

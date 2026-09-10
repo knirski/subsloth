@@ -76,6 +76,54 @@ class UserPreferencesTest {
         }
     }
 
+    // ── API base URL ──────────────────────────────────────────────────────
+
+    @Test
+    fun `stored api base url is null when never saved`() = runTest {
+        prefs.storedApiBaseUrl().test {
+            assertThat(awaitItem()).isNull()
+        }
+    }
+
+    @Test
+    fun `stored api base url preserves a deliberately saved default`() = runTest {
+        prefs.setApiBaseUrl(UserPreferences.DEFAULT_API_BASE_URL)
+        prefs.storedApiBaseUrl().test {
+            assertThat(awaitItem()).isEqualTo(UserPreferences.DEFAULT_API_BASE_URL)
+        }
+    }
+
+    @Test
+    fun `stored api base url preserves a blank saved value`() = runTest {
+        prefs.setApiBaseUrl("")
+        prefs.storedApiBaseUrl().test {
+            assertThat(awaitItem()).isEqualTo("")
+        }
+    }
+
+    @Test
+    fun `api base url defaults when never saved`() = runTest {
+        prefs.apiBaseUrl().test {
+            assertThat(awaitItem()).isEqualTo(UserPreferences.DEFAULT_API_BASE_URL)
+        }
+    }
+
+    @Test
+    fun `api base url falls back to default when the saved value is blank`() = runTest {
+        prefs.setApiBaseUrl("")
+        prefs.apiBaseUrl().test {
+            assertThat(awaitItem()).isEqualTo(UserPreferences.DEFAULT_API_BASE_URL)
+        }
+    }
+
+    @Test
+    fun `api base url returns the saved custom value`() = runTest {
+        prefs.setApiBaseUrl("https://custom.example.com/api/")
+        prefs.apiBaseUrl().test {
+            assertThat(awaitItem()).isEqualTo("https://custom.example.com/api/")
+        }
+    }
+
     // ── Set and read back ─────────────────────────────────────────────────
 
     @Test
