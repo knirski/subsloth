@@ -86,6 +86,51 @@ android {
     }
 }
 
+// Zero-test guard for the connected instrumentation run. When the app under
+// test crashes in Application.onCreate (see the container initialization
+// order crash fixed in the container-init-order PR), the instrumentation
+// dies before running any test and the connected task still reports
+// SUCCESS with `tests="0"` in the result XML — green CI over a broken app.
+// This task fails the build whenever the connected run produced no tests.
+val verifyAndroidAppConnectedTests by tasks.registering {
+    group = "verification"
+    description =
+        "Fails when :androidApp:connectedDebugAndroidTest produced zero tests " +
+        "(e.g. the app crashed before instrumentation could run anything)."
+    val resultsDirProvider = layout.buildDirectory.dir("outputs/androidTest-results/connected/debug")
+    doLast {
+        val resultsDir = resultsDirProvider.get().asFile
+        val resultXmls =
+            resultsDir
+                .walkTopDown()
+                .filter { it.isFile && it.name.startsWith("TEST-") && it.extension == "xml" }
+                .toList()
+        require(resultXmls.isNotEmpty()) {
+            "No connected-test result XML found under ${resultsDir.path} — " +
+                "the instrumentation run produced no results."
+        }
+        val total =
+            resultXmls.sumOf { xml ->
+                """tests="(\d+)""""
+                    .toRegex()
+                    .find(xml.readText())
+                    ?.groupValues
+                    ?.get(1)
+                    ?.toIntOrNull()
+                    ?: 0
+            }
+        check(total > 0) {
+            "Connected instrumentation executed 0 tests (results in ${resultsDir.path}). " +
+                "This usually means the app under test crashed before any test ran — " +
+                "see logcat on the device."
+        }
+    }
+}
+
+tasks.matching { it.name == "connectedDebugAndroidTest" }.configureEach {
+    finalizedBy(verifyAndroidAppConnectedTests)
+}
+
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
