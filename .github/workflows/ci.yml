@@ -328,6 +328,17 @@ jobs:
           fi
           ./gradlew :webApp:wasmJsBrowserDistribution
 
+      - name: Verify build-time base URL injection
+        env:
+          SUBSLOTH_API_BASE_URL: ${{ secrets.SUBSLOTH_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          bundle="webApp/build/dist/wasmJs/productionExecutable/subsloth-web.js"
+          if ! grep -qF "$SUBSLOTH_API_BASE_URL" "$bundle"; then
+            echo "Build-time SUBSLOTH_API_BASE_URL was not injected into $bundle."
+            exit 1
+          fi
+
       - name: Upload production web distribution
         uses: actions/upload-artifact@v4
         with:
