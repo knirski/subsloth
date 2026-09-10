@@ -175,15 +175,16 @@ argument, this falls back to `InMemorySessionState()` —
 doc comment states plainly: "Production wires a persistent-backed implementation; this is the
 no-frills reference for tests, the screenshot suite, and the dev/demo build flavour." It accepts
 any non-blank login/password pair and never persists session state across process restarts.
-Desktop and Web still construct `RootContainerViewModel` this way today (falling back to this
-default); Android no longer does — `MainActivity` now passes `container.sessionPort` (the real
-`AndroidSessionState`) explicitly, so `InMemorySessionState` is unreachable from Android's
-production startup path.
+No production startup path falls back to it anymore: Android's `MainActivity`, desktop's
+`Main.kt`, and web production's `Main.kt` all pass their platform composition root's real
+`sessionPort` explicitly, so the in-memory default remains only for the screenshot suite,
+tests, and the dev/demo build flavour (`WebDemoRuntime`'s demo session).
 
 ## Summary
 
 | Platform | Data/catalog adapters | Session/auth adapter | Playback adapter |
 |---|---|---|---|
-| Android | Real (`AppContainer`) | Real (`AndroidSessionState`, Change 2) | Real (`ApiPlaybackPort`) |
+| Android | Real (`AppContainer`) | Real (`AndroidSessionState`) | Real (`ApiPlaybackPort`) |
 | Desktop | Real (`DesktopContainer`) | Real (`ValidatingSessionState`) | Real (`ApiPlaybackPort`) |
-| Web | None yet (Change 3B scope) | In-memory default (Change 3B scope) | Demo mock (`WebDemoRuntime`) |
+| Web (production) | Real (`WebProductionContainer`) | Real (`ValidatingSessionState`) | Real (`ApiPlaybackPort`, progressive) |
+| Web (demo) | Fixture-backed (`WebDemoRuntime`) | In-memory (`InMemorySessionState`) | Demo mock (`WebDemoRuntime`) |
