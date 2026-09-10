@@ -302,6 +302,8 @@ class WebProductionContainer : WebRuntime {
     override suspend fun fetchVideoSource(mediaId: Media.MediaId): Outcome<VideoSource> =
         playbackPort.prepareSource(mediaId)
 
+    override suspend fun fetchSubtitleText(url: String): Outcome<String> = fetchSubtitleTextViaBrowser(url)
+
     override suspend fun fetchEpisodesForShow(showId: ShowId): Outcome<List<Episode>> =
         when (val result = catalogRepository.getDetails(Media.MediaId.Show(showId))) {
             is Outcome.Success -> {

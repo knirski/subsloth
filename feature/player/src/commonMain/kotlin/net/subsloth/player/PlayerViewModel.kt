@@ -28,7 +28,6 @@ import net.subsloth.core.domain.policy.StreamRefreshPolicy
 import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.PlayCommand
 import net.subsloth.core.media.PlayerSnapshot
-import net.subsloth.core.media.SubtitleMapper
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.fold
@@ -68,6 +67,7 @@ sealed interface PlayerUiState {
         val mediaId: Media.MediaId? = null,
         val session: PlayerSession? = null,
         val snapshotCountSinceSave: Int = 0,
+        val subtitleCues: ImmutableList<SubtitleCue> = persistentListOf(),
     ) : PlayerUiState
 
     @Immutable
@@ -117,6 +117,9 @@ class PlayerViewModel(
         LanguageCode("en")
     },
     private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
+    private val fetchSubtitleText: suspend (String) -> Outcome<String> = {
+        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+    },
 ) : ViewModel() {
     private val log = Logger.withTag("PlayerViewModel")
 
@@ -169,13 +172,15 @@ class PlayerViewModel(
 
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
-        val subtitleTrack = initialSubtitle?.let { SubtitleMapper.toSubtitleTrack(it) }
 
+        // Subtitles are rendered by our own Compose layer (see
+        // SubtitleTextParser), so the library's native subtitle track stays
+        // disabled — its layer would be drawn under our opaque control bar.
         _playCommands.send(
             PlayCommand(
                 url = source.streamUrl,
                 positionSeconds = positionSeconds,
-                subtitleTrack = subtitleTrack,
+                subtitleTrack = null,
             ),
         )
 
@@ -221,6 +226,7 @@ class PlayerViewModel(
         )
 
         populateNextEpisode(source)
+        loadSubtitleCues(initialSubtitle)
     }
 
     fun onPlayerSnapshot(snapshot: PlayerSnapshot) {
@@ -378,6 +384,39 @@ class PlayerViewModel(
         _uiState.update { current ->
             (current as? PlayerUiState.Content)?.copy(selectedSubtitle = subtitle) ?: current
         }
+        loadSubtitleCues(subtitle)
+    }
+
+    /**
+     * Loads and parses the cues for [subtitle] into the UI state. The
+     * result is applied only if the selection has not changed in the
+     * meantime (stale loads are dropped).
+     */
+    private fun loadSubtitleCues(subtitle: Subtitle?) {
+        viewModelScope.launch {
+            val cues = if (subtitle == null) {
+                emptyList()
+            } else {
+                fetchAndParseCues(subtitle)
+            }
+            _uiState.update { current ->
+                (current as? PlayerUiState.Content)
+                    ?.takeIf { it.selectedSubtitle == subtitle }
+                    ?.copy(subtitleCues = cues.toImmutableList())
+                    ?: current
+            }
+        }
+    }
+
+    private suspend fun fetchAndParseCues(subtitle: Subtitle): List<SubtitleCue> {
+        val url = subtitle.url ?: subtitle.downloadUrl ?: return emptyList()
+        return fetchSubtitleText(url).fold(
+            onSuccess = { text -> SubtitleTextParser.parse(text, subtitle.format) },
+            onFailure = { error ->
+                log.w { "Subtitle cue load failed (${subtitle.language.value}): $error" }
+                emptyList()
+            },
+        )
     }
 
     fun selectQuality(qualityLabel: String) {

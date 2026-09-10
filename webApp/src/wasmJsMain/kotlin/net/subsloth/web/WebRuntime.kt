@@ -1,6 +1,8 @@
 package net.subsloth.web
 
+import kotlinx.browser.window
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.await
 import kotlinx.coroutines.flow.Flow
 import net.subsloth.catalog.HomeViewModel
 import net.subsloth.core.domain.port.DownloadCommandOutcome
@@ -24,6 +26,7 @@ import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
 import net.subsloth.core.model.progress.PlaybackProgress
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Union surface consumed by [WebNavHost]: both the demo tier
@@ -61,6 +64,9 @@ interface WebRuntime {
 
     suspend fun fetchEpisodesForShow(showId: ShowId): Outcome<List<Episode>>
 
+    /** Fetches subtitle document text for the player's Compose subtitle layer. */
+    suspend fun fetchSubtitleText(url: String): Outcome<String>
+
     suspend fun resolveShowIdForEpisode(episodeId: EpisodeId): ShowId?
 
     suspend fun savePlaybackProgress(
@@ -79,7 +85,6 @@ interface WebRuntime {
     suspend fun loadPreferredLanguage(): LanguageCode
 
     fun invalidateSession()
-
     // ── Library / downloads ─────────────────────────────────────────────
 
     val libraryPort: LibraryPort
@@ -145,4 +150,24 @@ interface WebRuntime {
     fun clearCredentials()
 
     fun close()
+}
+
+/**
+ * Fetches subtitle document text through the browser `fetch` API for the
+ * player's Compose subtitle layer. Works for both runtimes: the demo tier
+ * resolves bundled compose-resource sidecars relative to the page origin,
+ * production resolves absolute subtitle stream URLs.
+ */
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+internal suspend fun fetchSubtitleTextViaBrowser(url: String): Outcome<String> = try {
+    val response = window.fetch(url).await()
+    if (response.ok) {
+        Outcome.Success(response.text().await().toString())
+    } else {
+        Outcome.Failure(net.subsloth.core.model.error.NetworkError.UnexpectedResponse)
+    }
+} catch (exception: CancellationException) {
+    throw exception
+} catch (exception: Exception) {
+    Outcome.Failure(net.subsloth.core.model.error.NetworkError.UnexpectedResponse)
 }

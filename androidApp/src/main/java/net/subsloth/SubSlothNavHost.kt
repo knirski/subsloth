@@ -4,6 +4,9 @@ import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -244,11 +247,23 @@ fun SubSlothNavHost(
                     }
                     current as? ComponentActivity
                 } ?: return@entry
-                DisposableEffect(Unit) {
+                DisposableEffect(activity) {
                     val originalOrientation = activity.requestedOrientation
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    // Fullscreen playback: hide system bars (immersive),
+                    // restore the original orientation and bars on dispose
+                    // so navigating back to the details screen recovers
+                    // the pre-player system UI state.
+                    val window = activity.window
+                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    val originalBehavior = insetsController.systemBarsBehavior
+                    insetsController.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    insetsController.hide(WindowInsetsCompat.Type.systemBars())
                     onDispose {
                         activity.requestedOrientation = originalOrientation
+                        insetsController.systemBarsBehavior = originalBehavior
+                        insetsController.show(WindowInsetsCompat.Type.systemBars())
                     }
                 }
 
@@ -281,6 +296,7 @@ fun SubSlothNavHost(
                                         loadPlaybackSpeed = container::loadPlaybackSpeed,
                                         loadPreferredLanguage = container::loadPreferredLanguage,
                                         resolveShowIdForEpisode = container::resolveShowIdForEpisode,
+                                        fetchSubtitleText = container::fetchSubtitleText,
                                     ),
                                 ),
                             )

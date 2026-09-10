@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import co.touchlab.kermit.Logger
+import java.net.URI
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -12,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.data.media.CatalogRepository
 import net.subsloth.core.domain.policy.CompletionPolicy
@@ -38,6 +40,7 @@ import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
@@ -53,6 +56,7 @@ import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.error.NetworkErrorClassifier
+import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.core.network.media.mapper.Mapper
@@ -513,6 +517,23 @@ class AppContainer(context: Context) {
                     ?: return Outcome.Success(emptyList())
                 Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(error))
             }
+        }
+    }
+
+    /**
+     * Fetches subtitle document text for the player's Compose subtitle
+     * layer. Subtitle URLs are ephemeral public streams (same trust level
+     * as the video stream URL), so a plain unauthenticated GET is used.
+     */
+    @Suppress("TooGenericExceptionCaught") // Network-boundary catch-all, same pattern as download URL resolution.
+    suspend fun fetchSubtitleText(url: String): Outcome<String> = withContext(Dispatchers.IO) {
+        try {
+            Outcome.Success(URI(url).toURL().readText())
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            log.e(exception) { "fetchSubtitleText failed for $url" }
+            Outcome.Failure(NetworkError.UnexpectedResponse)
         }
     }
 
