@@ -49,12 +49,10 @@ kotlin {
         wasmJsMain.dependencies {
             implementation(libs.sqlite.web)
             implementation(libs.kotlinx.browser)
-            implementation(libs.kotlinx.serialization.json)
             implementation(libs.coroutines.core)
         }
 
         jvmTest.dependencies {
-            implementation(libs.kotlinx.serialization.json)
             implementation(libs.coroutines.test)
             implementation(libs.turbine)
         }

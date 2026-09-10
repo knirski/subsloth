@@ -56,30 +56,23 @@ directly to `subsloth.kmp.library`.
 
 ## 3. `WebWorkerSQLiteDriver` nullable bug
 
-**Status:** Resolved ✅ (custom driver)
+**Status:** Resolved ✅ (upstream driver adopted)
 
-`sqlite-web:2.7.0-alpha05` has a bug where `isNull` / `getCellType` caches
+`sqlite-web:2.7.0-alpha05` had a bug where `isNull` / `getCellType` cached
 the column type from the first row only. Documented in
 `linhvnguyen9/room3-sqlite-web-nullable-npe-repro`.
 
-**Impact:** Affects wasmJs database queries with nullable columns. May cause
-incorrect results or crashes when `isNull` returns a cached type from a
-different row.
-
-**Resolution:** Replaced the upstream `WebWorkerSQLiteDriver` with a custom
-[SubSlothSqliteDriver] that changes the protocol to use **per-row column
-types** (`Array<Array<number>>` instead of `Array<number>`). The worker
-populates `columnTypes[rowIdx][colIdx]` for every row, and the driver
-checks the current row's actual type before reading values.
-
-Files changed:
-- `core/database/src/wasmJsMain/.../SubSlothSqliteDriver.kt` — custom driver
-- `core/database/src/wasmJsMain/.../SubSlothDatabaseBuilder.wasm.kt` — uses
-  `SubSlothSqliteDriver` instead of `WebWorkerSQLiteDriver`
-- `webApp/sqlite-wasm-worker/worker.js` — per-row column types in `step`
-- `webApp/sqlite-wasm-worker/protocol.d.ts` — updated type declarations
-- `core/database/src/jvmTest/.../WebWorkerProtocolContractTest.kt` — updated
-  test expectations + new nullable-scenario test
+**Resolution:** The pinned stable `androidx.sqlite:sqlite-web:2.7.0` fixes it
+upstream: `WebWorkerSQLiteStatement.getColumnType` combines the worker's
+first-row `columnTypes` with per-row value introspection
+(`StatementResult.getCellType`), and transaction statements are special-cased
+with `inTransaction` tracking under `NonCancellable`. The custom
+`SubSlothSqliteDriver`, its forked worker protocol, and
+`WebWorkerProtocolContractTest` were removed in favour of the upstream
+`WebWorkerSQLiteDriver` plus the AndroidX reference worker
+(`webApp/sqlite-wasm-worker/worker.js`), keeping only two local deltas:
+an in-memory fallback when the OPFS VFS is unavailable, and a correct
+rejection of queued requests when `sqlite3InitModule()` fails.
 
 **Upstream issue:** https://github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro
 
@@ -186,7 +179,7 @@ The following items were previously tracked but are now resolved:
 | **DataStore on wasmJs** | `LocalStorageDataStore` backs `DataStore<Preferences>` with browser `localStorage`. Persists across page reloads. |
 | **Navigation3 on desktop** | `SavedStateConfiguration` + `androidx.savedstate:savedstate:1.5.0`. ✅ |
 | **Navigation3 on web (wasmJs)** | `savedstate:1.5.0` + `savedstate-compose` (wasm support since 1.3.2). ✅ |
-| **Room 3.0 on wasmJs** | `sqlite-web` + `WebWorkerSQLiteDriver` via `kotlinx-browser`. ✅ |
+| **Room 3.0 on wasmJs** | `androidx.sqlite:sqlite-web` + `WebWorkerSQLiteDriver` with the AndroidX reference worker. ✅ |
 | **Crypto CSPRNG** | Browser `crypto.getRandomValues()` via `@JsFun`. ✅ |
 | **Normalization order** | `trim → NFC → lowercase` matching JVM/iOS. ✅ |
 | **CredentialStore localStorage security** | Removed "encrypted" claim, added plaintext warning. ✅ |
