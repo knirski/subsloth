@@ -86,9 +86,6 @@ private const val DEFAULT_LANGUAGE = "en"
 /** Fallback profile key for anonymous sessions, mirroring the other containers. */
 private const val DEFAULT_PROFILE_KEY = "default"
 
-/** Base URL used before preferences/session resolve; equals ClientFactory's default. */
-private const val DEFAULT_BASE_URL = "http://localhost:8080/api/v2/"
-
 /**
  * Production web composition root — the wasmJs counterpart of
  * `DesktopContainer`. Wires the real, persistent adapters: localStorage
@@ -212,10 +209,10 @@ class WebProductionContainer : WebRuntime {
 
     val catalogRepository: CatalogRepository get() = currentCatalogRepository
 
-    private fun initialBaseUrl(): String {
-        val fromEnv = subslothApiBaseUrlEnv()
-        return if (fromEnv.isNotEmpty()) fromEnv else DEFAULT_BASE_URL
-    }
+    private fun initialBaseUrl(): String = ApiBaseUrlPolicy.resolve(
+        stored = null,
+        configured = subslothApiBaseUrlEnv(),
+    )
 
     private suspend fun buildClient(session: Session = sessionPort.current()): io.ktor.client.HttpClient =
         ClientFactory.create(
