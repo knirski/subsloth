@@ -20,17 +20,20 @@
  *  1. `open` falls back to an in-memory database when the OPFS VFS is absent
  *     (host without COOP/COEP), so the app still runs; persistence requires
  *     the cross-origin-isolated setup documented in known-gaps.md.
- *  2. `sqlite3InitModule()` failure rejects every queued request instead of
- *     leaving the driver's `open()` hanging forever.
+ *  2. `sqlite3InitModule()` failure is remembered and rejects queued *and
+ *     subsequent* requests instead of leaving the driver's `open()` hanging.
  *  3. Every response carries explicit `data` and `error` keys. The driver
  *     reads them as typed external-interface properties, and an absent key
  *     surfaces as `ClassCastException: null` in the Kotlin/Wasm driver
  *     instead of reading as null.
+ *  4. Envelope validation rejects null/missing `data`/`cmd` before property
+ *     access; the reference worker's `&&` checks throw on `{ data: null }`.
  */
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 
 let sqlite3 = null;
+let initError = null;
 
 // Maps to track active database connections and prepared statements by their unique IDs.
 const databases = new Map(); // stores databaseId -> SQLiteDbObject
@@ -149,35 +152,42 @@ const commandMap = {
 
 function handleMessage(e) {
     const requestMsg = e.data;
-    if (!Object.hasOwn(requestMsg, 'data') && requestMsg.data == null) {
+    const requestId = requestMsg == null ? null : requestMsg.id ?? null;
+    if (initError != null) {
         postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, missing 'data'."}
+            {'id': requestId, 'data': null, 'error': `sqlite3 init failed: ${initError}`}
         );
         return;
     }
-    if (!Object.hasOwn(requestMsg.data, 'cmd') && requestMsg.data.cmd == null) {
+    if (requestMsg == null || !Object.hasOwn(requestMsg, 'data') || requestMsg.data == null) {
         postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, missing 'cmd'."}
+            {'id': requestId, 'data': null, 'error': "Invalid request, missing 'data'."}
+        );
+        return;
+    }
+    if (!Object.hasOwn(requestMsg.data, 'cmd') || requestMsg.data.cmd == null) {
+        postMessage(
+            {'id': requestId, 'data': null, 'error': "Invalid request, missing 'cmd'."}
         );
         return;
     }
     const command = requestMsg.data.cmd;
     const requestHandler = commandMap[command];
     if (requestHandler) {
-        requestHandler(requestMsg.id, requestMsg.data);
+        requestHandler(requestId, requestMsg.data);
     } else {
         postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, unknown command: '" + command + "'."}
+            {'id': requestId, 'data': null, 'error': "Invalid request, unknown command: '" + command + "'."}
         );
     }
 }
 
 const messageQueue = [];
 onmessage = (e) => {
-    if (!sqlite3) {
-        messageQueue.push(e);
-    } else {
+    if (sqlite3 != null || initError != null) {
         handleMessage(e);
+    } else {
+        messageQueue.push(e);
     }
 };
 
@@ -187,11 +197,8 @@ sqlite3InitModule().then(instance => {
         handleMessage(messageQueue.shift());
     }
 }).catch(error => {
+    initError = error?.message ?? String(error);
     while (messageQueue.length > 0) {
-        const queued = messageQueue.shift();
-        const requestId = queued?.data?.id;
-        postMessage(
-            {'id': requestId, 'error': `sqlite3 init failed: ${error?.message ?? String(error)}`}
-        );
+        handleMessage(messageQueue.shift());
     }
 });
