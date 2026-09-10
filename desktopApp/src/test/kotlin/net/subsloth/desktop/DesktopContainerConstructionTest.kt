@@ -21,15 +21,15 @@ class DesktopContainerConstructionTest {
     @Test
     fun `container constructs without initialization-order failures`() {
         val fakeHome = Files.createTempDirectory("subsloth-desktop-test-home").toFile()
+        val dataDir = Files.createTempDirectory("subsloth-desktop-test-data").toFile()
         val originalHome = System.getProperty("user.home")
         System.setProperty("user.home", fakeHome.path)
         try {
-            DesktopContainer(
-                dataDirOverride = Files.createTempDirectory("subsloth-desktop-test-data").toFile(),
-            )
+            DesktopContainer(dataDirOverride = dataDir)
         } finally {
             System.setProperty("user.home", originalHome)
             fakeHome.deleteRecursively()
+            dataDir.deleteRecursively()
         }
     }
 }
