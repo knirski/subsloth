@@ -1,8 +1,10 @@
 package net.subsloth.player
 
+import androidx.lifecycle.ViewModelStore
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -190,6 +192,57 @@ class PlayerViewModelTest {
 
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.positionSeconds).isEqualTo(500)
+    }
+
+    // ── Disposal-safe progress flush ──────────────────────────────────────
+
+    @Test
+    fun `flushProgress saves latest position through external scope`() = runTest(testDispatcher) {
+        var saved: Triple<Media.MediaId, Long, Long>? = null
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                saveProgress = { id, pos, dur, _ -> saved = Triple(id, pos, dur) },
+                externalScope = this,
+            )
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 55L, durationSeconds = 8060L))
+
+        viewModel.flushProgress()
+
+        assertThat(saved).isEqualTo(Triple(Media.MediaId.Movie(MovieId(1)), 55L, 8060L))
+    }
+
+    @Test
+    fun `flushProgress falls back to viewModelScope without external scope`() = runTest(testDispatcher) {
+        var saved: Long? = null
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                saveProgress = { _, pos, _, _ -> saved = pos },
+            )
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 42L, durationSeconds = 3600L))
+
+        viewModel.flushProgress()
+
+        assertThat(saved).isEqualTo(42L)
+    }
+
+    @Test
+    fun `clearing the view model flushes progress`() = runTest(testDispatcher) {
+        var saved: Long? = null
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                saveProgress = { _, pos, _, _ -> saved = pos },
+                externalScope = this,
+            )
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 77L, durationSeconds = 3600L))
+        val store = ViewModelStore()
+        store.put("player", viewModel)
+
+        store.clear()
+
+        assertThat(saved).isEqualTo(77L)
     }
 
     @Test
@@ -975,6 +1028,7 @@ class PlayerViewModelTest {
         fetchSubtitleText: suspend (String) -> Outcome<String> = {
             Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
         },
+        externalScope: CoroutineScope? = null,
     ): PlayerViewModel = PlayerViewModel(
         mediaId = mediaId,
         fetchVideoSource = fetchVideoSource,
@@ -989,6 +1043,7 @@ class PlayerViewModelTest {
         loadPreferredLanguage = loadPreferredLanguage,
         resolveShowIdForEpisode = resolveShowIdForEpisode,
         fetchSubtitleText = fetchSubtitleText,
+        externalScope = externalScope,
     )
 
     private fun progress(positionSeconds: Long, durationSeconds: Long): PlaybackProgress = PlaybackProgress(

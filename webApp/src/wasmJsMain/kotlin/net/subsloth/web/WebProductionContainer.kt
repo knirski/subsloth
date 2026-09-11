@@ -117,6 +117,13 @@ class WebProductionContainer : WebRuntime {
     /** Process-lifetime scope (page lifetime); never cancelled, same pattern as the other containers. */
     private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /**
+     * Read-only view of [containerScope] for work that must outlive a
+     * ViewModel — e.g. the player's final progress flush, which runs after
+     * AndroidX has already cancelled `viewModelScope`.
+     */
+    override val externalScope: CoroutineScope get() = containerScope
+
     private val dataStore by lazy {
         createDataStorePreferences(name = "subsloth", scope = containerScope)
     }

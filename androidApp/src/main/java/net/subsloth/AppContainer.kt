@@ -113,6 +113,13 @@ class AppContainer(context: Context) {
      */
     private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Read-only view of [containerScope] for work that must outlive a
+     * ViewModel — e.g. the player's final progress flush, which runs after
+     * AndroidX has already cancelled `viewModelScope`.
+     */
+    val externalScope: CoroutineScope get() = containerScope
+
     /** DataStore for user preferences. */
     val dataStore: DataStore<Preferences> by lazy {
         val appContext = context.applicationContext

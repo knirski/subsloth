@@ -8,6 +8,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
@@ -123,6 +124,7 @@ class PlayerViewModel(
     private val fetchSubtitleText: suspend (String) -> Outcome<String> = {
         Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
     },
+    private val externalScope: CoroutineScope? = null,
 ) : ViewModel() {
     private val log = Logger.withTag("PlayerViewModel")
 
@@ -504,7 +506,31 @@ class PlayerViewModel(
 
     override fun onCleared() {
         log.d { "ViewModel cleared" }
+        flushProgress()
         super.onCleared()
+    }
+
+    /**
+     * Persists the latest playback snapshot so leaving the player early
+     * does not lose up to the periodic (60-snapshot) save interval.
+     *
+     * The AndroidX lifecycle cancels [viewModelScope] before
+     * [onCleared] runs, so production composition roots inject an
+     * app-lifetime [externalScope] for this final write. Without one
+     * (tests, previews), the save falls back to [viewModelScope].
+     */
+    fun flushProgress() {
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        val id = state.mediaId ?: return
+        val save: suspend () -> Unit = {
+            saveProgress(id, state.positionSeconds, state.durationSeconds, state.playbackMode)
+        }
+        val scope = externalScope
+        if (scope == null) {
+            viewModelScope.launch { save() }
+        } else {
+            scope.launch { save() }
+        }
     }
 
     private fun saveProgressAndRouteToAuthRepair() {
