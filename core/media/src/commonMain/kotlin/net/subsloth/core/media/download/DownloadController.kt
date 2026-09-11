@@ -112,8 +112,9 @@ class DownloadController(
         language: LanguageCode,
     ): Result<SubtitleEnqueueOutcome> = runCatching {
         val downloadId = requireNotNull(parseLocalIdDownloadId(localId)) {
-            "No download found for $localId"
+            "No download found for ${localId.value}"
         }
+        downloadedMediaDao.getById(downloadId) ?: error("No download found for ${localId.value}")
         val existing = downloadedSubtitleDao.getForDownload(downloadId).first()
         if (existing.any { it.language == language.value }) {
             return@runCatching SubtitleEnqueueOutcome.AlreadyAvailable
