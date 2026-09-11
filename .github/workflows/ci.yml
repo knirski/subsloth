@@ -339,6 +339,19 @@ jobs:
             exit 1
           fi
 
+      - name: Verify bundled sqlite worker is current
+        run: |
+          set -euo pipefail
+          # Marker from the local deltas in webApp/sqlite-wasm-worker/worker.js.
+          # Yarn caches the file: dependency by version, so an edit that does
+          # not bump package.json can silently bundle the previous worker.
+          marker="sqlite3 init failed"
+          if ! grep -rqF --include='*.js' -- "$marker" webApp/build/dist/wasmJs/productionExecutable/; then
+            echo "Bundled sqlite worker is missing the current-worker marker: $marker"
+            echo "It may be a stale Yarn file: dependency. Bump webApp/sqlite-wasm-worker/package.json."
+            exit 1
+          fi
+
       - name: Upload production web distribution
         uses: actions/upload-artifact@v4
         with:

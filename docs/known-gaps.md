@@ -28,6 +28,12 @@ from the Nix environment via `KOTLIN_NODEJS_HOME`, `KOTLIN_YARN_HOME`, and
   webpack-dev-server via `webApp/webpack.config.d/opfs-headers.js`.
   Production deployments must also set these headers at the reverse proxy
   or CDN level.
+- `webApp/sqlite-wasm-worker/worker.js` changes must bump the package
+  version in `webApp/sqlite-wasm-worker/package.json`: the Yarn `file:`
+  dependency is cached by version, so an unchanged version can keep
+  bundling the previous worker on incremental builds. The production web
+  build job (`build-web-production`) asserts a current-worker marker as a
+  guard.
 
 ---
 
