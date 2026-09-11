@@ -427,6 +427,23 @@ class MovieDetailViewModelTest {
     }
 
     @Test
+    fun `toggleDownload enqueues fallback resolution when qualities are empty`() = runTest(testDispatcher) {
+        val requested = mutableListOf<Resolution>()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails.copy(qualities = persistentListOf())) },
+            enqueueDownload = { _, resolution ->
+                requested += resolution
+                Result.success(EnqueueOutcome.Queued)
+            },
+        )
+
+        viewModel.toggleDownload()
+
+        assertThat(requested).containsExactly(Resolution.HD_720)
+    }
+
+    @Test
     fun `toggleDownload removes completed download`() = runTest(testDispatcher) {
         val removed = mutableListOf<LocalMediaIdentifier>()
         val download = completedDownload()
