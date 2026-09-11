@@ -62,6 +62,10 @@ class LibraryPortAdapter(
                 FavoriteEntity(profileKey = key, contentId = contentId, contentType = contentType),
             )
 
+            LibraryCollection.HISTORY -> watchLaterDao.upsert(
+                WatchLaterEntity(profileKey = key, contentId = contentId, contentType = contentType),
+            )
+
             LibraryCollection.CUSTOM -> localLibraryDao.upsert(
                 LocalLibraryRecordEntity(
                     profileKey = key,
@@ -70,10 +74,6 @@ class LibraryPortAdapter(
                     addedAtEpochSeconds = item.addedAtEpochSeconds.epochSeconds,
                 ),
             )
-
-            LibraryCollection.HISTORY -> {
-                // HISTORY collection is managed by playback progress tracking
-            }
         }
         Outcome.Success(Unit)
     } catch (e: CancellationException) {
@@ -89,6 +89,9 @@ class LibraryPortAdapter(
 
         val favorite = favoriteDao.getByProfileAndContentId(key, contentId)
         if (favorite != null) favoriteDao.delete(favorite)
+
+        val watchLater = watchLaterDao.getByProfileAndContentId(key, contentId)
+        if (watchLater != null) watchLaterDao.delete(watchLater)
 
         val localRecord = localLibraryDao.getByProfileAndContentId(key, contentId)
         if (localRecord != null) localLibraryDao.delete(localRecord)
