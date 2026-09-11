@@ -70,9 +70,11 @@ with `inTransaction` tracking under `NonCancellable`. The custom
 `SubSlothSqliteDriver`, its forked worker protocol, and
 `WebWorkerProtocolContractTest` were removed in favour of the upstream
 `WebWorkerSQLiteDriver` plus the AndroidX reference worker
-(`webApp/sqlite-wasm-worker/worker.js`), keeping only two local deltas:
-an in-memory fallback when the OPFS VFS is unavailable, and a correct
-rejection of queued requests when `sqlite3InitModule()` fails.
+(`webApp/sqlite-wasm-worker/worker.js`), keeping four small local deltas:
+an in-memory fallback when the OPFS VFS is unavailable, a remembered
+`sqlite3InitModule()` failure that rejects queued and later requests,
+explicit `data`/`error` keys on every response, and null-safe envelope
+validation.
 
 **Upstream issue:** https://github.com/linhvnguyen9/room3-sqlite-web-nullable-npe-repro
 

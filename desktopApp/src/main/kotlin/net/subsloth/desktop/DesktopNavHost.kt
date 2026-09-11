@@ -393,6 +393,7 @@ private fun PlayerContent(
                 saveProgress = { id, positionSeconds, durationSeconds, playbackMode ->
                     container.savePlaybackProgress(id, positionSeconds, durationSeconds, playbackMode)
                 },
+                loadProgress = container::loadPlaybackProgress,
                 onNavigateToNextEpisode = onNavigateToNextEpisode,
                 onAuthFailure = container::invalidateSession,
                 savePlaybackSpeed = container::savePlaybackSpeed,

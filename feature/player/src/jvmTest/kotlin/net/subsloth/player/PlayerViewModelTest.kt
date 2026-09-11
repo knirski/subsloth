@@ -5,6 +5,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -30,10 +31,12 @@ import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
+import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -85,6 +88,108 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.playbackError).isNotNull()
         assertThat(state.playbackError).isInstanceOf(PlaybackError.Recoverable::class.java)
+    }
+
+    // ── Resume ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `resumes from stored progress at or above resume threshold`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadProgress = { progress(positionSeconds = 120, durationSeconds = 3600) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(120)
+        assertThat(viewModel.playCommands.first().positionSeconds).isEqualTo(120)
+    }
+
+    @Test
+    fun `ignores stored progress below resume threshold`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadProgress = { progress(positionSeconds = 25, durationSeconds = 3600) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(0)
+    }
+
+    @Test
+    fun `ignores near-finished stored progress`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadProgress = { progress(positionSeconds = 3500, durationSeconds = 3600) },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(0)
+    }
+
+    @Test
+    fun `starts from zero when no progress is stored`() = runTest(testDispatcher) {
+        val viewModel = createViewModel(fetchVideoSource = { Outcome.Success(createVideoSource()) })
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(0)
+    }
+
+    @Test
+    fun `loads progress for the playing media id`() = runTest(testDispatcher) {
+        var requested: Media.MediaId? = null
+        val mediaId = Media.MediaId.Movie(MovieId(42))
+        createViewModel(
+            mediaId = mediaId,
+            fetchVideoSource = { Outcome.Success(createVideoSource(mediaId = mediaId)) },
+            loadProgress = { id ->
+                requested = id
+                null
+            },
+        )
+
+        assertThat(requested).isEqualTo(mediaId)
+    }
+
+    @Test
+    fun `failed retry keeps in-session position`() = runTest(testDispatcher) {
+        var fail = false
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = {
+                    if (fail) {
+                        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+                    } else {
+                        Outcome.Success(createVideoSource())
+                    }
+                },
+            )
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 500, durationSeconds = 3600))
+
+        fail = true
+        viewModel.retryPlayback()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(500)
+        assertThat(state.playbackError).isNotNull()
+    }
+
+    @Test
+    fun `retry keeps in-session position over stored progress`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadProgress = { progress(positionSeconds = 120, durationSeconds = 3600) },
+            )
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).positionSeconds).isEqualTo(120)
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 500, durationSeconds = 3600))
+        viewModel.retryPlayback()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(500)
     }
 
     @Test
@@ -859,6 +964,7 @@ class PlayerViewModelTest {
         onAuthFailure: () -> Unit = {},
         onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
         saveProgress: suspend (Media.MediaId, Long, Long, PlaybackMode) -> Unit = { _, _, _, _ -> },
+        loadProgress: suspend (Media.MediaId) -> PlaybackProgress? = { null },
         refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
             Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
         },
@@ -876,12 +982,21 @@ class PlayerViewModelTest {
         onAuthFailure = onAuthFailure,
         onNavigateToNextEpisode = onNavigateToNextEpisode,
         saveProgress = saveProgress,
+        loadProgress = loadProgress,
         refreshStreamUrl = refreshStreamUrl,
         savePlaybackSpeed = savePlaybackSpeed,
         loadPlaybackSpeed = loadPlaybackSpeed,
         loadPreferredLanguage = loadPreferredLanguage,
         resolveShowIdForEpisode = resolveShowIdForEpisode,
         fetchSubtitleText = fetchSubtitleText,
+    )
+
+    private fun progress(positionSeconds: Long, durationSeconds: Long): PlaybackProgress = PlaybackProgress(
+        mediaId = Media.MediaId.Movie(MovieId(1)),
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(0),
+        isWatched = false,
     )
 
     private fun createVideoSource(

@@ -602,6 +602,14 @@ class AppContainer(context: Context) {
         }
     }.onFailure { if (it is CancellationException) throw it }
 
+    /**
+     * Looks up the active session's stored progress for [mediaId] so the
+     * player can resume. Returns `null` when there is none or the lookup
+     * fails — resume is best-effort and playback then starts from zero.
+     */
+    suspend fun loadPlaybackProgress(mediaId: Media.MediaId): PlaybackProgress? =
+        listAccountPlaybackProgress().getOrDefault(emptyList()).firstOrNull { it.mediaId == mediaId }
+
     private fun AccountPlaybackProgressEntity.toPlaybackProgress(): PlaybackProgress {
         val fraction = if (durationSeconds > 0) {
             positionSeconds.toDouble() / durationSeconds.toDouble()
