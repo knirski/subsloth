@@ -22,6 +22,14 @@ import kotlinx.coroutines.isActive
 /** Poll interval mirroring the underlying player's ~250 ms position updates. */
 private const val SNAPSHOT_POLL_INTERVAL_MS = 250L
 
+/** How long a direct unmuted `play()` gets to start before the muted retry. */
+private const val AUTOPLAY_DIRECT_WAIT_ATTEMPTS = 20
+private const val AUTOPLAY_DIRECT_WAIT_INTERVAL_MS = 50L
+
+/** How long the muted retry gets to start before the volume is restored anyway. */
+private const val AUTOPLAY_MUTED_WAIT_ATTEMPTS = 40
+private const val AUTOPLAY_MUTED_WAIT_INTERVAL_MS = 50L
+
 /**
  * How long a resume seek waits for the player to report a non-zero
  * duration. The wait is generous because browsers may block autoplay and
@@ -93,6 +101,7 @@ fun PlayerBridgeSurface(
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
             cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
             playerState.play()
+            ensurePlaybackStarted(playerState)
             if (cmd.positionSeconds > 0L) {
                 // The seek needs a non-zero duration, and on web the duration
                 // is only reported through timeupdate events — which fire
@@ -123,4 +132,33 @@ fun PlayerBridgeSurface(
     ) {
         overlay(playerState)
     }
+}
+
+/**
+ * Ensures playback actually starts under browser autoplay policies.
+ *
+ * Browsers reject an unmuted `play()` unless the page still holds
+ * transient user activation. The details-screen Play tap is a gesture,
+ * but stream resolution can outlive the activation window, leaving the
+ * player paused. When the direct attempt does not start, retry muted
+ * (always allowed) and restore the volume once playback is actually
+ * running, so the user still hears audio.
+ *
+ * Native players start immediately, so the retry never runs there.
+ */
+private suspend fun ensurePlaybackStarted(playerState: VideoPlayerState) {
+    if (awaitPlaying(playerState, AUTOPLAY_DIRECT_WAIT_ATTEMPTS, AUTOPLAY_DIRECT_WAIT_INTERVAL_MS)) return
+    val previousVolume = playerState.volume
+    playerState.volume = 0f
+    playerState.play()
+    awaitPlaying(playerState, AUTOPLAY_MUTED_WAIT_ATTEMPTS, AUTOPLAY_MUTED_WAIT_INTERVAL_MS)
+    playerState.volume = previousVolume
+}
+
+private suspend fun awaitPlaying(playerState: VideoPlayerState, attempts: Int, intervalMs: Long): Boolean {
+    repeat(attempts) {
+        if (playerState.isPlaying) return true
+        delay(intervalMs)
+    }
+    return playerState.isPlaying
 }
