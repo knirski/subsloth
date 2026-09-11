@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.policy.ResumePolicy
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
@@ -78,6 +80,8 @@ class MovieDetailViewModel(
         Result.success(emptyList())
     },
 ) : ViewModel() {
+    private val log = Logger.withTag("MovieDetailViewModel")
+
     private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
     val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
 
@@ -94,9 +98,17 @@ class MovieDetailViewModel(
                     if (details is MovieDetails) {
                         val library = when (val lib = listLibrary()) {
                             is Outcome.Success -> lib.value
-                            is Outcome.Failure -> emptyList()
+
+                            is Outcome.Failure -> {
+                                log.w { "Failed to load library: ${lib.error}" }
+                                emptyList()
+                            }
                         }
-                        val downloads = listDownloads().getOrDefault(emptyList())
+                        val downloads = listDownloads().getOrElse { error ->
+                            log.w { "Failed to load downloads: $error" }
+                            emptyList()
+                        }
+                        val progress = progressFor(mediaId)
                         _uiState.value =
                             MovieDetailUiState.Content(
                                 details = details,
@@ -106,6 +118,7 @@ class MovieDetailViewModel(
                                 isDownloaded = downloads.any {
                                     it.mediaId == mediaId && it is DownloadState.Completed
                                 },
+                                progressFraction = progress?.fraction,
                             )
                     } else {
                         _uiState.value = MovieDetailUiState.Error(UiError.NotFound("Unexpected media type"))
@@ -118,6 +131,20 @@ class MovieDetailViewModel(
             }
         }
     }
+
+    /**
+     * The stored progress playback would actually resume from for
+     * [mediaId], or `null` when there is none or [ResumePolicy] considers
+     * it non-resumable (below threshold / already finished). Keeps the
+     * detail Play label in sync with the player's resume decision.
+     */
+    private suspend fun progressFor(mediaId: Media.MediaId): PlaybackProgress? = listProgress()
+        .getOrElse { error ->
+            log.w { "Failed to load progress: $error" }
+            emptyList()
+        }
+        .firstOrNull { it.mediaId == mediaId }
+        ?.takeIf { ResumePolicy.resumablePosition(it) != null }
 }
 
 class ShowDetailViewModel(
@@ -137,6 +164,8 @@ class ShowDetailViewModel(
     private val listWatchedIds: suspend () -> Set<String> = { emptySet() },
     private val savedState: Map<String, String> = mapOf("selectedSeason" to ""),
 ) : ViewModel() {
+    private val log = Logger.withTag("ShowDetailViewModel")
+
     private val _uiState = MutableStateFlow<ShowDetailUiState>(ShowDetailUiState.Loading)
     val uiState: StateFlow<ShowDetailUiState> = _uiState.asStateFlow()
 
@@ -151,12 +180,23 @@ class ShowDetailViewModel(
                 is Outcome.Success -> {
                     val details = detailsResult.value
                     if (details is ShowDetails) {
-                        val watchedIds = runCatching { listWatchedIds() }.getOrDefault(emptySet())
+                        val watchedIds = runCatching { listWatchedIds() }.getOrElse { error ->
+                            log.w { "Failed to load watched ids: $error" }
+                            emptySet()
+                        }
                         val library = when (val lib = listLibrary()) {
                             is Outcome.Success -> lib.value
-                            is Outcome.Failure -> emptyList()
+
+                            is Outcome.Failure -> {
+                                log.w { "Failed to load library: ${lib.error}" }
+                                emptyList()
+                            }
                         }
-                        val downloads = listDownloads().getOrDefault(emptyList())
+                        val downloads = listDownloads().getOrElse { error ->
+                            log.w { "Failed to load downloads: $error" }
+                            emptyList()
+                        }
+                        val progress = resumableShowProgress(details)
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
                             ShowDetailUiState.Content(
@@ -168,6 +208,7 @@ class ShowDetailViewModel(
                                 isDownloaded = downloads.any {
                                     it.mediaId == mediaId && it is DownloadState.Completed
                                 },
+                                progressFraction = progress?.fraction,
                                 watchedEpisodeIds = details.seasons
                                     .flatMap { season -> season.episodes }
                                     .filter { episode -> watchedIds.contains(episode.id.value.toString()) }
@@ -190,6 +231,27 @@ class ShowDetailViewModel(
         _uiState.update { current ->
             if (current is ShowDetailUiState.Content) current.copy(selectedSeason = seasonNumber) else current
         }
+    }
+
+    /**
+     * The stored progress playback would resume from for this show: the
+     * most recently updated row among the show itself and its episodes,
+     * filtered through [ResumePolicy] so the detail Play label matches the
+     * player's resume decision.
+     */
+    private suspend fun resumableShowProgress(details: ShowDetails): PlaybackProgress? {
+        val episodeIds = details.seasons.flatMap { season -> season.episodes }.map { episode -> episode.id }.toSet()
+        return listProgress()
+            .getOrElse { error ->
+                log.w { "Failed to load progress: $error" }
+                emptyList()
+            }
+            .filter { progress ->
+                progress.mediaId == mediaId ||
+                    (progress.mediaId as? Media.MediaId.Episode)?.value in episodeIds
+            }
+            .maxByOrNull { it.lastUpdatedEpochSeconds }
+            ?.takeIf { ResumePolicy.resumablePosition(it) != null }
     }
 
     private fun parseSeason(saved: String, seasons: List<Season>): Int {
@@ -222,6 +284,8 @@ class EpisodeDetailViewModel(
     },
     private val isWatched: suspend (Media.MediaId) -> Boolean = { false },
 ) : ViewModel() {
+    private val log = Logger.withTag("EpisodeDetailViewModel")
+
     private val _uiState = MutableStateFlow<EpisodeDetailUiState>(EpisodeDetailUiState.Loading)
     val uiState: StateFlow<EpisodeDetailUiState> = _uiState.asStateFlow()
 
@@ -238,7 +302,10 @@ class EpisodeDetailViewModel(
                     if (details is EpisodeDetails) {
                         _uiState.value = EpisodeDetailUiState.Content(
                             details = details,
-                            isWatched = runCatching { isWatched(mediaId) }.getOrDefault(false),
+                            isWatched = runCatching { isWatched(mediaId) }.getOrElse { error ->
+                                log.w { "Failed to load watched state: $error" }
+                                false
+                            },
                         )
                     } else {
                         _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))

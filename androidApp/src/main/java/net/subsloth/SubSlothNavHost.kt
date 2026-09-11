@@ -151,6 +151,7 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds it
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        listProgress = { container.listAccountPlaybackProgress() },
                                     ),
                                 ),
                             )
@@ -181,6 +182,7 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds it
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        listProgress = { container.listAccountPlaybackProgress() },
                                         listWatchedIds = { container.listWatchedContentIds() },
                                     ),
                                 ),

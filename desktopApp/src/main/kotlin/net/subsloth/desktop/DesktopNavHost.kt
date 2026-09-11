@@ -129,6 +129,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             MovieDetailViewModel(
                                 mediaId = movieId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                listProgress = container::listAccountPlaybackProgress,
                             )
                         }
                         MovieDetailScreen(
@@ -153,6 +154,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             ShowDetailViewModel(
                                 mediaId = showId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                listProgress = container::listAccountPlaybackProgress,
                             )
                         }
                         SeriesDetailScreen(

@@ -10,16 +10,19 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowStatus
+import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShowDetailViewModelTest {
@@ -64,6 +67,29 @@ class ShowDetailViewModelTest {
         status = ShowStatus.ONGOING,
         popularity = null,
         seasons = seasons,
+    )
+
+    private val episode =
+        Episode(
+            id = EpisodeId(10),
+            showId = ShowId(1),
+            seasonNumber = 1,
+            episodeNumber = 1,
+            title = "Pilot",
+            plot = null,
+            durationSeconds = 3600,
+            availability = Availability.Available,
+            imdbId = null,
+            qualities = persistentListOf(),
+            subtitles = persistentListOf(),
+            airDateEpochSeconds = null,
+            premiereDateEpochSeconds = null,
+        )
+
+    private val showWithEpisodes = showDetails.copy(
+        seasons = persistentListOf(
+            Season(seasonNumber = 1, title = "Season 1", plot = null, episodes = persistentListOf(episode)),
+        ),
     )
 
     @Test
@@ -171,4 +197,95 @@ class ShowDetailViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `shows resume fraction from latest episode progress`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(mediaId, positionSeconds = 300, durationSeconds = 3600, updatedAt = 5),
+                        progress(Media.MediaId.Episode(EpisodeId(10)), 600, 3600, updatedAt = 10),
+                    ),
+                )
+            },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.progressFraction).isEqualTo(600.0 / 3600.0)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `shows resume fraction from show progress when newer`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(mediaId, positionSeconds = 1200, durationSeconds = 3600, updatedAt = 20),
+                        progress(Media.MediaId.Episode(EpisodeId(10)), 600, 3600, updatedAt = 10),
+                    ),
+                )
+            },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.progressFraction).isEqualTo(1200.0 / 3600.0)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ignores progress of episodes from other shows`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listProgress = {
+                Result.success(
+                    listOf(progress(Media.MediaId.Episode(EpisodeId(99)), 600, 3600, updatedAt = 10)),
+                )
+            },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ignores non-resumable episode progress`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listProgress = {
+                Result.success(
+                    listOf(progress(Media.MediaId.Episode(EpisodeId(10)), 20, 3600, updatedAt = 10)),
+                )
+            },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun progress(
+        mediaId: Media.MediaId,
+        positionSeconds: Long,
+        durationSeconds: Long,
+        updatedAt: Long,
+    ): PlaybackProgress = PlaybackProgress(
+        mediaId = mediaId,
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(updatedAt),
+        isWatched = false,
+    )
 }
