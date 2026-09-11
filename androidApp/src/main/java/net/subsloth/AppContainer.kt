@@ -291,7 +291,8 @@ class AppContainer(context: Context) {
 
     /**
      * Production [net.subsloth.core.domain.port.LibraryPort] implementation:
-     * favorites and custom-list membership, persisted to Room and scoped by
+     * favorites, watch later, and custom-list membership, persisted to Room
+     * and scoped by
      * the active session's user profile key (read fresh from [sessionPort]
      * on every call — see [LibraryPortAdapter.profileKey]), so a single
      * instance stays correct across login/logout/account switches.

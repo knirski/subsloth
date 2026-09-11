@@ -275,10 +275,10 @@ class DesktopContainer(dataDirOverride: File? = null) {
 
     val playbackPort: PlaybackPort get() = currentPlaybackPort
 
-    /** Production [net.subsloth.core.domain.port.LibraryPort]: favorites and
-     * custom-list membership, persisted to Room and scoped by the active
-     * session's profile key (read fresh per call). Stays correct across
-     * login/logout without rebuilding.
+    /** Production [net.subsloth.core.domain.port.LibraryPort]: favorites,
+     * watch later, and custom-list membership, persisted to Room and scoped
+     * by the active session's profile key (read fresh per call). Stays
+     * correct across login/logout without rebuilding.
      */
     val libraryPortAdapter by lazy {
         LibraryPortAdapter(

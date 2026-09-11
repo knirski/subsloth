@@ -69,7 +69,8 @@ object MockApi {
 
     private val library: MutableMap<Media.MediaId, LibraryItem> = mutableMapOf(
         Media.MediaId.Movie(MovieId(1)) to libraryItem(Media.MediaId.Movie(MovieId(1)), LibraryCollection.FAVORITES, 0),
-        Media.MediaId.Movie(MovieId(2)) to libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.HISTORY, 1),
+        Media.MediaId.Movie(MovieId(2)) to
+            libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.WATCH_LATER, 1),
         Media.MediaId.Movie(MovieId(3)) to libraryItem(Media.MediaId.Movie(MovieId(3)), LibraryCollection.CUSTOM, 2),
     )
 
@@ -132,7 +133,7 @@ object MockApi {
         library[Media.MediaId.Movie(MovieId(1))] =
             libraryItem(Media.MediaId.Movie(MovieId(1)), LibraryCollection.FAVORITES, 0)
         library[Media.MediaId.Movie(MovieId(2))] =
-            libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.HISTORY, 1)
+            libraryItem(Media.MediaId.Movie(MovieId(2)), LibraryCollection.WATCH_LATER, 1)
         library[Media.MediaId.Movie(MovieId(3))] =
             libraryItem(Media.MediaId.Movie(MovieId(3)), LibraryCollection.CUSTOM, 2)
         downloads.clear()

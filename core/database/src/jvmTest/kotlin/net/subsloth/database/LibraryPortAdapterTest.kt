@@ -39,7 +39,7 @@ class LibraryPortAdapterTest {
             assertEquals(
                 listOf(
                     LibraryCollection.FAVORITES,
-                    LibraryCollection.HISTORY,
+                    LibraryCollection.WATCH_LATER,
                     LibraryCollection.CUSTOM,
                 ),
                 items.map { it.collection },
@@ -76,7 +76,7 @@ class LibraryPortAdapterTest {
     }
 
     @Test
-    fun `addToLibrary history writes watch later and reads it back`() = runTest {
+    fun `addToLibrary watch later writes and reads it back`() = runTest {
         val db = createTestDatabase()
         try {
             val session = signedInSession()
@@ -85,7 +85,7 @@ class LibraryPortAdapterTest {
             adapter.addToLibrary(
                 LibraryItem(
                     mediaId = Media.MediaId.Movie(MovieId(4)),
-                    collection = LibraryCollection.HISTORY,
+                    collection = LibraryCollection.WATCH_LATER,
                     addedAtEpochSeconds = Instant.fromEpochSeconds(0),
                     sortOrder = 0,
                 ),
@@ -96,7 +96,7 @@ class LibraryPortAdapterTest {
                 onSuccess = { it },
                 onFailure = { error("unexpected failure: $it") },
             )
-            assertEquals(LibraryCollection.HISTORY, items.single().collection)
+            assertEquals(LibraryCollection.WATCH_LATER, items.single().collection)
             assertEquals(Media.MediaId.Movie(MovieId(4)), items.single().mediaId)
         } finally {
             db.close()

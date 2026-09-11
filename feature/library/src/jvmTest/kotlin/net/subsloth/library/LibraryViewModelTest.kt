@@ -142,11 +142,11 @@ class LibraryViewModelTest {
     }
 
     @Test
-    fun `includes watch later row when history exists`() = runTest(testDispatcher) {
+    fun `includes watch later row when watch later exists`() = runTest(testDispatcher) {
         val libraryItems = listOf(
             LibraryItem(
                 mediaId = sampleMovieId,
-                collection = LibraryCollection.HISTORY,
+                collection = LibraryCollection.WATCH_LATER,
                 addedAtEpochSeconds = Instant.fromEpochSeconds(100),
                 sortOrder = 1,
             ),
