@@ -5,10 +5,13 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.download.DownloadFailureReason
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.download.QueueId
@@ -413,24 +416,86 @@ class ShowDetailViewModelTest {
     @Test
     fun `downloadSeason is a no-op while a queue is active`() = runTest(testDispatcher) {
         var called = false
-        val activeQueue = SeasonDownloadQueue(
-            queueId = QueueId("1-1"),
-            showId = ShowId(1),
-            seasonNumber = 1,
-            items = persistentListOf(),
-            execution = SeasonQueueExecution.Running(Media.MediaId.Episode(EpisodeId(10))),
-            transferPreference = TransferPreference.WifiOnly,
-        )
         val vm = ShowDetailViewModel(
             mediaId = mediaId,
             getDetails = { Outcome.Success(showWithEpisodes) },
-            listSeasonQueues = { Result.success(listOf(activeQueue)) },
+            listSeasonQueues = { Result.success(listOf(seasonQueue(activeExecution()))) },
             startSeasonDownload = { _, _ -> called = true },
         )
 
         vm.downloadSeason()
 
         assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `downloadSeason re-queues a completed queue`() = runTest(testDispatcher) {
+        var called = false
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listSeasonQueues = { Result.success(listOf(seasonQueue(SeasonQueueExecution.Completed))) },
+            startSeasonDownload = { _, _ -> called = true },
+        )
+
+        vm.downloadSeason()
+
+        assertThat(called).isTrue()
+    }
+
+    @Test
+    fun `downloadSeason retries a failed queue`() = runTest(testDispatcher) {
+        var called = false
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listSeasonQueues = {
+                Result.success(listOf(seasonQueue(SeasonQueueExecution.Failed(DownloadFailureReason.DownloadFailed))))
+            },
+            startSeasonDownload = { _, _ -> called = true },
+        )
+
+        vm.downloadSeason()
+
+        assertThat(called).isTrue()
+    }
+
+    @Test
+    fun `season queue state refreshes while the queue is active`() = runTest(testDispatcher) {
+        var response: List<SeasonDownloadQueue> = emptyList()
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listSeasonQueues = { Result.success(response) },
+            startSeasonDownload = { _, _ ->
+                response = listOf(seasonQueue(activeExecution()))
+            },
+        )
+
+        vm.downloadSeason()
+        assertThat(currentSeasonDownloadState(vm)).isEqualTo(SeasonDownloadState.Downloading)
+
+        response = listOf(seasonQueue(SeasonQueueExecution.Completed))
+        advanceTimeBy(2_500)
+        runCurrent()
+
+        assertThat(currentSeasonDownloadState(vm)).isEqualTo(SeasonDownloadState.Completed)
+    }
+
+    private fun activeExecution() = SeasonQueueExecution.Running(Media.MediaId.Episode(EpisodeId(10)))
+
+    private fun seasonQueue(execution: SeasonQueueExecution) = SeasonDownloadQueue(
+        queueId = QueueId("1-1"),
+        showId = ShowId(1),
+        seasonNumber = 1,
+        items = persistentListOf(),
+        execution = execution,
+        transferPreference = TransferPreference.WifiOnly,
+    )
+
+    private fun currentSeasonDownloadState(vm: ShowDetailViewModel): SeasonDownloadState {
+        val content = vm.uiState.value as ShowDetailUiState.Content
+        return seasonDownloadState(content.seasonQueues, content.selectedSeason)
     }
 
     private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(

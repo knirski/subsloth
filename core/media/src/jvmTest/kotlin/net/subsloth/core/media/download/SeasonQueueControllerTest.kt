@@ -163,6 +163,41 @@ class SeasonQueueControllerTest {
     }
 
     @Test
+    fun `listQueues prunes old completed queues`() = runTest {
+        val dao = InMemorySeasonQueueDao()
+        dao.upsertQueue(
+            SeasonQueueEntity(
+                id = queueId.value,
+                showId = showId.value.toString(),
+                seasonNumber = 1,
+                status = "completed",
+                createdAtEpochSeconds = 0,
+            ),
+        )
+        val controller = SeasonQueueController(fakeDownloadsPort(), dao, Clock.System)
+
+        assertThat(controller.listQueues()).isEmpty()
+        assertThat(dao.getQueue(queueId.value)).isNull()
+    }
+
+    @Test
+    fun `listQueues keeps a recent completed queue`() = runTest {
+        val dao = InMemorySeasonQueueDao()
+        dao.upsertQueue(
+            SeasonQueueEntity(
+                id = queueId.value,
+                showId = showId.value.toString(),
+                seasonNumber = 1,
+                status = "completed",
+                createdAtEpochSeconds = Clock.System.now().epochSeconds,
+            ),
+        )
+        val controller = SeasonQueueController(fakeDownloadsPort(), dao, Clock.System)
+
+        assertThat(controller.listQueues().size).isEqualTo(1)
+    }
+
+    @Test
     fun `pauseQueue does nothing for nonexistent queue`() = runTest {
         val controller = SeasonQueueController(fakeDownloadsPort(), InMemorySeasonQueueDao(), Clock.System)
         controller.pauseQueue(queueId)
