@@ -19,6 +19,7 @@ import net.subsloth.core.data.session.ValidatingSessionState
 import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
+import net.subsloth.core.domain.policy.QualityPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
 import net.subsloth.core.domain.port.PlaybackPort
 import net.subsloth.core.domain.port.Session
@@ -32,12 +33,16 @@ import net.subsloth.core.media.download.DownloadTarget
 import net.subsloth.core.media.download.DownloadTransferCoordinator
 import net.subsloth.core.media.download.DownloadTransferer
 import net.subsloth.core.media.download.SeasonQueueController
+import net.subsloth.core.media.download.SeasonQueueDriver
 import net.subsloth.core.media.download.TransferEvent
 import net.subsloth.core.media.download.parseResolution
 import net.subsloth.core.media.playback.OfflineFirstPlaybackPort
 import net.subsloth.core.media.playback.OfflineSourceResolver
+import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
+import net.subsloth.core.model.download.QueueId
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.model.error.Outcome
@@ -47,6 +52,7 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
@@ -295,6 +301,14 @@ class DesktopContainer(dataDirOverride: File? = null) {
             downloadsPort = downloadController,
             seasonQueueDao = database.seasonQueueDao(),
             clock = clock,
+        )
+    }
+
+    /** Advances a confirmed season queue as each episode transfer finishes. */
+    private val seasonQueueDriver: SeasonQueueDriver by lazy {
+        SeasonQueueDriver(
+            controller = seasonQueueController,
+            downloadsPort = downloadController,
         )
     }
 
@@ -598,6 +612,47 @@ class DesktopContainer(dataDirOverride: File? = null) {
         )
 
         else -> error("Unknown contentType: $contentType")
+    }
+
+    /**
+     * Creates, confirms, and starts driving a download queue for one season
+     * of [showId]. Transfers themselves run through
+     * [downloadTransferCoordinator] for the process lifetime; this only
+     * seeds the queue with the season's episodes.
+     */
+    suspend fun startSeasonDownload(showId: ShowId, seasonNumber: Int, episodes: ImmutableList<Episode>) {
+        if (episodes.isEmpty()) return
+        val language = loadPreferredLanguage()
+        val quality = episodes
+            .firstNotNullOfOrNull { QualityPolicy.selectDefault(it.qualities, isTvDevice = false) }
+            ?.info
+            ?.resolution
+            ?: Resolution.HD_720
+        val completedIds = downloadController.listDownloads()
+            .getOrElse { emptyList() }
+            .filterIsInstance<DownloadState.Completed>()
+            .map { it.mediaId }
+            .toSet()
+        val confirmation = DownloadPolicy.prepareSeasonPreflight(
+            episodes = episodes,
+            qualityPref = quality,
+            subtitlePref = language,
+            transferPreference = TransferPreference.WifiOnly,
+            alreadyDownloaded = completedIds,
+        )
+        val queueId = QueueId("${showId.value}-$seasonNumber")
+        seasonQueueController.createQueue(
+            queueId = queueId,
+            showId = showId,
+            seasonNumber = seasonNumber,
+            episodes = episodes,
+            qualityPref = quality,
+            subtitlePref = language,
+            transferPreference = TransferPreference.WifiOnly,
+            confirmation = confirmation,
+        )
+        seasonQueueController.confirmQueue(queueId)
+        containerScope.launch { seasonQueueDriver.drive(queueId) }
     }
 
     /**

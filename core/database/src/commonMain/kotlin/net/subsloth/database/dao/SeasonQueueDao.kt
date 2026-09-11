@@ -28,6 +28,9 @@ interface SeasonQueueDao {
     @Query("DELETE FROM season_queues WHERE id = :queueId")
     suspend fun deleteQueue(queueId: String)
 
+    @Query("DELETE FROM queue_items WHERE queueId = :queueId")
+    suspend fun deleteItemsForQueue(queueId: String)
+
     @Query("DELETE FROM season_queues WHERE status = 'completed' AND createdAtEpochSeconds < :beforeEpochSeconds")
     suspend fun deleteCompletedQueuesOlderThan(beforeEpochSeconds: Long)
 }

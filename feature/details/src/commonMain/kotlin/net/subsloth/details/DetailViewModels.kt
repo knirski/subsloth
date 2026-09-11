@@ -18,6 +18,7 @@ import net.subsloth.core.domain.policy.ResumePolicy
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
+import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
@@ -25,6 +26,7 @@ import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
+import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
@@ -64,6 +66,7 @@ sealed interface ShowDetailUiState {
         val isWatchLater: Boolean = false,
         val progressFraction: Double? = null,
         val watchedEpisodeIds: ImmutableList<Int> = persistentListOf(),
+        val seasonQueues: ImmutableList<SeasonDownloadQueue> = persistentListOf(),
     ) : ShowDetailUiState
 
     @Immutable
@@ -269,6 +272,10 @@ class ShowDetailViewModel(
     private val removeFromLibrary: suspend (Media.MediaId) -> Outcome<Unit> = {
         Outcome.Success(Unit)
     },
+    private val listSeasonQueues: suspend () -> Result<List<SeasonDownloadQueue>> = {
+        Result.success(emptyList())
+    },
+    private val startSeasonDownload: suspend (Int, ImmutableList<Episode>) -> Unit = { _, _ -> },
     private val clock: Clock = Clock.System,
     private val savedState: Map<String, String> = mapOf("selectedSeason" to ""),
 ) : ViewModel() {
@@ -294,6 +301,7 @@ class ShowDetailViewModel(
                         }
                         val flags = loadFlags()
                         val progress = resumableShowProgress(details)
+                        val seasonQueues = loadSeasonQueues()
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
                             ShowDetailUiState.Content(
@@ -307,6 +315,7 @@ class ShowDetailViewModel(
                                     .filter { episode -> watchedIds.contains(episode.id.value.toString()) }
                                     .map { episode -> episode.id.value }
                                     .toImmutableList(),
+                                seasonQueues = seasonQueues.toImmutableList(),
                             )
                     } else {
                         _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
@@ -324,6 +333,33 @@ class ShowDetailViewModel(
         _uiState.update { current ->
             if (current is ShowDetailUiState.Content) current.copy(selectedSeason = seasonNumber) else current
         }
+    }
+
+    /**
+     * Queues every episode of the selected season for download. No-op while
+     * a queue for the season is already active or when the season has no
+     * episodes.
+     */
+    fun downloadSeason() {
+        val content = _uiState.value as? ShowDetailUiState.Content ?: return
+        if (seasonDownloadState(content.seasonQueues, content.selectedSeason) != SeasonDownloadState.Idle) return
+        val season = content.details.seasons.firstOrNull { it.seasonNumber == content.selectedSeason } ?: return
+        if (season.episodes.isEmpty()) return
+        viewModelScope.launch {
+            startSeasonDownload(content.selectedSeason, season.episodes.toImmutableList())
+            refreshSeasonQueues()
+        }
+    }
+
+    private suspend fun loadSeasonQueues(): List<SeasonDownloadQueue> = listSeasonQueues()
+        .getOrElse { error ->
+            log.w { "Failed to load season queues: $error" }
+            emptyList()
+        }
+
+    private suspend fun refreshSeasonQueues() {
+        val content = _uiState.value as? ShowDetailUiState.Content ?: return
+        _uiState.value = content.copy(seasonQueues = loadSeasonQueues().toImmutableList())
     }
 
     fun toggleFavorite() {

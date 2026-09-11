@@ -54,6 +54,9 @@ class SeasonQueueController(
             createdAtEpochSeconds = clock.now().epochSeconds,
         )
         seasonQueueDao.upsertQueue(queueEntity)
+        // Re-queueing the same season replaces any previous item rows so a
+        // retried download does not duplicate them.
+        seasonQueueDao.deleteItemsForQueue(queueId.value)
 
         val items = episodes.map { episode ->
             val subtitleSelection = SeasonQueuePolicy.selectInitialSubtitle(
@@ -103,9 +106,21 @@ class SeasonQueueController(
     }
 
     suspend fun executeNext(queueId: QueueId): SeasonQueueExecution {
+        val queue = seasonQueueDao.getQueue(queueId.value) ?: return SeasonQueueExecution.Completed
+        if (queue.status != "queued" && queue.status != "running") {
+            return when (queue.status) {
+                "paused" -> SeasonQueueExecution.Paused(DownloadFailureReason.NeedsWifi)
+                "completed" -> SeasonQueueExecution.Completed
+                "failed" -> SeasonQueueExecution.Failed(DownloadFailureReason.DownloadFailed)
+                else -> SeasonQueueExecution.PendingConfirmation
+            }
+        }
         val items = seasonQueueDao.getItemsForQueue(queueId.value)
         val nextPending = items.firstOrNull { it.status == "pending" }
-            ?: return SeasonQueueExecution.Completed
+        if (nextPending == null) {
+            markQueueCompletedIfDone(queueId)
+            return SeasonQueueExecution.Completed
+        }
 
         seasonQueueDao.upsertItem(nextPending.copy(status = "downloading"))
         val queueEntity = seasonQueueDao.getQueue(queueId.value)
@@ -126,17 +141,6 @@ class SeasonQueueController(
             transferPreference = TransferPreference.WifiOnly,
         )
 
-        val localId = net.subsloth.core.model.identifier.LocalMediaIdentifier(
-            "${nextPending.episodeId}/${nextPending.id}",
-        )
-        val subtitleLang = nextPending.subtitleLanguages
-        if (subtitleLang != null) {
-            downloadsPort.enqueueSubtitle(
-                localId = localId,
-                language = LanguageCode(subtitleLang),
-            )
-        }
-
         fun parseFailureReason(error: Throwable): DownloadFailureReason {
             val message = error.message ?: ""
             return when {
@@ -154,6 +158,7 @@ class SeasonQueueController(
 
         return result.fold(
             onSuccess = { outcome ->
+                enqueueSubtitleFor(nextPending, mediaId)
                 when (outcome) {
                     EnqueueOutcome.Queued -> SeasonQueueExecution.Running(mediaId)
 
@@ -175,6 +180,26 @@ class SeasonQueueController(
         )
     }
 
+    /**
+     * Marks the queue item for [mediaId] as completed and completes the
+     * queue when every item reached a terminal completed state. Called by
+     * the queue driver once the transferred download is available.
+     */
+    suspend fun markItemCompleted(queueId: QueueId, mediaId: Media.MediaId) {
+        updateItemStatus(queueId, mediaId, status = "completed")
+        markQueueCompletedIfDone(queueId)
+    }
+
+    /** Marks the queue item for [mediaId] as failed and fails its queue. */
+    suspend fun markItemFailed(queueId: QueueId, mediaId: Media.MediaId, reason: DownloadFailureReason) {
+        val episodeId = (mediaId as? Media.MediaId.Episode)?.value?.value?.toString() ?: return
+        val item = seasonQueueDao.getItemsForQueue(queueId.value).firstOrNull { it.episodeId == episodeId } ?: return
+        seasonQueueDao.upsertItem(item.copy(status = "failed", failureReason = reason.name))
+        seasonQueueDao.getQueue(queueId.value)?.let { queue ->
+            seasonQueueDao.upsertQueue(queue.copy(status = "failed", failureReason = reason.name))
+        }
+    }
+
     suspend fun pauseQueue(queueId: QueueId, reason: DownloadFailureReason = DownloadFailureReason.NeedsWifi) {
         val entity = seasonQueueDao.getQueue(queueId.value) ?: return
         seasonQueueDao.upsertQueue(entity.copy(status = "paused", failureReason = reason.name))
@@ -187,6 +212,34 @@ class SeasonQueueController(
 
     suspend fun cancelQueue(queueId: QueueId) {
         seasonQueueDao.deleteQueue(queueId.value)
+    }
+
+    private suspend fun updateItemStatus(queueId: QueueId, mediaId: Media.MediaId, status: String) {
+        val episodeId = (mediaId as? Media.MediaId.Episode)?.value?.value?.toString() ?: return
+        val item = seasonQueueDao.getItemsForQueue(queueId.value).firstOrNull { it.episodeId == episodeId } ?: return
+        seasonQueueDao.upsertItem(item.copy(status = status))
+    }
+
+    private suspend fun markQueueCompletedIfDone(queueId: QueueId) {
+        val items = seasonQueueDao.getItemsForQueue(queueId.value)
+        if (items.isNotEmpty() && items.all { it.status == "completed" }) {
+            seasonQueueDao.getQueue(queueId.value)?.let { queue ->
+                seasonQueueDao.upsertQueue(queue.copy(status = "completed"))
+            }
+        }
+    }
+
+    /**
+     * Enqueues the queue item's subtitle against the actual download row
+     * created for [mediaId] — the local id embeds the downloaded-entity id,
+     * which differs from the queue-item id.
+     */
+    private suspend fun enqueueSubtitleFor(item: QueueItemEntity, mediaId: Media.MediaId) {
+        val language = item.subtitleLanguages ?: return
+        val created = downloadsPort.listDownloads().getOrNull()
+            ?.firstOrNull { it.mediaId == mediaId }
+            ?: return
+        downloadsPort.enqueueSubtitle(created.localId, LanguageCode(language))
     }
 
     private fun SeasonQueueEntity.toDomain(items: List<QueueItemEntity>): SeasonDownloadQueue {

@@ -197,6 +197,10 @@ fun SubSlothNavHost(
                                         listLibrary = { container.libraryPortAdapter.listLibrary() },
                                         listProgress = { container.listAccountPlaybackProgress() },
                                         listWatchedIds = { container.listWatchedContentIds() },
+                                        listSeasonQueues = { container.listSeasonQueues() },
+                                        startSeasonDownload = { seasonNumber, episodes ->
+                                            container.startSeasonDownload(showId.value, seasonNumber, episodes)
+                                        },
                                         addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
                                         removeFromLibrary = { id ->
                                             container.libraryPortAdapter.removeFromLibrary(id)

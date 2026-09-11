@@ -106,6 +106,9 @@ interface WebRuntime {
 
     suspend fun listSeasonQueues(): Result<ImmutableList<SeasonDownloadQueue>>
 
+    /** Creates and confirms a download queue for one season of [showId]. */
+    suspend fun startSeasonDownload(showId: ShowId, seasonNumber: Int, episodes: ImmutableList<Episode>)
+
     suspend fun retryDownload(localId: String): EnqueueOutcome
 
     suspend fun pauseDownload(localId: String): DownloadCommandOutcome

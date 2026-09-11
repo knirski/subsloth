@@ -330,6 +330,10 @@ private fun ShowDetailContent(
                 listLibrary = { runtime.listLibrary() },
                 listProgress = { runtime.listAccountPlaybackProgress() },
                 listWatchedIds = { runtime.listWatchedContentIds() },
+                listSeasonQueues = { runtime.listSeasonQueues() },
+                startSeasonDownload = { seasonNumber, episodes ->
+                    runtime.startSeasonDownload(showId.value, seasonNumber, episodes)
+                },
                 addToLibrary = { item -> runtime.libraryPort.addToLibrary(item) },
                 removeFromLibrary = { id -> runtime.libraryPort.removeFromLibrary(id) },
             )
