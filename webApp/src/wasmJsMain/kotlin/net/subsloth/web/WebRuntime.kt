@@ -78,6 +78,9 @@ interface WebRuntime {
 
     suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>>
 
+    /** Stored progress for [mediaId], or `null` when unavailable (resume is best-effort). */
+    suspend fun loadPlaybackProgress(mediaId: Media.MediaId): PlaybackProgress?
+
     suspend fun savePlaybackSpeed(speed: Float)
 
     suspend fun loadPlaybackSpeed(): Float

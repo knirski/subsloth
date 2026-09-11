@@ -232,6 +232,8 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
 
     override suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> = Result.success(emptyList())
 
+    override suspend fun loadPlaybackProgress(mediaId: Media.MediaId): PlaybackProgress? = null
+
     override suspend fun savePlaybackSpeed(speed: Float) = Unit
 
     override suspend fun loadPlaybackSpeed(): Float = net.subsloth.core.domain.policy.PlaybackSpeedPolicy.defaultSpeed()

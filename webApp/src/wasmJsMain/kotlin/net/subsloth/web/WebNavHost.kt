@@ -567,6 +567,7 @@ private fun PlayerContent(
                 saveProgress = { mediaId, position, duration, mode ->
                     runtime.savePlaybackProgress(mediaId, position, duration, mode)
                 },
+                loadProgress = { runtime.loadPlaybackProgress(it) },
                 onNavigateToNextEpisode = onNavigateToNextEpisode,
                 onAuthFailure = { runtime.invalidateSession() },
                 savePlaybackSpeed = { runtime.savePlaybackSpeed(it) },

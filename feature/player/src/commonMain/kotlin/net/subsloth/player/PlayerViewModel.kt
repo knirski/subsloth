@@ -24,6 +24,7 @@ import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.PlaybackErrorClassifier
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
 import net.subsloth.core.domain.policy.QualityFallbackPolicy
+import net.subsloth.core.domain.policy.ResumePolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
 import net.subsloth.core.domain.policy.SubtitlePolicy
 import net.subsloth.core.media.PlayCommand
@@ -41,6 +42,7 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
+import net.subsloth.core.model.progress.PlaybackProgress
 
 @Stable
 sealed interface PlayerUiState {
@@ -106,6 +108,7 @@ class PlayerViewModel(
         Outcome.Success(emptyList())
     },
     private val saveProgress: suspend (Media.MediaId, Long, Long, PlaybackMode) -> Unit = { _, _, _, _ -> },
+    private val loadProgress: suspend (Media.MediaId) -> PlaybackProgress? = { null },
     private val onAuthFailure: () -> Unit = {},
     private val onNavigateToNextEpisode: (Media.MediaId) -> Unit = {},
     private val refreshStreamUrl: suspend (Media.MediaId) -> Outcome<VideoSource> = {
@@ -140,7 +143,7 @@ class PlayerViewModel(
         log.d { "Loading content for mediaId=$mediaId" }
         viewModelScope.launch {
             fetchVideoSource(mediaId).fold(
-                onSuccess = { source -> startPlayback(source) },
+                onSuccess = { source -> startPlayback(source, positionSeconds = resumePosition()) },
                 onFailure = { error ->
                     log.e { "Failed to fetch video source: $error" }
                     val playbackError = PlaybackErrorClassifier.classify(error)
@@ -163,6 +166,19 @@ class PlayerViewModel(
                 },
             )
         }
+    }
+
+    /**
+     * Position playback should start from. A retry keeps the in-session
+     * position when there is one; otherwise the persisted progress is
+     * used, filtered by [ResumePolicy] (ignores the first 30 seconds and
+     * near-finished items).
+     */
+    private suspend fun resumePosition(): Long {
+        val current = (_uiState.value as? PlayerUiState.Content)?.positionSeconds
+        if (current != null && current > 0L) return current
+        val progress = loadProgress(mediaId) ?: return 0L
+        return ResumePolicy.resumablePosition(progress) ?: 0L
     }
 
     private suspend fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {

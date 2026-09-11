@@ -287,6 +287,7 @@ fun SubSlothNavHost(
                                         saveProgress = { mediaId, positionSeconds, durationSeconds, playbackMode ->
                                             container.savePlaybackProgress(mediaId, positionSeconds, durationSeconds, playbackMode)
                                         },
+                                        loadProgress = container::loadPlaybackProgress,
                                         onNavigateToNextEpisode = { nextId ->
                                             val rawId =
                                                 (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
