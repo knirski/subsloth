@@ -167,6 +167,7 @@ class WebProductionContainer : WebRuntime {
     override val libraryPort: LibraryPort by lazy {
         LibraryPortAdapter(
             favoriteDao = database.favoriteDao(),
+            watchLaterDao = database.watchLaterDao(),
             localLibraryDao = database.localLibraryRecordDao(),
             sessionPort = sessionPort,
         )

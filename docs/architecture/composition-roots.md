@@ -37,7 +37,8 @@ constructs:
 - `api` / `catalogRepository` — an authenticated (or, before login, unauthenticated) `Api`/
   `CatalogRepository` pair that rebuilds itself whenever `sessionPort`'s credentials change
   (login, logout, account switch), closing the superseded Ktor `HttpClient` on each rebuild.
-- `libraryPortAdapter` (wrapping `favoriteDao`/`localLibraryRecordDao`/`sessionPort`),
+- `libraryPortAdapter` (wrapping `favoriteDao`/`watchLaterDao`/`localLibraryRecordDao`/
+  `sessionPort`),
   `downloadController` (wrapping `DownloadStorageManager`/`StorageProvider`/`ConnectivityChecker`
   and the download-related DAOs), and `seasonQueueController` — real, session-scoped `LibraryPort`/
   `DownloadsPort` adapters, previously built (in the archived `offline-downloads` change) but never

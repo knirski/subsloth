@@ -276,6 +276,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
     val libraryPortAdapter by lazy {
         LibraryPortAdapter(
             favoriteDao = database.favoriteDao(),
+            watchLaterDao = database.watchLaterDao(),
             localLibraryDao = database.localLibraryRecordDao(),
             sessionPort = sessionPort,
         )

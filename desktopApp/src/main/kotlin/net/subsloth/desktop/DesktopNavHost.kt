@@ -129,6 +129,8 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             MovieDetailViewModel(
                                 mediaId = movieId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                listLibrary = { container.libraryPortAdapter.listLibrary() },
+                                listDownloads = { container.downloadController.listDownloads() },
                                 listProgress = container::listAccountPlaybackProgress,
                             )
                         }
@@ -154,6 +156,8 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             ShowDetailViewModel(
                                 mediaId = showId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                listLibrary = { container.libraryPortAdapter.listLibrary() },
+                                listDownloads = { container.downloadController.listDownloads() },
                                 listProgress = container::listAccountPlaybackProgress,
                             )
                         }

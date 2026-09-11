@@ -9,11 +9,19 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.error.LibraryError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
+import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.library.LibraryCollection
+import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.media.ShowStatus
@@ -90,6 +98,13 @@ class ShowDetailViewModelTest {
         seasons = persistentListOf(
             Season(seasonNumber = 1, title = "Season 1", plot = null, episodes = persistentListOf(episode)),
         ),
+    )
+
+    private val sampleQuality = QualityDescriptor(
+        resolution = Resolution(1920, 1080),
+        label = "1080p",
+        bitrate = null,
+        mimeType = null,
     )
 
     @Test
@@ -275,6 +290,82 @@ class ShowDetailViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `favorite flag reflects favorites membership`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.FAVORITES))) },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.isFavorite).isTrue()
+            assertThat(content.isWatchLater).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `watch later flag reflects history membership`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.HISTORY))) },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.isWatchLater).isTrue()
+            assertThat(content.isFavorite).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `downloaded flag reflects completed download`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            listDownloads = { Result.success(listOf(completedDownload())) },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.isDownloaded).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `library failure keeps content with flags false`() = runTest(testDispatcher) {
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            listLibrary = { Outcome.Failure(LibraryError.NotSupported) },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.isFavorite).isFalse()
+            assertThat(content.isWatchLater).isFalse()
+            assertThat(content.details.title).isEqualTo("Test Show")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(
+        mediaId = mediaId,
+        collection = collection,
+        addedAtEpochSeconds = Instant.fromEpochSeconds(0),
+        sortOrder = 1,
+    )
+
+    private fun completedDownload(): DownloadState.Completed = DownloadState.Completed(
+        localId = LocalMediaIdentifier("show-1"),
+        mediaId = mediaId,
+        quality = sampleQuality,
+        downloadedAtEpochSeconds = Instant.fromEpochSeconds(0),
+        sizeBytes = 1024,
+        videoPath = OfflineRelativePath.safe("videos/show-1.mp4"),
+    )
 
     private fun progress(
         mediaId: Media.MediaId,
