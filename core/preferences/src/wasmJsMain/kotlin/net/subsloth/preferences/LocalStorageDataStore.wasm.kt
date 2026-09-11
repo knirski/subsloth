@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import co.touchlab.kermit.Logger
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,8 @@ private data class PrefEntry(val type: String, val value: String)
  * are returned (equivalent to file deletion in the native DataStore).
  */
 internal class LocalStorageDataStore(private val storageKey: String) : DataStore<Preferences> {
+
+    private val log = Logger.withTag("LocalStorageDataStore")
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -115,8 +118,8 @@ internal class LocalStorageDataStore(private val storageKey: String) : DataStore
                 map[key.name] = entry
             }
             localStorage.setItem(storageKey, json.encodeToString(map))
-        } catch (_: Exception) {
-            // Fail silently if localStorage is disabled or full (e.g. QuotaExceededError)
+        } catch (e: Exception) {
+            log.e(e) { "Failed to persist preferences; changes apply for this session only" }
         }
     }
 }
