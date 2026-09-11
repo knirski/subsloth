@@ -35,15 +35,21 @@ jobs:
         include:
           - display: 🟢 Android / APK
             type: android
-            tasks: :androidApp:assembleDebug
+            os: ubuntu-latest
+            tasks: :androidApp:assembleRelease
+            artifactPath: androidApp/build/outputs/apk/release/*.apk
 
           - display: 🖥️ Desktop / Linux
             type: desktop
+            os: ubuntu-latest
             tasks: :desktopApp:packageDistributionForCurrentOS
+            artifactPath: desktopApp/build/compose/binaries/main/deb/*.deb
 
           - display: 🌐 Web / wasmJs
             type: web
+            os: ubuntu-latest
             tasks: :webApp:wasmJsBrowserDistribution
+            artifactPath: webApp/build/dist/wasmJs/productionExecutable/**
 
           # macOS/iOS targets require macos-latest runner.
           # Uncomment when a macOS CI runner is configured:
@@ -58,7 +64,7 @@ jobs:
           #   os: macos-latest
           #   tasks: :core:model:compileKotlinMacosArm64
 
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -67,37 +73,109 @@ jobs:
 
       - uses: ./.github/actions/kmp-setup
 
-      - run: ./gradlew ${{ matrix.tasks }}
+      - name: Resolve release tag for this commit
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
+          # Only use the tag when it points at the checked-out commit. On a
+          # non-release main push `git describe` would otherwise return the
+          # previous release tag and the upload step could clobber its assets.
+          if [ -n "$TAG" ] && [ "$(git rev-list -n 1 "$TAG")" != "$(git rev-parse HEAD)" ]; then
+            TAG=""
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Locate and upload artifacts
+      - name: Ensure Android release-APK signing
+        if: matrix.type == 'android'
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            {
+              echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+              echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+              echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+              echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+          elif [ ! -f "$HOME/.android/debug.keystore" ]; then
+            # No release keystore configured: generate the standard debug
+            # keystore so the release APK is signed and installable.
+            mkdir -p "$HOME/.android"
+            keytool -genkeypair \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+      - name: Build (${{ matrix.display }})
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: ./gradlew ${{ matrix.tasks }} ${RELEASE_VERSION:+-PsubslothVersion=$RELEASE_VERSION}
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: subsloth-${{ matrix.type }}
+          path: ${{ matrix.artifactPath }}
+          if-no-files-found: error
+
+      - name: Upload release asset
+        if: steps.release.outputs.tag != ''
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          ARTIFACT_TYPE: ${{ matrix.type }}
         run: |
-          TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
-          [ -z "$TAG" ] && echo "No release tag — skipping upload" && exit 0
-          gh release view "$TAG" >/dev/null 2>&1 || { echo "Release $TAG not found — skipping upload"; exit 0; }
-          VER="${TAG#v}"
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 || {
+            echo "::error::Release $TAG for HEAD not found"
+            exit 1
+          }
 
-          case "${{ matrix.type }}" in
+          case "$ARTIFACT_TYPE" in
             android)
-              APK=$(find . -path '*/subsloth-*-debug.apk' | head -1)
-              if [ -n "$APK" ]; then
-                cp "$APK" /tmp/subsloth-"$VER"-debug.apk
-                gh release upload "$TAG" /tmp/subsloth-"$VER"-debug.apk --clobber
+              APK=$(find androidApp/build/outputs/apk/release -name '*.apk' | head -1)
+              if [ -z "$APK" ]; then
+                echo "::error::Android release APK not found under androidApp/build/outputs/apk/release"
+                exit 1
               fi
+              cp "$APK" /tmp/subsloth-"$VERSION"-release.apk
+              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-release.apk --clobber
               ;;
             desktop)
-              DEB=$(find . -path '*/compose/binaries/main/deb/*.deb' | head -1)
-              if [ -n "$DEB" ]; then
-                cp "$DEB" /tmp/subsloth-"$VER"-linux.deb
-                gh release upload "$TAG" /tmp/subsloth-"$VER"-linux.deb --clobber
+              DEB=$(find desktopApp/build/compose/binaries/main/deb -name '*.deb' | head -1)
+              if [ -z "$DEB" ]; then
+                echo "::error::Linux .deb not found under desktopApp/build/compose/binaries/main/deb"
+                exit 1
               fi
+              cp "$DEB" /tmp/subsloth-"$VERSION"-linux.deb
+              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-linux.deb --clobber
               ;;
             web)
               DIST="webApp/build/dist/wasmJs/productionExecutable"
-              if [ -d "$DIST" ]; then
-                cd "$DIST" && zip -r /tmp/subsloth-"$VER"-web.zip . && cd -
-                gh release upload "$TAG" /tmp/subsloth-"$VER"-web.zip --clobber
+              if [ ! -d "$DIST" ]; then
+                echo "::error::Wasm distribution not found at $DIST"
+                exit 1
               fi
+              (cd "$DIST" && zip -r /tmp/subsloth-"$VERSION"-web.zip .)
+              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-web.zip --clobber
+              ;;
+            *)
+              echo "::error::Unknown artifact type: $ARTIFACT_TYPE"
+              exit 1
               ;;
           esac
