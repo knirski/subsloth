@@ -1,5 +1,6 @@
 plugins {
     id("subsloth.kmp.android.library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -56,6 +57,10 @@ kotlin {
             implementation(project(":testing:assertions"))
             implementation(libs.coroutines.test)
             implementation(libs.turbine)
+        }
+
+        wasmJsTest.dependencies {
+            implementation(libs.coroutines.test)
         }
     }
 }
