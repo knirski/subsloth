@@ -70,7 +70,14 @@ fun MovieDetailScreen(
             }
 
             is MovieDetailUiState.Content -> {
-                MovieDetailContent(state = s, modifier = Modifier.weight(1f), onPlayClick = onPlayClick)
+                MovieDetailContent(
+                    state = s,
+                    modifier = Modifier.weight(1f),
+                    onPlayClick = onPlayClick,
+                    onFavoriteClick = viewModel::toggleFavorite,
+                    onWatchLaterClick = viewModel::toggleWatchLater,
+                    onDownloadClick = viewModel::toggleDownload,
+                )
             }
 
             is MovieDetailUiState.Error -> {
@@ -94,16 +101,40 @@ fun MovieDetailContent(
     state: MovieDetailUiState.Content,
     modifier: Modifier = Modifier,
     onPlayClick: () -> Unit = {},
+    onFavoriteClick: () -> Unit = {},
+    onWatchLaterClick: () -> Unit = {},
+    onDownloadClick: () -> Unit = {},
 ) {
     if (isLandscapeWideScreen()) {
-        MovieDetailWideLayout(state = state, modifier = modifier, onPlayClick = onPlayClick)
+        MovieDetailWideLayout(
+            state = state,
+            modifier = modifier,
+            onPlayClick = onPlayClick,
+            onFavoriteClick = onFavoriteClick,
+            onWatchLaterClick = onWatchLaterClick,
+            onDownloadClick = onDownloadClick,
+        )
     } else {
-        MovieDetailCompactLayout(state = state, modifier = modifier, onPlayClick = onPlayClick)
+        MovieDetailCompactLayout(
+            state = state,
+            modifier = modifier,
+            onPlayClick = onPlayClick,
+            onFavoriteClick = onFavoriteClick,
+            onWatchLaterClick = onWatchLaterClick,
+            onDownloadClick = onDownloadClick,
+        )
     }
 }
 
 @Composable
-private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: Modifier, onPlayClick: () -> Unit) {
+private fun MovieDetailWideLayout(
+    state: MovieDetailUiState.Content,
+    modifier: Modifier,
+    onPlayClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onWatchLaterClick: () -> Unit,
+    onDownloadClick: () -> Unit,
+) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
@@ -205,9 +236,9 @@ private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: M
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
-                onFavoriteClick = { },
-                onWatchLaterClick = { },
-                onDownloadClick = { },
+                onFavoriteClick = onFavoriteClick,
+                onWatchLaterClick = onWatchLaterClick,
+                onDownloadClick = onDownloadClick,
             )
 
             details.plot?.let { plot ->
@@ -257,7 +288,14 @@ private fun MovieDetailWideLayout(state: MovieDetailUiState.Content, modifier: M
 }
 
 @Composable
-private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier: Modifier, onPlayClick: () -> Unit) {
+private fun MovieDetailCompactLayout(
+    state: MovieDetailUiState.Content,
+    modifier: Modifier,
+    onPlayClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onWatchLaterClick: () -> Unit,
+    onDownloadClick: () -> Unit,
+) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
 
@@ -349,9 +387,9 @@ private fun MovieDetailCompactLayout(state: MovieDetailUiState.Content, modifier
                 isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
-                onFavoriteClick = { },
-                onWatchLaterClick = { },
-                onDownloadClick = { },
+                onFavoriteClick = onFavoriteClick,
+                onWatchLaterClick = onWatchLaterClick,
+                onDownloadClick = onDownloadClick,
             )
 
             details.plot?.let { plot ->

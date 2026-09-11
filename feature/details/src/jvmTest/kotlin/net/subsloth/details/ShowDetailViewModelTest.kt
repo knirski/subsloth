@@ -351,6 +351,68 @@ class ShowDetailViewModelTest {
         }
     }
 
+    @Test
+    fun `toggleFavorite adds favorite and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf<LibraryItem>()
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            addToLibrary = { item ->
+                library += item
+                Outcome.Success(Unit)
+            },
+            listLibrary = { Outcome.Success(library.toList()) },
+        )
+
+        vm.toggleFavorite()
+
+        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.FAVORITES)
+        val content = vm.uiState.value as ShowDetailUiState.Content
+        assertThat(content.isFavorite).isTrue()
+    }
+
+    @Test
+    fun `toggleFavorite removes favorite and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf(libraryItem(LibraryCollection.FAVORITES))
+        val removed = mutableListOf<Media.MediaId>()
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            listLibrary = { Outcome.Success(library.toList()) },
+            removeFromLibrary = { id ->
+                removed += id
+                library.removeAll { it.mediaId == id }
+                Outcome.Success(Unit)
+            },
+        )
+
+        vm.toggleFavorite()
+
+        assertThat(removed).containsExactly(mediaId)
+        val content = vm.uiState.value as ShowDetailUiState.Content
+        assertThat(content.isFavorite).isFalse()
+    }
+
+    @Test
+    fun `toggleWatchLater adds watch later and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf<LibraryItem>()
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showDetails) },
+            addToLibrary = { item ->
+                library += item
+                Outcome.Success(Unit)
+            },
+            listLibrary = { Outcome.Success(library.toList()) },
+        )
+
+        vm.toggleWatchLater()
+
+        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.HISTORY)
+        val content = vm.uiState.value as ShowDetailUiState.Content
+        assertThat(content.isWatchLater).isTrue()
+    }
+
     private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(
         mediaId = mediaId,
         collection = collection,

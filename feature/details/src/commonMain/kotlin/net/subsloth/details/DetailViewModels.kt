@@ -13,11 +13,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.policy.QualityPolicy
 import net.subsloth.core.domain.policy.ResumePolicy
+import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
+import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.EpisodeDetails
@@ -28,6 +33,7 @@ import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowDetails
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.ui.error.toUiError
+import kotlin.time.Clock
 
 @Stable
 sealed interface MovieDetailUiState {
@@ -79,6 +85,20 @@ class MovieDetailViewModel(
     private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
         Result.success(emptyList())
     },
+    private val addToLibrary: suspend (LibraryItem) -> Outcome<Unit> = {
+        Outcome.Success(Unit)
+    },
+    private val removeFromLibrary: suspend (Media.MediaId) -> Outcome<Unit> = {
+        Outcome.Success(Unit)
+    },
+    private val enqueueDownload: suspend (Media.MediaId, Resolution) -> Result<EnqueueOutcome> = { _, _ ->
+        Result.success(EnqueueOutcome.Queued)
+    },
+    private val removeDownload: suspend (LocalMediaIdentifier) -> Result<DownloadCommandOutcome> = {
+        Result.success(DownloadCommandOutcome.NoOp)
+    },
+    private val isTvDevice: Boolean = false,
+    private val clock: Clock = Clock.System,
 ) : ViewModel() {
     private val log = Logger.withTag("MovieDetailViewModel")
 
@@ -96,31 +116,14 @@ class MovieDetailViewModel(
                 is Outcome.Success -> {
                     val details = detailsResult.value
                     if (details is MovieDetails) {
-                        val library = when (val lib = listLibrary()) {
-                            is Outcome.Success -> lib.value
-
-                            is Outcome.Failure -> {
-                                log.w { "Failed to load library: ${lib.error}" }
-                                emptyList()
-                            }
-                        }
-                        val downloads = listDownloads().getOrElse { error ->
-                            log.w { "Failed to load downloads: $error" }
-                            emptyList()
-                        }
+                        val flags = loadFlags()
                         val progress = progressFor(mediaId)
                         _uiState.value =
                             MovieDetailUiState.Content(
                                 details = details,
-                                isFavorite = library.any {
-                                    it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
-                                },
-                                isWatchLater = library.any {
-                                    it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY
-                                },
-                                isDownloaded = downloads.any {
-                                    it.mediaId == mediaId && it is DownloadState.Completed
-                                },
+                                isFavorite = flags.isFavorite,
+                                isWatchLater = flags.isWatchLater,
+                                isDownloaded = flags.isDownloaded,
                                 progressFraction = progress?.fraction,
                             )
                     } else {
@@ -134,6 +137,105 @@ class MovieDetailViewModel(
             }
         }
     }
+
+    fun toggleFavorite() {
+        val content = _uiState.value as? MovieDetailUiState.Content ?: return
+        viewModelScope.launch {
+            val result = if (content.isFavorite) {
+                removeFromLibrary(mediaId)
+            } else {
+                addToLibrary(libraryItem(LibraryCollection.FAVORITES))
+            }
+            if (result is Outcome.Failure) {
+                log.w { "Failed to toggle favorite: ${result.error}" }
+            }
+            refreshFlags()
+        }
+    }
+
+    fun toggleWatchLater() {
+        val content = _uiState.value as? MovieDetailUiState.Content ?: return
+        viewModelScope.launch {
+            val result = if (content.isWatchLater) {
+                removeFromLibrary(mediaId)
+            } else {
+                addToLibrary(libraryItem(LibraryCollection.HISTORY))
+            }
+            if (result is Outcome.Failure) {
+                log.w { "Failed to toggle watch later: ${result.error}" }
+            }
+            refreshFlags()
+        }
+    }
+
+    fun toggleDownload() {
+        val content = _uiState.value as? MovieDetailUiState.Content ?: return
+        viewModelScope.launch {
+            if (content.isDownloaded) {
+                removeCompletedDownload()
+            } else {
+                val quality = QualityPolicy.selectDefault(content.details.qualities, isTvDevice)
+                if (quality == null) {
+                    log.w { "No downloadable quality for $mediaId" }
+                } else {
+                    enqueueDownload(mediaId, quality.info.resolution)
+                        .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
+                }
+            }
+            refreshFlags()
+        }
+    }
+
+    private suspend fun loadFlags(): DetailFlags {
+        val library = when (val lib = listLibrary()) {
+            is Outcome.Success -> lib.value
+
+            is Outcome.Failure -> {
+                log.w { "Failed to load library: ${lib.error}" }
+                emptyList()
+            }
+        }
+        val downloads = listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        }
+        return DetailFlags(
+            isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
+            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY },
+            isDownloaded = downloads.any { it.mediaId == mediaId && it is DownloadState.Completed },
+        )
+    }
+
+    private suspend fun refreshFlags() {
+        val content = _uiState.value as? MovieDetailUiState.Content ?: return
+        val flags = loadFlags()
+        _uiState.value = content.copy(
+            isFavorite = flags.isFavorite,
+            isWatchLater = flags.isWatchLater,
+            isDownloaded = flags.isDownloaded,
+        )
+    }
+
+    private suspend fun removeCompletedDownload() {
+        val completed = listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        }.firstOrNull { it.mediaId == mediaId && it is DownloadState.Completed }
+        if (completed == null) {
+            log.w { "No completed download to remove for $mediaId" }
+        } else {
+            removeDownload(completed.localId).onFailure { error ->
+                log.w(error) { "Failed to remove download" }
+            }
+        }
+    }
+
+    private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(
+        mediaId = mediaId,
+        collection = collection,
+        addedAtEpochSeconds = clock.now(),
+        sortOrder = 0,
+    )
 
     /**
      * The stored progress playback would actually resume from for
@@ -165,6 +267,13 @@ class ShowDetailViewModel(
         Result.success(emptyList())
     },
     private val listWatchedIds: suspend () -> Set<String> = { emptySet() },
+    private val addToLibrary: suspend (LibraryItem) -> Outcome<Unit> = {
+        Outcome.Success(Unit)
+    },
+    private val removeFromLibrary: suspend (Media.MediaId) -> Outcome<Unit> = {
+        Outcome.Success(Unit)
+    },
+    private val clock: Clock = Clock.System,
     private val savedState: Map<String, String> = mapOf("selectedSeason" to ""),
 ) : ViewModel() {
     private val log = Logger.withTag("ShowDetailViewModel")
@@ -187,33 +296,16 @@ class ShowDetailViewModel(
                             log.w { "Failed to load watched ids: $error" }
                             emptySet()
                         }
-                        val library = when (val lib = listLibrary()) {
-                            is Outcome.Success -> lib.value
-
-                            is Outcome.Failure -> {
-                                log.w { "Failed to load library: ${lib.error}" }
-                                emptyList()
-                            }
-                        }
-                        val downloads = listDownloads().getOrElse { error ->
-                            log.w { "Failed to load downloads: $error" }
-                            emptyList()
-                        }
+                        val flags = loadFlags()
                         val progress = resumableShowProgress(details)
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
                             ShowDetailUiState.Content(
                                 details = details,
                                 selectedSeason = restoredSeason,
-                                isFavorite = library.any {
-                                    it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
-                                },
-                                isWatchLater = library.any {
-                                    it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY
-                                },
-                                isDownloaded = downloads.any {
-                                    it.mediaId == mediaId && it is DownloadState.Completed
-                                },
+                                isFavorite = flags.isFavorite,
+                                isWatchLater = flags.isWatchLater,
+                                isDownloaded = flags.isDownloaded,
                                 progressFraction = progress?.fraction,
                                 watchedEpisodeIds = details.seasons
                                     .flatMap { season -> season.episodes }
@@ -238,6 +330,73 @@ class ShowDetailViewModel(
             if (current is ShowDetailUiState.Content) current.copy(selectedSeason = seasonNumber) else current
         }
     }
+
+    fun toggleFavorite() {
+        val content = _uiState.value as? ShowDetailUiState.Content ?: return
+        viewModelScope.launch {
+            val result = if (content.isFavorite) {
+                removeFromLibrary(mediaId)
+            } else {
+                addToLibrary(libraryItem(LibraryCollection.FAVORITES))
+            }
+            if (result is Outcome.Failure) {
+                log.w { "Failed to toggle favorite: ${result.error}" }
+            }
+            refreshFlags()
+        }
+    }
+
+    fun toggleWatchLater() {
+        val content = _uiState.value as? ShowDetailUiState.Content ?: return
+        viewModelScope.launch {
+            val result = if (content.isWatchLater) {
+                removeFromLibrary(mediaId)
+            } else {
+                addToLibrary(libraryItem(LibraryCollection.HISTORY))
+            }
+            if (result is Outcome.Failure) {
+                log.w { "Failed to toggle watch later: ${result.error}" }
+            }
+            refreshFlags()
+        }
+    }
+
+    private suspend fun loadFlags(): DetailFlags {
+        val library = when (val lib = listLibrary()) {
+            is Outcome.Success -> lib.value
+
+            is Outcome.Failure -> {
+                log.w { "Failed to load library: ${lib.error}" }
+                emptyList()
+            }
+        }
+        val downloads = listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        }
+        return DetailFlags(
+            isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
+            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY },
+            isDownloaded = downloads.any { it.mediaId == mediaId && it is DownloadState.Completed },
+        )
+    }
+
+    private suspend fun refreshFlags() {
+        val content = _uiState.value as? ShowDetailUiState.Content ?: return
+        val flags = loadFlags()
+        _uiState.value = content.copy(
+            isFavorite = flags.isFavorite,
+            isWatchLater = flags.isWatchLater,
+            isDownloaded = flags.isDownloaded,
+        )
+    }
+
+    private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(
+        mediaId = mediaId,
+        collection = collection,
+        addedAtEpochSeconds = clock.now(),
+        sortOrder = 0,
+    )
 
     /**
      * The stored progress playback would resume from for this show: the
@@ -325,3 +484,9 @@ class EpisodeDetailViewModel(
         }
     }
 }
+
+private data class DetailFlags(
+    val isFavorite: Boolean = false,
+    val isWatchLater: Boolean = false,
+    val isDownloaded: Boolean = false,
+)

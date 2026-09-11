@@ -7,13 +7,17 @@ import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.library.LibraryCollection
+import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
 import net.subsloth.database.entity.WatchLaterEntity
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 class LibraryPortAdapterTest {
     @Test
@@ -66,6 +70,50 @@ class LibraryPortAdapterTest {
             assertEquals(1, items.size)
             assertEquals(Media.MediaId.Movie(MovieId(1)), items.single().mediaId)
             assertEquals(LibraryCollection.FAVORITES, items.single().collection)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun `addToLibrary history writes watch later and reads it back`() = runTest {
+        val db = createTestDatabase()
+        try {
+            val session = signedInSession()
+            val adapter = adapter(db, session)
+
+            adapter.addToLibrary(
+                LibraryItem(
+                    mediaId = Media.MediaId.Movie(MovieId(4)),
+                    collection = LibraryCollection.HISTORY,
+                    addedAtEpochSeconds = Instant.fromEpochSeconds(0),
+                    sortOrder = 0,
+                ),
+            )
+
+            assertNotNull(db.watchLaterDao().getByProfileAndContentId("user", "4"))
+            val items = adapter.listLibrary().fold(
+                onSuccess = { it },
+                onFailure = { error("unexpected failure: $it") },
+            )
+            assertEquals(LibraryCollection.HISTORY, items.single().collection)
+            assertEquals(Media.MediaId.Movie(MovieId(4)), items.single().mediaId)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun `removeFromLibrary removes watch later row`() = runTest {
+        val db = createTestDatabase()
+        try {
+            val session = signedInSession()
+            db.watchLaterDao().upsert(watchLater(profileKey = "user", contentId = "2"))
+            val adapter = adapter(db, session)
+
+            adapter.removeFromLibrary(Media.MediaId.Movie(MovieId(2)))
+
+            assertNull(db.watchLaterDao().getByProfileAndContentId("user", "2"))
         } finally {
             db.close()
         }

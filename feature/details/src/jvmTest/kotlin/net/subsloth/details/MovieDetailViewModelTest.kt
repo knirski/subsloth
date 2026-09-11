@@ -8,8 +8,10 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.LibraryError
@@ -343,6 +345,104 @@ class MovieDetailViewModelTest {
             assertThat(content.details.title).isEqualTo("Test Movie")
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `toggleFavorite adds favorite and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf<LibraryItem>()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            addToLibrary = { item ->
+                library += item
+                Outcome.Success(Unit)
+            },
+            listLibrary = { Outcome.Success(library.toList()) },
+        )
+
+        viewModel.toggleFavorite()
+
+        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.FAVORITES)
+        val content = viewModel.uiState.value as MovieDetailUiState.Content
+        assertThat(content.isFavorite).isTrue()
+    }
+
+    @Test
+    fun `toggleFavorite removes favorite and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf(libraryItem(LibraryCollection.FAVORITES))
+        val removed = mutableListOf<Media.MediaId>()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listLibrary = { Outcome.Success(library.toList()) },
+            removeFromLibrary = { id ->
+                removed += id
+                library.removeAll { it.mediaId == id }
+                Outcome.Success(Unit)
+            },
+        )
+
+        viewModel.toggleFavorite()
+
+        assertThat(removed).containsExactly(Media.MediaId.Movie(MovieId(1)))
+        val content = viewModel.uiState.value as MovieDetailUiState.Content
+        assertThat(content.isFavorite).isFalse()
+    }
+
+    @Test
+    fun `toggleWatchLater adds watch later and updates state`() = runTest(testDispatcher) {
+        val library = mutableListOf<LibraryItem>()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            addToLibrary = { item ->
+                library += item
+                Outcome.Success(Unit)
+            },
+            listLibrary = { Outcome.Success(library.toList()) },
+        )
+
+        viewModel.toggleWatchLater()
+
+        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.HISTORY)
+        val content = viewModel.uiState.value as MovieDetailUiState.Content
+        assertThat(content.isWatchLater).isTrue()
+    }
+
+    @Test
+    fun `toggleDownload enqueues default capped quality`() = runTest(testDispatcher) {
+        val requested = mutableListOf<Resolution>()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            enqueueDownload = { _, resolution ->
+                requested += resolution
+                Result.success(EnqueueOutcome.Queued)
+            },
+        )
+
+        viewModel.toggleDownload()
+
+        assertThat(requested).containsExactly(Resolution(1920, 1080))
+    }
+
+    @Test
+    fun `toggleDownload removes completed download`() = runTest(testDispatcher) {
+        val removed = mutableListOf<LocalMediaIdentifier>()
+        val download = completedDownload()
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listDownloads = { Result.success(listOf(download)) },
+            removeDownload = { localId ->
+                removed += localId
+                Result.success(DownloadCommandOutcome.Applied)
+            },
+        )
+
+        viewModel.toggleDownload()
+
+        assertThat(removed).containsExactly(download.localId)
     }
 
     private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(

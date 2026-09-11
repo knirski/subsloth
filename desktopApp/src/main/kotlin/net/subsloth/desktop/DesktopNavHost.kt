@@ -132,6 +132,12 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 listLibrary = { container.libraryPortAdapter.listLibrary() },
                                 listDownloads = { container.downloadController.listDownloads() },
                                 listProgress = container::listAccountPlaybackProgress,
+                                addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
+                                removeFromLibrary = { id -> container.libraryPortAdapter.removeFromLibrary(id) },
+                                enqueueDownload = { id, resolution ->
+                                    container.downloadController.enqueue(id, resolution)
+                                },
+                                removeDownload = { localId -> container.downloadController.remove(localId) },
                             )
                         }
                         MovieDetailScreen(
@@ -159,6 +165,8 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 listLibrary = { container.libraryPortAdapter.listLibrary() },
                                 listDownloads = { container.downloadController.listDownloads() },
                                 listProgress = container::listAccountPlaybackProgress,
+                                addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
+                                removeFromLibrary = { id -> container.libraryPortAdapter.removeFromLibrary(id) },
                             )
                         }
                         SeriesDetailScreen(
