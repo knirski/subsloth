@@ -14,5 +14,18 @@ kotlin {
             // by the API-validated session state's test-support engine override.
             implementation(libs.ktor.client.core)
         }
+
+        jvmTest.dependencies {
+            implementation(project(":testing:assertions"))
+            implementation(libs.ktor.client.mock)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
+            implementation(libs.room3.runtime)
+            implementation(libs.sqlite.bundled)
+            implementation(libs.datastore.preferences)
+        }
     }
 }
