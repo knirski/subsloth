@@ -60,18 +60,18 @@ class MockApiTest {
     @Test
     fun library_mutations_are_observable() {
         val initial = MockApi.listLibrary().getOrNull() ?: error("expected success")
-        val beforeCount = initial.count { it.collection == LibraryCollection.HISTORY }
+        val beforeCount = initial.count { it.collection == LibraryCollection.WATCH_LATER }
 
-        MockApi.addToLibrary(Media.MediaId.Movie(MovieId(7)), LibraryCollection.HISTORY)
+        MockApi.addToLibrary(Media.MediaId.Movie(MovieId(7)), LibraryCollection.WATCH_LATER)
             .getOrNull() ?: error("expected success")
 
         val after = MockApi.listLibrary().getOrNull() ?: error("expected success")
-        val afterCount = after.count { it.collection == LibraryCollection.HISTORY }
+        val afterCount = after.count { it.collection == LibraryCollection.WATCH_LATER }
         assertEquals(beforeCount + 1, afterCount)
         assertTrue(
             after.any {
                 it.mediaId == Media.MediaId.Movie(MovieId(7)) &&
-                    it.collection == LibraryCollection.HISTORY
+                    it.collection == LibraryCollection.WATCH_LATER
             },
         )
     }

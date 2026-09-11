@@ -158,7 +158,7 @@ class MovieDetailViewModel(
             val result = if (content.isWatchLater) {
                 removeFromLibrary(mediaId)
             } else {
-                addToLibrary(libraryItem(LibraryCollection.HISTORY))
+                addToLibrary(libraryItem(LibraryCollection.WATCH_LATER))
             }
             if (result is Outcome.Failure) {
                 log.w { "Failed to toggle watch later: ${result.error}" }
@@ -200,7 +200,7 @@ class MovieDetailViewModel(
         }
         return DetailFlags(
             isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
-            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY },
+            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.WATCH_LATER },
             isDownloaded = downloads.any { it.mediaId == mediaId && it is DownloadState.Completed },
         )
     }
@@ -347,7 +347,7 @@ class ShowDetailViewModel(
             val result = if (content.isWatchLater) {
                 removeFromLibrary(mediaId)
             } else {
-                addToLibrary(libraryItem(LibraryCollection.HISTORY))
+                addToLibrary(libraryItem(LibraryCollection.WATCH_LATER))
             }
             if (result is Outcome.Failure) {
                 log.w { "Failed to toggle watch later: ${result.error}" }
@@ -367,7 +367,7 @@ class ShowDetailViewModel(
         }
         return DetailFlags(
             isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
-            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY },
+            isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.WATCH_LATER },
         )
     }
 

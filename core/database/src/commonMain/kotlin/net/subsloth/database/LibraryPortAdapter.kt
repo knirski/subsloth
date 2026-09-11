@@ -62,9 +62,13 @@ class LibraryPortAdapter(
                 FavoriteEntity(profileKey = key, contentId = contentId, contentType = contentType),
             )
 
-            LibraryCollection.HISTORY -> watchLaterDao.upsert(
+            LibraryCollection.WATCH_LATER -> watchLaterDao.upsert(
                 WatchLaterEntity(profileKey = key, contentId = contentId, contentType = contentType),
             )
+
+            LibraryCollection.HISTORY -> {
+                // HISTORY collection is managed by playback progress tracking.
+            }
 
             LibraryCollection.CUSTOM -> localLibraryDao.upsert(
                 LocalLibraryRecordEntity(
@@ -132,7 +136,7 @@ class LibraryPortAdapter(
 
     private fun WatchLaterEntity.toLibraryItem(): LibraryItem = LibraryItem(
         mediaId = parseMediaId(contentId, contentType),
-        collection = LibraryCollection.HISTORY,
+        collection = LibraryCollection.WATCH_LATER,
         addedAtEpochSeconds = Instant.fromEpochSeconds(0),
         sortOrder = id.toInt(),
     )
