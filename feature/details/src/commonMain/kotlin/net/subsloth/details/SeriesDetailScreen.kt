@@ -415,18 +415,16 @@ private fun ShowDetailActionButtons(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        val progressPercent = progressFraction?.let { (it * 100).toInt() }
+        val playLabel = when (val action = detailPlayAction(progressFraction)) {
+            is DetailPlayAction.Play -> stringResource(Res.string.detail_play)
+            is DetailPlayAction.Resume -> stringResource(Res.string.detail_resume)
+            is DetailPlayAction.ResumeAt -> stringResource(Res.string.detail_resume_play, action.percent)
+        }
         Button(
             onClick = onPlayClick,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                text = if (progressPercent != null && progressPercent > 0) {
-                    stringResource(Res.string.detail_resume_play, progressPercent)
-                } else {
-                    stringResource(Res.string.detail_play)
-                },
-            )
+            Text(text = playLabel)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
