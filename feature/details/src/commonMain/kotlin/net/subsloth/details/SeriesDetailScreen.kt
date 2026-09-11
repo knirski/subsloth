@@ -541,7 +541,7 @@ private fun SeasonDownloadButton(
 ) {
     OutlinedButton(
         onClick = onDownloadClick,
-        enabled = state == SeasonDownloadState.Idle,
+        enabled = state != SeasonDownloadState.Queued && state != SeasonDownloadState.Downloading,
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
@@ -549,8 +549,8 @@ private fun SeasonDownloadButton(
                 SeasonDownloadState.Idle -> stringResource(Res.string.detail_download_season)
                 SeasonDownloadState.Queued -> stringResource(Res.string.detail_download_season_queued)
                 SeasonDownloadState.Downloading -> stringResource(Res.string.detail_download_season_downloading)
-                SeasonDownloadState.Completed -> stringResource(Res.string.detail_download_season_completed)
-                SeasonDownloadState.Failed -> stringResource(Res.string.detail_download_season_failed)
+                SeasonDownloadState.Completed -> stringResource(Res.string.detail_download_season_again)
+                SeasonDownloadState.Failed -> stringResource(Res.string.detail_download_season_retry)
             },
             style = MaterialTheme.typography.labelMedium,
             maxLines = 1,

@@ -31,9 +31,17 @@ class SeasonQueueController(
     private val seasonQueueDao: SeasonQueueDao,
     private val clock: Clock,
 ) {
-    suspend fun listQueues(): List<SeasonDownloadQueue> = seasonQueueDao.getAllQueues().first().map { entity ->
-        val items = seasonQueueDao.getItemsForQueue(entity.id)
-        entity.toDomain(items)
+    suspend fun listQueues(): List<SeasonDownloadQueue> {
+        // Completed queues exist only for UI bookkeeping; prune them once
+        // they are old enough that the show screen no longer needs the
+        // "completed" affordance.
+        seasonQueueDao.deleteCompletedQueuesOlderThan(
+            clock.now().epochSeconds - COMPLETED_QUEUE_RETENTION_SECONDS,
+        )
+        return seasonQueueDao.getAllQueues().first().map { entity ->
+            val items = seasonQueueDao.getItemsForQueue(entity.id)
+            entity.toDomain(items)
+        }
     }
 
     suspend fun createQueue(
@@ -319,6 +327,11 @@ class SeasonQueueController(
             },
             transferPreference = TransferPreference.WifiOnly,
         )
+    }
+
+    private companion object {
+        /** How long completed queues are kept for the show screen's state. */
+        const val COMPLETED_QUEUE_RETENTION_SECONDS = 7L * 24 * 60 * 60
     }
 }
 

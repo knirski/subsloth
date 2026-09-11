@@ -22,8 +22,8 @@
     <string name="detail_download_season">Download season</string>
     <string name="detail_download_season_queued">Season queued</string>
     <string name="detail_download_season_downloading">Downloading season…</string>
-    <string name="detail_download_season_completed">Season downloaded</string>
-    <string name="detail_download_season_failed">Season download failed</string>
+    <string name="detail_download_season_again">Download again</string>
+    <string name="detail_download_season_retry">Retry season download</string>
     <string name="detail_download_season_title">Download season %1$d?</string>
     <string name="detail_download_season_message">%1$d episodes will be queued for download.</string>
     <string name="detail_download_season_confirm">Download</string>

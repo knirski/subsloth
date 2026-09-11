@@ -38,3 +38,16 @@ fun seasonDownloadState(queues: List<SeasonDownloadQueue>, seasonNumber: Int): S
             -> SeasonDownloadState.Failed
         }
     } ?: SeasonDownloadState.Idle
+
+/** True while [this] queue can still make progress without user action. */
+internal fun SeasonDownloadQueue.isActive(): Boolean = when (execution) {
+    SeasonQueueExecution.PendingConfirmation,
+    SeasonQueueExecution.Queued,
+    is SeasonQueueExecution.Running,
+    -> true
+
+    SeasonQueueExecution.Completed,
+    is SeasonQueueExecution.Paused,
+    is SeasonQueueExecution.Failed,
+    -> false
+}

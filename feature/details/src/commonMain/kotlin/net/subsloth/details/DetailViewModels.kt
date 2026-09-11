@@ -8,6 +8,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -317,6 +318,9 @@ class ShowDetailViewModel(
                                     .toImmutableList(),
                                 seasonQueues = seasonQueues.toImmutableList(),
                             )
+                        if (seasonQueues.any { it.isActive() }) {
+                            awaitSeasonQueuesTerminal()
+                        }
                     } else {
                         _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
@@ -336,18 +340,20 @@ class ShowDetailViewModel(
     }
 
     /**
-     * Queues every episode of the selected season for download. No-op while
-     * a queue for the season is already active or when the season has no
-     * episodes.
+     * Queues every episode of the selected season for download. Re-queues
+     * when the previous queue completed or failed; no-op while a queue for
+     * the season is still active or when the season has no episodes.
      */
     fun downloadSeason() {
         val content = _uiState.value as? ShowDetailUiState.Content ?: return
-        if (seasonDownloadState(content.seasonQueues, content.selectedSeason) != SeasonDownloadState.Idle) return
+        val current = seasonDownloadState(content.seasonQueues, content.selectedSeason)
+        if (current == SeasonDownloadState.Queued || current == SeasonDownloadState.Downloading) return
         val season = content.details.seasons.firstOrNull { it.seasonNumber == content.selectedSeason } ?: return
         if (season.episodes.isEmpty()) return
         viewModelScope.launch {
             startSeasonDownload(content.selectedSeason, season.episodes.toImmutableList())
             refreshSeasonQueues()
+            awaitSeasonQueuesTerminal()
         }
     }
 
@@ -360,6 +366,21 @@ class ShowDetailViewModel(
     private suspend fun refreshSeasonQueues() {
         val content = _uiState.value as? ShowDetailUiState.Content ?: return
         _uiState.value = content.copy(seasonQueues = loadSeasonQueues().toImmutableList())
+    }
+
+    /**
+     * Refreshes the queue list while any queue is still active so the show
+     * button tracks progress without leaving the screen. Gives up after
+     * [MAX_QUEUE_POLLS] to avoid polling a queue that never advances (the
+     * web tier keeps queues queued without a transfer worker).
+     */
+    private suspend fun awaitSeasonQueuesTerminal() {
+        repeat(MAX_QUEUE_POLLS) {
+            delay(QUEUE_POLL_INTERVAL_MS)
+            refreshSeasonQueues()
+            val content = _uiState.value as? ShowDetailUiState.Content ?: return
+            if (content.seasonQueues.none { it.isActive() }) return
+        }
     }
 
     fun toggleFavorite() {
@@ -448,6 +469,11 @@ class ShowDetailViewModel(
         val parsed = saved.toIntOrNull()
         if (parsed != null && seasons.any { it.seasonNumber == parsed }) return parsed
         return seasons.minOfOrNull { it.seasonNumber } ?: 1
+    }
+
+    private companion object {
+        const val QUEUE_POLL_INTERVAL_MS = 2_000L
+        const val MAX_QUEUE_POLLS = 900
     }
 }
 
