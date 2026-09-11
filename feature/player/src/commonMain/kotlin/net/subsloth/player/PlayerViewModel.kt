@@ -151,7 +151,11 @@ class PlayerViewModel(
                     if (isAuth) {
                         saveProgressAndRouteToAuthRepair()
                     }
-                    _uiState.value = PlayerUiState.Content(
+                    val previous = _uiState.value as? PlayerUiState.Content
+                    _uiState.value = previous?.copy(
+                        isPlaying = false,
+                        playbackError = playbackError,
+                    ) ?: PlayerUiState.Content(
                         title = "", positionSeconds = 0, durationSeconds = 0, isPlaying = false,
                         playbackSpeed = PlaybackSpeedPolicy.defaultSpeed(),
                         selectedSubtitle = null, availableSubtitles = persistentListOf(),

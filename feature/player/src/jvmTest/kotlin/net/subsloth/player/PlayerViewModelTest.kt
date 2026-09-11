@@ -154,6 +154,29 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `failed retry keeps in-session position`() = runTest(testDispatcher) {
+        var fail = false
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = {
+                    if (fail) {
+                        Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+                    } else {
+                        Outcome.Success(createVideoSource())
+                    }
+                },
+            )
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 500, durationSeconds = 3600))
+
+        fail = true
+        viewModel.retryPlayback()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(500)
+        assertThat(state.playbackError).isNotNull()
+    }
+
+    @Test
     fun `retry keeps in-session position over stored progress`() = runTest(testDispatcher) {
         val viewModel =
             createViewModel(
