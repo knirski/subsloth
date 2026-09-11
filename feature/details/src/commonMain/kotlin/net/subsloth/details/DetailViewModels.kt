@@ -175,12 +175,12 @@ class MovieDetailViewModel(
                 removeCompletedDownload()
             } else {
                 val quality = QualityPolicy.selectDefault(content.details.qualities, isTvDevice)
-                if (quality == null) {
-                    log.w { "No downloadable quality for $mediaId" }
-                } else {
-                    enqueueDownload(mediaId, quality.info.resolution)
-                        .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
-                }
+                // Items without per-quality variants only expose a top-level
+                // download URL, so enqueue a nominal resolution; the transfer
+                // resolver prefers the top-level URL and ignores this label.
+                val resolution = quality?.info?.resolution ?: Resolution.HD_720
+                enqueueDownload(mediaId, resolution)
+                    .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
             }
             refreshFlags()
         }
