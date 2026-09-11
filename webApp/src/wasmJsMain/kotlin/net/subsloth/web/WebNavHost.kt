@@ -286,7 +286,11 @@ private fun MovieDetailContent(
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: MovieDetailViewModel = viewModel(key = "movie_detail_${movieId.value.value}") {
-            MovieDetailViewModel(mediaId = movieId, getDetails = { runtime.getDetails(it) })
+            MovieDetailViewModel(
+                mediaId = movieId,
+                getDetails = { runtime.getDetails(it) },
+                listProgress = { runtime.listAccountPlaybackProgress() },
+            )
         }
         MovieDetailScreen(
             viewModel = vm,
@@ -317,6 +321,7 @@ private fun ShowDetailContent(
             ShowDetailViewModel(
                 mediaId = showId,
                 getDetails = { runtime.getDetails(it) },
+                listProgress = { runtime.listAccountPlaybackProgress() },
                 listWatchedIds = { runtime.listWatchedContentIds() },
             )
         }

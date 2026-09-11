@@ -21,10 +21,12 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.SubtitleFormat
+import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieDetailViewModelTest {
@@ -169,4 +171,97 @@ class MovieDetailViewModelTest {
             assertThat(content.details.description?.contains("comment", ignoreCase = true) != true).isTrue()
         }
     }
+
+    @Test
+    fun `shows resume fraction from matching stored progress`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listProgress = { Result.success(listOf(progress(positionSeconds = 600, durationSeconds = 3600))) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.progressFraction).isEqualTo(600.0 / 3600.0)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ignores progress of other media`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(
+                            mediaId = Media.MediaId.Movie(MovieId(2)),
+                            positionSeconds = 600,
+                            durationSeconds = 3600,
+                        ),
+                    ),
+                )
+            },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ignores progress below resume threshold`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listProgress = { Result.success(listOf(progress(positionSeconds = 25, durationSeconds = 3600))) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ignores near-finished progress`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listProgress = { Result.success(listOf(progress(positionSeconds = 3500, durationSeconds = 3600))) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `progress failure still renders content without resume fraction`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listProgress = { Result.failure(IllegalStateException("progress unavailable")) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.progressFraction).isNull()
+            assertThat(content.details.title).isEqualTo("Test Movie")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun progress(
+        mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
+        positionSeconds: Long,
+        durationSeconds: Long,
+    ): PlaybackProgress = PlaybackProgress(
+        mediaId = mediaId,
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(0),
+        isWatched = false,
+    )
 }
