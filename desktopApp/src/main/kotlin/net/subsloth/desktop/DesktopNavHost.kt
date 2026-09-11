@@ -403,6 +403,7 @@ private fun PlayerContent(
                 loadPreferredLanguage = container::loadPreferredLanguage,
                 resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                 fetchSubtitleText = container::fetchSubtitleText,
+                externalScope = container.externalScope,
             )
         }
         PlayerScreen(

@@ -580,6 +580,7 @@ private fun PlayerContent(
                 loadPreferredLanguage = { runtime.loadPreferredLanguage() },
                 resolveShowIdForEpisode = { runtime.resolveShowIdForEpisode(it) },
                 fetchSubtitleText = { runtime.fetchSubtitleText(it) },
+                externalScope = runtime.externalScope,
             )
         }
         PlayerScreen(

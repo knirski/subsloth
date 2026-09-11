@@ -303,6 +303,7 @@ fun SubSlothNavHost(
                                         loadPreferredLanguage = container::loadPreferredLanguage,
                                         resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                                         fetchSubtitleText = container::fetchSubtitleText,
+                                        externalScope = container.externalScope,
                                     ),
                                 ),
                             )

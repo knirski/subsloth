@@ -134,6 +134,13 @@ class DesktopContainer(dataDirOverride: File? = null) {
     private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
+     * Read-only view of [containerScope] for work that must outlive a
+     * ViewModel — e.g. the player's final progress flush, which runs after
+     * AndroidX has already cancelled `viewModelScope`.
+     */
+    val externalScope: CoroutineScope get() = containerScope
+
+    /**
      * App data directory (`~/.local/share/subsloth` on Linux/macOS, `%APPDATA%\subsloth` on
      * Windows). Created eagerly: SQLite does not create missing parent directories, so the
      * first database operation would fail on a fresh install otherwise.

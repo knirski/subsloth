@@ -2,6 +2,7 @@ package net.subsloth.web
 
 import kotlinx.browser.window
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.flow.Flow
 import net.subsloth.catalog.HomeViewModel
@@ -61,6 +62,9 @@ interface WebRuntime {
     // ── Player ──────────────────────────────────────────────────────────
 
     val playbackPort: PlaybackPort
+
+    /** Page-lifetime scope for work that must outlive a ViewModel (final progress flush). */
+    val externalScope: CoroutineScope
 
     suspend fun fetchEpisodesForShow(showId: ShowId): Outcome<List<Episode>>
 

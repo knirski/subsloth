@@ -2,6 +2,9 @@ package net.subsloth.web
 
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,6 +70,9 @@ private enum class MockVideoAsset(
 /** The fixture-backed runtime used by the publicly deployed GitHub Pages demo. */
 class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
     private val log = Logger.withTag("WebDemoRuntime")
+
+    /** Page-lifetime scope for work that must outlive a ViewModel (final progress flush). */
+    override val externalScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override suspend fun listCatalog(): Outcome<List<Media>> = try {
         val movies = Mapper.mapMovies(api.listMovies().movies).items
