@@ -22,11 +22,31 @@ object ApiBaseUrlPolicy {
     /**
      * Resolves the API base URL from the raw [stored] preference value and
      * the [configured] build-time override, both of which may be `null`,
-     * absent, or blank.
+     * absent, or blank. The resolved value is normalized with [normalize].
      */
-    fun resolve(stored: String?, configured: String?): String = when {
-        !stored.isNullOrBlank() -> stored
-        !configured.isNullOrBlank() -> configured
-        else -> LoginDefaults.DEFAULT_API_BASE_URL
+    fun resolve(stored: String?, configured: String?): String = normalize(
+        when {
+            !stored.isNullOrBlank() -> stored
+            !configured.isNullOrBlank() -> configured
+            else -> LoginDefaults.DEFAULT_API_BASE_URL
+        },
+    )
+
+    /**
+     * Normalizes [url] for use as a base URL by trimming surrounding
+     * whitespace and ensuring a single trailing `/`.
+     *
+     * Ktor resolves relative request paths against a base URL by replacing
+     * the base's last path segment when the base does not end in `/` — a
+     * base like `https://host/api/v2` therefore turns `movies` into
+     * `/api/movies` instead of `/api/v2/movies`. Requiring the trailing
+     * slash keeps the whole base path.
+     *
+     * A blank [url] falls back to [LoginDefaults.DEFAULT_API_BASE_URL].
+     */
+    fun normalize(url: String?): String {
+        val trimmed = url?.trim().orEmpty()
+        if (trimmed.isEmpty()) return LoginDefaults.DEFAULT_API_BASE_URL
+        return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
     }
 }
