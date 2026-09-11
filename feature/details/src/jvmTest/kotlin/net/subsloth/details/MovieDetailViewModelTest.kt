@@ -9,12 +9,18 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.error.DecodeError
+import net.subsloth.core.model.error.LibraryError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.UiError
 import net.subsloth.core.model.identifier.LanguageCode
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
+import net.subsloth.core.model.library.LibraryCollection
+import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieDetails
 import net.subsloth.core.model.media.Quality
@@ -81,6 +87,13 @@ class MovieDetailViewModelTest {
             posterUrl = "https://example.com/poster.jpg",
             backdropUrl = null,
         )
+
+    private val sampleQuality = QualityDescriptor(
+        resolution = Resolution(1920, 1080),
+        label = "1080p",
+        bitrate = null,
+        mimeType = null,
+    )
 
     @Test
     fun `loads movie details on init`() = runTest(testDispatcher) {
@@ -252,6 +265,101 @@ class MovieDetailViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `favorite flag reflects favorites membership`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.FAVORITES))) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.isFavorite).isTrue()
+            assertThat(content.isWatchLater).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `watch later flag reflects history membership`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.HISTORY))) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.isWatchLater).isTrue()
+            assertThat(content.isFavorite).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `downloaded flag reflects completed download`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listDownloads = { Result.success(listOf(completedDownload())) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.isDownloaded).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `in-progress download does not set downloaded flag`() = runTest(testDispatcher) {
+        val queued = DownloadState.Queued(
+            localId = LocalMediaIdentifier("movie-1"),
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            quality = sampleQuality,
+        )
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listDownloads = { Result.success(listOf(queued)) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.isDownloaded).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `library failure keeps content with flags false`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listLibrary = { Outcome.Failure(LibraryError.NotSupported) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.isFavorite).isFalse()
+            assertThat(content.isWatchLater).isFalse()
+            assertThat(content.details.title).isEqualTo("Test Movie")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(
+        mediaId = Media.MediaId.Movie(MovieId(1)),
+        collection = collection,
+        addedAtEpochSeconds = Instant.fromEpochSeconds(0),
+        sortOrder = 1,
+    )
+
+    private fun completedDownload(): DownloadState.Completed = DownloadState.Completed(
+        localId = LocalMediaIdentifier("movie-1"),
+        mediaId = Media.MediaId.Movie(MovieId(1)),
+        quality = sampleQuality,
+        downloadedAtEpochSeconds = Instant.fromEpochSeconds(0),
+        sizeBytes = 1024,
+        videoPath = OfflineRelativePath.safe("videos/movie-1.mp4"),
+    )
 
     private fun progress(
         mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),

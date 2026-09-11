@@ -115,6 +115,9 @@ class MovieDetailViewModel(
                                 isFavorite = library.any {
                                     it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
                                 },
+                                isWatchLater = library.any {
+                                    it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY
+                                },
                                 isDownloaded = downloads.any {
                                     it.mediaId == mediaId && it is DownloadState.Completed
                                 },
@@ -204,6 +207,9 @@ class ShowDetailViewModel(
                                 selectedSeason = restoredSeason,
                                 isFavorite = library.any {
                                     it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES
+                                },
+                                isWatchLater = library.any {
+                                    it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY
                                 },
                                 isDownloaded = downloads.any {
                                     it.mediaId == mediaId && it is DownloadState.Completed

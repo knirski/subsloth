@@ -289,6 +289,8 @@ private fun MovieDetailContent(
             MovieDetailViewModel(
                 mediaId = movieId,
                 getDetails = { runtime.getDetails(it) },
+                listLibrary = { runtime.listLibrary() },
+                listDownloads = { runtime.listDownloads() },
                 listProgress = { runtime.listAccountPlaybackProgress() },
             )
         }
@@ -321,6 +323,8 @@ private fun ShowDetailContent(
             ShowDetailViewModel(
                 mediaId = showId,
                 getDetails = { runtime.getDetails(it) },
+                listLibrary = { runtime.listLibrary() },
+                listDownloads = { runtime.listDownloads() },
                 listProgress = { runtime.listAccountPlaybackProgress() },
                 listWatchedIds = { runtime.listWatchedContentIds() },
             )

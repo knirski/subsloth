@@ -16,17 +16,20 @@ import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
+import net.subsloth.database.entity.WatchLaterEntity
 import kotlin.time.Instant
 
 /**
  * Production implementation of [LibraryPort].
  *
- * Persists favorites to the [FavoriteDao] table and custom-library items
- * to the [LocalLibraryRecordDao] table, both scoped by the active
- * session's user profile key.
+ * Persists favorites to the [FavoriteDao] table, watch-later items to the
+ * [WatchLaterDao] table, and custom-library items to the
+ * [LocalLibraryRecordDao] table, all scoped by the active session's user
+ * profile key.
  */
 class LibraryPortAdapter(
     private val favoriteDao: net.subsloth.database.dao.FavoriteDao,
+    private val watchLaterDao: net.subsloth.database.dao.WatchLaterDao,
     private val localLibraryDao: net.subsloth.database.dao.LocalLibraryRecordDao,
     private val sessionPort: SessionPort,
 ) : LibraryPort {
@@ -40,8 +43,9 @@ class LibraryPortAdapter(
     override suspend fun listLibrary(): Outcome<List<LibraryItem>> = try {
         val key = profileKey()
         val favorites = favoriteDao.getAllForProfile(key).first().map { it.toLibraryItem() }
+        val watchLater = watchLaterDao.getAllForProfile(key).first().map { it.toLibraryItem() }
         val custom = localLibraryDao.getAllForProfile(key).first().map { it.toLibraryItem() }
-        Outcome.Success(favorites + custom)
+        Outcome.Success(favorites + watchLater + custom)
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -119,6 +123,13 @@ class LibraryPortAdapter(
     private fun FavoriteEntity.toLibraryItem(): LibraryItem = LibraryItem(
         mediaId = parseMediaId(contentId, contentType),
         collection = LibraryCollection.FAVORITES,
+        addedAtEpochSeconds = Instant.fromEpochSeconds(0),
+        sortOrder = id.toInt(),
+    )
+
+    private fun WatchLaterEntity.toLibraryItem(): LibraryItem = LibraryItem(
+        mediaId = parseMediaId(contentId, contentType),
+        collection = LibraryCollection.HISTORY,
         addedAtEpochSeconds = Instant.fromEpochSeconds(0),
         sortOrder = id.toInt(),
     )

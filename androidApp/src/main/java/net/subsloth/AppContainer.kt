@@ -292,6 +292,7 @@ class AppContainer(context: Context) {
     val libraryPortAdapter: LibraryPortAdapter by lazy {
         LibraryPortAdapter(
             favoriteDao = database.favoriteDao(),
+            watchLaterDao = database.watchLaterDao(),
             localLibraryDao = database.localLibraryRecordDao(),
             sessionPort = sessionPort,
         )

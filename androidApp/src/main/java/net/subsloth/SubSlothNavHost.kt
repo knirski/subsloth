@@ -151,6 +151,8 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds it
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        listLibrary = { container.libraryPortAdapter.listLibrary() },
+                                        listDownloads = { container.downloadController.listDownloads() },
                                         listProgress = { container.listAccountPlaybackProgress() },
                                     ),
                                 ),
@@ -182,6 +184,8 @@ fun SubSlothNavHost(
                                         // (not captured once) since AppContainer rebuilds it
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                        listLibrary = { container.libraryPortAdapter.listLibrary() },
+                                        listDownloads = { container.downloadController.listDownloads() },
                                         listProgress = { container.listAccountPlaybackProgress() },
                                         listWatchedIds = { container.listWatchedContentIds() },
                                     ),
