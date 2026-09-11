@@ -71,6 +71,31 @@ composeCompiler {
 // gradlew forwards ORG_GRADLE_PROJECT_* vars to the daemon as project
 // properties regardless of when the daemon was started.  Without this,
 // the daemon would need a restart after entering the nix-shell.
+// Package version follows the nearest v* release tag, mirroring the Android
+// app's versionName resolution. CI passes -PsubslothVersion=<x.y.z> from the
+// tag it is uploading to so the .deb metadata always matches the release.
+val desktopAppVersion: String by lazy {
+    val fromProperty = providers.gradleProperty("subslothVersion").orNull?.trim()
+    if (!fromProperty.isNullOrBlank()) {
+        return@lazy fromProperty
+    }
+    val tag: String =
+        try {
+            providers
+                .exec {
+                    workingDir = rootProject.projectDir
+                    commandLine("git", "describe", "--tags", "--abbrev=0", "--match=v*")
+                    isIgnoreExitValue = true
+                }.standardOutput.asText
+                .get()
+                .trim()
+                .removePrefix("v")
+        } catch (_: Exception) {
+            ""
+        }
+    tag.ifBlank { "0.0.1" }
+}
+
 val desktopLibPath = providers.gradleProperty("desktopLibPath").orNull
 
 compose.desktop {
@@ -84,7 +109,7 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
             )
             packageName = "SubSloth"
-            packageVersion = "1.0.0"
+            packageVersion = desktopAppVersion
             description = "SubSloth Media Browser"
             vendor = "SubSloth"
 

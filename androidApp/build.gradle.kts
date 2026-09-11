@@ -1,8 +1,22 @@
+import java.io.File
+
 plugins {
     id("subsloth.android.application.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     alias(libs.plugins.compose.screenshot)
 }
+
+// Release-APK signing. CI can inject a real release keystore through
+// ANDROID_KEYSTORE_PATH + ANDROID_KEYSTORE_PASSWORD + ANDROID_KEY_ALIAS +
+// ANDROID_KEY_PASSWORD; when that is absent (local builds, unconfigured CI)
+// the standard Android debug keystore is used as a fallback so the release
+// APK stays installable.
+val releaseKeystorePath: String? = System.getenv("ANDROID_KEYSTORE_PATH")
+val releaseKeystorePassword: String? = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = System.getenv("ANDROID_KEY_ALIAS")
+val releaseKeyPassword: String? = System.getenv("ANDROID_KEY_PASSWORD")
+val debugKeystoreAlias = "androiddebugkey"
+val debugKeystorePassword = "android"
 
 val appVersionName: String by lazy {
     val tag: String =
@@ -46,6 +60,30 @@ android {
 
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
+    signingConfigs {
+        val configuredKeystore = releaseKeystorePath?.let { File(it) }?.takeIf { it.exists() }
+        val debugKeystore = File(System.getProperty("user.home"), ".android/debug.keystore")
+        val keystore = configuredKeystore ?: debugKeystore.takeIf { it.exists() }
+        if (keystore != null) {
+            create("release") {
+                storeFile = keystore
+                storePassword =
+                    if (keystore == configuredKeystore) {
+                        releaseKeystorePassword
+                    } else {
+                        debugKeystorePassword
+                    }
+                keyAlias = if (keystore == configuredKeystore) releaseKeyAlias else debugKeystoreAlias
+                keyPassword =
+                    if (keystore == configuredKeystore) {
+                        releaseKeyPassword
+                    } else {
+                        debugKeystorePassword
+                    }
+            }
+        }
+    }
+
     buildFeatures {
         buildConfig = true
     }
@@ -63,6 +101,7 @@ android {
 
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
