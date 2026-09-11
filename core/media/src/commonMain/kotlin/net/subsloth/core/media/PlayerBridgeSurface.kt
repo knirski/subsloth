@@ -22,13 +22,13 @@ import kotlinx.coroutines.isActive
 /** Poll interval mirroring the underlying player's ~250 ms position updates. */
 private const val SNAPSHOT_POLL_INTERVAL_MS = 250L
 
-/** How long a direct unmuted `play()` gets to start before the muted retry. */
-private const val AUTOPLAY_DIRECT_WAIT_ATTEMPTS = 20
-private const val AUTOPLAY_DIRECT_WAIT_INTERVAL_MS = 50L
+/** How long the muted start gets to begin before the volume is restored anyway. */
+private const val MUTED_START_WAIT_ATTEMPTS = 40
+private const val MUTED_START_WAIT_INTERVAL_MS = 50L
 
-/** How long the muted retry gets to start before the volume is restored anyway. */
-private const val AUTOPLAY_MUTED_WAIT_ATTEMPTS = 40
-private const val AUTOPLAY_MUTED_WAIT_INTERVAL_MS = 50L
+/** How long the first play command waits for the player's `<video>` element. */
+private const val BROWSER_VIDEO_WAIT_ATTEMPTS = 40
+private const val BROWSER_VIDEO_WAIT_INTERVAL_MS = 50L
 
 /**
  * How long a resume seek waits for the player to report a non-zero
@@ -100,8 +100,7 @@ fun PlayerBridgeSurface(
         playCommands.collectLatest { cmd ->
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
             cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
-            playerState.play()
-            ensurePlaybackStarted(playerState)
+            startPlaybackMutedOnWeb(playerState)
             if (cmd.positionSeconds > 0L) {
                 // The seek needs a non-zero duration, and on web the duration
                 // is only reported through timeupdate events — which fire
@@ -135,25 +134,35 @@ fun PlayerBridgeSurface(
 }
 
 /**
- * Ensures playback actually starts under browser autoplay policies.
+ * Starts playback with the media element muted, then unmutes once playback
+ * is running.
  *
- * Browsers reject an unmuted `play()` unless the page still holds
- * transient user activation. The details-screen Play tap is a gesture,
- * but stream resolution can outlive the activation window, leaving the
- * player paused. When the direct attempt does not start, retry with the
- * media element muted (always allowed by autoplay policies) and unmute
- * it once playback is running, so the user still hears audio. Policies
- * check the element's `muted` flag, not its volume, so this must go
- * through [setBrowserVideoMuted].
+ * Two browser-specific hazards are handled here:
+ * - the player library attaches its `<video>` element asynchronously, so
+ *   the first `play()` can be lost unless the element is awaited; and
+ * - browsers reject an unmuted `play()` without transient user activation,
+ *   while the library reports `isPlaying` optimistically, so a
+ *   "try, then detect rejection and retry" dance cannot reliably see the
+ *   rejection. Muting before `play()` is always allowed by autoplay
+ *   policies; unmuting after playback starts keeps the audio.
  *
- * Native players start immediately, so the retry never runs there.
+ * Both hooks are no-ops on native platforms, where the element is always
+ * ready and play starts immediately.
  */
-private suspend fun ensurePlaybackStarted(playerState: VideoPlayerState) {
-    if (awaitPlaying(playerState, AUTOPLAY_DIRECT_WAIT_ATTEMPTS, AUTOPLAY_DIRECT_WAIT_INTERVAL_MS)) return
+private suspend fun startPlaybackMutedOnWeb(playerState: VideoPlayerState) {
+    awaitBrowserVideoElement()
     setBrowserVideoMuted(true)
     playerState.play()
-    awaitPlaying(playerState, AUTOPLAY_MUTED_WAIT_ATTEMPTS, AUTOPLAY_MUTED_WAIT_INTERVAL_MS)
+    awaitPlaying(playerState, MUTED_START_WAIT_ATTEMPTS, MUTED_START_WAIT_INTERVAL_MS)
     setBrowserVideoMuted(false)
+}
+
+private suspend fun awaitBrowserVideoElement(): Boolean {
+    repeat(BROWSER_VIDEO_WAIT_ATTEMPTS) {
+        if (hasBrowserVideoElement()) return true
+        delay(BROWSER_VIDEO_WAIT_INTERVAL_MS)
+    }
+    return hasBrowserVideoElement()
 }
 
 private suspend fun awaitPlaying(playerState: VideoPlayerState, attempts: Int, intervalMs: Long): Boolean {
