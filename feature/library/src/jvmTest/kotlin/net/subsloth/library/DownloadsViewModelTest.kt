@@ -5,7 +5,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.domain.port.DownloadCommandOutcome
@@ -322,5 +324,88 @@ class DownloadsViewModelTest {
         )
         viewModel.deleteWatchedCompleted()
         assertThat(removedId).isEqualTo(completedDownload.localId.value)
+    }
+
+    @Test
+    fun `polls while a download is active and stops after terminal`() = runTest(testDispatcher) {
+        var downloads = persistentListOf<DownloadState>(activeDownload)
+        val viewModel = DownloadsViewModel(
+            listDownloads = { Result.success(downloads) },
+            listSeasonQueues = { Result.success(persistentListOf()) },
+        )
+        viewModel.uiState.test {
+            val initial = awaitItem() as DownloadsUiState.Content
+            assertThat(initial.active).isNotEmpty()
+
+            downloads = persistentListOf<DownloadState>(completedDownload)
+            advanceTimeBy(1_100)
+            runCurrent()
+
+            val updated = awaitItem() as DownloadsUiState.Content
+            assertThat(updated.completed).isNotEmpty()
+
+            advanceTimeBy(5_000)
+            runCurrent()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `polls while a season queue is running and stops after terminal`() = runTest(testDispatcher) {
+        val runningQueue = SeasonDownloadQueue(
+            queueId = QueueId("sq-live"),
+            showId = ShowId(1),
+            seasonNumber = 1,
+            items = persistentListOf(
+                SeasonDownloadQueueItem(
+                    mediaId = episodeId,
+                    selectedQuality = Resolution(1920, 1080),
+                    preferredSubtitleLanguage = LanguageCode("en"),
+                    subtitleSelection = SubtitleSelection.None,
+                    execution = SeasonQueueItemExecution.Downloading(10),
+                ),
+            ),
+            execution = SeasonQueueExecution.Running(episodeId),
+            transferPreference = TransferPreference.WifiOnly,
+        )
+        var queues = persistentListOf(runningQueue)
+        val viewModel = DownloadsViewModel(
+            listDownloads = { Result.success(persistentListOf()) },
+            listSeasonQueues = { Result.success(queues) },
+        )
+        viewModel.uiState.test {
+            val initial = awaitItem() as DownloadsUiState.Content
+            assertThat(initial.seasonQueues.first().execution).isEqualTo(SeasonQueueExecution.Running(episodeId))
+
+            queues = persistentListOf(runningQueue.copy(execution = SeasonQueueExecution.Completed))
+            advanceTimeBy(1_100)
+            runCurrent()
+
+            val updated = awaitItem() as DownloadsUiState.Content
+            assertThat(updated.seasonQueues.first().execution).isEqualTo(SeasonQueueExecution.Completed)
+
+            advanceTimeBy(5_000)
+            runCurrent()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `does not poll when nothing is active`() = runTest(testDispatcher) {
+        var loadCalls = 0
+        val viewModel = DownloadsViewModel(
+            listDownloads = {
+                loadCalls++
+                Result.success(persistentListOf(completedDownload))
+            },
+            listSeasonQueues = { Result.success(persistentListOf()) },
+        )
+        viewModel.uiState.test {
+            awaitItem()
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertThat(loadCalls).isEqualTo(1)
+            expectNoEvents()
+        }
     }
 }

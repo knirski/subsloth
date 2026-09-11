@@ -8,9 +8,13 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import net.subsloth.core.domain.policy.CompletionPolicy
@@ -18,6 +22,7 @@ import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.download.SeasonQueueExecution
 import net.subsloth.core.model.progress.PlaybackProgress
 
 @Stable
@@ -59,51 +64,74 @@ class DownloadsViewModel(
 
     init {
         loadDownloads()
+        viewModelScope.launch {
+            combine(_uiState, _uiState.subscriptionCount) { state, subscribers ->
+                subscribers > INTERNAL_SUBSCRIBER_COUNT && state is DownloadsUiState.Content && state.hasActiveWork()
+            }
+                .distinctUntilChanged()
+                .collectLatest { shouldPoll ->
+                    if (!shouldPoll) return@collectLatest
+                    while (true) {
+                        delay(POLL_INTERVAL_MS)
+                        refresh()
+                    }
+                }
+        }
     }
 
     private fun loadDownloads() {
-        viewModelScope.launch {
-            if (_uiState.value !is DownloadsUiState.Content) {
-                _uiState.value = DownloadsUiState.Loading
-            }
-            val downloads = listDownloads()
-                .onFailure { log.e(it) { "listDownloads failed" } }
-                .getOrDefault(persistentListOf())
-            val seasonQueues = listSeasonQueues()
-                .onFailure { log.e(it) { "listSeasonQueues failed" } }
-                .getOrDefault(persistentListOf())
-            val progress = listProgress()
-                .onFailure { log.e(it) { "listProgress failed" } }
-                .getOrDefault(emptyList())
-
-            val watchedIds = progress
-                .filter { it.fraction > CompletionPolicy.WATCHED_THRESHOLD }
-                .map { it.mediaId }
-                .toSet()
-
-            val active = downloads
-                .filterIsInstance<DownloadState.Active>()
-                .map { DownloadGroupItem(state = it, progressFraction = it.progressPercent / 100.0) }
-
-            val queuedOrPaused = downloads
-                .filter { it is DownloadState.Queued || it is DownloadState.Paused }
-
-            val failedOrUnavailable = downloads
-                .filter { it is DownloadState.Failed || it is DownloadState.Unavailable }
-
-            val completed = downloads
-                .filterIsInstance<DownloadState.Completed>()
-                .map { DownloadGroupItem(state = it, progressFraction = if (it.mediaId in watchedIds) 1.0 else null) }
-
-            _uiState.value = DownloadsUiState.Content(
-                active = active.toImmutableList(),
-                queuedOrPaused = queuedOrPaused.map { DownloadGroupItem(state = it) }.toImmutableList(),
-                failedOrUnavailable = failedOrUnavailable.map { DownloadGroupItem(state = it) }.toImmutableList(),
-                completed = completed.toImmutableList(),
-                seasonQueues = seasonQueues,
-            )
-        }
+        viewModelScope.launch { refresh() }
     }
+
+    private suspend fun refresh() {
+        if (_uiState.value !is DownloadsUiState.Content) {
+            _uiState.value = DownloadsUiState.Loading
+        }
+        val downloads = listDownloads()
+            .onFailure { log.e(it) { "listDownloads failed" } }
+            .getOrDefault(persistentListOf())
+        val seasonQueues = listSeasonQueues()
+            .onFailure { log.e(it) { "listSeasonQueues failed" } }
+            .getOrDefault(persistentListOf())
+        val progress = listProgress()
+            .onFailure { log.e(it) { "listProgress failed" } }
+            .getOrDefault(emptyList())
+
+        val watchedIds = progress
+            .filter { it.fraction > CompletionPolicy.WATCHED_THRESHOLD }
+            .map { it.mediaId }
+            .toSet()
+
+        val active = downloads
+            .filterIsInstance<DownloadState.Active>()
+            .map { DownloadGroupItem(state = it, progressFraction = it.progressPercent / 100.0) }
+
+        val queuedOrPaused = downloads
+            .filter { it is DownloadState.Queued || it is DownloadState.Paused }
+
+        val failedOrUnavailable = downloads
+            .filter { it is DownloadState.Failed || it is DownloadState.Unavailable }
+
+        val completed = downloads
+            .filterIsInstance<DownloadState.Completed>()
+            .map { DownloadGroupItem(state = it, progressFraction = if (it.mediaId in watchedIds) 1.0 else null) }
+
+        val content = DownloadsUiState.Content(
+            active = active.toImmutableList(),
+            queuedOrPaused = queuedOrPaused.map { DownloadGroupItem(state = it) }.toImmutableList(),
+            failedOrUnavailable = failedOrUnavailable.map { DownloadGroupItem(state = it) }.toImmutableList(),
+            completed = completed.toImmutableList(),
+            seasonQueues = seasonQueues,
+        )
+        _uiState.value = content
+    }
+
+    private fun DownloadsUiState.Content.hasActiveWork(): Boolean = active.isNotEmpty() ||
+        queuedOrPaused.any { it.state is DownloadState.Queued } ||
+        seasonQueues.any { it.execution.isActive() }
+
+    private fun SeasonQueueExecution.isActive(): Boolean =
+        this is SeasonQueueExecution.Queued || this is SeasonQueueExecution.Running
 
     fun pause(localId: String) {
         viewModelScope.launch {
@@ -178,5 +206,10 @@ class DownloadsViewModel(
                 }
             }
         }
+    }
+
+    private companion object {
+        const val POLL_INTERVAL_MS = 1_000L
+        const val INTERNAL_SUBSCRIBER_COUNT = 1
     }
 }
