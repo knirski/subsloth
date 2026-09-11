@@ -22,6 +22,14 @@ import kotlinx.coroutines.isActive
 /** Poll interval mirroring the underlying player's ~250 ms position updates. */
 private const val SNAPSHOT_POLL_INTERVAL_MS = 250L
 
+/** How long the muted start gets to begin before the volume is restored anyway. */
+private const val MUTED_START_WAIT_ATTEMPTS = 40
+private const val MUTED_START_WAIT_INTERVAL_MS = 50L
+
+/** How long the first play command waits for the player's `<video>` element. */
+private const val BROWSER_VIDEO_WAIT_ATTEMPTS = 40
+private const val BROWSER_VIDEO_WAIT_INTERVAL_MS = 50L
+
 /**
  * How long a resume seek waits for the player to report a non-zero
  * duration. The wait is generous because browsers may block autoplay and
@@ -92,7 +100,7 @@ fun PlayerBridgeSurface(
         playCommands.collectLatest { cmd ->
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
             cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
-            playerState.play()
+            startPlaybackMutedOnWeb(playerState)
             if (cmd.positionSeconds > 0L) {
                 // The seek needs a non-zero duration, and on web the duration
                 // is only reported through timeupdate events — which fire
@@ -123,4 +131,44 @@ fun PlayerBridgeSurface(
     ) {
         overlay(playerState)
     }
+}
+
+/**
+ * Starts playback with the media element muted, then unmutes once playback
+ * is running.
+ *
+ * Two browser-specific hazards are handled here:
+ * - the player library attaches its `<video>` element asynchronously, so
+ *   the first `play()` can be lost unless the element is awaited; and
+ * - browsers reject an unmuted `play()` without transient user activation,
+ *   while the library reports `isPlaying` optimistically, so a
+ *   "try, then detect rejection and retry" dance cannot reliably see the
+ *   rejection. Muting before `play()` is always allowed by autoplay
+ *   policies; unmuting after playback starts keeps the audio.
+ *
+ * Both hooks are no-ops on native platforms, where the element is always
+ * ready and play starts immediately.
+ */
+private suspend fun startPlaybackMutedOnWeb(playerState: VideoPlayerState) {
+    awaitBrowserVideoElement()
+    setBrowserVideoMuted(true)
+    playerState.play()
+    awaitPlaying(playerState, MUTED_START_WAIT_ATTEMPTS, MUTED_START_WAIT_INTERVAL_MS)
+    setBrowserVideoMuted(false)
+}
+
+private suspend fun awaitBrowserVideoElement(): Boolean {
+    repeat(BROWSER_VIDEO_WAIT_ATTEMPTS) {
+        if (hasBrowserVideoElement()) return true
+        delay(BROWSER_VIDEO_WAIT_INTERVAL_MS)
+    }
+    return hasBrowserVideoElement()
+}
+
+private suspend fun awaitPlaying(playerState: VideoPlayerState, attempts: Int, intervalMs: Long): Boolean {
+    repeat(attempts) {
+        if (playerState.isPlaying) return true
+        delay(intervalMs)
+    }
+    return playerState.isPlaying
 }
