@@ -318,7 +318,9 @@ class ShowDetailViewModel(
                                     .toImmutableList(),
                                 seasonQueues = seasonQueues.toImmutableList(),
                             )
-                        awaitSeasonQueuesTerminal()
+                        if (seasonQueues.any { it.isActive() }) {
+                            awaitSeasonQueuesTerminal()
+                        }
                     } else {
                         _uiState.value = ShowDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
@@ -374,10 +376,10 @@ class ShowDetailViewModel(
      */
     private suspend fun awaitSeasonQueuesTerminal() {
         repeat(MAX_QUEUE_POLLS) {
-            val content = _uiState.value as? ShowDetailUiState.Content ?: return
-            if (content.seasonQueues.none { it.isActive() }) return
             delay(QUEUE_POLL_INTERVAL_MS)
             refreshSeasonQueues()
+            val content = _uiState.value as? ShowDetailUiState.Content ?: return
+            if (content.seasonQueues.none { it.isActive() }) return
         }
     }
 
