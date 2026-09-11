@@ -55,9 +55,11 @@ fun EpisodeDetailScreen(
             is EpisodeDetailUiState.Content -> EpisodeDetailContent(
                 details = s.details,
                 isWatched = s.isWatched,
+                isDownloaded = s.isDownloaded,
                 modifier = Modifier.fillMaxSize(),
                 onNavigateBack = onNavigateBack,
                 onPlayClick = onPlayClick,
+                onDownloadClick = viewModel::toggleDownload,
             )
         }
     }
@@ -68,9 +70,11 @@ fun EpisodeDetailScreen(
 private fun EpisodeDetailContent(
     details: EpisodeDetails,
     isWatched: Boolean,
+    isDownloaded: Boolean,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
     onPlayClick: (EpisodeDetails) -> Unit,
+    onDownloadClick: () -> Unit,
 ) {
     val isAvailable = details.availability is Availability.Available
 
@@ -166,6 +170,13 @@ private fun EpisodeDetailContent(
                 ) {
                     Text(text = "Not available")
                 }
+            }
+
+            OutlinedButton(
+                onClick = onDownloadClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = if (isDownloaded) "Downloaded" else "Download")
             }
         }
     }

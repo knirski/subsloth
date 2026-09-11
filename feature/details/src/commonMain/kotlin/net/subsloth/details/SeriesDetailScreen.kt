@@ -25,7 +25,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -243,12 +242,10 @@ private fun ShowDetailWideLayout(
             ShowDetailActionButtons(
                 isFavorite = state.isFavorite,
                 isWatchLater = state.isWatchLater,
-                isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
                 onFavoriteClick = onFavoriteClick,
                 onWatchLaterClick = onWatchLaterClick,
-                onDownloadClick = { },
             )
 
             if (details.seasons.size > 1) {
@@ -375,12 +372,10 @@ private fun ShowDetailCompactLayout(
             ShowDetailActionButtons(
                 isFavorite = state.isFavorite,
                 isWatchLater = state.isWatchLater,
-                isDownloaded = state.isDownloaded,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
                 onFavoriteClick = onFavoriteClick,
                 onWatchLaterClick = onWatchLaterClick,
-                onDownloadClick = { },
             )
 
             if (details.seasons.size > 1) {
@@ -418,12 +413,10 @@ private fun ShowDetailCompactLayout(
 private fun ShowDetailActionButtons(
     isFavorite: Boolean,
     isWatchLater: Boolean,
-    isDownloaded: Boolean,
     progressFraction: Double?,
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onWatchLaterClick: () -> Unit,
-    onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -469,21 +462,6 @@ private fun ShowDetailActionButtons(
                         stringResource(Res.string.detail_watch_later_remove)
                     } else {
                         stringResource(Res.string.detail_watch_later)
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                )
-            }
-
-            OutlinedButton(
-                onClick = onDownloadClick,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = if (isDownloaded) {
-                        stringResource(Res.string.detail_downloaded)
-                    } else {
-                        stringResource(Res.string.detail_download)
                     },
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,

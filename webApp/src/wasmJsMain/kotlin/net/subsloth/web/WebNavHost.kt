@@ -328,7 +328,6 @@ private fun ShowDetailContent(
                 mediaId = showId,
                 getDetails = { runtime.getDetails(it) },
                 listLibrary = { runtime.listLibrary() },
-                listDownloads = { runtime.listDownloads() },
                 listProgress = { runtime.listAccountPlaybackProgress() },
                 listWatchedIds = { runtime.listWatchedContentIds() },
                 addToLibrary = { item -> runtime.libraryPort.addToLibrary(item) },
@@ -365,6 +364,9 @@ private fun EpisodeDetailContent(
                 mediaId = episodeId,
                 getDetails = { runtime.getDetails(it) },
                 isWatched = { runtime.isWatched(it) },
+                listDownloads = { runtime.listDownloads() },
+                enqueueDownload = { id, resolution -> runtime.downloadController.enqueue(id, resolution) },
+                removeDownload = { localId -> runtime.downloadController.remove(localId) },
             )
         }
         EpisodeDetailScreen(
