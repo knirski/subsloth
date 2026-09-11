@@ -140,19 +140,20 @@ fun PlayerBridgeSurface(
  * Browsers reject an unmuted `play()` unless the page still holds
  * transient user activation. The details-screen Play tap is a gesture,
  * but stream resolution can outlive the activation window, leaving the
- * player paused. When the direct attempt does not start, retry muted
- * (always allowed) and restore the volume once playback is actually
- * running, so the user still hears audio.
+ * player paused. When the direct attempt does not start, retry with the
+ * media element muted (always allowed by autoplay policies) and unmute
+ * it once playback is running, so the user still hears audio. Policies
+ * check the element's `muted` flag, not its volume, so this must go
+ * through [setBrowserVideoMuted].
  *
  * Native players start immediately, so the retry never runs there.
  */
 private suspend fun ensurePlaybackStarted(playerState: VideoPlayerState) {
     if (awaitPlaying(playerState, AUTOPLAY_DIRECT_WAIT_ATTEMPTS, AUTOPLAY_DIRECT_WAIT_INTERVAL_MS)) return
-    val previousVolume = playerState.volume
-    playerState.volume = 0f
+    setBrowserVideoMuted(true)
     playerState.play()
     awaitPlaying(playerState, AUTOPLAY_MUTED_WAIT_ATTEMPTS, AUTOPLAY_MUTED_WAIT_INTERVAL_MS)
-    playerState.volume = previousVolume
+    setBrowserVideoMuted(false)
 }
 
 private suspend fun awaitPlaying(playerState: VideoPlayerState, attempts: Int, intervalMs: Long): Boolean {

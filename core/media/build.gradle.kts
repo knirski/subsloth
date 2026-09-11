@@ -59,6 +59,10 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.compose.multiplatform.ui.tooling.preview)
         }
+        wasmJsMain.dependencies {
+            // Document access for the autoplay muted-retry in PlayerBridgeSurface.
+            implementation(libs.kotlinx.browser)
+        }
         jvmTest.dependencies {
             implementation(project(":testing:assertions"))
             implementation(project(":core:database"))
