@@ -27,6 +27,9 @@ enum class LibraryCollection {
     /** Recently watched items. */
     HISTORY,
 
+    /** Items explicitly saved for later. */
+    WATCH_LATER,
+
     /** Custom user-defined collection. */
     CUSTOM,
 }

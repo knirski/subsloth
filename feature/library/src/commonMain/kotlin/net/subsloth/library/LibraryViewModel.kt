@@ -118,7 +118,7 @@ class LibraryViewModel(
                     .filter { it.collection == LibraryCollection.FAVORITES }
                     .mapNotNull { catalog[it.mediaId] }
                 val watchLater = library
-                    .filter { it.collection == LibraryCollection.HISTORY }
+                    .filter { it.collection == LibraryCollection.WATCH_LATER }
                     .mapNotNull { catalog[it.mediaId] }
                 val custom = library
                     .filter { it.collection == LibraryCollection.CUSTOM }

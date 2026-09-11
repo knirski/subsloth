@@ -336,4 +336,14 @@ class DownloadControllerTest {
 
         assertThat(result.isFailure).isTrue()
     }
+
+    @Test
+    fun `enqueueSubtitle fails for an unknown download id`() = runTest {
+        val fixtures = fixtures()
+
+        val result = fixtures.controller.enqueueSubtitle(LocalMediaIdentifier("1/99"), LanguageCode("en"))
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(fixtures.subtitles.rows).isEmpty()
+    }
 }

@@ -284,11 +284,11 @@ class MovieDetailViewModelTest {
     }
 
     @Test
-    fun `watch later flag reflects history membership`() = runTest(testDispatcher) {
+    fun `watch later flag reflects watch later membership`() = runTest(testDispatcher) {
         val viewModel = MovieDetailViewModel(
             mediaId = Media.MediaId.Movie(MovieId(1)),
             getDetails = { Outcome.Success(sampleMovieDetails) },
-            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.HISTORY))) },
+            listLibrary = { Outcome.Success(listOf(libraryItem(LibraryCollection.WATCH_LATER))) },
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
@@ -404,7 +404,7 @@ class MovieDetailViewModelTest {
 
         viewModel.toggleWatchLater()
 
-        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.HISTORY)
+        assertThat(library.map { it.collection }).containsExactly(LibraryCollection.WATCH_LATER)
         val content = viewModel.uiState.value as MovieDetailUiState.Content
         assertThat(content.isWatchLater).isTrue()
     }
