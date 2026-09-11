@@ -22,6 +22,14 @@ import kotlinx.coroutines.isActive
 /** Poll interval mirroring the underlying player's ~250 ms position updates. */
 private const val SNAPSHOT_POLL_INTERVAL_MS = 250L
 
+/**
+ * How long a resume seek waits for the player to report a non-zero
+ * duration. The wait is generous because browsers may block autoplay and
+ * only report the duration once the user has started playback manually.
+ */
+private const val SEEK_DURATION_WAIT_ATTEMPTS = 3_000
+private const val SEEK_DURATION_WAIT_INTERVAL_MS = 100L
+
 @Composable
 fun PlayerBridgeSurface(
     modifier: Modifier = Modifier,
@@ -83,10 +91,19 @@ fun PlayerBridgeSurface(
     LaunchedEffect(playerState, playCommands) {
         playCommands.collectLatest { cmd ->
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
+            cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
+            playerState.play()
             if (cmd.positionSeconds > 0L) {
+                // The seek needs a non-zero duration, and on web the duration
+                // is only reported through timeupdate events — which fire
+                // once playback has started. Browsers may block unmuted
+                // autoplay, so playback (and therefore the duration) can
+                // arrive only when the user presses play; wait for it rather
+                // than giving up after a short window. Native platforms
+                // report the duration immediately and skip the wait.
                 var attempts = 0
-                while (attempts < 100 && playerState.duration <= 0.0) {
-                    delay(100)
+                while (attempts < SEEK_DURATION_WAIT_ATTEMPTS && playerState.duration <= 0.0) {
+                    delay(SEEK_DURATION_WAIT_INTERVAL_MS)
                     attempts++
                 }
                 if (playerState.duration > 0.0) {
@@ -96,8 +113,6 @@ fun PlayerBridgeSurface(
                     playerState.seekTo(seekValue)
                 }
             }
-            cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
-            playerState.play()
         }
     }
 
