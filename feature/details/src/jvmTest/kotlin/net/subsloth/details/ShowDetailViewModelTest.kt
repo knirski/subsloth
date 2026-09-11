@@ -100,13 +100,6 @@ class ShowDetailViewModelTest {
         ),
     )
 
-    private val sampleQuality = QualityDescriptor(
-        resolution = Resolution(1920, 1080),
-        label = "1080p",
-        bitrate = null,
-        mimeType = null,
-    )
-
     @Test
     fun `default season is first season when no saved state`() = runTest(testDispatcher) {
         val vm = ShowDetailViewModel(
@@ -322,20 +315,6 @@ class ShowDetailViewModelTest {
     }
 
     @Test
-    fun `downloaded flag reflects completed download`() = runTest(testDispatcher) {
-        val vm = ShowDetailViewModel(
-            mediaId = mediaId,
-            getDetails = { Outcome.Success(showDetails) },
-            listDownloads = { Result.success(listOf(completedDownload())) },
-        )
-        vm.uiState.test {
-            val content = awaitItem() as ShowDetailUiState.Content
-            assertThat(content.isDownloaded).isTrue()
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `library failure keeps content with flags false`() = runTest(testDispatcher) {
         val vm = ShowDetailViewModel(
             mediaId = mediaId,
@@ -418,15 +397,6 @@ class ShowDetailViewModelTest {
         collection = collection,
         addedAtEpochSeconds = Instant.fromEpochSeconds(0),
         sortOrder = 1,
-    )
-
-    private fun completedDownload(): DownloadState.Completed = DownloadState.Completed(
-        localId = LocalMediaIdentifier("show-1"),
-        mediaId = mediaId,
-        quality = sampleQuality,
-        downloadedAtEpochSeconds = Instant.fromEpochSeconds(0),
-        sizeBytes = 1024,
-        videoPath = OfflineRelativePath.safe("videos/show-1.mp4"),
     )
 
     private fun progress(

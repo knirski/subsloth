@@ -195,7 +195,6 @@ fun SubSlothNavHost(
                                         // whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
                                         listLibrary = { container.libraryPortAdapter.listLibrary() },
-                                        listDownloads = { container.downloadController.listDownloads() },
                                         listProgress = { container.listAccountPlaybackProgress() },
                                         listWatchedIds = { container.listWatchedContentIds() },
                                         addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
@@ -237,6 +236,13 @@ fun SubSlothNavHost(
                                         // it whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
                                         isWatched = { container.isWatched(it) },
+                                        listDownloads = { container.downloadController.listDownloads() },
+                                        enqueueDownload = { id, resolution ->
+                                            container.downloadController.enqueue(id, resolution)
+                                        },
+                                        removeDownload = { localId ->
+                                            container.downloadController.remove(localId)
+                                        },
                                     ),
                                 ),
                             )

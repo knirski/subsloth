@@ -163,7 +163,6 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 mediaId = showId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
                                 listLibrary = { container.libraryPortAdapter.listLibrary() },
-                                listDownloads = { container.downloadController.listDownloads() },
                                 listProgress = container::listAccountPlaybackProgress,
                                 addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
                                 removeFromLibrary = { id -> container.libraryPortAdapter.removeFromLibrary(id) },
@@ -194,6 +193,11 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             EpisodeDetailViewModel(
                                 mediaId = episodeId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                listDownloads = { container.downloadController.listDownloads() },
+                                enqueueDownload = { id, resolution ->
+                                    container.downloadController.enqueue(id, resolution)
+                                },
+                                removeDownload = { localId -> container.downloadController.remove(localId) },
                             )
                         }
                         EpisodeDetailScreen(

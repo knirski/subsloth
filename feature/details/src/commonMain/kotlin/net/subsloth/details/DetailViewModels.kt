@@ -62,7 +62,6 @@ sealed interface ShowDetailUiState {
         val selectedSeason: Int,
         val isFavorite: Boolean = false,
         val isWatchLater: Boolean = false,
-        val isDownloaded: Boolean = false,
         val progressFraction: Double? = null,
         val watchedEpisodeIds: ImmutableList<Int> = persistentListOf(),
     ) : ShowDetailUiState
@@ -260,9 +259,6 @@ class ShowDetailViewModel(
     private val listLibrary: suspend () -> Outcome<List<LibraryItem>> = {
         Outcome.Success(emptyList())
     },
-    private val listDownloads: suspend () -> Result<List<DownloadState>> = {
-        Result.success(emptyList())
-    },
     private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
         Result.success(emptyList())
     },
@@ -305,7 +301,6 @@ class ShowDetailViewModel(
                                 selectedSeason = restoredSeason,
                                 isFavorite = flags.isFavorite,
                                 isWatchLater = flags.isWatchLater,
-                                isDownloaded = flags.isDownloaded,
                                 progressFraction = progress?.fraction,
                                 watchedEpisodeIds = details.seasons
                                     .flatMap { season -> season.episodes }
@@ -370,14 +365,9 @@ class ShowDetailViewModel(
                 emptyList()
             }
         }
-        val downloads = listDownloads().getOrElse { error ->
-            log.w { "Failed to load downloads: $error" }
-            emptyList()
-        }
         return DetailFlags(
             isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
             isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.HISTORY },
-            isDownloaded = downloads.any { it.mediaId == mediaId && it is DownloadState.Completed },
         )
     }
 
@@ -387,7 +377,6 @@ class ShowDetailViewModel(
         _uiState.value = content.copy(
             isFavorite = flags.isFavorite,
             isWatchLater = flags.isWatchLater,
-            isDownloaded = flags.isDownloaded,
         )
     }
 
@@ -431,7 +420,11 @@ sealed interface EpisodeDetailUiState {
     data object Loading : EpisodeDetailUiState
 
     @Immutable
-    data class Content(val details: EpisodeDetails, val isWatched: Boolean = false) : EpisodeDetailUiState
+    data class Content(
+        val details: EpisodeDetails,
+        val isWatched: Boolean = false,
+        val isDownloaded: Boolean = false,
+    ) : EpisodeDetailUiState
 
     @Immutable
     data class Error(val error: UiError) : EpisodeDetailUiState
@@ -448,6 +441,16 @@ class EpisodeDetailViewModel(
         Outcome.Failure(DecodeError.SerializationFailed)
     },
     private val isWatched: suspend (Media.MediaId) -> Boolean = { false },
+    private val listDownloads: suspend () -> Result<List<DownloadState>> = {
+        Result.success(emptyList())
+    },
+    private val enqueueDownload: suspend (Media.MediaId, Resolution) -> Result<EnqueueOutcome> = { _, _ ->
+        Result.success(EnqueueOutcome.Queued)
+    },
+    private val removeDownload: suspend (LocalMediaIdentifier) -> Result<DownloadCommandOutcome> = {
+        Result.success(DownloadCommandOutcome.NoOp)
+    },
+    private val isTvDevice: Boolean = false,
 ) : ViewModel() {
     private val log = Logger.withTag("EpisodeDetailViewModel")
 
@@ -471,6 +474,7 @@ class EpisodeDetailViewModel(
                                 log.w { "Failed to load watched state: $error" }
                                 false
                             },
+                            isDownloaded = isDownloaded(),
                         )
                     } else {
                         _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))
@@ -480,6 +484,47 @@ class EpisodeDetailViewModel(
                 is Outcome.Failure -> {
                     _uiState.value = EpisodeDetailUiState.Error(detailsResult.error.toUiError())
                 }
+            }
+        }
+    }
+
+    fun toggleDownload() {
+        val content = _uiState.value as? EpisodeDetailUiState.Content ?: return
+        viewModelScope.launch {
+            if (content.isDownloaded) {
+                removeCompletedDownload()
+            } else {
+                val quality = QualityPolicy.selectDefault(content.details.qualities, isTvDevice)
+                // Episodes without per-quality variants only expose a
+                // top-level download URL; enqueue a nominal resolution.
+                val resolution = quality?.info?.resolution ?: Resolution.HD_720
+                enqueueDownload(mediaId, resolution)
+                    .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
+            }
+            refreshDownloadFlag()
+        }
+    }
+
+    private suspend fun isDownloaded(): Boolean = listDownloads().getOrElse { error ->
+        log.w { "Failed to load downloads: $error" }
+        emptyList()
+    }.any { it.mediaId == mediaId && it is DownloadState.Completed }
+
+    private suspend fun refreshDownloadFlag() {
+        val content = _uiState.value as? EpisodeDetailUiState.Content ?: return
+        _uiState.value = content.copy(isDownloaded = isDownloaded())
+    }
+
+    private suspend fun removeCompletedDownload() {
+        val completed = listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        }.firstOrNull { it.mediaId == mediaId && it is DownloadState.Completed }
+        if (completed == null) {
+            log.w { "No completed download to remove for $mediaId" }
+        } else {
+            removeDownload(completed.localId).onFailure { error ->
+                log.w(error) { "Failed to remove download" }
             }
         }
     }
