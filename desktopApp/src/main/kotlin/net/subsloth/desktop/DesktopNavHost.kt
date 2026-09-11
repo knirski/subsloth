@@ -164,6 +164,10 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
                                 listLibrary = { container.libraryPortAdapter.listLibrary() },
                                 listProgress = container::listAccountPlaybackProgress,
+                                listSeasonQueues = { container.listSeasonQueues() },
+                                startSeasonDownload = { seasonNumber, episodes ->
+                                    container.startSeasonDownload(showId.value, seasonNumber, episodes)
+                                },
                                 addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
                                 removeFromLibrary = { id -> container.libraryPortAdapter.removeFromLibrary(id) },
                             )

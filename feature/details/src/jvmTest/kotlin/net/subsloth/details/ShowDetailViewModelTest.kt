@@ -11,6 +11,10 @@ import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.download.QueueId
+import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.download.SeasonQueueExecution
+import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.LibraryError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.EpisodeId
@@ -390,6 +394,43 @@ class ShowDetailViewModelTest {
         assertThat(library.map { it.collection }).containsExactly(LibraryCollection.WATCH_LATER)
         val content = vm.uiState.value as ShowDetailUiState.Content
         assertThat(content.isWatchLater).isTrue()
+    }
+
+    @Test
+    fun `downloadSeason starts the selected season download`() = runTest(testDispatcher) {
+        val started = mutableListOf<Pair<Int, Int>>()
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            startSeasonDownload = { season, episodes -> started += season to episodes.size },
+        )
+
+        vm.downloadSeason()
+
+        assertThat(started).containsExactly(1 to 1)
+    }
+
+    @Test
+    fun `downloadSeason is a no-op while a queue is active`() = runTest(testDispatcher) {
+        var called = false
+        val activeQueue = SeasonDownloadQueue(
+            queueId = QueueId("1-1"),
+            showId = ShowId(1),
+            seasonNumber = 1,
+            items = persistentListOf(),
+            execution = SeasonQueueExecution.Running(Media.MediaId.Episode(EpisodeId(10))),
+            transferPreference = TransferPreference.WifiOnly,
+        )
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(showWithEpisodes) },
+            listSeasonQueues = { Result.success(listOf(activeQueue)) },
+            startSeasonDownload = { _, _ -> called = true },
+        )
+
+        vm.downloadSeason()
+
+        assertThat(called).isFalse()
     }
 
     private fun libraryItem(collection: LibraryCollection): LibraryItem = LibraryItem(

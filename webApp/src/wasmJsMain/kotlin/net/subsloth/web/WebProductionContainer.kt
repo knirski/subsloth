@@ -18,6 +18,7 @@ import net.subsloth.core.data.session.ValidatingSessionState
 import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
+import net.subsloth.core.domain.policy.QualityPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
 import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.domain.port.DownloadsPort
@@ -34,6 +35,7 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.OfflineAsset
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.download.QueueId
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.MediaError
@@ -435,6 +437,45 @@ class WebProductionContainer : WebRuntime {
     override suspend fun listSeasonQueues(): Result<ImmutableList<SeasonDownloadQueue>> = runCatching {
         seasonQueueController.listQueues().toImmutableList()
     }.onFailure { if (it is CancellationException) throw it }
+
+    /**
+     * The web tier has no byte-transfer worker, so the queue is created and
+     * confirmed for state/bookkeeping only — no driver is launched and the
+     * items stay queued until a browser transfer path exists.
+     */
+    override suspend fun startSeasonDownload(showId: ShowId, seasonNumber: Int, episodes: ImmutableList<Episode>) {
+        if (episodes.isEmpty()) return
+        val language = loadPreferredLanguage()
+        val quality = episodes
+            .firstNotNullOfOrNull { QualityPolicy.selectDefault(it.qualities, isTvDevice = false) }
+            ?.info
+            ?.resolution
+            ?: Resolution.HD_720
+        val completedIds = downloadController.listDownloads()
+            .getOrElse { emptyList() }
+            .filterIsInstance<DownloadState.Completed>()
+            .map { it.mediaId }
+            .toSet()
+        val confirmation = DownloadPolicy.prepareSeasonPreflight(
+            episodes = episodes,
+            qualityPref = quality,
+            subtitlePref = language,
+            transferPreference = TransferPreference.WifiOnly,
+            alreadyDownloaded = completedIds,
+        )
+        val queueId = QueueId("${showId.value}-$seasonNumber")
+        seasonQueueController.createQueue(
+            queueId = queueId,
+            showId = showId,
+            seasonNumber = seasonNumber,
+            episodes = episodes,
+            qualityPref = quality,
+            subtitlePref = language,
+            transferPreference = TransferPreference.WifiOnly,
+            confirmation = confirmation,
+        )
+        seasonQueueController.confirmQueue(queueId)
+    }
 
     override suspend fun retryDownload(localId: String): EnqueueOutcome = EnqueueOutcome.Queued
 

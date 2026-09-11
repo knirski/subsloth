@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,10 +26,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -57,6 +62,7 @@ fun SeriesDetailScreen(
     onEpisodeClick: (Episode) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showDownloadConfirmation by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         if (onNavigateBack != null) {
@@ -87,6 +93,7 @@ fun SeriesDetailScreen(
                     onEpisodeClick = onEpisodeClick,
                     onFavoriteClick = viewModel::toggleFavorite,
                     onWatchLaterClick = viewModel::toggleWatchLater,
+                    onDownloadSeason = { showDownloadConfirmation = true },
                 )
             }
 
@@ -103,6 +110,44 @@ fun SeriesDetailScreen(
                 }
             }
         }
+
+        if (showDownloadConfirmation && state is ShowDetailUiState.Content) {
+            val content = state as ShowDetailUiState.Content
+            val episodeCount = content.details.seasons
+                .firstOrNull { it.seasonNumber == content.selectedSeason }
+                ?.episodes
+                ?.size
+                ?: 0
+            AlertDialog(
+                onDismissRequest = { showDownloadConfirmation = false },
+                title = {
+                    Text(
+                        stringResource(
+                            Res.string.detail_download_season_title,
+                            content.selectedSeason,
+                        ),
+                    )
+                },
+                text = {
+                    Text(stringResource(Res.string.detail_download_season_message, episodeCount))
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDownloadConfirmation = false
+                            viewModel.downloadSeason()
+                        },
+                    ) {
+                        Text(stringResource(Res.string.detail_download_season_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDownloadConfirmation = false }) {
+                        Text(stringResource(Res.string.detail_download_season_cancel))
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -115,6 +160,7 @@ fun ShowDetailContent(
     onEpisodeClick: (Episode) -> Unit = {},
     onFavoriteClick: () -> Unit = {},
     onWatchLaterClick: () -> Unit = {},
+    onDownloadSeason: () -> Unit = {},
 ) {
     if (isLandscapeWideScreen()) {
         ShowDetailWideLayout(
@@ -125,6 +171,7 @@ fun ShowDetailContent(
             onEpisodeClick = onEpisodeClick,
             onFavoriteClick = onFavoriteClick,
             onWatchLaterClick = onWatchLaterClick,
+            onDownloadSeason = onDownloadSeason,
         )
     } else {
         ShowDetailCompactLayout(
@@ -135,6 +182,7 @@ fun ShowDetailContent(
             onEpisodeClick = onEpisodeClick,
             onFavoriteClick = onFavoriteClick,
             onWatchLaterClick = onWatchLaterClick,
+            onDownloadSeason = onDownloadSeason,
         )
     }
 }
@@ -148,6 +196,7 @@ private fun ShowDetailWideLayout(
     onEpisodeClick: (Episode) -> Unit,
     onFavoriteClick: () -> Unit,
     onWatchLaterClick: () -> Unit,
+    onDownloadSeason: () -> Unit,
 ) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
@@ -248,6 +297,12 @@ private fun ShowDetailWideLayout(
                 onWatchLaterClick = onWatchLaterClick,
             )
 
+            SeasonDownloadButton(
+                state = seasonDownloadState(state.seasonQueues, state.selectedSeason),
+                modifier = Modifier.padding(top = 8.dp),
+                onDownloadClick = onDownloadSeason,
+            )
+
             if (details.seasons.size > 1) {
                 Spacer(modifier = Modifier.height(16.dp))
                 SeasonSelector(
@@ -288,6 +343,7 @@ private fun ShowDetailCompactLayout(
     onEpisodeClick: (Episode) -> Unit,
     onFavoriteClick: () -> Unit,
     onWatchLaterClick: () -> Unit,
+    onDownloadSeason: () -> Unit,
 ) {
     val details = state.details
     val posterContentDescription = stringResource(Res.string.detail_poster_content_desc, details.title)
@@ -376,6 +432,12 @@ private fun ShowDetailCompactLayout(
                 onPlayClick = onPlayClick,
                 onFavoriteClick = onFavoriteClick,
                 onWatchLaterClick = onWatchLaterClick,
+            )
+
+            SeasonDownloadButton(
+                state = seasonDownloadState(state.seasonQueues, state.selectedSeason),
+                modifier = Modifier.padding(top = 8.dp),
+                onDownloadClick = onDownloadSeason,
             )
 
             if (details.seasons.size > 1) {
@@ -468,6 +530,31 @@ private fun ShowDetailActionButtons(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SeasonDownloadButton(
+    state: SeasonDownloadState,
+    modifier: Modifier = Modifier,
+    onDownloadClick: () -> Unit = {},
+) {
+    OutlinedButton(
+        onClick = onDownloadClick,
+        enabled = state == SeasonDownloadState.Idle,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = when (state) {
+                SeasonDownloadState.Idle -> stringResource(Res.string.detail_download_season)
+                SeasonDownloadState.Queued -> stringResource(Res.string.detail_download_season_queued)
+                SeasonDownloadState.Downloading -> stringResource(Res.string.detail_download_season_downloading)
+                SeasonDownloadState.Completed -> stringResource(Res.string.detail_download_season_completed)
+                SeasonDownloadState.Failed -> stringResource(Res.string.detail_download_season_failed)
+            },
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+        )
     }
 }
 

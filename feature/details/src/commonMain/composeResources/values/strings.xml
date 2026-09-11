@@ -19,4 +19,13 @@
     <string name="detail_quality_format">Quality: %1$s</string>
     <string name="detail_episode_count_format">%1$d subtitles</string>
     <string name="detail_episode_not_available">This episode is not yet available</string>
+    <string name="detail_download_season">Download season</string>
+    <string name="detail_download_season_queued">Season queued</string>
+    <string name="detail_download_season_downloading">Downloading season…</string>
+    <string name="detail_download_season_completed">Season downloaded</string>
+    <string name="detail_download_season_failed">Season download failed</string>
+    <string name="detail_download_season_title">Download season %1$d?</string>
+    <string name="detail_download_season_message">%1$d episodes will be queued for download.</string>
+    <string name="detail_download_season_confirm">Download</string>
+    <string name="detail_download_season_cancel">Cancel</string>
 </resources>

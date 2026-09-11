@@ -300,6 +300,12 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
     override suspend fun listSeasonQueues(): Result<kotlinx.collections.immutable.ImmutableList<SeasonDownloadQueue>> =
         Result.success(persistentListOf())
 
+    override suspend fun startSeasonDownload(
+        showId: ShowId,
+        seasonNumber: Int,
+        episodes: kotlinx.collections.immutable.ImmutableList<Episode>,
+    ) = Unit
+
     override suspend fun retryDownload(localId: String): EnqueueOutcome = EnqueueOutcome.Queued
 
     override suspend fun pauseDownload(localId: String): DownloadCommandOutcome = DownloadCommandOutcome.NoOp

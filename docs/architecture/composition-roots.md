@@ -132,6 +132,14 @@ There is no ranged resume: aborted or failed transfers restart from scratch. And
 `DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer is not
 wired yet — subtitle rows stay metadata-only.
 
+**Season downloads are wired.** The show detail screen's "Download season" action calls the
+container's `startSeasonDownload`, which computes the preflight confirmation
+(`DownloadPolicy.prepareSeasonPreflight`), creates and confirms a `SeasonQueueController`
+queue for the selected season, and launches a `SeasonQueueDriver`. The driver enqueues
+episodes one at a time through `DownloadController` and advances each queue item to
+completed/failed by observing the real download state, pausing the queue when a transfer
+defers on a metered network.
+
 ## Web — demo tier and production composition root
 
 Web runs one of two tiers, selected at startup by `createWebApp()` from the build-injected
@@ -154,7 +162,8 @@ into a runtime global and read via `WebBaseUrl.kt`):
 
 Download **byte transfer** remains jvm-only (no browser equivalent of the staged-file
 worker): the web downloads port lists persisted state (empty until transfer lands) and its
-controls manage that state without moving bytes. Web production playback depends on the
+controls manage that state without moving bytes. Season downloads on web create and
+confirm the queue for bookkeeping only — no driver runs there, so its items stay queued. Web production playback depends on the
 media exposing a progressive `download_url`; HLS-only items are not playable in browsers
 until hls.js support lands in the player bridge.
 
