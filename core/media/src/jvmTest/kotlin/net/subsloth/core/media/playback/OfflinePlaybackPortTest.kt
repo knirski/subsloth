@@ -3,13 +3,16 @@ package net.subsloth.core.media.playback
 import kotlinx.coroutines.test.runTest
 import net.subsloth.core.model.download.OfflineAsset
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.download.OfflineSubtitle
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
+import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.playback.VideoSource
 import net.subsloth.testing.assertions.assertThat
@@ -55,6 +58,36 @@ class OfflineSourceResolverTest {
         assertThat(s.localId?.value).isEqualTo("1/1")
         assertThat(s.durationSeconds).isEqualTo(0L)
         assertThat(s.selectedQuality.info.resolution).isEqualTo(Resolution.HD_720)
+    }
+
+    @Test
+    fun `exposes verified local subtitle files on the offline source`() = runTest {
+        val asset =
+            offlineAsset().copy(
+                subtitles =
+                kotlinx.collections.immutable.persistentListOf(
+                    OfflineSubtitle(
+                        language = LanguageCode("en"),
+                        format = SubtitleFormat.SRT,
+                        relativePath = OfflineRelativePath.safe("1/abc.en.srt"),
+                    ),
+                    OfflineSubtitle(
+                        language = LanguageCode("pl"),
+                        format = SubtitleFormat.SRT,
+                        relativePath = OfflineRelativePath.safe("1/gone.pl.srt"),
+                    ),
+                ),
+            )
+        val resolver = OfflineSourceResolver(
+            offlineAssets = { Result.success(listOf(asset)) },
+            files = files,
+        )
+
+        val source = requireNotNull(resolver.resolve(movieId))
+
+        assertThat(source.availableSubtitles.map { it.language.value }).containsExactly("en")
+        assertThat(source.availableSubtitles.first().url).isEqualTo("file:///downloads/1/abc.en.srt")
+        assertThat(source.availableSubtitles.first().format).isEqualTo(SubtitleFormat.SRT)
     }
 
     @Test

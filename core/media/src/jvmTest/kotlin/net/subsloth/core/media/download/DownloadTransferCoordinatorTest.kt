@@ -20,9 +20,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import net.subsloth.core.domain.port.ConnectivityPort
 import net.subsloth.core.model.download.DownloadFailureReason
+import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.Subtitle
+import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.database.dao.DownloadedMediaDao
+import net.subsloth.database.dao.DownloadedSubtitleDao
 import net.subsloth.database.entity.DownloadedMediaEntity
+import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
@@ -61,6 +66,29 @@ private class FakeDownloadedMediaDao : DownloadedMediaDao {
     }
 }
 
+private class FakeDownloadedSubtitleDao : DownloadedSubtitleDao {
+    val rows = mutableListOf<DownloadedSubtitleEntity>()
+
+    override fun getForDownload(downloadId: Long): Flow<List<DownloadedSubtitleEntity>> =
+        MutableStateFlow(rows.filter { it.downloadId == downloadId })
+
+    override fun getPending(): Flow<List<DownloadedSubtitleEntity>> =
+        MutableStateFlow(rows.filter { it.localFilePath.isBlank() })
+
+    override suspend fun upsert(entity: DownloadedSubtitleEntity) {
+        rows.removeAll { it.id == entity.id }
+        rows += entity
+    }
+
+    override suspend fun delete(entity: DownloadedSubtitleEntity) {
+        rows.remove(entity)
+    }
+
+    override suspend fun deleteForDownload(downloadId: Long) {
+        rows.removeAll { it.downloadId == downloadId }
+    }
+}
+
 private class FakeConnectivity(var metered: Boolean = false) : ConnectivityPort {
     override fun isOnline(): Boolean = true
     override fun isMetered(): Boolean = metered
@@ -86,6 +114,8 @@ class DownloadTransferCoordinatorTest {
 
     private fun coordinator(
         dao: FakeDownloadedMediaDao,
+        subtitleDao: FakeDownloadedSubtitleDao = FakeDownloadedSubtitleDao(),
+        resolveSubtitles: suspend (Media.MediaId) -> List<Subtitle> = { emptyList() },
         connectivity: FakeConnectivity = FakeConnectivity(),
         resolver: suspend (Media.MediaId, String?) -> DownloadTarget? = { _, _ ->
             DownloadTarget("https://cdn.example.com/file.mp4", "mp4")
@@ -95,6 +125,7 @@ class DownloadTransferCoordinatorTest {
         },
     ): DownloadTransferCoordinator = DownloadTransferCoordinator(
         downloadedMediaDao = dao,
+        downloadedSubtitleDao = subtitleDao,
         store = DesktopDownloadStore(tempDir.toFile()),
         transferer = DownloadTransferer(
             client = HttpClient(MockEngine { engineHandler(it.url.toString()) }),
@@ -103,6 +134,7 @@ class DownloadTransferCoordinatorTest {
         connectivityChecker = connectivity,
         clock = kotlin.time.Clock.System,
         resolveDownloadUrl = resolver,
+        resolveSubtitles = resolveSubtitles,
     )
 
     @Test
@@ -120,6 +152,80 @@ class DownloadTransferCoordinatorTest {
         val finalFile = tempDir.resolve(stored.localFilePath)
         assertThat(finalFile.exists()).isTrue()
         assertThat(String(finalFile.readBytes())).isEqualTo(body)
+    }
+
+    @Test
+    fun `subtitle bytes transfer after the media completes`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val subtitleDao = FakeDownloadedSubtitleDao().apply {
+            rows += DownloadedSubtitleEntity(
+                id = 1,
+                downloadId = 1,
+                language = "en",
+                source = null,
+                format = null,
+                localFilePath = "",
+            )
+        }
+        val coordinator = coordinator(
+            dao,
+            subtitleDao = subtitleDao,
+            resolveSubtitles = {
+                listOf(
+                    Subtitle(
+                        language = LanguageCode("en"),
+                        languageDisplayName = "English",
+                        url = null,
+                        downloadUrl = "https://cdn.example.com/en.srt",
+                        format = SubtitleFormat.SRT,
+                    ),
+                )
+            },
+        )
+
+        coordinator.processQueued()
+
+        val row = requireNotNull(subtitleDao.rows.firstOrNull())
+        assertThat(row.localFilePath).isNotEmpty()
+        assertThat(row.format).isEqualTo("SRT")
+        assertThat(tempDir.resolve(row.localFilePath).exists()).isTrue()
+    }
+
+    @Test
+    fun `subtitle queued after the media completed still transfers`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply {
+            set(listOf(entity(status = "completed").copy(localFilePath = "1/abc.mp4")))
+        }
+        val subtitleDao = FakeDownloadedSubtitleDao().apply {
+            rows += DownloadedSubtitleEntity(
+                id = 1,
+                downloadId = 1,
+                language = "en",
+                source = null,
+                format = null,
+                localFilePath = "",
+            )
+        }
+        val coordinator = coordinator(
+            dao,
+            subtitleDao = subtitleDao,
+            resolveSubtitles = {
+                listOf(
+                    Subtitle(
+                        language = LanguageCode("en"),
+                        languageDisplayName = "English",
+                        url = null,
+                        downloadUrl = "https://cdn.example.com/en.srt",
+                        format = SubtitleFormat.SRT,
+                    ),
+                )
+            },
+        )
+
+        val processed = coordinator.transferPendingSubtitles()
+
+        assertThat(processed).isEqualTo(1)
+        assertThat(requireNotNull(subtitleDao.rows.firstOrNull()).localFilePath).isNotEmpty()
     }
 
     @Test
