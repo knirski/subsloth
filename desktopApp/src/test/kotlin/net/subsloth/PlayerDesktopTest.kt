@@ -1,6 +1,9 @@
 package net.subsloth
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -10,10 +13,13 @@ import io.github.kdroidfilter.composemediaplayer.PreviewableVideoPlayerState
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
+import net.subsloth.core.ui.FullscreenController
+import net.subsloth.core.ui.LocalFullscreenController
 import net.subsloth.player.PlayerOverlay
 import net.subsloth.player.PlayerUiState
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PlayerDesktopTest {
@@ -207,5 +213,57 @@ class PlayerDesktopTest {
 
         composeRule.onNodeWithText("01:05").assertIsDisplayed()
         composeRule.onNodeWithText("02:00").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerOverlay_togglesFullscreen() {
+        val controller = FakeFullscreenController()
+        composeRule.setContent {
+            MaterialTheme {
+                CompositionLocalProvider(LocalFullscreenController provides controller) {
+                    PlayerOverlay(
+                        state = PlayerUiState.Content(
+                            title = "Test",
+                            positionSeconds = 0L,
+                            durationSeconds = 120L,
+                            isPlaying = false,
+                            playbackSpeed = 1.0f,
+                            selectedSubtitle = null,
+                            availableSubtitles = persistentListOf(),
+                            availableQualities = persistentListOf(),
+                            selectedQualityLabel = null,
+                            nextEpisode = null,
+                            showNextEpisodePrompt = false,
+                            playbackError = null,
+                            playbackMode = PlaybackMode.ONLINE,
+                            qualityFallbackNotice = null,
+                            subtitleFallbackNotice = null,
+                        ),
+                        playerState = PreviewableVideoPlayerState(),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Fullscreen").assertIsDisplayed()
+        composeRule.onNodeWithText("Fullscreen").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Exit fullscreen").assertIsDisplayed()
+        assertEquals(1, controller.toggleCount)
+    }
+
+    private class FakeFullscreenController : FullscreenController {
+        private val state = mutableStateOf(false)
+
+        var toggleCount = 0
+            private set
+
+        override val isFullscreen: State<Boolean> = state
+
+        override fun toggle() {
+            toggleCount++
+            state.value = !state.value
+        }
     }
 }

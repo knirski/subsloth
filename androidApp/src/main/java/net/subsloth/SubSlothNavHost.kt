@@ -1,13 +1,10 @@
 package net.subsloth
 
 import android.content.ContextWrapper
-import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -30,6 +27,7 @@ import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.EpisodeDetailKey
 import net.subsloth.core.ui.LibraryKey
+import net.subsloth.core.ui.LocalFullscreenController
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -40,6 +38,7 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.player.AndroidFullscreenController
 import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
@@ -275,29 +274,9 @@ fun SubSlothNavHost(
                     }
                     current as? ComponentActivity
                 } ?: return@entry
-                DisposableEffect(activity) {
-                    val originalOrientation = activity.requestedOrientation
-                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    // Fullscreen playback: hide system bars (immersive) —
-                    // but only record them as ours to restore when they
-                    // were visible before entry; bars hidden by someone
-                    // else stay hidden after leaving the player.
-                    val window = activity.window
-                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                    val barsInitiallyVisible = WindowInsetsCompat
-                        .toWindowInsetsCompat(window.decorView.rootWindowInsets)
-                        .isVisible(WindowInsetsCompat.Type.systemBars())
-                    val originalBehavior = insetsController.systemBarsBehavior
-                    insetsController.systemBarsBehavior =
-                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                    insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                    onDispose {
-                        activity.requestedOrientation = originalOrientation
-                        insetsController.systemBarsBehavior = originalBehavior
-                        if (barsInitiallyVisible) {
-                            insetsController.show(WindowInsetsCompat.Type.systemBars())
-                        }
-                    }
+                val fullscreenController = remember(activity) { AndroidFullscreenController(activity) }
+                DisposableEffect(fullscreenController) {
+                    onDispose { fullscreenController.restore() }
                 }
 
                 val app = LocalContext.current.applicationContext
@@ -337,12 +316,14 @@ fun SubSlothNavHost(
                             )
                     },
                 )
-                PlayerScreen(
-                    viewModel = viewModel,
-                    modifier = Modifier,
-                    onNavigateBack = { backStack.removeLastOrNull() },
-                    onNavigateToAuthRepair = { backStack += AuthRepairKey },
-                )
+                CompositionLocalProvider(LocalFullscreenController provides fullscreenController) {
+                    PlayerScreen(
+                        viewModel = viewModel,
+                        modifier = Modifier,
+                        onNavigateBack = { backStack.removeLastOrNull() },
+                        onNavigateToAuthRepair = { backStack += AuthRepairKey },
+                    )
+                }
             }
 
             entry<LibraryKey> {

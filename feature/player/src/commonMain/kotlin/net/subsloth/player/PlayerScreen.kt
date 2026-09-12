@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +48,7 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
+import net.subsloth.core.ui.LocalFullscreenController
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
 
@@ -377,24 +379,35 @@ private fun PlaybackControls(
     onToggleSubtitles: () -> Unit,
     onToggleQuality: () -> Unit = {},
 ) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
+    val fullscreenController = LocalFullscreenController.current
+    val isFullscreen by fullscreenController.isFullscreen
+    // Wraps so the added fullscreen control still fits narrow (portrait)
+    // layouts; wide layouts keep one centered row.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedButton(onClick = onTogglePlayPause) {
             Text(if (isPlaying) stringResource(Res.string.player_pause) else stringResource(Res.string.player_play))
         }
-        Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleSpeed) {
             Text(stringResource(Res.string.player_speed))
         }
-        Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleSubtitles) {
             Text(stringResource(Res.string.player_subtitles))
         }
-        Spacer(modifier = Modifier.width(8.dp))
         OutlinedButton(onClick = onToggleQuality) {
             Text(stringResource(Res.string.player_quality))
+        }
+        OutlinedButton(onClick = fullscreenController::toggle) {
+            Text(
+                if (isFullscreen) {
+                    stringResource(Res.string.player_exit_fullscreen)
+                } else {
+                    stringResource(Res.string.player_fullscreen)
+                },
+            )
         }
     }
 }

@@ -78,7 +78,7 @@ This document maps all 24 modules in the project, their responsibilities, depend
 | `:feature:auth` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:ui` | Login, logout, credential management, profile selection |
 | `:feature:catalog` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Home screen, search, filters, sort |
 | `:feature:details` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:ui` | Movie/series detail views, episode lists |
-| `:feature:player` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:media` | Playback UI, controls, subtitles, quality |
+| `:feature:player` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain`, `:core:ui`, `:core:media` | Playback UI, controls, subtitles, quality |
 | `:feature:library` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Library, downloads list, storage management |
 | `:feature:settings` | `subsloth.kmp.library` + Compose | `:core:model`, `:core:domain` | Settings, diagnostics, about |
 
@@ -139,7 +139,7 @@ injected only at each platform's composition root
 ```text
 :feature:* ──────┬── :core:model
                   ├── :core:domain
-                  ├── :core:ui        (auth, details)
+                  ├── :core:ui        (auth, details, player)
                   └── :core:media     (player only)
 
 :core:data ───────┬── :core:network      (transport only)
