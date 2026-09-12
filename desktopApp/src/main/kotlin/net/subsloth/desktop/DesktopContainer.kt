@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.subsloth.core.data.media.CatalogRepository
+import net.subsloth.core.data.runtime.AccountMediaRuntime
 import net.subsloth.core.data.session.ValidatingSessionState
 import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.domain.policy.CompletionPolicy
@@ -280,6 +281,25 @@ class DesktopContainer(dataDirOverride: File? = null) {
 
     val catalogRepository: CatalogRepository get() = currentCatalogRepository
 
+    /**
+     * Shared account-scoped runtime: catalog projections, playback
+     * progress, watched state, and subtitle-track resolution. Platform
+     * specifics (DataStore, credential storage, byte transfer) stay in this
+     * container.
+     */
+    private val accountMediaRuntime: AccountMediaRuntime by lazy {
+        AccountMediaRuntime(
+            sessionPort = sessionPort,
+            catalogRepository = { catalogRepository },
+            api = { api },
+            accountPlaybackProgressDao = { database.accountPlaybackProgressDao() },
+            offlinePlaybackProgressDao = { database.offlinePlaybackProgressDao() },
+            watchedStateDao = { database.watchedStateDao() },
+            clock = clock,
+            anonymousProfileKey = DEFAULT_PROFILE_KEY,
+        )
+    }
+
     val playbackPort: PlaybackPort get() = currentPlaybackPort
 
     /** Production [net.subsloth.core.domain.port.LibraryPort]: favorites,
@@ -425,14 +445,8 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * Signed subtitle URLs are ephemeral, so they are fetched fresh and
      * never persisted.
      */
-    private suspend fun resolveSubtitleTracks(mediaId: Media.MediaId): List<Subtitle> {
-        val tracks = when (mediaId) {
-            is Media.MediaId.Movie -> api.getMovie(mediaId.value.value).subtitles
-            is Media.MediaId.Episode -> api.getEpisode(mediaId.value.value).subtitles
-            is Media.MediaId.Show -> null
-        }
-        return Mapper.mapSubtitleTracks(tracks)
-    }
+    private suspend fun resolveSubtitleTracks(mediaId: Media.MediaId): List<Subtitle> =
+        accountMediaRuntime.resolveSubtitleTracks(mediaId)
 
     private fun pickDownloadTarget(
         topDownloadUrl: String?,
@@ -510,14 +524,10 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * catalog lambdas never go stale across session rebuilds — the same
      * anti-stale-capture discipline `AppContainer` documents.
      */
-    suspend fun listMovies(): Result<List<MovieSummary>> = runCatching {
-        catalogRepository.catalogItems("movie").first().filterIsInstance<MovieSummary>()
-    }.onFailure { if (it is CancellationException) throw it }
+    suspend fun listMovies(): Result<List<MovieSummary>> = accountMediaRuntime.listMovies()
 
     /** Show-list counterpart of [listMovies]. */
-    suspend fun listShows(): Result<List<ShowSummary>> = runCatching {
-        catalogRepository.catalogItems("show").first().filterIsInstance<ShowSummary>()
-    }.onFailure { if (it is CancellationException) throw it }
+    suspend fun listShows(): Result<List<ShowSummary>> = accountMediaRuntime.listShows()
 
     /**
      * Merged movie+show catalog for the search screen (`SearchViewModel`'s
@@ -525,21 +535,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * same cached-catalog lists wrapped in the `Outcome` shape the search
      * ViewModel consumes; a failed side degrades to a failure.
      */
-    suspend fun listAllMedia(): Outcome<List<Media>> {
-        val movies = listMovies()
-        val shows = listShows()
-        return when {
-            movies.isSuccess && shows.isSuccess -> Outcome.Success(
-                movies.getOrThrow() + shows.getOrThrow(),
-            )
-
-            else -> {
-                val error = movies.exceptionOrNull() ?: shows.exceptionOrNull()
-                    ?: return Outcome.Success(emptyList())
-                Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(error))
-            }
-        }
-    }
+    suspend fun listAllMedia(): Outcome<List<Media>> = accountMediaRuntime.listAllMedia()
 
     // ── Player wiring (net.subsloth.player.PlayerViewModel) ─────────────
 
@@ -585,16 +581,8 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * "Continue Watching" row — same mapping as `AppContainer`'s
      * `listAccountPlaybackProgress`.
      */
-    suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> = runCatching {
-        when (val session = sessionPort.current()) {
-            Session.Anonymous -> emptyList()
-
-            is Session.Authenticated -> database.accountPlaybackProgressDao()
-                .getAllForProfile(session.userId)
-                .first()
-                .map { it.toPlaybackProgress() }
-        }
-    }.onFailure { if (it is CancellationException) throw it }
+    suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> =
+        accountMediaRuntime.listAccountPlaybackProgress()
 
     /**
      * Looks up the active session's stored progress for [mediaId] so the
@@ -602,34 +590,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * fails — resume is best-effort and playback then starts from zero.
      */
     suspend fun loadPlaybackProgress(mediaId: Media.MediaId): PlaybackProgress? =
-        listAccountPlaybackProgress().getOrDefault(emptyList()).firstOrNull { it.mediaId == mediaId }
-
-    private fun AccountPlaybackProgressEntity.toPlaybackProgress(): PlaybackProgress {
-        val fraction = if (durationSeconds > 0) {
-            positionSeconds.toDouble() / durationSeconds.toDouble()
-        } else {
-            0.0
-        }
-        return PlaybackProgress(
-            mediaId = parsePlaybackMediaId(contentId, contentType),
-            positionSeconds = positionSeconds,
-            durationSeconds = durationSeconds,
-            lastUpdatedEpochSeconds = Instant.fromEpochSeconds(updatedAtEpochSeconds),
-            isWatched = fraction > CompletionPolicy.WATCHED_THRESHOLD,
-        )
-    }
-
-    private fun parsePlaybackMediaId(contentId: String, contentType: String): Media.MediaId = when (contentType) {
-        "movie" -> Media.MediaId.Movie(MovieId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
-
-        "show" -> Media.MediaId.Show(ShowId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
-
-        "episode" -> Media.MediaId.Episode(
-            EpisodeId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
-        )
-
-        else -> error("Unknown contentType: $contentType")
-    }
+        accountMediaRuntime.loadPlaybackProgress(mediaId)
 
     /**
      * Creates, confirms, and starts driving a download queue for one season
@@ -708,87 +669,20 @@ class DesktopContainer(dataDirOverride: File? = null) {
 
     /** Flattens [ShowDetails]'s seasons into a single episode list for the "next episode" lookup. */
     suspend fun fetchEpisodesForShow(showId: Media.MediaId.Show): Outcome<List<Episode>> =
-        when (val result = catalogRepository.getDetails(showId)) {
-            is Outcome.Success -> {
-                val details = result.value as? ShowDetails
-                if (details != null) {
-                    Outcome.Success(details.seasons.flatMap { it.episodes })
-                } else {
-                    Outcome.Failure(MediaError.NotFound)
-                }
-            }
-
-            is Outcome.Failure -> Outcome.Failure(result.error)
-        }
-
-    /**
-     * Persists playback progress for the active profile. Online progress
-     * goes to the account-scoped table (and marks the item watched once
-     * the completion threshold is crossed); offline playback goes to the
-     * shared offline table — [PlayerViewModel] passes its mode through.
-     */
+        accountMediaRuntime.fetchEpisodesForShow(showId)
     suspend fun savePlaybackProgress(
         mediaId: Media.MediaId,
         positionSeconds: Long,
         durationSeconds: Long,
         playbackMode: PlaybackMode = PlaybackMode.ONLINE,
-    ) {
-        when (playbackMode) {
-            PlaybackMode.OFFLINE -> database.offlinePlaybackProgressDao().upsert(
-                OfflinePlaybackProgressEntity(
-                    contentId = mediaId.toContentId(),
-                    positionSeconds = positionSeconds,
-                    durationSeconds = durationSeconds,
-                    updatedAtEpochSeconds = clock.now().epochSeconds,
-                ),
-            )
-
-            PlaybackMode.ONLINE -> {
-                database.accountPlaybackProgressDao().upsert(
-                    AccountPlaybackProgressEntity(
-                        profileKey = currentProfileKey().value,
-                        contentId = mediaId.toContentId(),
-                        contentType = mediaId.toContentType(),
-                        positionSeconds = positionSeconds,
-                        durationSeconds = durationSeconds,
-                        updatedAtEpochSeconds = clock.now().epochSeconds,
-                    ),
-                )
-                if (durationSeconds > 0 &&
-                    positionSeconds.toDouble() / durationSeconds > CompletionPolicy.WATCHED_THRESHOLD
-                ) {
-                    markWatched(mediaId)
-                }
-            }
-        }
-    }
+    ) = accountMediaRuntime.savePlaybackProgress(mediaId, positionSeconds, durationSeconds, playbackMode)
 
     /** Marks [mediaId] watched for the active profile (watched_state table). */
-    suspend fun markWatched(mediaId: Media.MediaId) {
-        database.watchedStateDao().upsert(
-            WatchedStateEntity(
-                profileKey = currentProfileKey().value,
-                contentId = mediaId.toContentId(),
-                contentType = mediaId.toContentType(),
-                isWatched = true,
-                watchedAtEpochSeconds = clock.now().epochSeconds,
-            ),
-        )
-    }
+    suspend fun markWatched(mediaId: Media.MediaId) = accountMediaRuntime.markWatched(mediaId)
 
     /** Content ids marked watched for the active profile (series rows, detail badges). */
-    suspend fun listWatchedContentIds(): Set<String> = database.watchedStateDao()
-        .getAllForProfile(currentProfileKey().value)
-        .first()
-        .filter { it.isWatched }
-        .map { it.contentId }
-        .toSet()
-
-    /** Watched state for a single media item, for the active profile. */
-    suspend fun isWatched(mediaId: Media.MediaId): Boolean = database.watchedStateDao()
-        .getByProfileAndContentId(currentProfileKey().value, mediaId.toContentId())
-        ?.isWatched == true
-
+    suspend fun listWatchedContentIds(): Set<String> = accountMediaRuntime.listWatchedContentIds()
+    suspend fun isWatched(mediaId: Media.MediaId): Boolean = accountMediaRuntime.isWatched(mediaId)
     suspend fun savePlaybackSpeed(speed: Float) {
         userPreferences.setPlaybackSpeed(currentProfileKey(), speed)
     }
@@ -826,10 +720,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
      * for anonymous sessions (same pattern as `AppContainer` and
      * `SettingsViewModel`).
      */
-    fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
-        is Session.Authenticated -> AccountProfileKey(session.userId)
-        Session.Anonymous -> AccountProfileKey(DEFAULT_PROFILE_KEY)
-    }
+    fun currentProfileKey(): AccountProfileKey = accountMediaRuntime.currentProfileKey()
 
     // ── Settings wiring (net.subsloth.settings.SettingsViewModel) ───────
 
