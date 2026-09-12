@@ -72,11 +72,24 @@ API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 ## Live E2E Tests (real backend)
 
 `androidApp/src/androidTest/kotlin/net/subsloth/e2e/LiveCatalogE2ETest.kt` drives
-the real `MainActivity` against a live backend: it signs in through the
-production login form (base URL + credentials from instrumentation args),
-fetches a show title from the live API, and asserts the app's search finds
-that title in the synced catalog. The class is skipped unless credentials are
-passed, so CI never runs it and never stores secrets.
+the real `MainActivity` against a live backend:
+
+- **Catalog**: signs in through the production login form (base URL +
+  credentials from instrumentation args), fetches a show title from the live
+  API, and asserts the app's search finds that title in the synced catalog.
+- **Episode playback**: searches the show, opens its detail, taps the first
+  playable episode, presses Play, and waits for the player to resolve a
+  stream and report `Starting playback`. The player's controls hide while
+  playing and video rendering depends on CDN/codec support in the emulator,
+  so the assertion is the player's own playback log rather than pixels.
+- **Movie playback**: the same journey for the first live movie; it skips
+  itself when the account has no movies (the free tier has none).
+
+The suite switches the device to landscape before launching the activity
+(the player forces sensor-landscape; starting landscape avoids an activity
+recreation mid-test) and suppresses the immersive-mode confirmation dialog.
+The class is skipped unless credentials are passed, so CI never runs it and
+never stores secrets.
 
 ```bash
 # 1. Start the emulator, then build + install app and test APKs
