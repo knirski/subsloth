@@ -69,6 +69,41 @@ API 36, `google_apis`, `x86_64`, `swiftshader_indirect`.
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`verify` mode) | `:androidApp:connectedDebugAndroidTest` — compares against stored golden images | `workflow_dispatch` (manual) |
 | [`screenshots.yml`](/.github/workflows/screenshots.yml) (`update` mode) | Regenerate goldens + export to `docs/screenshots/` + commit | `workflow_dispatch` (manual) |
 
+## Live E2E Tests (real backend)
+
+`androidApp/src/androidTest/kotlin/net/subsloth/e2e/LiveCatalogE2ETest.kt` drives
+the real `MainActivity` against a live backend: it signs in through the
+production login form (base URL + credentials from instrumentation args),
+fetches a show title from the live API, and asserts the app's search finds
+that title in the synced catalog. The class is skipped unless credentials are
+passed, so CI never runs it and never stores secrets.
+
+```bash
+# 1. Start the emulator, then build + install app and test APKs
+start-subsloth-emulator
+./gradlew :androidApp:installDebug :androidApp:installDebugAndroidTest
+
+# 2. Reset the target app so the login form is shown
+adb -e shell pm clear net.subsloth
+
+# 3. Run only the live class (values stay in your shell environment)
+adb -e shell am instrument -w \
+  -e class net.subsloth.e2e.LiveCatalogE2ETest \
+  -e SUBSLOTH_LOGIN "$SUBSLOTH_LOGIN" \
+  -e SUBSLOTH_PASSWORD "$SUBSLOTH_PASSWORD" \
+  -e SUBSLOTH_API_BASE_URL "$SUBSLOTH_API_BASE_URL" \
+  net.subsloth.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+- `SUBSLOTH_API_BASE_URL` must point at the API root including its version
+  path (for example `/api/v2/`); the live E2E class falls back to
+  `BuildConfig.SUBSLOTH_API_BASE_URL` when the arg is absent.
+- Credentials are passed as instrumentation arguments only — never commit
+  them, never pass them to Gradle tasks, and keep the base URL out of
+  committed files.
+- Headless emulators work: no manual interaction is needed because the login
+  credentials come from instrumentation args.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
