@@ -76,7 +76,8 @@ as before.
 ## Desktop — real composition root (`DesktopContainer`)
 
 `desktopApp/src/main/kotlin/net/subsloth/desktop/DesktopContainer.kt` is the desktop
-composition root, mirroring `AppContainer`'s structure: DataStore-backed `UserPreferences`
+composition root, mirroring `AppContainer`'s structure (both delegate account-scoped media
+helpers to the shared `AccountMediaRuntime`): DataStore-backed `UserPreferences`
 (`~/.local/share/subsloth` on Linux/macOS, `%APPDATA%\subsloth` on Windows), the
 machine-keyed AES-GCM `CredentialStore` JVM actual (`~/.subsloth`), `AccountProfileStore`,
 a Room `SubSlothDatabase` (BundledSQLiteDriver, next to the preferences file), and a
@@ -101,9 +102,11 @@ tests are unchanged. Known desktop omissions (deliberate):
   blank preference (the same presence-aware precedence as Android's
   `BuildConfig.SUBSLOTH_API_BASE_URL`, resolved via `ApiBaseUrlPolicy`
   — see `DesktopContainer.resolveApiBaseUrl`/`apiBaseUrlFlow`).
-- The platform-neutral helper subset of `AppContainer` (catalog lambdas, settings writers,
-  playback-progress persistence) is mirrored into `DesktopContainer` rather than extracted
-  into a shared runtime; consolidating the two containers is a future refactor.
+- The platform-neutral helper subset of `AppContainer` (catalog projections, playback-progress
+  persistence, watched state, subtitle-track resolution) is extracted into the shared
+  `AccountMediaRuntime` (`core/data/.../runtime/AccountMediaRuntime.kt`); both containers
+  delegate to it and keep only platform-specific wiring. Settings writers remain one-liners
+  in each container.
 
 **Downloads are wired on desktop.** `DesktopContainer.downloadController` mirrors
 `AppContainer`'s adapter: `DownloadController` (now in `:core:media`'s commonMain, since it is
