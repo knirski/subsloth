@@ -97,6 +97,7 @@ val desktopAppVersion: String by lazy {
 }
 
 val desktopLibPath = providers.gradleProperty("desktopLibPath").orNull
+val desktopGstPluginPath = providers.gradleProperty("desktopGstPluginPath").orNull
 
 compose.desktop {
     application {
@@ -131,5 +132,8 @@ compose.desktop {
 tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
     if (desktopLibPath != null) {
         environment("LD_LIBRARY_PATH", desktopLibPath)
+    }
+    if (desktopGstPluginPath != null) {
+        environment("GST_PLUGIN_SYSTEM_PATH_1_0", desktopGstPluginPath)
     }
 }

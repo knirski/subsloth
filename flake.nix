@@ -350,6 +350,25 @@
       ];
       desktopLibPath = pkgs.lib.makeLibraryPath desktopLibs;
 
+      # ── Desktop media runtime libraries (composemediaplayer/GStreamer) ────
+      # The player bridge's native library links GStreamer (libgstapp-1.0 and
+      # friends) and decodes media through its plugins. Plugin discovery
+      # additionally needs GST_PLUGIN_SYSTEM_PATH_1_0 pointing at each
+      # package's lib/gstreamer-1.0 directory.
+      gstLibs = with pkgs; [
+        glib # libglib-2.0/libgobject-2.0 — direct deps of the player bridge
+      ] ++ (with pkgs.gst_all_1; [
+        gstreamer
+        gst-plugins-base
+        gst-plugins-good
+        gst-plugins-bad
+        gst-plugins-ugly
+        gst-libav
+      ]);
+      gstLibPath = pkgs.lib.makeLibraryPath gstLibs;
+      gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" gstLibs;
+      mediaLibPath = "${desktopLibPath}:${gstLibPath}";
+
       # ── run-subsloth-instrumented-tests script ──────────────────────────────
       # Full one-shot pipeline: start emulator → wait for boot → run tests →
       # stop emulator.  All-in-one convenience for AI agents and humans.
@@ -420,9 +439,10 @@
       # ── Desktop app package (Linux) ────────────────────────────────────
       # Installs the pre-built Compose Desktop app image (the
       # `:desktopApp:createDistributable` output) with a wrapper exporting
-      # `desktopLibPath` on LD_LIBRARY_PATH so Skiko resolves its dlopen'd
-      # native libraries (libGL, libX11, fontconfig, ...) against the Nix
-      # store instead of the host system.
+      # `mediaLibPath` on LD_LIBRARY_PATH (Skiko's dlopen'd GL/X11/fontconfig
+      # libraries plus the player bridge's GStreamer libraries) and
+      # `gstPluginPath` on GST_PLUGIN_SYSTEM_PATH_1_0, so both rendering and
+      # playback resolve against the Nix store instead of the host system.
       #
       # Gradle is deliberately NOT run inside `nix build` (network
       # impurity): build the distributable first,
@@ -466,7 +486,8 @@
               mkdir -p "$out/share" "$out/bin"
               cp -r "${/. + distributableDir}" "$out/share/subsloth"
               makeWrapper "$out/share/subsloth/bin/SubSloth" "$out/bin/subsloth" \
-                --prefix LD_LIBRARY_PATH : "${desktopLibPath}"
+                --prefix LD_LIBRARY_PATH : "${mediaLibPath}" \
+                --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${gstPluginPath}"
             '';
 
       devShells.${system}.default = pkgs.mkShell {
@@ -535,12 +556,19 @@
           # Nix packages provide all native deps: libglvnd+mesa (GL dispatch +
           # vendor implementation), X11, fontconfig, etc.
           old_path="''${LD_LIBRARY_PATH:-}"
-          export LD_LIBRARY_PATH="${desktopLibPath}''${old_path:+:}''${old_path}"
+          export LD_LIBRARY_PATH="${mediaLibPath}''${old_path:+:}''${old_path}"
+
+          # GStreamer plugin discovery for the desktop player bridge.
+          old_gst_path="''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
+          export GST_PLUGIN_SYSTEM_PATH_1_0="${gstPluginPath}''${old_gst_path:+:}''${old_gst_path}"
 
           # Gradle daemon project property forwarding: ORG_GRADLE_PROJECT_*
           # env vars are passed from the client shell to the daemon by gradlew.
-          # The desktopApp build reads this and forwards it to the forked JVM.
+          # The desktopApp build reads these and forwards them to the forked
+          # JVM, so a long-lived daemon started before this shell still runs
+          # the app with the right native library and plugin paths.
           export ORG_GRADLE_PROJECT_desktopLibPath="$LD_LIBRARY_PATH"
+          export ORG_GRADLE_PROJECT_desktopGstPluginPath="$GST_PLUGIN_SYSTEM_PATH_1_0"
 
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
           CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"

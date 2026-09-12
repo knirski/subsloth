@@ -132,6 +132,7 @@ Common build, test, emulator, IDE, and development issues and their fixes.
 | Missing `JAVA17_HOME` / `ANDROID_HOME` | Nix shell not loaded | Verify `echo $JAVA17_HOME` has a value |
 | Emulator scripts not found (`setup-emulator`, etc.) | Not in Nix dev shell | These are provided by `flake.nix` — enter the shell first |
 | `vacuum: command not found` | vacuum not installed | Install via Nix (included in flake), npm, or `curl` — see `docs/openapi.md` |
+| Desktop playback: `UnsatisfiedLinkError: libgstapp-1.0.so.0: cannot open shared object file` | The player bridge's native library needs GStreamer, which is not on the host library path (NixOS) | Run the app inside the Nix dev shell (`./gradlew :desktopApp:run`) or via the wrapped `nix build .#subsloth` package; both provide the GStreamer libraries and `GST_PLUGIN_SYSTEM_PATH_1_0`. Verify with `ldd ~/.cache/composemediaplayer/native/linux-x86-64/libNativeVideoPlayer.so` — it should report no `not found` entries |
 
 ---
 
