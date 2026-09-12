@@ -3,7 +3,6 @@ package net.subsloth.desktop
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
@@ -14,25 +13,21 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
-import net.subsloth.core.ui.LocalFullscreenController
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
 
 fun main() = application {
     val windowState = rememberWindowState(size = DpSize(1280.dp, 800.dp))
-    val fullscreenController = remember(windowState) { DesktopFullscreenController(windowState) }
 
     Window(
         onCloseRequest = ::exitApplication,
         title = "SubSloth",
         state = windowState,
     ) {
-        CompositionLocalProvider(LocalFullscreenController provides fullscreenController) {
-            SubSlothTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    DesktopRoot()
-                }
+        SubSlothTheme {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                DesktopRoot()
             }
         }
     }

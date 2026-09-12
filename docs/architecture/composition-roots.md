@@ -173,14 +173,14 @@ could only enqueue rows that never complete. Web production playback depends on 
 media exposing a progressive `download_url`; HLS-only items are not playable in browsers
 until hls.js support lands in the player bridge.
 
-Playback **fullscreen** is another platform capability delivered through
-`core/ui`'s `LocalFullscreenController` (no-op default, so previews and tests
-need no windowing): Android's `AndroidFullscreenController` enters landscape
-and hides the system bars, restoring the pre-entry orientation and bars when
-fullscreen is left; desktop's `DesktopFullscreenController` toggles the window
-between `WindowPlacement.Fullscreen` and its previous placement; the web root's
-`WebFullscreenController` requests the browser Fullscreen API on the document
-element and tracks `fullscreenchange` so Esc keeps the control label in sync.
+Playback **fullscreen** is owned by the player library itself
+(`VideoPlayerState.isFullscreen` / `toggleFullscreen()`), so the video — not
+the app shell — fills the screen: desktop opens a dedicated fullscreen video
+window, web requests the browser Fullscreen API and lays the video out
+full-screen with the Compose overlay on top, and Android renders a full-window
+player dialog. Android hosts additionally mirror that state onto the activity
+(`AndroidFullscreenWindowController` in `SubSlothNavHost`): landscape plus
+hidden system bars while fullscreen, restored when fullscreen ends.
 
 ## The shared non-production default
 
