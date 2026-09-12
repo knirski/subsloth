@@ -25,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -132,9 +133,14 @@ fun PlayerOverlay(
     // The player library owns the fullscreen mode (it opens a dedicated
     // video window on desktop and lays the video out full-screen on web and
     // Android); report its state so hosts can apply platform window effects
-    // (e.g. Android landscape + immersive bars).
+    // (e.g. Android landscape + immersive bars, hiding the web demo banner).
     LaunchedEffect(playerState.isFullscreen) {
         onFullscreenChanged(playerState.isFullscreen)
+    }
+    // Leaving the player while fullscreen must not leave hosts stuck in the
+    // fullscreen state (e.g. the web demo banner hidden).
+    DisposableEffect(Unit) {
+        onDispose { onFullscreenChanged(false) }
     }
 
     // Auto-hide the chrome a few seconds into uninterrupted playback. Any

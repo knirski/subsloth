@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeViewport
@@ -25,9 +28,13 @@ fun main() {
                 DisposableEffect(app) {
                     onDispose { app.close() }
                 }
+                // The demo banner must leave the layout in fullscreen: it
+                // sits above the player surface, so the library's interop
+                // <video> could never cover the top of the viewport.
+                var playbackFullscreen by remember { mutableStateOf(false) }
                 CompositionLocalProvider(LocalDownloadActionsEnabled provides false) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (app.showBanner) {
+                        if (app.showBanner && !playbackFullscreen) {
                             WebDemoBanner(text = app.bannerText)
                         }
                         when (app.mode) {
@@ -35,6 +42,7 @@ fun main() {
                                 runtime = app.runtime,
                                 startDestination = app.startDestination,
                                 modifier = Modifier.weight(1f),
+                                onPlaybackFullscreenChanged = { playbackFullscreen = it },
                             )
 
                             // Production gates the nav host on the session exactly
@@ -57,6 +65,7 @@ fun main() {
                                         runtime = app.runtime,
                                         startDestination = app.startDestination,
                                         modifier = Modifier.weight(1f),
+                                        onPlaybackFullscreenChanged = { playbackFullscreen = it },
                                     )
                                 },
                             )
