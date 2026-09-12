@@ -134,6 +134,71 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `marks movies unavailable when only shows exist`() = runTest(testDispatcher) {
+        val shows = listOf(
+            ShowSummary(
+                id = Media.MediaId.Show(ShowId(1)),
+                title = "Show A",
+                plot = null,
+                availability = Availability.Available,
+                rating = null,
+                year = null,
+                genres = persistentListOf(),
+                durationMinutes = null,
+                slug = null,
+                imdbId = null,
+                backdropUrl = null,
+                status = ShowStatus.ONGOING,
+                countries = persistentListOf(),
+            ),
+        )
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(shows),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.moviesUnavailable).isTrue()
+        }
+    }
+
+    @Test
+    fun `does not mark movies unavailable when movies exist`() = runTest(testDispatcher) {
+        val movies = listOf(
+            MovieSummary(
+                id = Media.MediaId.Movie(MovieId(1)),
+                title = "Movie A",
+                plot = null,
+                availability = Availability.Available,
+                rating = null,
+                year = null,
+                genres = persistentListOf(),
+                durationMinutes = null,
+                slug = null,
+                imdbId = null,
+                backdropUrl = null,
+            ),
+        )
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(movies),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.moviesUnavailable).isFalse()
+        }
+    }
+
+    @Test
+    fun `does not mark movies unavailable while catalog is empty`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as HomeUiState.Content
+            assertThat(content.moviesUnavailable).isFalse()
+        }
+    }
+
+    @Test
     fun `shows recency row labeled Recently Added when updatedAt exists`() = runTest(testDispatcher) {
         val movies = listOf(
             MovieSummary(

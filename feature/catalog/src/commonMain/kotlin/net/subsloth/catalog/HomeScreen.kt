@@ -134,6 +134,16 @@ fun CatalogContent(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (state.moviesUnavailable) {
+            item(key = "movies_unavailable", contentType = "notice") {
+                Text(
+                    text = MOVIES_UNAVAILABLE_NOTICE,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+        }
         val rows = state.rows
         rows.forEach { row ->
             item(key = row.label, contentType = row::class) {
@@ -142,6 +152,9 @@ fun CatalogContent(
         }
     }
 }
+
+/** Shown when the catalog has shows but no movies (missing movie entitlement). */
+private const val MOVIES_UNAVAILABLE_NOTICE = "Movies aren't available on this account."
 
 @Composable
 private fun HomeRowSection(

@@ -36,8 +36,12 @@ sealed interface HomeUiState {
     data object Loading : HomeUiState
 
     @Immutable
-    data class Content(val rows: ImmutableList<HomeRow<*>>, val selectedTab: HomeTab, val isSyncing: Boolean = false) :
-        HomeUiState
+    data class Content(
+        val rows: ImmutableList<HomeRow<*>>,
+        val selectedTab: HomeTab,
+        val isSyncing: Boolean = false,
+        val moviesUnavailable: Boolean = false,
+    ) : HomeUiState
 }
 
 @Stable
@@ -176,7 +180,15 @@ internal fun buildHomeContent(
             ?.let { add(HomeRow.Shows(it.toImmutableList())) }
     }.toImmutableList()
 
-    return HomeUiState.Content(rows = rows, selectedTab = selectedTab, isSyncing = isSyncing)
+    return HomeUiState.Content(
+        rows = rows,
+        selectedTab = selectedTab,
+        isSyncing = isSyncing,
+        // The backend hides its movie catalog from accounts without movie
+        // entitlement: the movies list comes back empty while shows are
+        // present, so surface that instead of an unexplained empty section.
+        moviesUnavailable = movieItems.isEmpty() && showItems.isNotEmpty(),
+    )
 }
 
 private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary>): ImmutableList<HomeRow.Recency> {
