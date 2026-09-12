@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -14,8 +15,11 @@ import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.Subtitle
 import net.subsloth.database.dao.DownloadedMediaDao
+import net.subsloth.database.dao.DownloadedSubtitleDao
 import net.subsloth.database.entity.DownloadedMediaEntity
+import net.subsloth.database.entity.DownloadedSubtitleEntity
 import kotlin.time.Clock
 
 /** Target resolved for a queued download: a progressive (single-file) URL. */
@@ -53,11 +57,13 @@ class TransferAbortedException(status: String) : RuntimeException("Transfer abor
  */
 class DownloadTransferCoordinator(
     private val downloadedMediaDao: DownloadedMediaDao,
+    private val downloadedSubtitleDao: DownloadedSubtitleDao,
     private val store: DownloadTransferStore,
     private val transferer: DownloadTransferer,
     private val connectivityChecker: ConnectivityPort,
     private val clock: Clock,
     private val resolveDownloadUrl: suspend (mediaId: Media.MediaId, qualityLabel: String?) -> DownloadTarget?,
+    private val resolveSubtitles: suspend (mediaId: Media.MediaId) -> List<Subtitle>,
 ) {
     private val log = Logger.withTag("DownloadTransferCoordinator")
 
@@ -73,11 +79,18 @@ class DownloadTransferCoordinator(
      * lifetime. Overlapping invocations of [processQueued] are collapsed.
      */
     suspend fun runWatcher() {
-        downloadedMediaDao.getAll().collect { entities ->
-            if (entities.any { it.status == DownloadStatus.QUEUED.name.lowercase() }) {
-                processQueued()
+        combine(
+            downloadedMediaDao.getAll(),
+            downloadedSubtitleDao.getPending(),
+        ) { media, pendingSubtitles -> media to pendingSubtitles }
+            .collect { (media, pendingSubtitles) ->
+                if (media.any { it.status == DownloadStatus.QUEUED.name.lowercase() }) {
+                    processQueued()
+                }
+                if (pendingSubtitles.isNotEmpty()) {
+                    transferPendingSubtitles()
+                }
             }
-        }
     }
 
     /**
@@ -171,6 +184,89 @@ class DownloadTransferCoordinator(
             ),
         )
         _events.tryEmit(TransferEvent.Completed(localId, bytes))
+        transferSubtitles(current)
+    }
+
+    /**
+     * Transfers the subtitle files requested for a completed download.
+     *
+     * Subtitle URLs are signed and ephemeral, so they are resolved fresh at
+     * transfer time (like the media URL) and never persisted. A subtitle
+     * that fails to transfer is logged and left without a local path; the
+     * media download itself is unaffected.
+     */
+    private suspend fun transferSubtitles(download: DownloadedMediaEntity) {
+        val pending = downloadedSubtitleDao.getForDownload(download.id).first()
+            .filter { it.localFilePath.isBlank() }
+        if (pending.isEmpty()) return
+        val mediaId = parseMediaId(download.contentId, download.mediaType) ?: return
+        val available = try {
+            resolveSubtitles(mediaId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.e(e) { "Subtitle resolution failed for ${download.contentId}" }
+            return
+        }
+        for (row in pending) {
+            transferSubtitle(row, download, available)
+        }
+    }
+
+    /**
+     * Transfers pending subtitle rows whose media download already
+     * completed. The watcher calls this when a subtitle row is inserted
+     * after its media finished (season queues enqueue subtitles right
+     * after the media row), so no request is lost to that ordering.
+     */
+    internal suspend fun transferPendingSubtitles(): Int {
+        if (!processMutex.tryLock()) return 0
+        var processed = 0
+        try {
+            for (row in downloadedSubtitleDao.getPending().first()) {
+                val download = downloadedMediaDao.getById(row.downloadId) ?: continue
+                if (download.status != DownloadStatus.COMPLETED.name.lowercase()) continue
+                val mediaId = parseMediaId(download.contentId, download.mediaType) ?: continue
+                val available = try {
+                    resolveSubtitles(mediaId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    log.e(e) { "Subtitle resolution failed for ${download.contentId}" }
+                    continue
+                }
+                transferSubtitle(row, download, available)
+                processed++
+            }
+        } finally {
+            processMutex.unlock()
+        }
+        return processed
+    }
+
+    private suspend fun transferSubtitle(
+        row: DownloadedSubtitleEntity,
+        download: DownloadedMediaEntity,
+        available: List<Subtitle>,
+    ) {
+        val subtitle = available.firstOrNull { it.language.value == row.language } ?: return
+        val url = subtitle.downloadUrl ?: subtitle.url ?: return
+        val relativePath = store.allocatePath(download.contentId, ".${subtitle.format.name.lowercase()}")
+        transferer.transfer(url, relativePath).fold(
+            onSuccess = {
+                val staged = store.stageFile(relativePath)
+                val target = store.finalFile(relativePath)
+                if (store.finalizeDownload(staged, target) && target.exists()) {
+                    downloadedSubtitleDao.upsert(
+                        row.copy(format = subtitle.format.name, localFilePath = relativePath.value),
+                    )
+                }
+            },
+            onFailure = { error ->
+                if (error is CancellationException) throw error
+                log.e(error) { "Subtitle transfer failed for ${download.contentId}/${row.language}" }
+            },
+        )
     }
 
     private suspend fun checkStillActive(localId: LocalMediaIdentifier) {

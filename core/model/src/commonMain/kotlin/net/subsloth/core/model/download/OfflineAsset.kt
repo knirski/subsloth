@@ -1,11 +1,14 @@
 package net.subsloth.core.model.download
 
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.Subtitle
+import net.subsloth.core.model.media.SubtitleFormat
 
 /** Unique identifier for a download or season queue operation. */
 data class QueueId(val value: String)
@@ -93,6 +96,13 @@ sealed interface SubtitleSelection {
     data object None : SubtitleSelection
 }
 
+/** A subtitle file stored locally as part of an [OfflineAsset]. */
+data class OfflineSubtitle(
+    val language: LanguageCode,
+    val format: SubtitleFormat?,
+    val relativePath: OfflineRelativePath,
+)
+
 /**
  * A downloaded media asset available for offline playback.
  *
@@ -108,4 +118,6 @@ data class OfflineAsset(
     val effectiveQuality: QualityDescriptor,
     val displayTitle: String,
     val isPlayable: Boolean,
+    /** Subtitle files whose bytes were transferred alongside the media. */
+    val subtitles: ImmutableList<OfflineSubtitle> = persistentListOf(),
 )

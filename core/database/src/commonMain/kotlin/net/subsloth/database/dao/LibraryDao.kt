@@ -152,6 +152,9 @@ interface DownloadedSubtitleDao {
     @Query("SELECT * FROM downloaded_subtitles WHERE downloadId = :downloadId")
     fun getForDownload(downloadId: Long): Flow<List<DownloadedSubtitleEntity>>
 
+    @Query("SELECT * FROM downloaded_subtitles WHERE localFilePath = ''")
+    fun getPending(): Flow<List<DownloadedSubtitleEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: DownloadedSubtitleEntity)
 

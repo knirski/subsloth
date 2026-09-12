@@ -3,6 +3,7 @@ package net.subsloth.core.media.download
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
@@ -15,12 +16,14 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.OfflineAsset
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.download.OfflineSubtitle
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.QualityDescriptor
+import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.database.dao.DownloadedMediaDao
 import net.subsloth.database.dao.DownloadedSubtitleDao
 import net.subsloth.database.dao.OfflineDisplayMetadataDao
@@ -43,11 +46,12 @@ class DownloadController(
 
     override suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>> = runCatching {
         downloadedMediaDao.getCompleted().first().map { entity ->
+            val subtitles = entity.offlineSubtitles()
             OfflineAsset(
                 mediaId = parseMediaId(entity.contentId, entity.mediaType),
                 localId = LocalMediaIdentifier("${entity.contentId}/${entity.id}"),
                 videoRelativePath = OfflineRelativePath.safe(entity.localFilePath),
-                subtitleLanguages = persistentSetOf(),
+                subtitleLanguages = subtitles.map { it.language }.toPersistentSet(),
                 effectiveQuality = QualityDescriptor(
                     resolution = parseResolution(entity.selectedQuality),
                     label = entity.selectedQuality,
@@ -56,9 +60,30 @@ class DownloadController(
                 ),
                 displayTitle = entity.contentId,
                 isPlayable = entity.localFilePath.isNotBlank(),
+                subtitles = subtitles,
             )
         }.toImmutableList()
     }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+
+    private suspend fun DownloadedMediaEntity.offlineSubtitles(): ImmutableList<OfflineSubtitle> =
+        downloadedSubtitleDao.getForDownload(id).first().mapNotNull { row ->
+            val path = row.localFilePath.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            OfflineSubtitle(
+                language = LanguageCode(row.language),
+                format = row.format?.let { value ->
+                    runCatching { SubtitleFormat.valueOf(value.uppercase()) }.getOrNull()
+                },
+                relativePath = OfflineRelativePath.safe(path),
+            )
+        }.toImmutableList()
+
+    private suspend fun deleteStoredSubtitles(downloadId: Long) {
+        downloadedSubtitleDao.getForDownload(downloadId).first().forEach { row ->
+            row.localFilePath.takeIf { it.isNotBlank() }?.let { path ->
+                storageManager.deleteMedia(OfflineRelativePath.safe(path))
+            }
+        }
+    }
 
     override suspend fun enqueue(
         mediaId: Media.MediaId,
@@ -147,6 +172,7 @@ class DownloadController(
         if (path.isNotBlank()) {
             storageManager.deleteMedia(OfflineRelativePath.safe(path))
         }
+        deleteStoredSubtitles(entity.id)
         updateStatus(localId, DownloadStatus.REMOVED)
         DownloadCommandOutcome.Applied
     }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
@@ -157,6 +183,8 @@ class DownloadController(
         if (path.isNotBlank()) {
             storageManager.deleteMedia(OfflineRelativePath.safe(path))
         }
+        deleteStoredSubtitles(entity.id)
+        downloadedSubtitleDao.deleteForDownload(entity.id)
         downloadedMediaDao.delete(entity)
         val remainingForContent = downloadedMediaDao.getByContent(entity.contentId, entity.mediaType)
         if (remainingForContent == null) {

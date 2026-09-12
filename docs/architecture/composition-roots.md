@@ -129,8 +129,10 @@ and a pause/remove mid-transfer aborts the stream without overwriting the persis
 There is no ranged resume: aborted or failed transfers restart from scratch. Android's
 `AppContainer` runs the watcher for the process lifetime and surfaces progress through
 `DownloadForegroundService` (started on first transfer, stopped when idle);
-`DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer is not
-wired yet — subtitle rows stay metadata-only.
+`DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer runs with the media transfer: after a media
+download completes, pending subtitle rows are resolved through the scoped
+API and streamed to local files, and the offline resolver exposes verified
+local subtitle files on the offline source.
 
 **Season downloads are wired.** The show detail screen's "Download season" action calls the
 container's `startSeasonDownload`, which computes the preflight confirmation

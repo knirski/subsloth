@@ -68,6 +68,9 @@ private class ControllerSubtitleDao : DownloadedSubtitleDao {
     override fun getForDownload(downloadId: Long): Flow<List<DownloadedSubtitleEntity>> =
         MutableStateFlow(rows.filter { it.downloadId == downloadId })
 
+    override fun getPending(): Flow<List<DownloadedSubtitleEntity>> =
+        MutableStateFlow(rows.filter { it.localFilePath.isBlank() })
+
     override suspend fun upsert(entity: DownloadedSubtitleEntity) {
         rows += entity
     }
@@ -153,6 +156,15 @@ private fun entity(
     downloadedAtEpochSeconds = null,
 )
 
+private fun subtitleRow(downloadId: Long, localFilePath: String = "1/abc.en.srt") = DownloadedSubtitleEntity(
+    id = 1,
+    downloadId = downloadId,
+    language = "en",
+    source = null,
+    format = "SRT",
+    localFilePath = localFilePath,
+)
+
 private fun metadata(contentId: String) = OfflineDisplayMetadataEntity(
     contentId = contentId,
     title = "Title",
@@ -195,6 +207,31 @@ private fun fixtures(
 }
 
 class DownloadControllerTest {
+    @Test
+    fun `listOfflineAssets exposes transferred subtitles`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(listOf(entity(id = 7, status = "completed", localFilePath = "1/abc.mp4")))
+        fixtures.subtitles.rows += subtitleRow(downloadId = 7)
+
+        val asset = requireNotNull(fixtures.controller.listOfflineAssets().getOrThrow().firstOrNull())
+
+        assertThat(asset.subtitleLanguages.map { it.value }).containsExactly("en")
+        assertThat(asset.subtitles.map { it.relativePath.value }).containsExactly("1/abc.en.srt")
+        assertThat(asset.subtitles.map { it.format?.name }).containsExactly("SRT")
+    }
+
+    @Test
+    fun `remove deletes subtitle files and rows`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(listOf(entity(id = 7, status = "completed", localFilePath = "1/abc.mp4")))
+        fixtures.subtitles.rows += subtitleRow(downloadId = 7)
+
+        fixtures.controller.remove(LocalMediaIdentifier("1/7"))
+
+        assertThat(fixtures.store.deleted.map { it.value }).contains("1/abc.en.srt")
+        assertThat(fixtures.subtitles.rows).isEmpty()
+    }
+
     @Test
     fun `enqueue persists a queued download`() = runTest {
         val fixtures = fixtures()

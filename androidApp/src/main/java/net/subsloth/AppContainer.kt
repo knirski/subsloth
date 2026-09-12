@@ -61,6 +61,7 @@ import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.ShowDetails
@@ -354,11 +355,13 @@ class AppContainer(context: Context) {
     val downloadTransferCoordinator: DownloadTransferCoordinator by lazy {
         DownloadTransferCoordinator(
             downloadedMediaDao = database.downloadedMediaDao(),
+            downloadedSubtitleDao = database.downloadedSubtitleDao(),
             store = downloadStorageManager,
             transferer = downloadTransferer,
             connectivityChecker = connectivityChecker,
             clock = clock,
             resolveDownloadUrl = ::resolveDownloadTarget,
+            resolveSubtitles = ::resolveSubtitleTracks,
         )
     }
 
@@ -450,6 +453,22 @@ class AppContainer(context: Context) {
     } catch (e: Exception) {
         log.e(e) { "Download URL resolution failed for $mediaId" }
         null
+    }
+
+    /**
+     * Resolves the subtitle tracks offered for [mediaId] at transfer time.
+     * Signed subtitle URLs are ephemeral, so they are fetched fresh and
+     * never persisted.
+     */
+    private suspend fun resolveSubtitleTracks(mediaId: Media.MediaId): List<Subtitle> {
+        val tracks = when (mediaId) {
+            is Media.MediaId.Movie -> api.getMovie(mediaId.value.value).subtitles
+
+            is Media.MediaId.Episode -> api.getEpisode(mediaId.value.value).subtitles
+
+            is Media.MediaId.Show -> null
+        }
+        return Mapper.mapSubtitleTracks(tracks)
     }
 
     private fun pickDownloadTarget(
