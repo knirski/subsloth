@@ -367,6 +367,12 @@
       ]);
       gstLibPath = pkgs.lib.makeLibraryPath gstLibs;
       gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" gstLibs;
+      # GIO's TLS backend lives in glib-networking; without it libsoup (and
+      # therefore souphttpsrc) cannot open https:// streams.
+      gioModulesPath = pkgs.lib.makeSearchPath "lib/gio/modules" [
+        pkgs.glib-networking
+        pkgs.glib
+      ];
       mediaLibPath = "${desktopLibPath}:${gstLibPath}";
 
       # ── run-subsloth-instrumented-tests script ──────────────────────────────
@@ -487,7 +493,8 @@
               cp -r "${/. + distributableDir}" "$out/share/subsloth"
               makeWrapper "$out/share/subsloth/bin/SubSloth" "$out/bin/subsloth" \
                 --prefix LD_LIBRARY_PATH : "${mediaLibPath}" \
-                --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${gstPluginPath}"
+                --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${gstPluginPath}" \
+                --prefix GIO_EXTRA_MODULES : "${gioModulesPath}"
             '';
 
       devShells.${system}.default = pkgs.mkShell {
@@ -531,6 +538,9 @@
           zip
 
           # Desktop app runtime (Skiko/Compose native libraries)
+          # GStreamer CLI tools (gst-inspect/gst-play/gst-launch) for
+          # diagnosing desktop playback pipelines.
+          pkgs.gst_all_1.gstreamer
         ] ++ desktopLibs;
 
         # JDK 25 runs the Gradle daemon because Metro requires at least 21.
@@ -562,6 +572,10 @@
           old_gst_path="''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
           export GST_PLUGIN_SYSTEM_PATH_1_0="${gstPluginPath}''${old_gst_path:+:}''${old_gst_path}"
 
+          # GIO TLS backend (glib-networking) for libsoup/souphttpsrc.
+          old_gio_path="''${GIO_EXTRA_MODULES:-}"
+          export GIO_EXTRA_MODULES="${gioModulesPath}''${old_gio_path:+:}''${old_gio_path}"
+
           # Gradle daemon project property forwarding: ORG_GRADLE_PROJECT_*
           # env vars are passed from the client shell to the daemon by gradlew.
           # The desktopApp build reads these and forwards them to the forked
@@ -569,6 +583,7 @@
           # the app with the right native library and plugin paths.
           export ORG_GRADLE_PROJECT_desktopLibPath="$LD_LIBRARY_PATH"
           export ORG_GRADLE_PROJECT_desktopGstPluginPath="$GST_PLUGIN_SYSTEM_PATH_1_0"
+          export ORG_GRADLE_PROJECT_desktopGioModulesPath="$GIO_EXTRA_MODULES"
 
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
           CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
