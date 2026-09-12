@@ -43,12 +43,9 @@ import kotlin.test.assertTrue
  * playable episode's stream through the desktop playback port.
  *
  * Skipped automatically unless credentials are provided through the
- * environment, so CI never touches a live backend and never stores secrets:
- *
- * ```
- * SUBSLOTH_LOGIN=… SUBSLOTH_PASSWORD=… SUBSLOTH_API_BASE_URL=… \
- *   xvfb-run -a ./gradlew :desktopApp:test --tests '*LiveDesktopE2ETest*'
- * ```
+ * environment, so CI never touches a live backend and never stores secrets.
+ * Run it with the login, password, and API base URL environment variables
+ * set, as documented in `docs/testing/desktop-tests.md`.
  */
 class LiveDesktopE2ETest {
     @get:Rule
