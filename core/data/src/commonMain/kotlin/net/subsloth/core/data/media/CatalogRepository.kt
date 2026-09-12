@@ -175,11 +175,21 @@ class CatalogRepository(
     private suspend fun <T> paginate(fetch: suspend (Int) -> List<T>): List<T> {
         val result = mutableListOf<T>()
         var page = 1
-        do {
+        var previousFirst: T? = null
+        while (true) {
             val batch = fetch(page)
+            if (batch.isEmpty()) break
+            if (batch.first() == previousFirst) {
+                log.w {
+                    "Backend returned page $page identical to the previous page; " +
+                        "it ignores pagination parameters, stopping after ${result.size} items"
+                }
+                break
+            }
             result.addAll(batch)
+            previousFirst = batch.first()
             page++
-        } while (batch.isNotEmpty())
+        }
         return result
     }
 
