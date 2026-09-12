@@ -102,8 +102,8 @@ fun SubSlothNavHost(
                     viewModel = viewModel,
                     modifier = Modifier,
                     onSearchClick = { backStack += SearchKey },
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
+                    onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
             }
 
@@ -130,8 +130,8 @@ fun SubSlothNavHost(
                 SearchScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
+                    onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
             }
 
@@ -375,8 +375,8 @@ fun SubSlothNavHost(
                 LibraryScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
+                    onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
             }
 
@@ -551,8 +551,8 @@ fun SubSlothNavHost(
                 LibraryScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
-                    onMovieClick = { backStack += MovieDetailKey(it.value.toString()) },
-                    onShowClick = { backStack += ShowDetailKey(it.value.toString()) },
+                    onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
+                    onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
             }
         },
@@ -584,6 +584,18 @@ internal fun parseMediaId(contentId: String, contentType: String): Media.MediaId
     "show" -> contentId.toLongOrNull()?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
         ?.let { Media.MediaId.Show(ShowId(it.toInt())) }
     else -> null
+}
+
+/**
+ * Renders a [Media.MediaId] as the raw numeric value [parseMediaId] expects.
+ *
+ * ID value classes stringify as `ShowId(value=7)`, so callers must unwrap to
+ * the underlying number before building a detail nav key.
+ */
+internal fun Media.MediaId.toNavKeyValue(): String = when (this) {
+    is Media.MediaId.Movie -> value.value.toString()
+    is Media.MediaId.Show -> value.value.toString()
+    is Media.MediaId.Episode -> value.value.toString()
 }
 
 @Composable
