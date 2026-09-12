@@ -1,5 +1,8 @@
 package net.subsloth.core.media
 
+import androidx.compose.runtime.Composable
+import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
+
 /**
  * Browser `<video>` element controls for autoplay-policy compliance on
  * Wasm.
@@ -16,3 +19,15 @@ package net.subsloth.core.media
 internal expect fun hasBrowserVideoElement(): Boolean
 
 internal expect fun setBrowserVideoMuted(muted: Boolean)
+
+/**
+ * Clears [playerState]'s fullscreen flag when the browser leaves fullscreen
+ * on its own (Esc or the browser chrome).
+ *
+ * The player library's own `fullscreenchange` listener captures the video
+ * element before it exists, so it never clears the flag; without this the
+ * player would stay in its fullscreen layout after the browser exited.
+ * Native platforms no-op: their fullscreen mode cannot change externally.
+ */
+@Composable
+internal expect fun SyncPlayerFullscreenWithBrowser(playerState: VideoPlayerState)

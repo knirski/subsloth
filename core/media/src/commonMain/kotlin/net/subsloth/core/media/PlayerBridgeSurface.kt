@@ -49,6 +49,7 @@ fun PlayerBridgeSurface(
     overlay: @Composable (VideoPlayerState) -> Unit = {},
 ) {
     val playerState = rememberVideoPlayerState()
+    SyncPlayerFullscreenWithBrowser(playerState)
     val currentOnEvent = rememberUpdatedState(onEvent)
 
     playerState.subtitleTextStyle = subtitleTextStyle

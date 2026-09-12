@@ -68,7 +68,12 @@ import net.subsloth.settings.SettingsViewModel
  * Feature screens are the same KMP composables shared across all platforms.
  */
 @Composable
-fun WebNavHost(runtime: WebRuntime, modifier: Modifier = Modifier, startDestination: AppNavKey = CatalogKey) {
+fun WebNavHost(
+    runtime: WebRuntime,
+    modifier: Modifier = Modifier,
+    startDestination: AppNavKey = CatalogKey,
+    onPlaybackFullscreenChanged: (Boolean) -> Unit = {},
+) {
     val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
     // Browser back/forward buttons drive the in-app back stack. Each history
@@ -170,6 +175,7 @@ fun WebNavHost(runtime: WebRuntime, modifier: Modifier = Modifier, startDestinat
                         val rawId = (nextId as? Media.MediaId.Episode)?.value?.value?.toString()
                         if (rawId != null) navigate(PlayerKey(contentId = rawId, contentType = "episode"))
                     },
+                    onFullscreenChanged = onPlaybackFullscreenChanged,
                 )
             }
 
@@ -568,6 +574,7 @@ private fun PlayerContent(
     onNavigateBack: () -> Unit,
     onNavigateToAuthRepair: () -> Unit,
     onNavigateToNextEpisode: (Media.MediaId) -> Unit,
+    onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val mediaId = parseMediaId(contentId, contentType) ?: return
     val storeOwner = remember(contentId) {
@@ -604,6 +611,7 @@ private fun PlayerContent(
             modifier = Modifier,
             onNavigateBack = onNavigateBack,
             onNavigateToAuthRepair = onNavigateToAuthRepair,
+            onFullscreenChanged = onFullscreenChanged,
         )
     }
 }
