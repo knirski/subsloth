@@ -1,6 +1,7 @@
 package net.subsloth
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -22,6 +23,7 @@ import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.SubtitleFormat
+import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.details.MovieDetailContent
 import net.subsloth.details.MovieDetailUiState
 import net.subsloth.settings.DiagnosticsContent
@@ -212,5 +214,21 @@ class CatalogDetailDesktopTest {
         composeRule.onNodeWithText("Diagnostics").assertIsDisplayed()
         composeRule.onNodeWithText("Version information").assertIsDisplayed()
         composeRule.onNodeWithText("1.0.0").assertIsDisplayed()
+    }
+
+    @Test
+    fun movieDetail_hidesDownloadActions_whenUnavailable() {
+        composeRule.setContent {
+            MaterialTheme {
+                CompositionLocalProvider(LocalDownloadActionsEnabled provides false) {
+                    MovieDetailContent(
+                        state = MovieDetailUiState.Content(details = movieDetails),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Downloads are not available in the browser.").assertIsDisplayed()
+        composeRule.onNodeWithText("Download").assertDoesNotExist()
     }
 }

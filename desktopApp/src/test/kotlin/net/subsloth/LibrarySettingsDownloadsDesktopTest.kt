@@ -272,4 +272,24 @@ class LibrarySettingsDownloadsDesktopTest {
 
         composeRule.onNodeWithText("1080p").assertIsDisplayed()
     }
+
+    @Test
+    fun downloadsContent_showsUnavailableNotice() {
+        composeRule.setContent {
+            MaterialTheme {
+                DownloadsContent(
+                    state = DownloadsUiState.Content(
+                        active = persistentListOf<DownloadGroupItem>(),
+                        queuedOrPaused = persistentListOf<DownloadGroupItem>(),
+                        failedOrUnavailable = persistentListOf<DownloadGroupItem>(),
+                        completed = persistentListOf<DownloadGroupItem>(),
+                        seasonQueues = persistentListOf(),
+                    ),
+                    showUnavailableNotice = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Downloads are not available in the browser.").assertIsDisplayed()
+    }
 }

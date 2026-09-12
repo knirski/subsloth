@@ -163,9 +163,10 @@ into a runtime global and read via `WebBaseUrl.kt`):
   auth-repair entry — consumes a shared `WebRuntime` interface.
 
 Download **byte transfer** remains jvm-only (no browser equivalent of the staged-file
-worker): the web downloads port lists persisted state (empty until transfer lands) and its
-controls manage that state without moving bytes. Season downloads on web create and
-confirm the queue for bookkeeping only — no driver runs there, so its items stay queued. Web production playback depends on the
+worker): the web downloads port lists persisted state and its controls manage that state
+without moving bytes. Web roots therefore provide `LocalDownloadActionsEnabled = false`,
+and the detail and downloads screens render a short notice instead of download actions that
+could only enqueue rows that never complete. Web production playback depends on the
 media exposing a progressive `download_url`; HLS-only items are not playable in browsers
 until hls.js support lands in the player bridge.
 
