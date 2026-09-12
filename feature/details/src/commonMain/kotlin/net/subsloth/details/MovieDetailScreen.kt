@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.DownloadUnavailableNotice
+import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
@@ -499,20 +501,27 @@ private fun DetailActionButtons(
                 )
             }
 
-            OutlinedButton(
-                onClick = onDownloadClick,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = if (isDownloaded) {
-                        stringResource(Res.string.detail_downloaded)
-                    } else {
-                        stringResource(Res.string.detail_download)
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                )
+            if (LocalDownloadActionsEnabled.current) {
+                OutlinedButton(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = if (isDownloaded) {
+                            stringResource(Res.string.detail_downloaded)
+                        } else {
+                            stringResource(Res.string.detail_download)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                    )
+                }
             }
+        }
+
+        if (!LocalDownloadActionsEnabled.current) {
+            Spacer(modifier = Modifier.height(8.dp))
+            DownloadUnavailableNotice(modifier = Modifier.fillMaxWidth())
         }
     }
 }

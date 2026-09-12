@@ -48,6 +48,8 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.media.Episode
 import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
+import net.subsloth.core.ui.DownloadUnavailableNotice
+import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
@@ -539,6 +541,10 @@ private fun SeasonDownloadButton(
     modifier: Modifier = Modifier,
     onDownloadClick: () -> Unit = {},
 ) {
+    if (!LocalDownloadActionsEnabled.current) {
+        DownloadUnavailableNotice(modifier = modifier.fillMaxWidth())
+        return
+    }
     OutlinedButton(
         onClick = onDownloadClick,
         enabled = state != SeasonDownloadState.Queued && state != SeasonDownloadState.Downloading,

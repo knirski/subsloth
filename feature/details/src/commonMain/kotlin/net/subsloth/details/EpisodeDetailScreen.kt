@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.media.EpisodeDetails
+import net.subsloth.core.ui.DownloadUnavailableNotice
+import net.subsloth.core.ui.LocalDownloadActionsEnabled
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,11 +174,15 @@ private fun EpisodeDetailContent(
                 }
             }
 
-            OutlinedButton(
-                onClick = onDownloadClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = if (isDownloaded) "Downloaded" else "Download")
+            if (LocalDownloadActionsEnabled.current) {
+                OutlinedButton(
+                    onClick = onDownloadClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = if (isDownloaded) "Downloaded" else "Download")
+                }
+            } else {
+                DownloadUnavailableNotice(modifier = Modifier.fillMaxWidth())
             }
         }
     }

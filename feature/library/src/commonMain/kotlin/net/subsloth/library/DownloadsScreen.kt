@@ -36,6 +36,8 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.SeasonQueueItemExecution
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.ui.DownloadUnavailableNotice
+import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.library.generated.resources.Res
 import subsloth.feature.library.generated.resources.downloads_active
@@ -86,6 +88,7 @@ fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier
             DownloadsContent(
                 state = s,
                 modifier = modifier,
+                showUnavailableNotice = !LocalDownloadActionsEnabled.current,
                 onPause = viewModel::pause,
                 onResume = viewModel::resume,
                 onCancel = viewModel::cancel,
@@ -102,6 +105,7 @@ fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier
 fun DownloadsContent(
     state: DownloadsUiState.Content,
     modifier: Modifier = Modifier,
+    showUnavailableNotice: Boolean = false,
     onPause: (String) -> Unit = {},
     onResume: (String) -> Unit = {},
     onCancel: (String) -> Unit = {},
@@ -115,6 +119,7 @@ fun DownloadsContent(
     DownloadsContentBody(
         state = state,
         modifier = modifier,
+        showUnavailableNotice = showUnavailableNotice,
         onPause = onPause,
         onResume = onResume,
         onCancel = onCancel,
@@ -179,6 +184,7 @@ private fun DeleteConfirmationDialog(type: DeleteConfirmationType, onConfirm: ()
 private fun DownloadsContentBody(
     state: DownloadsUiState.Content,
     modifier: Modifier = Modifier,
+    showUnavailableNotice: Boolean = false,
     onPause: (String) -> Unit = {},
     onResume: (String) -> Unit = {},
     onCancel: (String) -> Unit = {},
@@ -199,6 +205,12 @@ private fun DownloadsContentBody(
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp),
             )
+        }
+
+        if (showUnavailableNotice) {
+            item {
+                DownloadUnavailableNotice(modifier = Modifier.fillMaxWidth())
+            }
         }
 
         if (state.active.isNotEmpty()) {
