@@ -5,16 +5,19 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.close
 import io.ktor.utils.io.writeString
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
@@ -94,18 +97,18 @@ private class FakeConnectivity(var metered: Boolean = false) : ConnectivityPort 
     override fun isMetered(): Boolean = metered
 }
 
-private fun entity(id: Long = 1, status: String = "queued") = DownloadedMediaEntity(
+private fun entity(id: Long = 1, status: String = "queued", localFilePath: String = "") = DownloadedMediaEntity(
     id = id,
     contentId = "1",
     mediaType = "movie",
-    localFilePath = "",
+    localFilePath = localFilePath,
     sizeBytes = 0,
     status = status,
     selectedQuality = "720p",
     downloadedAtEpochSeconds = null,
 )
 
-private typealias MockRoute = suspend MockRequestHandleScope.(String) -> HttpResponseData
+private typealias MockRoute = suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData
 
 class DownloadTransferCoordinatorTest {
 
@@ -128,7 +131,7 @@ class DownloadTransferCoordinatorTest {
         downloadedSubtitleDao = subtitleDao,
         store = DesktopDownloadStore(tempDir.toFile()),
         transferer = DownloadTransferer(
-            client = HttpClient(MockEngine { engineHandler(it.url.toString()) }),
+            client = HttpClient(MockEngine { engineHandler(it) }),
             store = DesktopDownloadStore(tempDir.toFile()),
         ),
         connectivityChecker = connectivity,
@@ -262,33 +265,117 @@ class DownloadTransferCoordinatorTest {
     }
 
     @Test
-    fun `pausing mid-transfer aborts without overwriting the paused status`() = runBlocking {
+    fun `pausing mid-transfer keeps the staged bytes for resume`() = runBlocking {
         val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
         val channel = ByteChannel(autoFlush = true)
-        val feeder = launch {
-            channel.writeString(body)
-            channel.flush()
-            channel.writeString("more")
-            channel.flush()
-            channel.close()
-        }
         val coordinator = coordinator(
             dao,
             engineHandler = { _ -> respond(content = channel, status = HttpStatusCode.OK) },
         )
 
         val processing = async { coordinator.processQueued() }
-        // Flip the status mid-stream (before or between chunk reads — any
-        // interleaving aborts: every progress callback re-checks the
-        // status and aborts once it is no longer active).
-        dao.set(listOf(entity(status = "paused")))
+        // Wait until the row is persisted as downloading (path allocated),
+        // then pause before any bytes flow: the first chunk's progress
+        // callback observes the pause and aborts the stream.
+        withTimeout(10_000) {
+            while (dao.getById(1)?.status != "downloading") delay(10)
+        }
+        val stagedPath = requireNotNull(dao.getById(1)).localFilePath
+        require(stagedPath.isNotBlank()) { "transfer should persist its staged path" }
+        dao.set(listOf(entity(status = "paused", localFilePath = stagedPath)))
+        channel.writeString(body)
+        channel.flush()
+        channel.close()
 
         withTimeout(10_000) { processing.await() }
 
         assertThat(requireNotNull(dao.getById(1)).status).isEqualTo("paused")
-        assertThat(tempDir.resolve("1").toFile().listFiles()?.any { it.name.endsWith(".part") } ?: false)
-            .isFalse()
-        feeder.join()
+        assertThat(tempDir.resolve("$stagedPath.part").toFile().exists()).isTrue()
+    }
+
+    @Test
+    fun `resumes a downloading row from its staged bytes after a crash`() = runTest {
+        val prefix = "hello "
+        val suffix = "download-payload"
+        val total = prefix.length + suffix.length
+        val staged = tempDir.resolve("1/abc.mp4.part").toFile()
+        staged.parentFile?.mkdirs()
+        staged.writeText(prefix)
+        val dao = FakeDownloadedMediaDao().apply {
+            set(listOf(entity(status = "downloading", localFilePath = "1/abc.mp4")))
+        }
+        var requestedRange: String? = null
+        val coordinator = coordinator(
+            dao,
+            engineHandler = { request ->
+                requestedRange = request.headers[HttpHeaders.Range]
+                respond(
+                    content = ByteReadChannel(suffix),
+                    status = HttpStatusCode.PartialContent,
+                    headers = headersOf(
+                        HttpHeaders.ContentLength to listOf(suffix.length.toString()),
+                        HttpHeaders.ContentRange to listOf("bytes ${prefix.length}-${total - 1}/$total"),
+                    ),
+                )
+            },
+        )
+
+        coordinator.processQueued()
+
+        val stored = requireNotNull(dao.getById(1))
+        assertThat(stored.status).isEqualTo("completed")
+        assertThat(stored.sizeBytes).isEqualTo(total.toLong())
+        assertThat(String(tempDir.resolve(stored.localFilePath).readBytes())).isEqualTo(prefix + suffix)
+        assertThat(requestedRange).isEqualTo("bytes=${prefix.length}-")
+    }
+
+    @Test
+    fun `resumes a re-queued row from its staged bytes`() = runTest {
+        val prefix = "hello "
+        val suffix = "download-payload"
+        val total = prefix.length + suffix.length
+        val staged = tempDir.resolve("1/abc.mp4.part").toFile()
+        staged.parentFile?.mkdirs()
+        staged.writeText(prefix)
+        val dao = FakeDownloadedMediaDao().apply {
+            set(listOf(entity(status = "queued", localFilePath = "1/abc.mp4")))
+        }
+        val coordinator = coordinator(
+            dao,
+            engineHandler = { _ ->
+                respond(
+                    content = ByteReadChannel(suffix),
+                    status = HttpStatusCode.PartialContent,
+                    headers = headersOf(
+                        HttpHeaders.ContentLength to listOf(suffix.length.toString()),
+                        HttpHeaders.ContentRange to listOf("bytes ${prefix.length}-${total - 1}/$total"),
+                    ),
+                )
+            },
+        )
+
+        coordinator.processQueued()
+
+        val stored = requireNotNull(dao.getById(1))
+        assertThat(stored.status).isEqualTo("completed")
+        assertThat(String(tempDir.resolve(stored.localFilePath).readBytes())).isEqualTo(prefix + suffix)
+    }
+
+    @Test
+    fun `a failed transfer keeps its staged path for retry`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val coordinator = coordinator(
+            dao,
+            engineHandler = { _ ->
+                respond(content = ByteReadChannel(""), status = HttpStatusCode.InternalServerError)
+            },
+        )
+
+        coordinator.processQueued()
+
+        val stored = requireNotNull(dao.getById(1))
+        assertThat(stored.status).isEqualTo("failed")
+        assertThat(stored.localFilePath).isNotEmpty()
     }
 
     @Test
