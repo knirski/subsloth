@@ -123,18 +123,21 @@ progress on completed items, like Android.
 
 **Byte transfers run on both desktop and Android.** `DownloadTransferCoordinator`
 (`core/media/.../download/DownloadTransferCoordinator.kt`, in `:core:media`'s jvm-shared
-source set) watches the `downloaded_media` table for QUEUED rows and streams each through
-`DownloadTransferer` (Ktor → staged `.part` file → rename) with progress events on a
-`SharedFlow`. Policy is enforced per transfer: a metered network defers the item as
-PAUSED (NeedsWifi, Wi-Fi-only contract), the stream URL is re-resolved per transfer against
-the session-scoped `Api` (progressive `download_url` only — `.m3u8` playlists are rejected),
-and a pause/remove mid-transfer aborts the stream without overwriting the persisted status.
-There is no ranged resume: aborted or failed transfers restart from scratch. Android's
+source set) watches the `downloaded_media` table for QUEUED rows — plus DOWNLOADING rows
+left behind by a crash — and streams each through `DownloadTransferer` (Ktor → staged
+`.part` file → rename) with progress events on a `SharedFlow`. Policy is enforced per
+transfer: a metered network defers the item as PAUSED (NeedsWifi, Wi-Fi-only contract),
+the stream URL is re-resolved per transfer against the session-scoped `Api` (progressive
+`download_url` only — `.m3u8` playlists are rejected), and a pause/remove mid-transfer
+aborts the stream without overwriting the persisted status. Staged bytes are kept, so a
+later resume (or the next process start) continues with a `Range` request: a `206` appends
+and a `200` (server ignored the range, e.g. the asset changed) restarts from zero. Android's
 `AppContainer` runs the watcher for the process lifetime and surfaces progress through
 `DownloadForegroundService` (started on first transfer, stopped when idle);
 `DesktopContainer` runs the same watcher and logs events. Subtitle byte-transfer runs with the media transfer: after a media
 download completes, pending subtitle rows are resolved through the scoped
-API and streamed to local files, and the offline resolver exposes verified
+API and streamed to local files (subtitle partials are discarded on failure — their URLs
+are re-resolved per attempt), and the offline resolver exposes verified
 local subtitle files on the offline source.
 
 **Season downloads are wired.** The show detail screen's "Download season" action calls the

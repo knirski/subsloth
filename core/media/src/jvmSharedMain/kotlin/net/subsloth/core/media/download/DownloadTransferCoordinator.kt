@@ -50,10 +50,12 @@ class TransferAbortedException(status: String) : RuntimeException("Transfer abor
  * [resolveDownloadUrl] lambda — a `null` resolution fails the item.
  *
  * Pause/remove detected mid-transfer aborts the current stream; the
- * next run restarts it from scratch (no ranged resume — documented
- * limitation). Terminal states are persisted to the same
- * [DownloadedMediaEntity] rows [DownloadController] manages, so the
- * library/downloads/offline-playback surfaces see real files.
+ * staged bytes are kept, so a later resume — or the next process start
+ * after a crash ([DownloadStatus.DOWNLOADING] rows are re-scanned) —
+ * continues from where it stopped via a ranged request. Terminal states
+ * are persisted to the same [DownloadedMediaEntity] rows
+ * [DownloadController] manages, so the library/downloads/offline-playback
+ * surfaces see real files.
  */
 class DownloadTransferCoordinator(
     private val downloadedMediaDao: DownloadedMediaDao,
@@ -84,7 +86,7 @@ class DownloadTransferCoordinator(
             downloadedSubtitleDao.getPending(),
         ) { media, pendingSubtitles -> media to pendingSubtitles }
             .collect { (media, pendingSubtitles) ->
-                if (media.any { it.status == DownloadStatus.QUEUED.name.lowercase() }) {
+                if (media.any { it.isResumable() }) {
                     processQueued()
                 }
                 if (pendingSubtitles.isNotEmpty()) {
@@ -94,7 +96,8 @@ class DownloadTransferCoordinator(
     }
 
     /**
-     * Processes every currently-QUEUED download, one at a time. Returns
+     * Processes every currently-resumable download (QUEUED, plus
+     * DOWNLOADING rows left behind by a crash), one at a time. Returns
      * the number of items processed (0 when another scan is already
      * running). Re-throws only [CancellationException]; item failures are
      * persisted as FAILED, never surfaced as throwables.
@@ -103,7 +106,7 @@ class DownloadTransferCoordinator(
         if (!processMutex.tryLock()) return 0
         try {
             val queued = downloadedMediaDao.getAll().first()
-                .filter { it.status == DownloadStatus.QUEUED.name.lowercase() }
+                .filter { it.isResumable() }
             for (entity in queued) {
                 process(entity)
             }
@@ -134,10 +137,19 @@ class DownloadTransferCoordinator(
             return
         }
 
-        downloadedMediaDao.upsert(entity.copy(status = DownloadStatus.DOWNLOADING.name.lowercase()))
-
         var lastReportedBytes = -1L
-        val relativePath = store.allocatePath(entity.contentId, target.extension)
+        // A path persisted by an earlier attempt points at the staged file
+        // to resume; otherwise allocate a fresh one. The path is persisted
+        // before streaming so pause/remove/crash can find the partial.
+        val relativePath = entity.localFilePath
+            .takeIf { it.isNotBlank() }
+            ?.let { runCatching { OfflineRelativePath.safe(it) }.getOrNull() }
+            ?: store.allocatePath(entity.contentId, target.extension)
+        val attempted = entity.copy(
+            status = DownloadStatus.DOWNLOADING.name.lowercase(),
+            localFilePath = relativePath.value,
+        )
+        downloadedMediaDao.upsert(attempted)
         val result = transferer.transfer(target.url, relativePath) { progress ->
             if (progress.bytesWritten != lastReportedBytes) {
                 lastReportedBytes = progress.bytesWritten
@@ -148,7 +160,7 @@ class DownloadTransferCoordinator(
 
         // The item left the active state while streaming (paused/removed
         // via DownloadController): its persisted status is authoritative
-        // already, so don't overwrite it — just drop the staged file.
+        // already, so don't overwrite it — the staged file stays for resume.
         if (result.exceptionOrNull() is TransferAbortedException) return
 
         result.fold(
@@ -156,7 +168,7 @@ class DownloadTransferCoordinator(
             onFailure = { error ->
                 if (error is CancellationException) throw error
                 log.e(error) { "Transfer failed for ${localId.value}" }
-                fail(localId, entity, DownloadFailureReason.DownloadFailed)
+                fail(localId, attempted, DownloadFailureReason.DownloadFailed)
             },
         )
     }
@@ -252,7 +264,9 @@ class DownloadTransferCoordinator(
         val subtitle = available.firstOrNull { it.language.value == row.language } ?: return
         val url = subtitle.downloadUrl ?: subtitle.url ?: return
         val relativePath = store.allocatePath(download.contentId, ".${subtitle.format.name.lowercase()}")
-        transferer.transfer(url, relativePath).fold(
+        // Subtitle paths are not persisted until success and their URLs are
+        // re-resolved per attempt, so a partial would be unreachable: drop it.
+        transferer.transfer(url, relativePath, keepPartialOnFailure = false).fold(
             onSuccess = {
                 val staged = store.stageFile(relativePath)
                 val target = store.finalFile(relativePath)
@@ -284,7 +298,10 @@ class DownloadTransferCoordinator(
         entity: DownloadedMediaEntity,
         reason: DownloadFailureReason,
     ) {
-        downloadedMediaDao.upsert(entity.copy(status = DownloadStatus.FAILED.name.lowercase()))
+        // Re-read so a path persisted at transfer start survives the FAILED
+        // status: a retry of the same row can then resume the partial.
+        val current = downloadedMediaDao.getById(entity.id) ?: entity
+        downloadedMediaDao.upsert(current.copy(status = DownloadStatus.FAILED.name.lowercase()))
         _events.tryEmit(TransferEvent.Failed(localId, reason))
     }
 
@@ -299,4 +316,11 @@ private fun parseMediaId(contentId: String, mediaType: String): Media.MediaId? =
     "episode" -> contentId.toIntOrNull()?.let { Media.MediaId.Episode(EpisodeId(it)) }
     "show" -> contentId.toIntOrNull()?.let { Media.MediaId.Show(ShowId(it)) }
     else -> null
+}
+
+/** QUEUED items and DOWNLOADING rows left behind by a crash are resumable. */
+private fun DownloadedMediaEntity.isResumable(): Boolean {
+    val current = status.lowercase()
+    return current == DownloadStatus.QUEUED.name.lowercase() ||
+        current == DownloadStatus.DOWNLOADING.name.lowercase()
 }

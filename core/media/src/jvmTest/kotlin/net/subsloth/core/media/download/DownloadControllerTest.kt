@@ -42,7 +42,13 @@ private class ControllerMediaDao : DownloadedMediaDao {
 
     override suspend fun upsert(entity: DownloadedMediaEntity) {
         val id = if (entity.id == 0L) nextId++ else entity.id
-        state.value = state.value.filterNot { it.id == id } + entity.copy(id = id)
+        val stored = entity.copy(id = id)
+        // Mirrors the production unique (contentId, mediaType) index with
+        // OnConflictStrategy.REPLACE: a new row for the same content
+        // replaces the old one instead of coexisting with it.
+        state.value = state.value.filterNot {
+            it.id == id || (it.contentId == stored.contentId && it.mediaType == stored.mediaType)
+        } + stored
     }
 
     override suspend fun delete(entity: DownloadedMediaEntity) {
@@ -256,6 +262,38 @@ class DownloadControllerTest {
 
         assertThat(result.isFailure).isTrue()
         assertThat(result.exceptionOrNull()?.message).contains("already active or queued")
+    }
+
+    @Test
+    fun `enqueue reuses a failed row so its staged partial can resume`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(
+            listOf(entity(id = 7, status = "failed", localFilePath = "1/abc.mp4", quality = "720p")),
+        )
+
+        val result = fixtures.controller.enqueue(movieId, Resolution.HD_720)
+
+        assertThat(result.getOrNull()).isEqualTo(EnqueueOutcome.Queued)
+        val row = requireNotNull(fixtures.dao.entity(7))
+        assertThat(row.status).isEqualTo("queued")
+        assertThat(row.localFilePath).isEqualTo("1/abc.mp4")
+        assertThat(fixtures.store.deleted).isEmpty()
+    }
+
+    @Test
+    fun `enqueue on a quality change drops the old partial and starts a new row`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(
+            listOf(entity(id = 7, status = "failed", localFilePath = "1/abc.mp4", quality = "720p")),
+        )
+
+        val result = fixtures.controller.enqueue(movieId, Resolution.UHD_4K)
+
+        assertThat(result.getOrNull()).isEqualTo(EnqueueOutcome.Queued)
+        val row = requireNotNull(fixtures.dao.getByContent("1", "movie"))
+        assertThat(row.localFilePath).isEmpty()
+        assertThat(row.selectedQuality).isEqualTo("4K")
+        assertThat(fixtures.store.deleted.map { it.value }).containsExactly("1/abc.mp4")
     }
 
     @Test

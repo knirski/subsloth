@@ -119,11 +119,28 @@ class DownloadController(
         ) {
             error("Insufficient storage available")
         }
+        // Reuse a failed/paused row of the same quality so the staged
+        // partial it points at is resumed instead of orphaned. A quality
+        // change gets a fresh path, and the now-unusable partial is
+        // deleted; completed finals are never deleted here.
+        val reusable = existingForMedia?.takeIf { existing ->
+            existing.status.lowercase() != DownloadStatus.COMPLETED.name.lowercase() &&
+                existing.selectedQuality == requested.label
+        }
+        if (reusable == null && existingForMedia != null) {
+            existingForMedia.localFilePath
+                .takeIf {
+                    it.isNotBlank() &&
+                        existingForMedia.status.lowercase() != DownloadStatus.COMPLETED.name.lowercase()
+                }
+                ?.let { storageManager.deleteMedia(OfflineRelativePath.safe(it)) }
+        }
         val entity = DownloadedMediaEntity(
-            contentId = mediaId.toContentId(),
-            mediaType = mediaId.toMediaType(),
-            localFilePath = "",
-            sizeBytes = needBytes,
+            id = reusable?.id ?: 0,
+            contentId = contentId,
+            mediaType = mediaType,
+            localFilePath = reusable?.localFilePath.orEmpty(),
+            sizeBytes = reusable?.sizeBytes ?: needBytes,
             status = DownloadStatus.QUEUED.name.lowercase(),
             selectedQuality = requested.label,
             downloadedAtEpochSeconds = null,
