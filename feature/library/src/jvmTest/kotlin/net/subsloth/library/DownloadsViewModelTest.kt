@@ -284,6 +284,32 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun `completed downloads show watch progress from listProgress`() = runTest(testDispatcher) {
+        val viewModel =
+            DownloadsViewModel(
+                listDownloads = { Result.success(persistentListOf(completedDownload)) },
+                listSeasonQueues = { Result.success(persistentListOf()) },
+                listProgress = {
+                    Result.success(
+                        listOf(
+                            net.subsloth.core.model.progress.PlaybackProgress(
+                                mediaId = movieId,
+                                positionSeconds = 1100L,
+                                durationSeconds = 1200L,
+                                lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1000),
+                                isWatched = true,
+                            ),
+                        ),
+                    )
+                },
+            )
+        viewModel.uiState.test {
+            val content = awaitItem() as DownloadsUiState.Content
+            assertThat(content.completed.first().progressFraction).isEqualTo(1.0)
+        }
+    }
+
+    @Test
     fun `delete all downloads calls remove for each completed`() = runTest(testDispatcher) {
         var removedCount = 0
         val viewModel = DownloadsViewModel(

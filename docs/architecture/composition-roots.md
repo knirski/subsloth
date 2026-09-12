@@ -115,8 +115,8 @@ portable metered-network API and reports the flat desktop model (online, unmeter
 user's Wi-Fi-only preference is the only transfer gate there (documented caveat on the class).
 `seasonQueueController`, `listSeasonQueues`, `retryDownload`, and `deleteAllDownloads` mirror
 `AppContainer`'s helpers; `DesktopNavHost`'s downloads, library, offline-library, and settings
-entries consume them. `listProgress` on the downloads entry stays on its safe default for the
-same reason as Android (the shared progress table has no `contentType` column).
+entries consume them. The downloads entry consumes `listAccountPlaybackProgress` for watch
+progress on completed items, like Android.
 
 **Byte transfers run on both desktop and Android.** `DownloadTransferCoordinator`
 (`core/media/.../download/DownloadTransferCoordinator.kt`, in `:core:media`'s jvm-shared

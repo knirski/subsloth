@@ -392,11 +392,7 @@ fun SubSlothNavHost(
                                     DownloadsViewModel(
                                         listDownloads = container.downloadController::listDownloads,
                                         listSeasonQueues = container::listSeasonQueues,
-                                        // listProgress intentionally left on its safe default here:
-                                        // the shared offline_playback_progress table has no
-                                        // contentType column, so a contentId alone can't
-                                        // disambiguate movie vs. episode ids (see AppContainer's
-                                        // listAccountPlaybackProgress doc for the full reasoning).
+                                        listProgress = { container.listAccountPlaybackProgress() },
                                         pauseDownload = { localId ->
                                             container.downloadController.pause(LocalMediaIdentifier(localId))
                                                 .getOrDefault(DownloadCommandOutcome.NoOp)
