@@ -173,6 +173,15 @@ could only enqueue rows that never complete. Web production playback depends on 
 media exposing a progressive `download_url`; HLS-only items are not playable in browsers
 until hls.js support lands in the player bridge.
 
+Playback **fullscreen** is another platform capability delivered through
+`core/ui`'s `LocalFullscreenController` (no-op default, so previews and tests
+need no windowing): Android's `AndroidFullscreenController` enters landscape
+and hides the system bars, restoring the pre-entry orientation and bars when
+fullscreen is left; desktop's `DesktopFullscreenController` toggles the window
+between `WindowPlacement.Fullscreen` and its previous placement; the web root's
+`WebFullscreenController` requests the browser Fullscreen API on the document
+element and tracks `fullscreenchange` so Esc keeps the control label in sync.
+
 ## The shared non-production default
 
 `core/ui/src/commonMain/kotlin/net/subsloth/core/ui/RootContainerViewModel.kt`'s
