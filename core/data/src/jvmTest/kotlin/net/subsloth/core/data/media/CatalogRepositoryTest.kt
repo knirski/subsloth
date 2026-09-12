@@ -107,6 +107,21 @@ class CatalogRepositoryTest {
     }
 
     @Test
+    fun `sync stops when the backend repeats a page instead of paginating`() = runTest {
+        val repeatedPage = """{"shows":[${showJson(1, "Alpha", 1)},${showJson(2, "Beta", 2)}]}"""
+        val deps = createDeps(handler = routes(showAnyPage = repeatedPage))
+        try {
+            val result = deps.repository.sync()
+
+            assertThat(result).isInstanceOf(Outcome.Success::class.java)
+            assertThat(deps.dao.getAllByType("show").first().map { it.title })
+                .containsExactly("Alpha", "Beta")
+        } finally {
+            deps.db.close()
+        }
+    }
+
+    @Test
     fun `sync maps request timeout to SyncError Timeout`() = runTest {
         val deps = createDeps { request -> throw HttpRequestTimeoutException(request) }
         try {
@@ -245,11 +260,12 @@ class CatalogRepositoryTest {
     private fun routes(
         moviePages: Map<Int, String> = emptyMap(),
         showPages: Map<Int, String> = emptyMap(),
+        showAnyPage: String? = null,
     ): MockRoute = { request ->
         val page = request.url.parameters["page"]?.toIntOrNull() ?: 1
         val body = when (request.url.encodedPath) {
             "/movies" -> moviePages[page] ?: EMPTY_MOVIES
-            "/shows" -> showPages[page] ?: EMPTY_SHOWS
+            "/shows" -> showPages[page] ?: showAnyPage ?: EMPTY_SHOWS
             else -> null
         }
         if (body == null) {
