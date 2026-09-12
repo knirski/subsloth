@@ -43,6 +43,15 @@ import net.subsloth.core.network.media.api.model.SubtitleTrack as DtoSubtitleTra
 import net.subsloth.core.network.media.api.model.VideoQuality as DtoVideoQuality
 
 object Mapper {
+    /**
+     * Show link used when an episode response omits `show_id`, which the live
+     * API does in both embedded and standalone episode payloads. Embedded
+     * episodes inherit their parent show's id through
+     * [mapEpisode]'s `fallbackShowId`; standalone episode details carry the
+     * real, nullable link on `EpisodeDetails.showId` instead.
+     */
+    private const val UNKNOWN_SHOW_ID = 0
+
     // ── Movie List → Domain Media List ───────────────────────────────────
 
     fun mapMovies(dtos: List<DtoMovieSummary>): MappingResult<Media> = mapList(dtos, ::mapMovieSummary)
@@ -134,7 +143,7 @@ object Mapper {
 
         val episodes: List<DomainEpisode> =
             dto.episodes
-                ?.mapNotNull { mapEpisode(it).getOrNull() }
+                ?.mapNotNull { mapEpisode(it, fallbackShowId = dto.id).getOrNull() }
                 .orEmpty()
         val seasons = groupEpisodesBySeason(episodes)
 
@@ -166,28 +175,23 @@ object Mapper {
 
     // ── Episode → Domain Episode ─────────────────────────────────────────
 
-    fun mapEpisode(dto: DtoEpisode): Outcome<DomainEpisode> {
-        val showId =
-            dto.showId
-                ?: return Outcome.Failure(DecodeError.MissingFields(listOf("show_id")))
-        return Outcome.Success(
-            DomainEpisode(
-                id = EpisodeId(dto.id),
-                showId = ShowId(showId),
-                seasonNumber = dto.season ?: 0,
-                episodeNumber = dto.episode ?: dto.number ?: 0,
-                title = dto.title ?: dto.name ?: "Episode ${dto.episode ?: dto.number ?: dto.id}",
-                plot = dto.plot ?: dto.description,
-                durationSeconds = dto.duration?.minutes?.inWholeSeconds,
-                availability = mapEpisodeAvailability(dto.available),
-                imdbId = null,
-                qualities = mapQualities(dto.qualities),
-                subtitles = mapSubtitleTracks(dto.subtitles),
-                airDateEpochSeconds = dto.airDate?.toInstant() ?: dto.airdate?.toInstant(),
-                premiereDateEpochSeconds = dto.premiereDate?.toInstant(),
-            ),
-        )
-    }
+    fun mapEpisode(dto: DtoEpisode, fallbackShowId: Int? = null): Outcome<DomainEpisode> = Outcome.Success(
+        DomainEpisode(
+            id = EpisodeId(dto.id),
+            showId = ShowId(dto.showId ?: fallbackShowId ?: UNKNOWN_SHOW_ID),
+            seasonNumber = dto.season ?: 0,
+            episodeNumber = dto.episode ?: dto.number ?: 0,
+            title = dto.title ?: dto.name ?: "Episode ${dto.episode ?: dto.number ?: dto.id}",
+            plot = dto.plot ?: dto.description,
+            durationSeconds = dto.duration?.minutes?.inWholeSeconds,
+            availability = mapEpisodeAvailability(dto.available),
+            imdbId = null,
+            qualities = mapQualities(dto.qualities),
+            subtitles = mapSubtitleTracks(dto.subtitles),
+            airDateEpochSeconds = dto.airDate?.toInstant() ?: dto.airdate?.toInstant(),
+            premiereDateEpochSeconds = dto.premiereDate?.toInstant(),
+        ),
+    )
 
     /**
      * Episode detail page (fetched via `GET /episodes/{id}`): maps to the

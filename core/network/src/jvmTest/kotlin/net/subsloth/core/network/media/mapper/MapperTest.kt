@@ -6,6 +6,8 @@ import net.subsloth.core.model.error.DomainError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.getOrNull
 import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.SubtitleFormat
@@ -211,6 +213,29 @@ class MapperTest {
     }
 
     @Test
+    fun `mapShowDetails keeps episodes that omit show_id`() {
+        val dto =
+            DtoShow(
+                id = 20,
+                title = "Live Shape Show",
+                episodes =
+                listOf(
+                    DtoEpisode(id = 101, season = 1, number = 1, name = "Pilot"),
+                    DtoEpisode(id = 102, season = 1, number = 2, name = "Second"),
+                ),
+            )
+
+        val details = Mapper.mapShowDetails(dto).getOrNull()!!
+
+        assertThat(details.seasons).hasSize(1)
+        assertThat(details.seasons[0].episodes).hasSize(2)
+        val first = details.seasons[0].episodes[0]
+        assertThat(first.showId).isEqualTo(ShowId(20))
+        assertThat(first.episodeNumber).isEqualTo(1)
+        assertThat(first.title).isEqualTo("Pilot")
+    }
+
+    @Test
     fun `mapShowDetails fails when title is missing`() {
         val dto = DtoShow(id = 20)
         val result = Mapper.mapShowDetails(dto)
@@ -223,13 +248,32 @@ class MapperTest {
     // ── Episode ──────────────────────────────────────────────────────────
 
     @Test
-    fun `mapEpisode fails when showId is missing`() {
-        val dto = DtoEpisode(id = 101, title = "Orphan Episode", available = true)
-        val result = Mapper.mapEpisode(dto)
+    fun `mapEpisode uses the fallback show id when show_id is missing`() {
+        val dto = DtoEpisode(id = 101, title = "Embedded Episode", available = true)
 
-        val domainError = (result as Outcome.Failure).error
-        assertThat(domainError).isInstanceOf(DecodeError.MissingFields::class.java)
-        assertThat((domainError as DecodeError.MissingFields).fields).containsExactly("show_id")
+        val episode = Mapper.mapEpisode(dto, fallbackShowId = 20).getOrNull()!!
+
+        assertThat(episode.showId).isEqualTo(ShowId(20))
+    }
+
+    @Test
+    fun `mapEpisode maps standalone episodes without show_id as unlinked`() {
+        val dto = DtoEpisode(id = 101, title = "Standalone Episode")
+
+        val episode = Mapper.mapEpisode(dto).getOrNull()!!
+
+        assertThat(episode.showId).isEqualTo(ShowId(0))
+    }
+
+    @Test
+    fun `mapEpisodeDetails maps standalone episode without show_id and url as available`() {
+        val dto = DtoEpisode(id = 101, season = 2, number = 4, name = "Live Episode", url = "/uploads/x.mp4")
+
+        val details = Mapper.mapEpisodeDetails(dto).getOrNull() as EpisodeDetails
+
+        assertThat(details.title).isEqualTo("Live Episode")
+        assertThat(details.showId).isNull()
+        assertThat(details.availability).isInstanceOf(Availability.Available::class.java)
     }
 
     @Test
