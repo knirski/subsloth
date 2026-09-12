@@ -44,7 +44,6 @@ fun main() = application {
  */
 @Composable
 internal fun DesktopRoot(container: DesktopContainer = remember { DesktopContainer() }) {
-    val container = remember { DesktopContainer() }
     val root: RootContainerViewModel = viewModel {
         RootContainerViewModel(container.sessionPort)
     }

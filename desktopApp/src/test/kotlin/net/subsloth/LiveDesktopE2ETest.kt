@@ -9,7 +9,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -127,8 +126,10 @@ class LiveDesktopE2ETest {
         if (!hasAnyNodeWithText(SIGN_IN)) return
 
         if (baseUrl.isNotBlank()) {
-            composeRule.onNodeWithText(API_BASE_URL_LABEL).performTextClearance()
-            composeRule.onNodeWithText(API_BASE_URL_LABEL).performTextInput(baseUrl)
+            // The login form seeds its field from the persisted preference
+            // asynchronously; wait for that seed before typing so the
+            // recomposition cannot replace the fields mid-input.
+            composeRule.waitUntil(timeoutMillis = LOGIN_TIMEOUT_MS) { hasAnyNodeWithText(baseUrl) }
         }
         composeRule.onNodeWithText(LOGIN_LABEL).performTextInput(login)
         composeRule.onNodeWithText(PASSWORD_LABEL).performTextInput(password)
@@ -213,7 +214,6 @@ class LiveDesktopE2ETest {
         private const val SHOWS_ROW_LABEL = "Shows"
         private const val LOGIN_LABEL = "Login"
         private const val PASSWORD_LABEL = "Password"
-        private const val API_BASE_URL_LABEL = "API Base URL"
         private const val SIGN_IN = "Sign In"
         private const val SEARCH_ICON = "🔍"
         private const val SEARCH_PLACEHOLDER = "Search movies and shows"
