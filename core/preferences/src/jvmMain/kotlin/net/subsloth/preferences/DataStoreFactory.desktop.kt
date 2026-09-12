@@ -7,14 +7,35 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
+import okio.Path.Companion.toOkioPath
+import java.io.File
 
 actual fun createDataStorePreferences(
     name: String,
     corruptionHandler: ReplaceFileCorruptionHandler<Preferences>?,
     scope: CoroutineScope,
+): DataStore<Preferences> = createDataStorePreferences(
+    name = name,
+    appDataDir = File(resolveAppDataDir()),
+    corruptionHandler = corruptionHandler,
+    scope = scope,
+)
+
+/**
+ * Creates a preferences [DataStore] inside [appDataDir] instead of the
+ * platform default app data directory.
+ *
+ * Composition roots that own an overridable data directory (desktop's
+ * `DesktopContainer`) use this so test and portable-profile overrides cover
+ * preferences, not just the database.
+ */
+fun createDataStorePreferences(
+    name: String,
+    appDataDir: File,
+    corruptionHandler: ReplaceFileCorruptionHandler<Preferences>? = null,
+    scope: CoroutineScope,
 ): DataStore<Preferences> {
-    val dataDir: Path = resolveAppDataDir().toPath()
+    val dataDir: Path = appDataDir.toOkioPath()
     FileSystem.SYSTEM.createDirectories(dataDir)
     return PreferenceDataStoreFactory.createWithPath(
         corruptionHandler = corruptionHandler,

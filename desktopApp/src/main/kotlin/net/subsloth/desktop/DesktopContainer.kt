@@ -154,7 +154,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
     private val dataDir: File = (dataDirOverride ?: resolveAppDataDir()).apply { mkdirs() }
 
     private val dataStore: DataStore<Preferences> by lazy {
-        createDataStorePreferences(name = "subsloth", scope = containerScope)
+        createDataStorePreferences(name = "subsloth", appDataDir = dataDir, scope = containerScope)
     }
 
     /** User preferences backed by DataStore. */
