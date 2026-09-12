@@ -38,9 +38,12 @@ fun main() = application {
  * (constructed once per window via [remember]) and gates the nav host on the
  * real, persisted [net.subsloth.core.domain.port.SessionPort] state — the
  * same structure as androidApp's `MainActivity` + `SubSlothApplication`.
+ *
+ * The [container] parameter is the test seam for live E2E tests, which pass a
+ * container rooted at a temporary data directory.
  */
 @Composable
-private fun DesktopRoot() {
+internal fun DesktopRoot(container: DesktopContainer = remember { DesktopContainer() }) {
     val container = remember { DesktopContainer() }
     val root: RootContainerViewModel = viewModel {
         RootContainerViewModel(container.sessionPort)
