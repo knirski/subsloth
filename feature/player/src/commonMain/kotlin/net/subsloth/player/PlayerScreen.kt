@@ -48,7 +48,6 @@ import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
-import net.subsloth.core.ui.LocalFullscreenController
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
 
@@ -66,6 +65,7 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
+    onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -100,6 +100,7 @@ fun PlayerScreen(
                         onSelectQuality = { viewModel.selectQuality(it) },
                         onNavigateBack = onNavigateBack,
                         onNavigateToAuthRepair = onNavigateToAuthRepair,
+                        onFullscreenChanged = onFullscreenChanged,
                     )
                 },
             )
@@ -120,12 +121,21 @@ fun PlayerOverlay(
     onSelectQuality: (String) -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
+    onFullscreenChanged: (Boolean) -> Unit = {},
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
     var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
+
+    // The player library owns the fullscreen mode (it opens a dedicated
+    // video window on desktop and lays the video out full-screen on web and
+    // Android); report its state so hosts can apply platform window effects
+    // (e.g. Android landscape + immersive bars).
+    LaunchedEffect(playerState.isFullscreen) {
+        onFullscreenChanged(playerState.isFullscreen)
+    }
 
     // Auto-hide the chrome a few seconds into uninterrupted playback. Any
     // user interaction (tap, drag, open picker) either re-shows the
@@ -294,6 +304,8 @@ fun PlayerOverlay(
                         onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                         onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
                         onToggleQuality = { showQualityPicker = !showQualityPicker },
+                        isFullscreen = playerState.isFullscreen,
+                        onToggleFullscreen = playerState::toggleFullscreen,
                     )
                 }
 
@@ -378,9 +390,9 @@ private fun PlaybackControls(
     onToggleSpeed: () -> Unit,
     onToggleSubtitles: () -> Unit,
     onToggleQuality: () -> Unit = {},
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: () -> Unit = {},
 ) {
-    val fullscreenController = LocalFullscreenController.current
-    val isFullscreen by fullscreenController.isFullscreen
     // Wraps so the added fullscreen control still fits narrow (portrait)
     // layouts; wide layouts keep one centered row.
     FlowRow(
@@ -400,7 +412,7 @@ private fun PlaybackControls(
         OutlinedButton(onClick = onToggleQuality) {
             Text(stringResource(Res.string.player_quality))
         }
-        OutlinedButton(onClick = fullscreenController::toggle) {
+        OutlinedButton(onClick = onToggleFullscreen) {
             Text(
                 if (isFullscreen) {
                     stringResource(Res.string.player_exit_fullscreen)
