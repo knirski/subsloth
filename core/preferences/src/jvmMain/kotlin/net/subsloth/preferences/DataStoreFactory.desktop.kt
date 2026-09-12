@@ -7,7 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
+import okio.Path.Companion.toOkioPath
 import java.io.File
 
 actual fun createDataStorePreferences(
@@ -35,7 +35,7 @@ fun createDataStorePreferences(
     corruptionHandler: ReplaceFileCorruptionHandler<Preferences>? = null,
     scope: CoroutineScope,
 ): DataStore<Preferences> {
-    val dataDir: Path = appDataDir.absolutePath.toPath()
+    val dataDir: Path = appDataDir.toOkioPath()
     FileSystem.SYSTEM.createDirectories(dataDir)
     return PreferenceDataStoreFactory.createWithPath(
         corruptionHandler = corruptionHandler,
