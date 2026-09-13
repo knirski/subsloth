@@ -63,6 +63,15 @@ Common build, test, emulator, IDE, and development issues and their fixes.
 
 ---
 
+## Desktop Tests
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `NoClassDefFoundError: Could not initialize class sun.awt.X11.XToolkit` / `AWTError: Can't connect to X11 window server using ':99'` | A long-lived Gradle daemon cached a dead or restarted X11 connection (or Xvfb `:99` is gone) | `./gradlew --stop`, confirm Xvfb is running on `:99`, then rerun with `DISPLAY=:99`. CI wraps each invocation in `xvfb-run`, so this only bites local daemons |
+| Only some Compose Desktop tests fail with toolkit errors | Tests that create windows need a display | Run `xvfb-run -a ./gradlew :desktopApp:test` (CI pattern) or start Xvfb `:99` and set `DISPLAY=:99` |
+
+---
+
 ## Screenshot Tests
 
 | Symptom | Likely Cause | Fix |

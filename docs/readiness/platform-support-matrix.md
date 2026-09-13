@@ -4,7 +4,7 @@ This is the single authoritative statement of each platform's release-readiness 
 
 Tiers are adopted from `docs/superpowers/plans/2026-07-23-repository-assessment-remediation.md`'s promotion-gates table and are not re-derived here.
 
-Last reconciled: 2026-09-09, against `main` after PR #234 (real `PlaybackPort` adapter wired on Android) and PR #235 (desktop production runtime: `DesktopContainer`, all nav routes, persisted session). Android detail-screen Play wiring closed the gap in [known-gaps item 9](../known-gaps.md#9-android-detail-screen-play-is-not-wired). Desktop downloads storage shell wired (follow-up to PR #235 — see the Desktop promotion rows).
+Last reconciled: 2026-09-12, against `main` after the desktop playback fixes (#299–#305) and ranged download resume (#306) — the Desktop row now reflects subtitle transfer and resumed partials. Previous reconciliation was 2026-09-09, against `main` after PR #234 (real `PlaybackPort` adapter wired on Android) and PR #235 (desktop production runtime: `DesktopContainer`, all nav routes, persisted session). Android detail-screen Play wiring closed the gap in [known-gaps item 9](../known-gaps.md#9-android-detail-screen-play-is-not-wired). Desktop downloads storage shell wired (follow-up to PR #235 — see the Desktop promotion rows).
 
 ## Tiers
 
