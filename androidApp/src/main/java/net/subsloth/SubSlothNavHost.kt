@@ -99,6 +99,9 @@ fun SubSlothNavHost(
                     viewModel = viewModel,
                     modifier = Modifier,
                     onSearchClick = { backStack += SearchKey },
+                    onLibraryClick = { backStack += LibraryKey },
+                    onDownloadsClick = { backStack += DownloadsKey },
+                    onSettingsClick = { backStack += SettingsKey },
                     onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
                     onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
@@ -127,6 +130,7 @@ fun SubSlothNavHost(
                 SearchScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
                     onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
                     onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
@@ -355,6 +359,7 @@ fun SubSlothNavHost(
                 LibraryScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
                     onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
                     onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
@@ -398,6 +403,7 @@ fun SubSlothNavHost(
                 DownloadsScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
                 )
             }
 
@@ -494,6 +500,7 @@ fun SubSlothNavHost(
                 AuthRepairScreen(
                     viewModel = viewModel,
                     onRepaired = { backStack.removeLastOrNull() },
+                    onNavigateBack = { backStack.removeLastOrNull() },
                 )
             }
 

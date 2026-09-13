@@ -50,6 +50,7 @@ import net.subsloth.core.model.media.Season
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
@@ -68,12 +69,10 @@ fun SeriesDetailScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         if (onNavigateBack != null) {
-            TextButton(
+            SubSlothBackButton(
                 onClick = onNavigateBack,
                 modifier = Modifier.padding(start = 8.dp, top = 8.dp),
-            ) {
-                Text(stringResource(Res.string.detail_back))
-            }
+            )
         }
 
         when (val s = state) {

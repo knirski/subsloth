@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -30,6 +29,7 @@ import net.subsloth.core.model.Availability
 import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.SubSlothBackButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,9 +91,7 @@ private fun EpisodeDetailContent(
                 )
             },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Text("←", style = MaterialTheme.typography.titleLarge)
-                }
+                SubSlothBackButton(onClick = onNavigateBack)
             },
         )
 

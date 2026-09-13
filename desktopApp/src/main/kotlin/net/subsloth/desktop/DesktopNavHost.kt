@@ -96,6 +96,9 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     HomeScreen(
                         viewModel = vm,
                         onSearchClick = { backStack += SearchKey },
+                        onLibraryClick = { backStack += LibraryKey },
+                        onDownloadsClick = { backStack += DownloadsKey },
+                        onSettingsClick = { backStack += SettingsKey },
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                     )
@@ -115,6 +118,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     }
                     SearchScreen(
                         viewModel = vm,
+                        onNavigateBack = { backStack.removeLastOrNull() },
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                     )
@@ -251,6 +255,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     }
                     LibraryScreen(
                         viewModel = vm,
+                        onNavigateBack = { backStack.removeLastOrNull() },
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                     )
@@ -283,7 +288,10 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                             },
                         )
                     }
-                    DownloadsScreen(viewModel = vm)
+                    DownloadsScreen(
+                        viewModel = vm,
+                        onNavigateBack = { backStack.removeLastOrNull() },
+                    )
                 }
             }
 
@@ -310,6 +318,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     }
                     SettingsScreen(
                         viewModel = vm,
+                        onNavigateBack = { backStack.removeLastOrNull() },
                         onNavigateToDiagnostics = { backStack += DiagnosticsKey },
                     )
                 }
@@ -318,7 +327,10 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
             entry<DiagnosticsKey> {
                 ScopedViewModel(key = "diagnostics") {
                     val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") { DiagnosticsViewModel() }
-                    DiagnosticsScreen(viewModel = vm)
+                    DiagnosticsScreen(
+                        viewModel = vm,
+                        onNavigateBack = { backStack.removeLastOrNull() },
+                    )
                 }
             }
 
@@ -337,7 +349,11 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     LaunchedEffect(vm) {
                         vm.retryAuth()
                     }
-                    AuthRepairScreen(viewModel = vm, onRepaired = { backStack.removeLastOrNull() })
+                    AuthRepairScreen(
+                        viewModel = vm,
+                        onRepaired = { backStack.removeLastOrNull() },
+                        onNavigateBack = { backStack.removeLastOrNull() },
+                    )
                 }
             }
 

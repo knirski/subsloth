@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
 import subsloth.feature.settings.generated.resources.diagnostics_api_base_url
@@ -41,9 +42,21 @@ import subsloth.feature.settings.generated.resources.diagnostics_version_code
 import subsloth.feature.settings.generated.resources.diagnostics_version_section
 
 @Composable
-fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, modifier: Modifier = Modifier) {
+fun DiagnosticsScreen(
+    viewModel: DiagnosticsViewModel,
+    modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    DiagnosticsContent(state = state, modifier = modifier)
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            SubSlothBackButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            )
+        }
+        DiagnosticsContent(state = state, modifier = Modifier)
+    }
 }
 
 @Composable

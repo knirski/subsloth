@@ -38,6 +38,7 @@ import net.subsloth.core.model.download.SeasonQueueItemExecution
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.library.generated.resources.Res
 import subsloth.feature.library.generated.resources.downloads_active
@@ -71,32 +72,45 @@ import subsloth.feature.library.generated.resources.downloads_title
 import subsloth.feature.library.generated.resources.downloads_unknown_quality
 
 @Composable
-fun DownloadsScreen(viewModel: DownloadsViewModel, modifier: Modifier = Modifier) {
+fun DownloadsScreen(
+    viewModel: DownloadsViewModel,
+    modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val s = state) {
-        is DownloadsUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            SubSlothBackButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            )
         }
 
-        is DownloadsUiState.Content -> {
-            DownloadsContent(
-                state = s,
-                modifier = modifier,
-                showUnavailableNotice = !LocalDownloadActionsEnabled.current,
-                onPause = viewModel::pause,
-                onResume = viewModel::resume,
-                onCancel = viewModel::cancel,
-                onRetry = viewModel::retry,
-                onRemove = viewModel::remove,
-                onDeleteAllCompleted = viewModel::deleteAllCompleted,
-                onDeleteWatchedCompleted = viewModel::deleteWatchedCompleted,
-            )
+        when (val s = state) {
+            is DownloadsUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is DownloadsUiState.Content -> {
+                DownloadsContent(
+                    state = s,
+                    modifier = Modifier,
+                    showUnavailableNotice = !LocalDownloadActionsEnabled.current,
+                    onPause = viewModel::pause,
+                    onResume = viewModel::resume,
+                    onCancel = viewModel::cancel,
+                    onRetry = viewModel::retry,
+                    onRemove = viewModel::remove,
+                    onDeleteAllCompleted = viewModel::deleteAllCompleted,
+                    onDeleteWatchedCompleted = viewModel::deleteWatchedCompleted,
+                )
+            }
         }
     }
 }
