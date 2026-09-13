@@ -30,23 +30,23 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class TvFocusTraversalTest {
-
     @get:Rule
     val tvFocusRule = TvFocusTestRule()
 
-    private val sampleMovie = MovieSummary(
-        id = Media.MediaId.Movie(MovieId(1)),
-        title = "Focus Movie",
-        plot = null,
-        availability = Availability.Available,
-        rating = null,
-        year = null,
-        genres = persistentListOf(),
-        durationMinutes = null,
-        slug = null,
-        imdbId = null,
-        backdropUrl = null,
-    )
+    private val sampleMovie =
+        MovieSummary(
+            id = Media.MediaId.Movie(MovieId(1)),
+            title = "Focus Movie",
+            plot = null,
+            availability = Availability.Available,
+            rating = null,
+            year = null,
+            genres = persistentListOf(),
+            durationMinutes = null,
+            slug = null,
+            imdbId = null,
+            backdropUrl = null,
+        )
 
     @Test
     fun backButton_receivesInitialFocusOnTv() {
@@ -67,12 +67,14 @@ class TvFocusTraversalTest {
             CompositionLocalProvider(LocalIsTelevision provides true) {
                 MaterialTheme {
                     CatalogContent(
-                        state = HomeUiState.Content(
-                            rows = persistentListOf(
-                                HomeRow.Movies(persistentListOf(sampleMovie), label = "Movies"),
+                        state =
+                            HomeUiState.Content(
+                                rows =
+                                    persistentListOf(
+                                        HomeRow.Movies(persistentListOf(sampleMovie), label = "Movies"),
+                                    ),
+                                selectedTab = HomeTab.MOVIES,
                             ),
-                            selectedTab = HomeTab.MOVIES,
-                        ),
                     )
                 }
             }
