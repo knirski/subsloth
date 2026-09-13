@@ -234,7 +234,6 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleEnabled = true,
             subtitleLanguage = "English",
             quality = "1080p",
-            playbackSpeed = 1.0f,
             downloadsWifiOnly = true,
             diagnostics = DiagnosticsState(),
         )
@@ -259,7 +258,6 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleEnabled = true,
             subtitleLanguage = null,
             quality = "1080p",
-            playbackSpeed = 1.0f,
             downloadsWifiOnly = false,
             diagnostics = DiagnosticsState(),
         )

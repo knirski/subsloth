@@ -472,14 +472,12 @@ fun SubSlothNavHost(
                                             container.userPreferences.subtitleLanguage(key)
                                         },
                                         readQuality = { key -> container.userPreferences.quality(key) },
-                                        readPlaybackSpeed = { key -> container.userPreferences.playbackSpeed(key) },
                                         readDownloadsWifiOnly = { key ->
                                             container.userPreferences.downloadsWifiOnly(key)
                                         },
                                         writeSubtitleEnabled = container::writeSubtitleEnabled,
                                         writeSubtitleLanguage = container::writeSubtitleLanguage,
                                         writeQuality = container::writeQuality,
-                                        writePlaybackSpeed = container::writePlaybackSpeed,
                                         writeDownloadsWifiOnly = container::writeDownloadsWifiOnly,
                                         deleteAllDownloads = container::deleteAllDownloads,
                                         clearPreferences = container::clearPreferences,

@@ -48,7 +48,6 @@ class SettingsFlowTest {
                             subtitleEnabled = true,
                             subtitleLanguage = "English",
                             quality = "1080p",
-                            playbackSpeed = 1.5f,
                             downloadsWifiOnly = true,
                             showLogoutCleanup = false,
                             diagnostics = DiagnosticsState.REDACTED,

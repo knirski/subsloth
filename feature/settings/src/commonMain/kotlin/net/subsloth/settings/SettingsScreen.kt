@@ -18,7 +18,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +44,6 @@ import subsloth.feature.settings.generated.resources.settings_logout_cleanup_mes
 import subsloth.feature.settings.generated.resources.settings_logout_cleanup_reset_preferences
 import subsloth.feature.settings.generated.resources.settings_logout_cleanup_title
 import subsloth.feature.settings.generated.resources.settings_logout_confirm
-import subsloth.feature.settings.generated.resources.settings_playback_speed
 import subsloth.feature.settings.generated.resources.settings_preferred_quality
 import subsloth.feature.settings.generated.resources.settings_quality_playback_section
 import subsloth.feature.settings.generated.resources.settings_subtitle_language
@@ -100,7 +98,6 @@ fun SettingsScreen(
                     onSubtitleEnabledChanged = viewModel::onSubtitleEnabledChanged,
                     onSubtitleLanguageChanged = viewModel::onSubtitleLanguageChanged,
                     onQualityChanged = viewModel::onQualityChanged,
-                    onPlaybackSpeedChanged = viewModel::onPlaybackSpeedChanged,
                     onDownloadsWifiOnlyChanged = viewModel::onDownloadsWifiOnlyChanged,
                     onLogoutClick = viewModel::showLogoutCleanup,
                     onNavigateToDiagnostics = onNavigateToDiagnostics,
@@ -119,7 +116,6 @@ fun SettingsContent(
     onSubtitleEnabledChanged: (Boolean) -> Unit = {},
     onSubtitleLanguageChanged: (String?) -> Unit = {},
     onQualityChanged: (String?) -> Unit = {},
-    onPlaybackSpeedChanged: (Float) -> Unit = {},
     onDownloadsWifiOnlyChanged: (Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onNavigateToDiagnostics: () -> Unit = {},
@@ -206,24 +202,6 @@ fun SettingsContent(
                         text = state.quality ?: "Auto",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            item {
-                Column {
-                    var sliderValue by remember(state.playbackSpeed) { mutableStateOf(state.playbackSpeed) }
-                    Text(
-                        stringResource(Res.string.settings_playback_speed, sliderValue),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { sliderValue = it },
-                        onValueChangeFinished = { onPlaybackSpeedChanged(sliderValue) },
-                        valueRange = 0.5f..2.0f,
-                        steps = 5,
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
