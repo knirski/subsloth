@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 /**
  * Playwright-style Compose UI tests for the Settings screen.
  *
- * Tests settings content rendering, checkbox toggles, playback speed slider,
+ * Tests settings content rendering, checkbox toggles,
  * diagnostics navigation, logout button, and the logout cleanup dialog.
  */
 @RunWith(AndroidJUnit4::class)
@@ -34,7 +34,6 @@ class SettingsScreenTest {
             subtitleEnabled = true,
             subtitleLanguage = null,
             quality = null,
-            playbackSpeed = 1.0f,
             downloadsWifiOnly = true,
             showLogoutCleanup = false,
             diagnostics = DiagnosticsState.REDACTED,
@@ -107,16 +106,6 @@ class SettingsScreenTest {
         }
 
         composeTestRule.onNodeWithText("1080p").assertIsDisplayed()
-    }
-
-    @Test
-    fun settingsContent_displaysPlaybackSpeed() {
-        composeTestRule.setContent {
-            SettingsContent(state = defaultContentState)
-        }
-
-        // Use substring match — locale determines decimal separator (. vs ,)
-        composeTestRule.onNode(hasText("Playback speed: ", substring = true)).assertIsDisplayed()
     }
 
     @Test
@@ -216,7 +205,6 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
         composeTestRule.onNodeWithText("Preferred quality").assertIsDisplayed()
-        composeTestRule.onNode(hasText("Playback speed: ", substring = true)).assertIsDisplayed()
     }
 
     // ── Logout dialog tests ──────────────────────────────────────────

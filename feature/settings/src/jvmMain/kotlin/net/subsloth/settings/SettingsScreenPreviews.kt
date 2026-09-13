@@ -9,7 +9,6 @@ fun SettingsScreenPreview() {
             subtitleEnabled = true,
             subtitleLanguage = "en",
             quality = "1080p",
-            playbackSpeed = 1.0f,
             downloadsWifiOnly = true,
             diagnostics = DiagnosticsState.REDACTED,
         ),

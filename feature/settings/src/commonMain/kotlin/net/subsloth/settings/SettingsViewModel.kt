@@ -25,7 +25,6 @@ sealed interface SettingsUiState {
         val subtitleEnabled: Boolean,
         val subtitleLanguage: String?,
         val quality: String?,
-        val playbackSpeed: Float,
         val downloadsWifiOnly: Boolean,
         val showLogoutCleanup: Boolean = false,
         val diagnostics: DiagnosticsState,
@@ -63,12 +62,10 @@ class SettingsViewModel(
     private val readSubtitleEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
     private val readSubtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
     private val readQuality: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
-    private val readPlaybackSpeed: suspend (AccountProfileKey) -> Flow<Float> = { flowOf(1.0f) },
     private val readDownloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
     private val writeSubtitleEnabled: (Boolean) -> Unit = {},
     private val writeSubtitleLanguage: (String?) -> Unit = {},
     private val writeQuality: (String?) -> Unit = {},
-    private val writePlaybackSpeed: (Float) -> Unit = {},
     private val writeDownloadsWifiOnly: (Boolean) -> Unit = {},
     private val deleteAllDownloads: () -> Unit = {},
     private val clearPreferences: (AccountProfileKey) -> Unit = {},
@@ -92,14 +89,12 @@ class SettingsViewModel(
                     readSubtitleEnabled(key),
                     readSubtitleLanguage(key),
                     readQuality(key),
-                    readPlaybackSpeed(key),
                     readDownloadsWifiOnly(key),
-                ) { enabled, lang, qual, speed, wifi ->
+                ) { enabled, lang, qual, wifi ->
                     SettingsUiState.Content(
                         subtitleEnabled = enabled,
                         subtitleLanguage = lang,
                         quality = qual,
-                        playbackSpeed = speed,
                         downloadsWifiOnly = wifi,
                         diagnostics = DiagnosticsState.REDACTED,
                     )
@@ -123,10 +118,6 @@ class SettingsViewModel(
 
     fun onQualityChanged(quality: String?) {
         writeQuality(quality)
-    }
-
-    fun onPlaybackSpeedChanged(speed: Float) {
-        writePlaybackSpeed(speed)
     }
 
     fun onDownloadsWifiOnlyChanged(wifiOnly: Boolean) {

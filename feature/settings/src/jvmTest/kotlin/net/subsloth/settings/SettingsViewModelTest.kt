@@ -35,7 +35,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
         )
         viewModel.uiState.test {
@@ -43,7 +42,6 @@ class SettingsViewModelTest {
             assertThat(content.subtitleEnabled).isTrue()
             assertThat(content.subtitleLanguage).isEqualTo("en")
             assertThat(content.quality).isEqualTo("1080p")
-            assertThat(content.playbackSpeed).isEqualTo(1.0f)
             assertThat(content.downloadsWifiOnly).isTrue()
         }
     }
@@ -56,7 +54,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             writeSubtitleEnabled = { savedEnabled = it },
         )
@@ -72,28 +69,11 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             writeQuality = { savedQuality = it },
         )
         viewModel.onQualityChanged("720p")
         assertThat(savedQuality).isEqualTo("720p")
-    }
-
-    @Test
-    fun `updates playback speed`() = runTest(testDispatcher) {
-        var savedSpeed: Float? = null
-        val viewModel = SettingsViewModel(
-            profileKey = { AccountProfileKey("profile1") },
-            readSubtitleEnabled = { flowOf(true) },
-            readSubtitleLanguage = { flowOf("en") },
-            readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
-            readDownloadsWifiOnly = { flowOf(true) },
-            writePlaybackSpeed = { savedSpeed = it },
-        )
-        viewModel.onPlaybackSpeedChanged(1.5f)
-        assertThat(savedSpeed).isEqualTo(1.5f)
     }
 
     @Test
@@ -104,7 +84,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             writeDownloadsWifiOnly = { savedWifiOnly = it },
         )
@@ -120,7 +99,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             writeSubtitleLanguage = { savedLanguage = it },
         )
@@ -135,7 +113,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
         )
         viewModel.uiState.test {
@@ -151,7 +128,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
         )
         viewModel.showLogoutCleanup()
@@ -172,7 +148,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             deleteAllDownloads = { deletedDownloads = true },
             clearPreferences = { clearedPreferences = true },
@@ -197,7 +172,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             deleteAllDownloads = { deletedDownloads = true },
             clearPreferences = { clearedPreferences = true },
@@ -222,7 +196,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
             deleteAllDownloads = { deletedDownloads = true },
             clearPreferences = { clearedPreferences = true },
@@ -243,7 +216,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
         )
         viewModel.uiState.test {
@@ -261,7 +233,6 @@ class SettingsViewModelTest {
             readSubtitleEnabled = { flowOf(true) },
             readSubtitleLanguage = { flowOf("en") },
             readQuality = { flowOf("1080p") },
-            readPlaybackSpeed = { flowOf(1.0f) },
             readDownloadsWifiOnly = { flowOf(true) },
         )
         viewModel.uiState.test {
