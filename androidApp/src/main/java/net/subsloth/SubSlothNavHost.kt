@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -79,9 +80,20 @@ import net.subsloth.settings.SettingsViewModel
 fun SubSlothNavHost(
     modifier: Modifier = Modifier,
     startDestination: AppNavKey = CatalogKey,
+    deepLinkDestination: AppNavKey? = null,
+    onConsumeDeepLink: () -> Unit = {},
     onExitOfflineLibrary: () -> Unit = {},
 ) {
     val backStack = rememberNavBackStack(startDestination)
+    val onConsumeDeepLinkState = rememberUpdatedState(onConsumeDeepLink)
+
+    LaunchedEffect(deepLinkDestination) {
+        val destination = deepLinkDestination ?: return@LaunchedEffect
+        if (backStack.lastOrNull() != destination) {
+            backStack += destination
+        }
+        onConsumeDeepLinkState.value()
+    }
 
     NavDisplay(
         modifier = modifier,

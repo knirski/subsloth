@@ -3,6 +3,7 @@ package net.subsloth.core.media.download
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -46,6 +47,12 @@ class DownloadForegroundService : Service() {
         const val CHANNEL_ID = "downloads"
         const val CHANNEL_ID_SILENT = "downloads_silent"
         const val CHANNEL_NAME = "Downloads"
+
+        /**
+         * Action on the notification's content intent. The app maps it to the
+         * Downloads screen; see `MainActivity.destinationForAction`.
+         */
+        const val ACTION_OPEN_DOWNLOADS = "net.subsloth.action.OPEN_DOWNLOADS"
         private const val NOTIFICATION_ID = 1001
 
         /** Starts the foreground service (process-wide, idempotent). */
@@ -90,7 +97,7 @@ class DownloadForegroundService : Service() {
         @Suppress("Deprecation")
         private fun buildNotification(context: Context, activeCount: Int, progressPercent: Int = 0): Notification {
             val channelId = if (progressPercent == 0) CHANNEL_ID_SILENT else CHANNEL_ID
-            return Notification.Builder(context, channelId)
+            val builder = Notification.Builder(context, channelId)
                 .setContentTitle("Downloading $activeCount file${if (activeCount != 1) "s" else ""}")
                 .setContentText(
                     if (progressPercent > 0) "$progressPercent% complete" else "Preparing download",
@@ -98,7 +105,26 @@ class DownloadForegroundService : Service() {
                 .setSmallIcon(android.R.drawable.stat_sys_download)
                 .setProgress(100, progressPercent, progressPercent == 0)
                 .setOngoing(true)
-                .build()
+            openDownloadsIntent(context)?.let(builder::setContentIntent)
+            return builder.build()
+        }
+
+        /**
+         * Tapping the notification opens the Downloads screen. The launch
+         * intent is resolved from the package manager so this Android-only
+         * module does not need a compile-time dependency on the app module.
+         */
+        private fun openDownloadsIntent(context: Context): PendingIntent? {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+                action = ACTION_OPEN_DOWNLOADS
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            } ?: return null
+            return PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         }
     }
 }
