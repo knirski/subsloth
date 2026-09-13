@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.SubSlothBackButton
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
 import subsloth.feature.settings.generated.resources.diagnostics_api_base_url
@@ -66,7 +67,7 @@ fun DiagnosticsContent(state: DiagnosticsState, modifier: Modifier = Modifier) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         ) {
             item {
                 Text(

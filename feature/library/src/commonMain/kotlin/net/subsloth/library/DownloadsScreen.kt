@@ -40,6 +40,7 @@ import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.SubSlothBackButton
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.library.generated.resources.Res
 import subsloth.feature.library.generated.resources.downloads_active
@@ -213,7 +214,7 @@ private fun DownloadsContentBody(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {

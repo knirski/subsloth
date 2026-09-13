@@ -33,6 +33,7 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.WindowWidthClass
 import net.subsloth.core.ui.currentWindowWidthClass
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.library.generated.resources.Res
 import subsloth.feature.library.generated.resources.library_available_offline
@@ -119,7 +120,7 @@ private fun LibraryListContent(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -231,7 +232,7 @@ private fun LibraryGridContent(
         columns = GridCells.Adaptive(minSize = 180.dp),
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

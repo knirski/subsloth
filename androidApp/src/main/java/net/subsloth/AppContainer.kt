@@ -1,6 +1,8 @@
 package net.subsloth
 
+import android.app.UiModeManager
 import android.content.Context
+import android.content.res.Configuration
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -110,6 +112,11 @@ import kotlin.time.Instant
 @Suppress("TooManyFunctions") // Composition root: one small function per port callback, by design.
 class AppContainer(context: Context) {
     private val log = Logger.withTag("AppContainer")
+
+    /** Drives TV-specific quality defaults (capped resolutions). */
+    private val isTelevision: Boolean =
+        (context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager)
+            .currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 
     /** System clock implementation. */
     val clock: Clock = Clock.System
@@ -630,7 +637,7 @@ class AppContainer(context: Context) {
         if (episodes.isEmpty()) return
         val language = loadPreferredLanguage()
         val quality = episodes
-            .firstNotNullOfOrNull { QualityPolicy.selectDefault(it.qualities, isTvDevice = false) }
+            .firstNotNullOfOrNull { QualityPolicy.selectDefault(it.qualities, isTvDevice = isTelevision) }
             ?.info
             ?.resolution
             ?: Resolution.HD_720

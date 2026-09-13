@@ -53,6 +53,7 @@ import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.details.generated.resources.*
 
@@ -205,7 +206,7 @@ private fun ShowDetailWideLayout(
     Row(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(24.dp), vertical = 24.dp),
     ) {
         Column(
             modifier = Modifier
@@ -370,7 +371,7 @@ private fun ShowDetailCompactLayout(
             )
         }
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = tvSafeHorizontalPadding(16.dp), vertical = 16.dp)) {
             Text(
                 text = details.title,
                 style = MaterialTheme.typography.headlineMedium,

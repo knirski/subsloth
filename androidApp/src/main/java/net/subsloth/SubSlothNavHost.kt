@@ -27,6 +27,7 @@ import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.EpisodeDetailKey
 import net.subsloth.core.ui.LibraryKey
+import net.subsloth.core.ui.LocalIsTelevision
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -161,6 +162,7 @@ fun SubSlothNavHost(
             entry<MovieDetailKey> { key ->
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val isTvDevice = LocalIsTelevision.current
                 val movieId = parseMediaId(key.movieId, "movie") as? Media.MediaId.Movie ?: return@entry
                 val viewModel: MovieDetailViewModel = viewModel(
                     key = "movie_detail_${key.movieId}",
@@ -177,6 +179,7 @@ fun SubSlothNavHost(
                                         listLibrary = { container.libraryPortAdapter.listLibrary() },
                                         listDownloads = { container.downloadController.listDownloads() },
                                         listProgress = { container.listAccountPlaybackProgress() },
+                                        isTvDevice = isTvDevice,
                                         addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
                                         removeFromLibrary = { id ->
                                             container.libraryPortAdapter.removeFromLibrary(id)
@@ -248,6 +251,7 @@ fun SubSlothNavHost(
             entry<EpisodeDetailKey> { key ->
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val isTvDevice = LocalIsTelevision.current
                 val episodeId = parseMediaId(key.episodeId, "episode") as? Media.MediaId.Episode
                     ?: return@entry
                 val viewModel: EpisodeDetailViewModel = viewModel(
@@ -265,6 +269,7 @@ fun SubSlothNavHost(
                                         isWatched = { container.isWatched(it) },
                                         listProgress = { container.listAccountPlaybackProgress() },
                                         listDownloads = { container.downloadController.listDownloads() },
+                                        isTvDevice = isTvDevice,
                                         enqueueDownload = { id, resolution ->
                                             container.downloadController.enqueue(id, resolution)
                                         },
