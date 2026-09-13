@@ -32,6 +32,7 @@ import net.subsloth.core.ui.PlayerKey
 import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
+import net.subsloth.core.ui.navigateBack
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -76,13 +77,15 @@ import net.subsloth.settings.SettingsViewModel
 @Composable
 fun SubSlothNavHost(
     modifier: Modifier = Modifier,
+    startDestination: AppNavKey = CatalogKey,
+    onExitOfflineLibrary: () -> Unit = {},
 ) {
-    val backStack = rememberNavBackStack(CatalogKey)
+    val backStack = rememberNavBackStack(startDestination)
 
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
-        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+        onBack = { navigateBack(backStack, onExitOfflineLibrary) },
         entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -534,6 +537,7 @@ fun SubSlothNavHost(
                 LibraryScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { navigateBack(backStack, onExitOfflineLibrary) },
                     onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
                     onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )

@@ -40,6 +40,7 @@ import net.subsloth.core.ui.PlayerKey
 import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
+import net.subsloth.core.ui.navigateBack
 import net.subsloth.core.ui.subslothNavConfig
 import net.subsloth.details.EpisodeDetailScreen
 import net.subsloth.details.EpisodeDetailViewModel
@@ -70,13 +71,18 @@ import net.subsloth.settings.SettingsViewModel
  * [net.subsloth.core.ui.SessionGate] in [Main.kt].
  */
 @Composable
-fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(subslothNavConfig, CatalogKey)
+fun DesktopNavHost(
+    container: DesktopContainer,
+    modifier: Modifier = Modifier,
+    startDestination: AppNavKey = CatalogKey,
+    onExitOfflineLibrary: () -> Unit = {},
+) {
+    val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
-        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+        onBack = { navigateBack(backStack, onExitOfflineLibrary) },
         entryDecorators =
         listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
@@ -376,6 +382,7 @@ fun DesktopNavHost(container: DesktopContainer, modifier: Modifier = Modifier) {
                     }
                     LibraryScreen(
                         viewModel = vm,
+                        onNavigateBack = { navigateBack(backStack, onExitOfflineLibrary) },
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                     )

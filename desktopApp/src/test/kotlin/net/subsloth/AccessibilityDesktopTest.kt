@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.auth.LoginFormContent
 import net.subsloth.core.model.Availability
@@ -20,6 +21,7 @@ import net.subsloth.core.model.media.Subtitle
 import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.details.MovieDetailContent
 import net.subsloth.details.MovieDetailUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -59,7 +61,8 @@ class AccessibilityDesktopTest {
     )
 
     @Test
-    fun loginForm_offlineLibraryButton_hasClickAction() {
+    fun loginForm_offlineLibraryButton_invokesCallback() {
+        var offlineLibraryClicks = 0
         composeRule.setContent {
             MaterialTheme {
                 LoginFormContent(
@@ -69,11 +72,14 @@ class AccessibilityDesktopTest {
                     isLoading = false,
                     error = null,
                     hasOfflineLibrary = true,
+                    onNavigateToOfflineLibrary = { offlineLibraryClicks++ },
                 )
             }
         }
 
-        composeRule.onNodeWithText("Offline Library").assertHasClickAction()
+        composeRule.onNodeWithText("Offline Library").assertHasClickAction().performClick()
+
+        assertEquals(1, offlineLibraryClicks)
     }
 
     @Test

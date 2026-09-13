@@ -3,7 +3,10 @@ package net.subsloth.desktop
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -13,6 +16,7 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
+import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
@@ -51,14 +55,27 @@ internal fun DesktopRoot(container: DesktopContainer = remember { DesktopContain
     SessionGate(
         sessionPort = sessionPort,
         login = {
-            val viewModel: LoginViewModel = viewModel {
-                LoginViewModel(
-                    sessionPort = sessionPort,
-                    readApiBaseUrl = { container.apiBaseUrlFlow() },
-                    saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
+            var showOfflineLibrary by remember { mutableStateOf(false) }
+            if (showOfflineLibrary) {
+                DesktopNavHost(
+                    container = container,
+                    startDestination = OfflineLibraryKey,
+                    onExitOfflineLibrary = { showOfflineLibrary = false },
+                )
+            } else {
+                val viewModel: LoginViewModel = viewModel {
+                    LoginViewModel(
+                        sessionPort = sessionPort,
+                        readApiBaseUrl = { container.apiBaseUrlFlow() },
+                        saveApiBaseUrl = { url -> container.userPreferences.setApiBaseUrl(url) },
+                    )
+                }
+                LoginScreen(
+                    viewModel = viewModel,
+                    onNavigateToOfflineLibrary = { showOfflineLibrary = true },
+                    onNavigateToCatalog = {},
                 )
             }
-            LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
         },
         authenticated = { DesktopNavHost(container) },
     )
