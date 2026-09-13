@@ -6,6 +6,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -22,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 import net.subsloth.BuildConfig
 import net.subsloth.MainActivity
 import net.subsloth.SubSlothApplication
+import net.subsloth.catalog.MEDIA_CARD_TEST_TAG
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import org.junit.Assert.assertTrue
@@ -178,12 +180,15 @@ class LiveCatalogE2ETest {
 
     /**
      * Search filters the locally synced catalog, so it must wait until the
-     * home screen has rendered shows; searching earlier would legitimately
-     * report "No results" for an empty database.
+     * home screen has rendered synced content; searching earlier would
+     * legitimately report "No results" for an empty database. The default
+     * Home tab shows only personal rows, so select the Shows tab first and
+     * wait for its media cards.
      */
     private fun awaitCatalogSynced() {
+        composeTestRule.onNodeWithText(SHOWS_TAB_LABEL).performClick()
         composeTestRule.waitUntil(timeoutMillis = SYNC_TIMEOUT_MS) {
-            hasAnyNodeWithText(SHOWS_ROW_LABEL)
+            hasAnyNodeWithTag(MEDIA_CARD_TEST_TAG)
         }
     }
 
@@ -294,6 +299,9 @@ class LiveCatalogE2ETest {
     private fun hasAnyNodeWithText(text: String): Boolean =
         composeTestRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
 
+    private fun hasAnyNodeWithTag(tag: String): Boolean =
+        composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+
     private data class LiveEpisode(
         val showTitle: String,
         val rowText: String,
@@ -311,7 +319,7 @@ class LiveCatalogE2ETest {
         private const val PLAYBACK_START_TIMEOUT_MS = 120_000L
         private const val PROGRESS_SAMPLE_MS = 2_000L
         private const val SHOW_CANDIDATE_LIMIT = 5
-        private const val SHOWS_ROW_LABEL = "Shows"
+        private const val SHOWS_TAB_LABEL = "Shows"
         private const val LOGIN_LABEL = "Login"
         private const val PASSWORD_LABEL = "Password"
         private const val API_BASE_URL_LABEL = "API Base URL"

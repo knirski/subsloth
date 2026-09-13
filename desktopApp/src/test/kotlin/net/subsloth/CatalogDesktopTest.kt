@@ -4,10 +4,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.catalog.CatalogContent
 import net.subsloth.catalog.HomeTab
 import net.subsloth.catalog.HomeUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -48,5 +50,25 @@ class CatalogDesktopTest {
         }
 
         composeRule.onNodeWithText("Movies aren't available on this account.").assertDoesNotExist()
+    }
+
+    @Test
+    fun catalogContent_tabClick_invokesCallback() {
+        var selected: HomeTab? = null
+        composeRule.setContent {
+            MaterialTheme {
+                CatalogContent(
+                    state = HomeUiState.Content(
+                        rows = persistentListOf(),
+                        selectedTab = HomeTab.HOME,
+                    ),
+                    onTabSelected = { selected = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Shows").performClick()
+
+        assertEquals(HomeTab.SHOWS, selected)
     }
 }

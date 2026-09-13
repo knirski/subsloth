@@ -5,8 +5,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -130,9 +132,9 @@ class LoginFlowTest {
         // Sign in triggers sessionPort.open → Outcome.Success → LoggedIn → navigation
         composeTestRule.onNodeWithText("Sign In").performClick()
 
-        // Verify the catalog screen rendered
+        // Verify the catalog screen rendered: the Movies tab plus its row label.
         composeTestRule.onNodeWithText("Login Flow Movie").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Movies").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Movies").assertCountEquals(2)
         composeTestRule.onNodeWithText("★ 8.0").assertIsDisplayed()
     }
 

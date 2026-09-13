@@ -1,13 +1,16 @@
 package net.subsloth.ui
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.catalog.CatalogContent
 import net.subsloth.catalog.HomeRow
+import net.subsloth.catalog.HomeTab
 import net.subsloth.catalog.HomeUiState
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.ExternalId
@@ -84,7 +87,9 @@ class HomeScreenTest {
             CatalogContent(state = contentState)
         }
 
-        composeTestRule.onNodeWithText("Movies").assertIsDisplayed()
+        // The tab row always shows these names; selecting the Movies tab adds
+        // the "Movies" row label beneath it, while the show row stays hidden.
+        composeTestRule.onAllNodesWithText("Movies").assertCountEquals(2)
         composeTestRule.onNodeWithText("Shows").assertIsDisplayed()
     }
 
@@ -266,8 +271,29 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText("Just Added").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Movies").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Shows").assertIsDisplayed()
         composeTestRule.onNodeWithText("Recent Flick").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Movies").assertCountEquals(2)
+        composeTestRule.onNodeWithText("Shows").assertIsDisplayed()
+    }
+
+    @Test
+    fun homeTab_click_invokesCallback() {
+        var selectedTab: HomeTab? = null
+        val contentState =
+            HomeUiState.Content(
+                rows = persistentListOf(),
+                selectedTab = HomeTab.HOME,
+            )
+
+        composeTestRule.setContent {
+            CatalogContent(
+                state = contentState,
+                onTabSelected = { selectedTab = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Shows").performClick()
+
+        assertTrue(selectedTab == HomeTab.SHOWS, "Expected Shows tab, got $selectedTab")
     }
 }

@@ -18,11 +18,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -31,11 +33,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.toImmutableList
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
@@ -50,6 +54,7 @@ fun HomeScreen(
     onLibraryClick: () -> Unit = {},
     onDownloadsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onTabSelected: (HomeTab) -> Unit = {},
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
@@ -139,6 +144,7 @@ fun HomeScreen(
                 CatalogContent(
                     state = s,
                     modifier = modifier.padding(padding),
+                    onTabSelected = onTabSelected,
                     onMovieClick = onMovieClick,
                     onShowClick = onShowClick,
                 )
@@ -151,16 +157,127 @@ fun HomeScreen(
 fun CatalogContent(
     state: HomeUiState.Content,
     modifier: Modifier = Modifier,
+    onTabSelected: (HomeTab) -> Unit = {},
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
+    Column(modifier = modifier.fillMaxSize()) {
+        PrimaryTabRow(selectedTabIndex = state.selectedTab.ordinal) {
+            HomeTab.entries.forEach { tab ->
+                Tab(
+                    selected = state.selectedTab == tab,
+                    onClick = { onTabSelected(tab) },
+                    text = { Text(tab.label) },
+                )
+            }
+        }
+
+        when (state.selectedTab) {
+            HomeTab.HOME -> HomeDashboard(state, onMovieClick = onMovieClick, onShowClick = onShowClick)
+
+            HomeTab.MOVIES -> MediaRowsContent(
+                rows = state.rows.filter { it.isMovieRow() },
+                showMoviesUnavailableNotice = state.moviesUnavailable,
+                onMovieClick = onMovieClick,
+                onShowClick = onShowClick,
+            )
+
+            HomeTab.SHOWS -> MediaRowsContent(
+                rows = state.rows.filter { it.isShowRow() },
+                showMoviesUnavailableNotice = false,
+                onMovieClick = onMovieClick,
+                onShowClick = onShowClick,
+            )
+
+            HomeTab.FAVORITES -> PersonalRowContent(
+                items = state.favorites,
+                emptyText = "No favorites yet. Tap Favorite on a movie or show to add one.",
+                onMovieClick = onMovieClick,
+                onShowClick = onShowClick,
+            )
+
+            HomeTab.WATCH_LATER -> PersonalRowContent(
+                items = state.watchLater,
+                emptyText = "Nothing on your Watch Later list yet.",
+                onMovieClick = onMovieClick,
+                onShowClick = onShowClick,
+            )
+        }
+    }
+}
+
+private val HomeTab.label: String
+    get() = when (this) {
+        HomeTab.HOME -> "Home"
+        HomeTab.MOVIES -> "Movies"
+        HomeTab.SHOWS -> "Shows"
+        HomeTab.FAVORITES -> "Favorites"
+        HomeTab.WATCH_LATER -> "Watch Later"
+    }
+
+private fun HomeRow<*>.isMovieRow(): Boolean = when (this) {
+    is HomeRow.Movies -> true
+    is HomeRow.Shows -> false
+    is HomeRow.Recency -> items.firstOrNull() is MovieSummary
+}
+
+private fun HomeRow<*>.isShowRow(): Boolean = when (this) {
+    is HomeRow.Movies -> false
+    is HomeRow.Shows -> true
+    is HomeRow.Recency -> items.firstOrNull() is ShowSummary
+}
+
+@Composable
+private fun HomeDashboard(
+    state: HomeUiState.Content,
+    onMovieClick: (Media.MediaId.Movie) -> Unit = {},
+    onShowClick: (Media.MediaId.Show) -> Unit = {},
+) {
+    if (state.continueWatching.isEmpty() && state.availableOffline.isEmpty()) {
+        EmptyTabContent("Nothing in progress and nothing downloaded yet.")
+        return
+    }
     LazyColumn(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if (state.moviesUnavailable) {
+        if (state.continueWatching.isNotEmpty()) {
+            item(key = "continue_watching") {
+                HomeRowSection(
+                    row = HomeRow.Recency(state.continueWatching, label = "Continue Watching"),
+                    onMovieClick = onMovieClick,
+                    onShowClick = onShowClick,
+                )
+            }
+        }
+        if (state.availableOffline.isNotEmpty()) {
+            item(key = "available_offline") {
+                HomeRowSection(
+                    row = HomeRow.Recency(state.availableOffline, label = "Available Offline"),
+                    onMovieClick = onMovieClick,
+                    onShowClick = onShowClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaRowsContent(
+    rows: List<HomeRow<*>>,
+    showMoviesUnavailableNotice: Boolean,
+    onMovieClick: (Media.MediaId.Movie) -> Unit = {},
+    onShowClick: (Media.MediaId.Show) -> Unit = {},
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        if (showMoviesUnavailableNotice) {
             item(key = "movies_unavailable", contentType = "notice") {
                 Text(
                     text = MOVIES_UNAVAILABLE_NOTICE,
@@ -170,7 +287,6 @@ fun CatalogContent(
                 )
             }
         }
-        val rows = state.rows
         rows.forEach { row ->
             item(key = row.label, contentType = row::class) {
                 HomeRowSection(row = row, onMovieClick = onMovieClick, onShowClick = onShowClick)
@@ -179,8 +295,51 @@ fun CatalogContent(
     }
 }
 
+@Composable
+private fun PersonalRowContent(
+    items: List<Media>,
+    emptyText: String,
+    onMovieClick: (Media.MediaId.Movie) -> Unit = {},
+    onShowClick: (Media.MediaId.Show) -> Unit = {},
+) {
+    if (items.isEmpty()) {
+        EmptyTabContent(emptyText)
+        return
+    }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+    ) {
+        item(key = "personal_row") {
+            HomeRowSection(
+                row = HomeRow.Recency(items.toImmutableList(), label = null),
+                onMovieClick = onMovieClick,
+                onShowClick = onShowClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyTabContent(text: String) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 /** Shown when the catalog has shows but no movies (missing movie entitlement). */
 private const val MOVIES_UNAVAILABLE_NOTICE = "Movies aren't available on this account."
+
+/** Test tag on every catalog media card, shared with UI and E2E tests. */
+const val MEDIA_CARD_TEST_TAG = "media_card"
 
 @Composable
 private fun HomeRowSection(
@@ -224,7 +383,7 @@ private fun HomeRowSection(
 fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
         onClick = onClick,
-        modifier = modifier.width(160.dp),
+        modifier = modifier.width(160.dp).testTag(MEDIA_CARD_TEST_TAG),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),

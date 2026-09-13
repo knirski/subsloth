@@ -12,15 +12,23 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.download.DownloadState
+import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.error.asFailure
+import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
+import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.identifier.ShowId
+import net.subsloth.core.model.library.LibraryCollection
+import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
+import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.ShowStatus
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -297,14 +305,14 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `defaults to movies tab when no saved state tab`() = runTest(testDispatcher) {
+    fun `defaults to home tab when no saved state tab`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "", "searchQuery" to ""),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
-            assertThat(content.selectedTab).isEqualTo(HomeTab.MOVIES)
+            assertThat(content.selectedTab).isEqualTo(HomeTab.HOME)
         }
     }
 
@@ -321,26 +329,26 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `saved SEARCH tab is restored`() = runTest(testDispatcher) {
+    fun `legacy SEARCH saved tab restores home`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "SEARCH"),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
-            assertThat(content.selectedTab).isEqualTo(HomeTab.SEARCH)
+            assertThat(content.selectedTab).isEqualTo(HomeTab.HOME)
         }
     }
 
     @Test
-    fun `invalid saved tab defaults to MOVIES`() = runTest(testDispatcher) {
+    fun `invalid saved tab defaults to home`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),
             savedState = mapOf("selectedTab" to "INVALID"),
         )
         viewModel.uiState.test {
             val content = awaitItem() as HomeUiState.Content
-            assertThat(content.selectedTab).isEqualTo(HomeTab.MOVIES)
+            assertThat(content.selectedTab).isEqualTo(HomeTab.HOME)
         }
     }
 
@@ -453,4 +461,139 @@ class HomeViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         assertThat(syncCalled).isTrue()
     }
+
+    @Test
+    fun `buildHomeContent maps progress, downloads and personal collections`() {
+        val movie = MovieSummary(
+            id = Media.MediaId.Movie(MovieId(1)),
+            title = "Favorite Movie",
+            plot = null,
+            availability = Availability.Available,
+            rating = null,
+            year = null,
+            genres = persistentListOf(),
+            durationMinutes = null,
+            slug = null,
+            imdbId = null,
+            backdropUrl = null,
+        )
+        val show = ShowSummary(
+            id = Media.MediaId.Show(ShowId(2)),
+            title = "Watch Later Show",
+            plot = null,
+            availability = Availability.Available,
+            rating = null,
+            year = null,
+            genres = persistentListOf(),
+            durationMinutes = null,
+            slug = null,
+            imdbId = null,
+            backdropUrl = null,
+            status = ShowStatus.ONGOING,
+            countries = persistentListOf(),
+        )
+
+        val content = buildHomeContent(
+            movies = listOf(movie),
+            shows = listOf(show),
+            library = listOf(
+                libraryItem(movie.id, LibraryCollection.FAVORITES),
+                libraryItem(show.id, LibraryCollection.WATCH_LATER),
+            ),
+            downloads = listOf(completedDownload(show.id)),
+            progress = listOf(progress(movie.id, fraction = 0.5)),
+        )
+
+        assertThat(content.favorites).containsExactly(movie)
+        assertThat(content.watchLater).containsExactly(show)
+        assertThat(content.availableOffline).containsExactly(show)
+        assertThat(content.continueWatching).containsExactly(movie)
+    }
+
+    @Test
+    fun `buildHomeContent ignores progress outside the in-progress range`() {
+        val movie = MovieSummary(
+            id = Media.MediaId.Movie(MovieId(1)),
+            title = "Barely Started",
+            plot = null,
+            availability = Availability.Available,
+            rating = null,
+            year = null,
+            genres = persistentListOf(),
+            durationMinutes = null,
+            slug = null,
+            imdbId = null,
+            backdropUrl = null,
+        )
+
+        val content = buildHomeContent(
+            movies = listOf(movie),
+            shows = emptyList(),
+            progress = listOf(
+                progress(movie.id, fraction = 0.02),
+                progress(movie.id, fraction = 0.95),
+            ),
+        )
+
+        assertThat(content.continueWatching).isEmpty()
+    }
+
+    @Test
+    fun `selectTab switches tab and reloads personal data`() = runTest(testDispatcher) {
+        val movie = MovieSummary(
+            id = Media.MediaId.Movie(MovieId(1)),
+            title = "Favorite Movie",
+            plot = null,
+            availability = Availability.Available,
+            rating = null,
+            year = null,
+            genres = persistentListOf(),
+            durationMinutes = null,
+            slug = null,
+            imdbId = null,
+            backdropUrl = null,
+        )
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(listOf(movie)),
+            listLibrary = { Outcome.Success(listOf(libraryItem(movie.id, LibraryCollection.FAVORITES))) },
+        )
+        viewModel.uiState.test {
+            var content = awaitItem() as HomeUiState.Content
+            while (content.favorites.isEmpty()) content = awaitItem() as HomeUiState.Content
+
+            viewModel.selectTab(HomeTab.FAVORITES)
+            content = awaitItem() as HomeUiState.Content
+            assertThat(content.selectedTab).isEqualTo(HomeTab.FAVORITES)
+            assertThat(content.favorites).containsExactly(movie)
+        }
+    }
+
+    private fun libraryItem(mediaId: Media.MediaId, collection: LibraryCollection) = LibraryItem(
+        mediaId = mediaId,
+        collection = collection,
+        addedAtEpochSeconds = Instant.fromEpochSeconds(1),
+        sortOrder = 0,
+    )
+
+    private fun completedDownload(mediaId: Media.MediaId) = DownloadState.Completed(
+        localId = LocalMediaIdentifier("local-1"),
+        mediaId = mediaId,
+        quality = QualityDescriptor(
+            resolution = Resolution(1920, 1080),
+            label = "1080p",
+            bitrate = 5_000,
+            mimeType = "video/mp4",
+        ),
+        downloadedAtEpochSeconds = Instant.fromEpochSeconds(1),
+        sizeBytes = null,
+        videoPath = OfflineRelativePath("local-1.mp4"),
+    )
+
+    private fun progress(mediaId: Media.MediaId, fraction: Double) = PlaybackProgress(
+        mediaId = mediaId,
+        positionSeconds = (fraction * 1_000).toLong(),
+        durationSeconds = 1_000,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1),
+        isWatched = false,
+    )
 }

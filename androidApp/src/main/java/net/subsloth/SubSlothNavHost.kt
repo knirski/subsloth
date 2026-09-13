@@ -97,7 +97,12 @@ fun SubSlothNavHost(
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
-                    factory = HomeViewModelFactory { container.catalogRepository },
+                    factory = HomeViewModelFactory(
+                        catalogRepositoryProvider = { container.catalogRepository },
+                        listLibrary = { container.libraryPortAdapter.listLibrary() },
+                        listDownloads = container.downloadController::listDownloads,
+                        listProgress = { container.listAccountPlaybackProgress() },
+                    ),
                 )
                 HomeScreen(
                     viewModel = viewModel,
@@ -106,6 +111,7 @@ fun SubSlothNavHost(
                     onLibraryClick = { backStack += LibraryKey },
                     onDownloadsClick = { backStack += DownloadsKey },
                     onSettingsClick = { backStack += SettingsKey },
+                    onTabSelected = viewModel::selectTab,
                     onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
                     onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )

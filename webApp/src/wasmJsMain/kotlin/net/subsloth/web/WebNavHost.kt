@@ -258,6 +258,7 @@ private fun CatalogContent(
             onLibraryClick = onLibraryClick,
             onDownloadsClick = onDownloadsClick,
             onSettingsClick = onSettingsClick,
+            onTabSelected = vm::selectTab,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,
         )

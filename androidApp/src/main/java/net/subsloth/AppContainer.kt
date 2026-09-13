@@ -52,6 +52,7 @@ import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
+import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
@@ -908,6 +909,9 @@ class AppContainer(context: Context) {
  */
 internal class HomeViewModelFactory(
     private val catalogRepositoryProvider: () -> CatalogRepository,
+    private val listLibrary: suspend () -> Outcome<List<LibraryItem>>,
+    private val listDownloads: suspend () -> Result<List<DownloadState>>,
+    private val listProgress: suspend () -> Result<List<PlaybackProgress>>,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val catalogRepository = catalogRepositoryProvider()
@@ -917,6 +921,9 @@ internal class HomeViewModelFactory(
                     catalogItems = { contentType -> catalogRepository.catalogItems(contentType) },
                     syncCatalog = { catalogRepository.sync() },
                     isCatalogStale = { catalogRepository.isStale() },
+                    listLibrary = listLibrary,
+                    listDownloads = listDownloads,
+                    listProgress = listProgress,
                 ),
             ),
         )

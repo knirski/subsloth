@@ -149,7 +149,7 @@ class LibraryViewModel(
         progress: List<PlaybackProgress>,
         catalog: Map<Media.MediaId, Media>,
     ): List<Media> = progress
-        .filter { it.fraction in 0.05..CompletionPolicy.WATCHED_THRESHOLD }
+        .filter { CompletionPolicy.isInProgress(it.fraction) }
         .mapNotNull { catalog[it.mediaId] }
 
     fun deleteDownload(localId: String) {
