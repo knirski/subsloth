@@ -181,13 +181,16 @@ Playback **fullscreen** is owned by the player library itself
 the app shell — fills the screen: desktop opens a dedicated fullscreen video
 window, web requests the browser Fullscreen API and lays the video out
 full-screen with the Compose overlay on top, and Android renders a full-window
-player dialog. Android hosts additionally mirror that state onto the activity
-(`AndroidFullscreenWindowController` in `SubSlothNavHost`): landscape plus
-hidden system bars while fullscreen, restored when fullscreen ends. On web the
-shell keeps `html`/`body` at full viewport size and hides the demo banner
-while fullscreen so the interop `<video>` can cover the screen, and
-`:core:media` clears the player flag when the browser leaves fullscreen on its
-own (Esc) because the library's own listener misses that case.
+player dialog. Android hosts keep the playback screen in sensor landscape for
+its whole lifetime (`PlayerOrientationViewModel` in `SubSlothNavHost`) and
+restore the orientation requested before playback when the player exits;
+`AndroidFullscreenWindowController` mirrors only the immersive part of
+fullscreen onto the activity (hidden system bars while fullscreen, restored
+when fullscreen ends). On web the shell keeps `html`/`body` at full viewport
+size and hides the demo banner while fullscreen so the interop `<video>` can
+cover the screen, and `:core:media` clears the player flag when the browser
+leaves fullscreen on its own (Esc) because the library's own listener misses
+that case.
 
 ## The shared non-production default
 
