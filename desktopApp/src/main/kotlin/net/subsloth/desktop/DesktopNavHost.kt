@@ -211,6 +211,8 @@ fun DesktopNavHost(
                             EpisodeDetailViewModel(
                                 mediaId = episodeId,
                                 getDetails = { id -> container.catalogRepository.getDetails(id) },
+                                isWatched = { id -> container.isWatched(id) },
+                                listProgress = { container.listAccountPlaybackProgress() },
                                 listDownloads = { container.downloadController.listDownloads() },
                                 enqueueDownload = { id, resolution ->
                                     container.downloadController.enqueue(id, resolution)

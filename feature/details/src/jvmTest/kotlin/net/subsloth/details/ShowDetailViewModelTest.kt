@@ -292,6 +292,39 @@ class ShowDetailViewModelTest {
     }
 
     @Test
+    fun `maps resumable progress per episode and skips non-resumable rows`() = runTest(testDispatcher) {
+        val secondEpisode = episode.copy(id = EpisodeId(11), episodeNumber = 2)
+        val show = showDetails.copy(
+            seasons = persistentListOf(
+                Season(
+                    seasonNumber = 1,
+                    title = "Season 1",
+                    plot = null,
+                    episodes = persistentListOf(episode, secondEpisode),
+                ),
+            ),
+        )
+        val vm = ShowDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(show) },
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(Media.MediaId.Episode(EpisodeId(10)), 600, 3600, updatedAt = 10),
+                        progress(Media.MediaId.Episode(EpisodeId(11)), 20, 3600, updatedAt = 20),
+                    ),
+                )
+            },
+        )
+        vm.uiState.test {
+            val content = awaitItem() as ShowDetailUiState.Content
+            assertThat(content.episodeProgress[10]).isEqualTo(600.0 / 3600.0)
+            assertThat(content.episodeProgress[11]).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `favorite flag reflects favorites membership`() = runTest(testDispatcher) {
         val vm = ShowDetailViewModel(
             mediaId = mediaId,

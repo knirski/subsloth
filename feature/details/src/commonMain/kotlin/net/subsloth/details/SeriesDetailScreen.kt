@@ -317,19 +317,12 @@ private fun ShowDetailWideLayout(
 
             val currentSeason = details.seasons.find { it.seasonNumber == state.selectedSeason }
             currentSeason?.let { season ->
-                Text(
-                    text = season.title.orEmpty(),
-                    style = MaterialTheme.typography.titleMedium,
+                SeasonEpisodesSection(
+                    season = season,
+                    watchedEpisodeIds = state.watchedEpisodeIds,
+                    episodeProgress = state.episodeProgress,
+                    onEpisodeClick = onEpisodeClick,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                season.episodes.forEach { episode ->
-                    EpisodeRow(
-                        episode = episode,
-                        isWatched = state.watchedEpisodeIds.contains(episode.id.value),
-                        onClick = { onEpisodeClick(episode) },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
             }
         }
     }
@@ -454,19 +447,12 @@ private fun ShowDetailCompactLayout(
 
             val currentSeason = details.seasons.find { it.seasonNumber == state.selectedSeason }
             currentSeason?.let { season ->
-                Text(
-                    text = season.title.orEmpty(),
-                    style = MaterialTheme.typography.titleMedium,
+                SeasonEpisodesSection(
+                    season = season,
+                    watchedEpisodeIds = state.watchedEpisodeIds,
+                    episodeProgress = state.episodeProgress,
+                    onEpisodeClick = onEpisodeClick,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                season.episodes.forEach { episode ->
-                    EpisodeRow(
-                        episode = episode,
-                        isWatched = state.watchedEpisodeIds.contains(episode.id.value),
-                        onClick = { onEpisodeClick(episode) },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
             }
         }
     }
@@ -585,18 +571,66 @@ private fun SeasonSelector(
 }
 
 @Composable
-fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, isWatched: Boolean = false, onClick: () -> Unit = {}) {
+private fun SeasonEpisodesSection(
+    season: Season,
+    watchedEpisodeIds: List<Int>,
+    episodeProgress: Map<Int, Double>,
+    onEpisodeClick: (Episode) -> Unit,
+) {
+    val watchedCount = season.episodes.count { episode -> watchedEpisodeIds.contains(episode.id.value) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = season.title.orEmpty(),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        SeasonWatchedSummary(watchedCount = watchedCount, total = season.episodes.size)
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    season.episodes.forEach { episode ->
+        EpisodeRow(
+            episode = episode,
+            isWatched = watchedEpisodeIds.contains(episode.id.value),
+            progressFraction = episodeProgress[episode.id.value],
+            onClick = { onEpisodeClick(episode) },
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun SeasonWatchedSummary(watchedCount: Int, total: Int) {
+    if (watchedCount == 0 || total == 0) return
+    Text(
+        text = if (watchedCount == total) "✓ All watched" else "$watchedCount/$total watched",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 8.dp),
+    )
+}
+
+@Composable
+fun EpisodeRow(
+    episode: Episode,
+    modifier: Modifier = Modifier,
+    isWatched: Boolean = false,
+    progressFraction: Double? = null,
+    onClick: () -> Unit = {},
+) {
     val isUpcoming = episode.availability is Availability.Upcoming
 
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        colors = if (isUpcoming) {
-            CardDefaults.cardColors(
+        colors = when {
+            isUpcoming -> CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             )
-        } else {
-            CardDefaults.cardColors()
+
+            isWatched -> CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            )
+
+            else -> CardDefaults.cardColors()
         },
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -607,16 +641,34 @@ fun EpisodeRow(episode: Episode, modifier: Modifier = Modifier, isWatched: Boole
                 Text(
                     text = "${episode.episodeNumber}. ${episode.title}",
                     style = MaterialTheme.typography.titleSmall,
+                    color = if (isWatched) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (isWatched) {
                     Text(
-                        text = "✓",
-                        style = MaterialTheme.typography.titleSmall,
+                        text = "✓ Watched",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
+                } else if (progressFraction != null) {
+                    val resumeLabel = when (val action = detailPlayAction(progressFraction)) {
+                        is DetailPlayAction.Play -> null
+                        is DetailPlayAction.Resume -> "Resume"
+                        is DetailPlayAction.ResumeAt -> "Resume ${action.percent}%"
+                    }
+                    resumeLabel?.let { label ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
                 if (isUpcoming) {
                     Text(

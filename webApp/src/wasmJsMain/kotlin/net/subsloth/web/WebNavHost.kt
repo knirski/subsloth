@@ -395,6 +395,7 @@ private fun EpisodeDetailContent(
                 mediaId = episodeId,
                 getDetails = { runtime.getDetails(it) },
                 isWatched = { runtime.isWatched(it) },
+                listProgress = { runtime.listAccountPlaybackProgress() },
                 listDownloads = { runtime.listDownloads() },
                 enqueueDownload = { id, resolution -> runtime.downloadController.enqueue(id, resolution) },
                 removeDownload = { localId -> runtime.downloadController.remove(localId) },
