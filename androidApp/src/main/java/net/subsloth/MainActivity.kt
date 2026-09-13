@@ -6,6 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import net.subsloth.core.ui.theme.SubSlothTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,6 +21,7 @@ import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
+import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 
@@ -44,23 +49,35 @@ class MainActivity : ComponentActivity() {
                     SessionGate(
                         sessionPort = sessionPort,
                         login = {
-                            val viewModel: LoginViewModel = viewModel {
-                                LoginViewModel(
-                                    sessionPort = sessionPort,
-                                    readApiBaseUrl = {
-                                        container?.apiBaseUrlFlow() ?: flowOf(
-                                            ApiBaseUrlPolicy.resolve(
-                                                stored = null,
-                                                configured = BuildConfig.SUBSLOTH_API_BASE_URL,
-                                            ),
-                                        )
-                                    },
-                                    saveApiBaseUrl = { url ->
-                                        userPreferences?.setApiBaseUrl(url)
-                                    },
+                            var showOfflineLibrary by rememberSaveable { mutableStateOf(false) }
+                            if (showOfflineLibrary) {
+                                SubSlothNavHost(
+                                    startDestination = OfflineLibraryKey,
+                                    onExitOfflineLibrary = { showOfflineLibrary = false },
+                                )
+                            } else {
+                                val viewModel: LoginViewModel = viewModel {
+                                    LoginViewModel(
+                                        sessionPort = sessionPort,
+                                        readApiBaseUrl = {
+                                            container?.apiBaseUrlFlow() ?: flowOf(
+                                                ApiBaseUrlPolicy.resolve(
+                                                    stored = null,
+                                                    configured = BuildConfig.SUBSLOTH_API_BASE_URL,
+                                                ),
+                                            )
+                                        },
+                                        saveApiBaseUrl = { url ->
+                                            userPreferences?.setApiBaseUrl(url)
+                                        },
+                                    )
+                                }
+                                LoginScreen(
+                                    viewModel = viewModel,
+                                    onNavigateToOfflineLibrary = { showOfflineLibrary = true },
+                                    onNavigateToCatalog = {},
                                 )
                             }
-                            LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
                         },
                         authenticated = { SubSlothNavHost() },
                     )

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
 
@@ -51,14 +52,29 @@ fun main() {
                             WebRuntimeMode.Production -> SessionGate(
                                 sessionPort = app.runtime.sessionPort,
                                 login = {
-                                    val viewModel: LoginViewModel = viewModel {
-                                        LoginViewModel(
-                                            sessionPort = app.runtime.sessionPort,
-                                            readApiBaseUrl = { app.runtime.apiBaseUrlFlow() },
-                                            saveApiBaseUrl = { url -> app.runtime.saveApiBaseUrl(url) },
+                                    var showOfflineLibrary by remember { mutableStateOf(false) }
+                                    if (showOfflineLibrary) {
+                                        WebNavHost(
+                                            runtime = app.runtime,
+                                            startDestination = OfflineLibraryKey,
+                                            modifier = Modifier.weight(1f),
+                                            onPlaybackFullscreenChanged = { playbackFullscreen = it },
+                                            onExitOfflineLibrary = { showOfflineLibrary = false },
+                                        )
+                                    } else {
+                                        val viewModel: LoginViewModel = viewModel {
+                                            LoginViewModel(
+                                                sessionPort = app.runtime.sessionPort,
+                                                readApiBaseUrl = { app.runtime.apiBaseUrlFlow() },
+                                                saveApiBaseUrl = { url -> app.runtime.saveApiBaseUrl(url) },
+                                            )
+                                        }
+                                        LoginScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToOfflineLibrary = { showOfflineLibrary = true },
+                                            onNavigateToCatalog = {},
                                         )
                                     }
-                                    LoginScreen(viewModel = viewModel, onNavigateToCatalog = {})
                                 },
                                 authenticated = {
                                     WebNavHost(

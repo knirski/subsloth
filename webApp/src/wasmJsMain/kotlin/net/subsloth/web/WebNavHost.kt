@@ -42,6 +42,7 @@ import net.subsloth.core.ui.PlayerKey
 import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
+import net.subsloth.core.ui.navigateBack
 import net.subsloth.core.ui.subslothNavConfig
 import net.subsloth.details.EpisodeDetailScreen
 import net.subsloth.details.EpisodeDetailViewModel
@@ -73,6 +74,7 @@ fun WebNavHost(
     modifier: Modifier = Modifier,
     startDestination: AppNavKey = CatalogKey,
     onPlaybackFullscreenChanged: (Boolean) -> Unit = {},
+    onExitOfflineLibrary: () -> Unit = {},
 ) {
     val backStack = rememberNavBackStack(subslothNavConfig, startDestination)
 
@@ -98,7 +100,7 @@ fun WebNavHost(
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
-        onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+        onBack = { navigateBack(backStack, onExitOfflineLibrary) },
         entryDecorators =
         listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
@@ -219,6 +221,9 @@ fun WebNavHost(
             entry<OfflineLibraryKey> {
                 OfflineLibraryContent(
                     runtime = runtime,
+                    onNavigateBack = {
+                        if (backStack.size > 1) popHistory() else onExitOfflineLibrary()
+                    },
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
@@ -554,6 +559,7 @@ private fun DiagnosticsContent(onNavigateBack: () -> Unit) {
 @Composable
 private fun OfflineLibraryContent(
     runtime: WebRuntime,
+    onNavigateBack: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -578,6 +584,7 @@ private fun OfflineLibraryContent(
         }
         LibraryScreen(
             viewModel = vm,
+            onNavigateBack = onNavigateBack,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,
         )
