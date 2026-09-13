@@ -3,6 +3,7 @@ package net.subsloth.desktop
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,10 @@ import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 import net.subsloth.core.ui.theme.SubSlothTheme
+import java.awt.Dimension
+
+private const val MIN_WINDOW_WIDTH_PX = 480
+private const val MIN_WINDOW_HEIGHT_PX = 640
 
 fun main() = application {
     val windowState = rememberWindowState(size = DpSize(1280.dp, 800.dp))
@@ -29,6 +34,11 @@ fun main() = application {
         title = "SubSloth",
         state = windowState,
     ) {
+        // Keep the window wide enough for the two-column detail layouts and
+        // the tab row; the layout adapts upward from here.
+        LaunchedEffect(window) {
+            window.minimumSize = Dimension(MIN_WINDOW_WIDTH_PX, MIN_WINDOW_HEIGHT_PX)
+        }
         SubSlothTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
                 DesktopRoot()
