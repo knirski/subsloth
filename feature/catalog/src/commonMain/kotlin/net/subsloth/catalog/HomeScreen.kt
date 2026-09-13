@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -337,6 +338,9 @@ private fun EmptyTabContent(text: String) {
 /** Shown when the catalog has shows but no movies (missing movie entitlement). */
 private const val MOVIES_UNAVAILABLE_NOTICE = "Movies aren't available on this account."
 
+/** Test tag on every catalog media card, shared with UI and E2E tests. */
+const val MEDIA_CARD_TEST_TAG = "media_card"
+
 @Composable
 private fun HomeRowSection(
     row: HomeRow<*>,
@@ -379,7 +383,7 @@ private fun HomeRowSection(
 fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
         onClick = onClick,
-        modifier = modifier.width(160.dp),
+        modifier = modifier.width(160.dp).testTag(MEDIA_CARD_TEST_TAG),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
