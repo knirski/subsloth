@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import net.subsloth.core.ui.theme.SubSlothTheme
 import androidx.compose.ui.Modifier
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     SessionGate(
                         sessionPort = sessionPort,
                         login = {
-                            var showOfflineLibrary by remember { mutableStateOf(false) }
+                            var showOfflineLibrary by rememberSaveable { mutableStateOf(false) }
                             if (showOfflineLibrary) {
                                 SubSlothNavHost(
                                     startDestination = OfflineLibraryKey,
