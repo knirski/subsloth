@@ -4,8 +4,13 @@ import android.view.KeyEvent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
@@ -43,6 +48,19 @@ class TvFocusTestRule : TestRule {
     fun pressMediaFastForward() = sendKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
 
     fun assertFocused(tag: String): SemanticsNodeInteraction = composeRule.onNodeWithTag(tag).assertIsFocused()
+
+    /** Asserts the single node with this accessibility description has focus. */
+    fun assertFocusedContentDescription(description: String): SemanticsNodeInteraction =
+        composeRule.onNodeWithContentDescription(description).assertIsFocused()
+
+    /** Asserts at least one node with this tag has focus. */
+    fun assertAnyFocused(tag: String) {
+        composeRule.onAllNodesWithTag(tag).assertAny(isFocused())
+    }
+
+    /** Whether any node with this tag currently has focus, for traversal loops. */
+    fun hasAnyFocused(tag: String): Boolean =
+        composeRule.onAllNodesWithTag(tag).filter(isFocused()).fetchSemanticsNodes().isNotEmpty()
 
     private fun sendKeyEvent(keyCode: Int) {
         composeRule.onRoot().performKeyInput {
