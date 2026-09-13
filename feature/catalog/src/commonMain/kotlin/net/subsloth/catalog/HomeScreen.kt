@@ -6,12 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +49,8 @@ import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.ui.WindowWidthClass
+import net.subsloth.core.ui.currentWindowWidthClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,14 +197,14 @@ fun CatalogContent(
             )
 
             HomeTab.FAVORITES -> PersonalRowContent(
-                items = state.favorites,
+                mediaItems = state.favorites,
                 emptyText = "No favorites yet. Tap Favorite on a movie or show to add one.",
                 onMovieClick = onMovieClick,
                 onShowClick = onShowClick,
             )
 
             HomeTab.WATCH_LATER -> PersonalRowContent(
-                items = state.watchLater,
+                mediaItems = state.watchLater,
                 emptyText = "Nothing on your Watch Later list yet.",
                 onMovieClick = onMovieClick,
                 onShowClick = onShowClick,
@@ -237,6 +244,42 @@ private fun HomeDashboard(
         EmptyTabContent("Nothing in progress and nothing downloaded yet.")
         return
     }
+    if (currentWindowWidthClass() == WindowWidthClass.EXPANDED) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 180.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (state.continueWatching.isNotEmpty()) {
+                item(key = "continue_watching_label", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionLabel("Continue Watching")
+                }
+                items(state.continueWatching, key = { it.id.key }) { media ->
+                    MediaCard(
+                        media = media,
+                        fillWidth = true,
+                        onClick = mediaClick(media, onMovieClick, onShowClick),
+                    )
+                }
+            }
+            if (state.availableOffline.isNotEmpty()) {
+                item(key = "available_offline_label", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionLabel("Available Offline")
+                }
+                items(state.availableOffline, key = { it.id.key }) { media ->
+                    MediaCard(
+                        media = media,
+                        fillWidth = true,
+                        onClick = mediaClick(media, onMovieClick, onShowClick),
+                    )
+                }
+            }
+        }
+        return
+    }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -262,6 +305,17 @@ private fun HomeDashboard(
             }
         }
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(vertical = 8.dp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -297,13 +351,32 @@ private fun MediaRowsContent(
 
 @Composable
 private fun PersonalRowContent(
-    items: List<Media>,
+    mediaItems: List<Media>,
     emptyText: String,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
-    if (items.isEmpty()) {
+    if (mediaItems.isEmpty()) {
         EmptyTabContent(emptyText)
+        return
+    }
+    if (currentWindowWidthClass() == WindowWidthClass.EXPANDED) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 180.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(mediaItems, key = { it.id.key }) { media ->
+                MediaCard(
+                    media = media,
+                    fillWidth = true,
+                    onClick = mediaClick(media, onMovieClick, onShowClick),
+                )
+            }
+        }
         return
     }
     LazyColumn(
@@ -313,7 +386,7 @@ private fun PersonalRowContent(
     ) {
         item(key = "personal_row") {
             HomeRowSection(
-                row = HomeRow.Recency(items.toImmutableList(), label = null),
+                row = HomeRow.Recency(mediaItems.toImmutableList(), label = null),
                 onMovieClick = onMovieClick,
                 onShowClick = onShowClick,
             )
@@ -365,13 +438,7 @@ private fun HomeRowSection(
                 item(key = media.id.key, contentType = media::class) {
                     MediaCard(
                         media = media,
-                        onClick = {
-                            when (val mid = media.id) {
-                                is Media.MediaId.Movie -> onMovieClick(mid)
-                                is Media.MediaId.Show -> onShowClick(mid)
-                                is Media.MediaId.Episode -> {}
-                            }
-                        },
+                        onClick = mediaClick(media, onMovieClick, onShowClick),
                     )
                 }
             }
@@ -379,11 +446,27 @@ private fun HomeRowSection(
     }
 }
 
+private fun mediaClick(
+    media: Media,
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+): () -> Unit = {
+    when (val mid = media.id) {
+        is Media.MediaId.Movie -> onMovieClick(mid)
+        is Media.MediaId.Show -> onShowClick(mid)
+        is Media.MediaId.Episode -> {}
+    }
+}
+
 @Composable
-fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}, fillWidth: Boolean = false) {
     Card(
         onClick = onClick,
-        modifier = modifier.width(160.dp).testTag(MEDIA_CARD_TEST_TAG),
+        modifier = if (fillWidth) {
+            modifier.fillMaxWidth().testTag(MEDIA_CARD_TEST_TAG)
+        } else {
+            modifier.width(160.dp).testTag(MEDIA_CARD_TEST_TAG)
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
