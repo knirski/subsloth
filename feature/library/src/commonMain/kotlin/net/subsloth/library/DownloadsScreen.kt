@@ -36,6 +36,7 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.SeasonQueueItemExecution
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.SubSlothBackButton
@@ -130,18 +131,20 @@ fun DownloadsContent(
 ) {
     var showDeleteConfirmation by remember { mutableStateOf<DeleteConfirmationType?>(null) }
 
-    DownloadsContentBody(
-        state = state,
-        modifier = modifier,
-        showUnavailableNotice = showUnavailableNotice,
-        onPause = onPause,
-        onResume = onResume,
-        onCancel = onCancel,
-        onRetry = onRetry,
-        onRemove = onRemove,
-        onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
-        onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
-    )
+    AdaptiveContentFrame(modifier = modifier, maxWidth = 960.dp) {
+        DownloadsContentBody(
+            state = state,
+            modifier = Modifier,
+            showUnavailableNotice = showUnavailableNotice,
+            onPause = onPause,
+            onResume = onResume,
+            onCancel = onCancel,
+            onRetry = onRetry,
+            onRemove = onRemove,
+            onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
+            onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
+        )
+    }
 
     showDeleteConfirmation?.let { type ->
         DeleteConfirmationDialog(

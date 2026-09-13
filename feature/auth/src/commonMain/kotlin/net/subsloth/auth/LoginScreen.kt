@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.model.error.UiError
+import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
@@ -131,84 +131,85 @@ fun LoginFormContent(
     onSignIn: () -> Unit = {},
     onNavigateToOfflineLibrary: () -> Unit = {},
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .widthIn(max = 480.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(Res.string.app_title),
-            style = MaterialTheme.typography.headlineLarge,
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OutlinedTextField(
-            value = login,
-            onValueChange = onLoginChange,
-            label = { Text(stringResource(Res.string.login_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text(stringResource(Res.string.password_label)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = apiBaseUrl,
-            onValueChange = onApiBaseUrlChange,
-            label = { Text(stringResource(Res.string.api_base_url_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else {
-            Button(
-                onClick = dropUnlessResumed { onSignIn() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = login.isNotBlank() && password.isNotBlank(),
-            ) {
-                Text(stringResource(Res.string.sign_in))
-            }
-        }
-
-        error?.let { err ->
-            Spacer(modifier = Modifier.height(16.dp))
+    AdaptiveContentFrame(modifier = modifier, maxWidth = 480.dp) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Text(
-                text = err.toUiErrorMessage().toDisplayString(),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(Res.string.app_title),
+                style = MaterialTheme.typography.headlineLarge,
             )
-        }
 
-        if (hasOfflineLibrary) {
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedButton(
-                onClick = onNavigateToOfflineLibrary,
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedTextField(
+                value = login,
+                onValueChange = onLoginChange,
+                label = { Text(stringResource(Res.string.login_label)) },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(Res.string.offline_library))
+                enabled = !isLoading,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text(stringResource(Res.string.password_label)) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = apiBaseUrl,
+                onValueChange = onApiBaseUrlChange,
+                label = { Text(stringResource(Res.string.api_base_url_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else {
+                Button(
+                    onClick = dropUnlessResumed { onSignIn() },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = login.isNotBlank() && password.isNotBlank(),
+                ) {
+                    Text(stringResource(Res.string.sign_in))
+                }
+            }
+
+            error?.let { err ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = err.toUiErrorMessage().toDisplayString(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (hasOfflineLibrary) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onNavigateToOfflineLibrary,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.offline_library))
+                }
             }
         }
     }

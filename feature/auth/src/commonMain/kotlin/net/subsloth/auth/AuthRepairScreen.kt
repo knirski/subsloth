@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.auth.generated.resources.Res
@@ -62,35 +63,37 @@ fun AuthRepairScreen(
                         modifier = Modifier.padding(start = 8.dp, top = 8.dp),
                     )
                 }
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = stringResource(Res.string.session_expired),
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(Res.string.session_expired_message),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = {
-                            viewModel.dismissNeedsAuthRepair()
-                            onRepaired()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
+                AdaptiveContentFrame(maxWidth = 480.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
-                        Text(stringResource(Res.string.sign_in_again))
+                        Text(
+                            text = stringResource(Res.string.session_expired),
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = stringResource(Res.string.session_expired_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(
+                            onClick = {
+                                viewModel.dismissNeedsAuthRepair()
+                                onRepaired()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(Res.string.sign_in_again))
+                        }
                     }
                 }
             }
