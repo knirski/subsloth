@@ -90,7 +90,7 @@ class TvFocusTestRule : TestRule {
         }
     }
 
-    private fun wakeDeviceAndDismissKeyguard() {
+    internal fun wakeDeviceAndDismissKeyguard() {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
         uiAutomation.executeShellCommand("input keyevent KEYCODE_WAKEUP").close()
         uiAutomation.executeShellCommand("wm dismiss-keyguard").close()
