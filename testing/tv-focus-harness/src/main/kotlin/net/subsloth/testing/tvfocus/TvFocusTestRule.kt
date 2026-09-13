@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -24,7 +25,18 @@ class TvFocusTestRule : TestRule {
 
     val composeRule = createComposeRule()
 
-    override fun apply(base: Statement, description: Description): Statement = composeRule.apply(base, description)
+    override fun apply(base: Statement, description: Description): Statement {
+        val composed = composeRule.apply(base, description)
+        return object : Statement() {
+            override fun evaluate() {
+                // A headless CI emulator can still be on the lock screen; its
+                // window never gets focus, so every focus request is dropped
+                // even though composition and clicks work.
+                wakeDeviceAndDismissKeyguard()
+                composed.evaluate()
+            }
+        }
+    }
 
     fun setContent(content: @Composable () -> Unit) {
         composeRule.setContent(content)
@@ -76,6 +88,12 @@ class TvFocusTestRule : TestRule {
             keyDown(Key(keyCode))
             keyUp(Key(keyCode))
         }
+    }
+
+    private fun wakeDeviceAndDismissKeyguard() {
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        uiAutomation.executeShellCommand("input keyevent KEYCODE_WAKEUP").close()
+        uiAutomation.executeShellCommand("wm dismiss-keyguard").close()
     }
 
     private companion object {
