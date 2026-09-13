@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -53,6 +54,14 @@ class TvFocusTestRule : TestRule {
     fun assertFocusedContentDescription(description: String): SemanticsNodeInteraction =
         composeRule.onNodeWithContentDescription(description).assertIsFocused()
 
+    /** Waits until the description's node has focus (focus can land a layout later). */
+    fun waitUntilFocused(description: String, timeoutMillis: Long = DEFAULT_FOCUS_TIMEOUT_MS) {
+        composeRule.waitUntil(timeoutMillis) {
+            composeRule.onAllNodesWithContentDescription(description).filter(isFocused())
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
     /** Asserts at least one node with this tag has focus. */
     fun assertAnyFocused(tag: String) {
         composeRule.onAllNodesWithTag(tag).assertAny(isFocused())
@@ -67,5 +76,9 @@ class TvFocusTestRule : TestRule {
             keyDown(Key(keyCode))
             keyUp(Key(keyCode))
         }
+    }
+
+    private companion object {
+        const val DEFAULT_FOCUS_TIMEOUT_MS = 5_000L
     }
 }

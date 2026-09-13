@@ -1,13 +1,14 @@
 package net.subsloth.core.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -30,23 +31,27 @@ fun tvSafeHorizontalPadding(default: Dp): Dp =
     if (LocalIsTelevision.current) maxOf(default, TvOverscanPadding) else default
 
 /**
- * Requests focus when the element enters composition on TV, giving each
+ * Requests focus once after this element is first placed on TV, giving each
  * screen a deterministic initial D-pad target (back button, search action).
  * A no-op elsewhere.
+ *
+ * Placement (not a frame effect) is used so the focus target is guaranteed to
+ * exist when the request is made; a one-shot guard keeps later relayouts from
+ * stealing focus back after the user has moved it.
  */
 @Composable
 fun Modifier.tvInitialFocus(): Modifier {
-    val enabled = LocalIsTelevision.current
+    if (!LocalIsTelevision.current) return this
     val requester = remember { FocusRequester() }
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            // Effects run after composition is applied, so the focus target is
-            // attached; a direct request is reliable. Guarded because a screen
-            // can navigate away in the same frame.
-            runCatching { requester.requestFocus() }
+    val requested = remember { mutableStateOf(false) }
+    return this
+        .focusRequester(requester)
+        .onPlaced {
+            if (!requested.value) {
+                requested.value = true
+                runCatching { requester.requestFocus() }
+            }
         }
-    }
-    return this.then(Modifier.focusRequester(requester))
 }
 
 private val TvOverscanPadding = 48.dp

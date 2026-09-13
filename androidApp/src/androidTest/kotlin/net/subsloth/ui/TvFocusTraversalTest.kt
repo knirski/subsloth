@@ -57,6 +57,7 @@ class TvFocusTraversalTest {
             }
         }
 
+        tvFocusRule.waitUntilFocused("Back")
         tvFocusRule.assertFocusedContentDescription("Back")
     }
 
@@ -78,6 +79,7 @@ class TvFocusTraversalTest {
             }
         }
 
+        tvFocusRule.waitUntilFocused("Search")
         tvFocusRule.assertFocusedContentDescription("Search")
 
         var reachedCard = false
