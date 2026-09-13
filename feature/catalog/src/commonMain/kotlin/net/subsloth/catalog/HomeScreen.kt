@@ -462,11 +462,9 @@ private fun mediaClick(
 fun MediaCard(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}, fillWidth: Boolean = false) {
     Card(
         onClick = onClick,
-        modifier = if (fillWidth) {
-            modifier.fillMaxWidth().testTag(MEDIA_CARD_TEST_TAG)
-        } else {
-            modifier.width(160.dp).testTag(MEDIA_CARD_TEST_TAG)
-        },
+        modifier = modifier
+            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(160.dp))
+            .testTag(MEDIA_CARD_TEST_TAG),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
