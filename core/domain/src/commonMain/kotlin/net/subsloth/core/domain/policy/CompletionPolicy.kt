@@ -23,6 +23,19 @@ object CompletionPolicy {
     const val WATCHED_THRESHOLD: Double = 0.9
 
     /**
+     * Below this fraction, a partially watched item is not surfaced as
+     * in-progress content (Continue Watching); playback merely started.
+     */
+    private const val IN_PROGRESS_MIN_FRACTION: Double = 0.05
+
+    /**
+     * Returns `true` when [fraction] is worth surfacing as in-progress
+     * content: started beyond [IN_PROGRESS_MIN_FRACTION] but not yet
+     * [WATCHED_THRESHOLD] watched.
+     */
+    fun isInProgress(fraction: Double): Boolean = fraction in IN_PROGRESS_MIN_FRACTION..WATCHED_THRESHOLD
+
+    /**
      * Returns `true` when the playback position has reached or exceeded
      * the completion threshold of the known duration.
      *

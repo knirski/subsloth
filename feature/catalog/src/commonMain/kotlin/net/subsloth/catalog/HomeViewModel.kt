@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -20,15 +21,18 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
+import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.model.progress.PlaybackProgress
 import kotlin.time.Instant
 
 @Stable
@@ -41,6 +45,10 @@ sealed interface HomeUiState {
         val selectedTab: HomeTab,
         val isSyncing: Boolean = false,
         val moviesUnavailable: Boolean = false,
+        val continueWatching: ImmutableList<Media> = persistentListOf(),
+        val availableOffline: ImmutableList<Media> = persistentListOf(),
+        val favorites: ImmutableList<Media> = persistentListOf(),
+        val watchLater: ImmutableList<Media> = persistentListOf(),
     ) : HomeUiState
 }
 
@@ -58,12 +66,19 @@ sealed interface HomeRow<out T : Media> {
         HomeRow<ShowSummary>
 
     @Immutable
-    data class Recency(override val items: ImmutableList<Media>, override val label: String) : HomeRow<Media>
+    data class Recency(override val items: ImmutableList<Media>, override val label: String? = null) : HomeRow<Media>
 }
 
-enum class HomeTab { MOVIES, SHOWS, SEARCH }
+enum class HomeTab { HOME, MOVIES, SHOWS, FAVORITES, WATCH_LATER }
 
 private data class SyncRequest(val silent: Boolean)
+
+/** One-shot library/download/progress data backing the personal Home tabs. */
+private data class HomeAuxData(
+    val library: List<LibraryItem> = emptyList(),
+    val downloads: List<DownloadState> = emptyList(),
+    val progress: List<PlaybackProgress> = emptyList(),
+)
 
 class HomeViewModel(
     private val listCatalog: suspend () -> Outcome<List<Media>> = { Outcome.Success(emptyList()) },
@@ -74,6 +89,9 @@ class HomeViewModel(
         Outcome.Success(emptyList())
     },
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
+        Result.success(emptyList())
+    },
+    private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
         Result.success(emptyList())
     },
     private val catalogItems: (String) -> Flow<List<Media>> = { flowOf(emptyList()) },
@@ -106,7 +124,9 @@ class HomeViewModel(
 
     private val syncChannel = Channel<SyncRequest>(Channel.CONFLATED)
 
-    private val restoredTab = parseSavedTab(savedState["selectedTab"].orEmpty())
+    private val selectedTab = MutableStateFlow(parseSavedTab(savedState["selectedTab"].orEmpty()))
+
+    private val auxData = MutableStateFlow(HomeAuxData())
 
     init {
         viewModelScope.launch {
@@ -114,17 +134,23 @@ class HomeViewModel(
                 catalogItems("movie"),
                 catalogItems("show"),
                 isSyncing,
-            ) { movies, shows, syncing ->
+                selectedTab,
+                auxData,
+            ) { movies, shows, syncing, tab, aux ->
                 buildHomeContent(
                     movies = movies,
                     shows = shows,
-                    selectedTab = restoredTab,
+                    selectedTab = tab,
                     isSyncing = syncing,
+                    library = aux.library,
+                    downloads = aux.downloads,
+                    progress = aux.progress,
                 )
             }.collect { content ->
                 _uiState.value = content
             }
         }
+        refreshAuxData()
         viewModelScope.launch {
             syncChannel.receiveAsFlow().collectLatest { request ->
                 isSyncing.value = true
@@ -159,13 +185,54 @@ class HomeViewModel(
     fun retrySync() {
         viewModelScope.launch { sync() }
     }
+
+    /** Switches tabs and refreshes the personal data the new tab renders. */
+    fun selectTab(tab: HomeTab) {
+        if (selectedTab.value == tab) return
+        selectedTab.value = tab
+        if (tab != HomeTab.MOVIES && tab != HomeTab.SHOWS) {
+            refreshAuxData()
+        }
+    }
+
+    /**
+     * Reloads the one-shot personal data (library collections, completed
+     * downloads, playback progress). Catalog data stays on its own flow; this
+     * runs on init and whenever a personal tab is selected.
+     */
+    private fun refreshAuxData() {
+        viewModelScope.launch {
+            val library = when (val result = listLibrary()) {
+                is Outcome.Success -> result.value
+
+                is Outcome.Failure -> {
+                    log.e(null) { "listLibrary failed: ${result.error}" }
+                    auxData.value.library
+                }
+            }
+            val downloads = listDownloads()
+                .onFailure { log.e(it) { "listDownloads failed" } }
+                .getOrDefault(auxData.value.downloads)
+            val progress = listProgress()
+                .onFailure { log.e(it) { "listProgress failed" } }
+                .getOrDefault(auxData.value.progress)
+            auxData.value = HomeAuxData(
+                library = library,
+                downloads = downloads,
+                progress = progress,
+            )
+        }
+    }
 }
 
 internal fun buildHomeContent(
     movies: List<Media>,
     shows: List<Media>,
-    selectedTab: HomeTab = HomeTab.MOVIES,
+    selectedTab: HomeTab = HomeTab.HOME,
     isSyncing: Boolean = false,
+    library: List<LibraryItem> = emptyList(),
+    downloads: List<DownloadState> = emptyList(),
+    progress: List<PlaybackProgress> = emptyList(),
 ): HomeUiState.Content {
     val movieItems = movies.filterIsInstance<MovieSummary>()
     val showItems = shows.filterIsInstance<ShowSummary>()
@@ -180,6 +247,22 @@ internal fun buildHomeContent(
             ?.let { add(HomeRow.Shows(it.toImmutableList())) }
     }.toImmutableList()
 
+    val catalog = (movieItems + showItems).associateBy { it.id }
+    val continueWatching = progress
+        .filter { CompletionPolicy.isInProgress(it.fraction) }
+        .mapNotNull { catalog[it.mediaId] }
+    val offlineIds = downloads
+        .filterIsInstance<DownloadState.Completed>()
+        .map { it.mediaId }
+        .toSet()
+    val availableOffline = offlineIds.mapNotNull { catalog[it] }
+    val favorites = library
+        .filter { it.collection == LibraryCollection.FAVORITES }
+        .mapNotNull { catalog[it.mediaId] }
+    val watchLater = library
+        .filter { it.collection == LibraryCollection.WATCH_LATER }
+        .mapNotNull { catalog[it.mediaId] }
+
     return HomeUiState.Content(
         rows = rows,
         selectedTab = selectedTab,
@@ -188,6 +271,10 @@ internal fun buildHomeContent(
         // entitlement: the movies list comes back empty while shows are
         // present, so surface that instead of an unexplained empty section.
         moviesUnavailable = movieItems.isEmpty() && showItems.isNotEmpty(),
+        continueWatching = continueWatching.toImmutableList(),
+        availableOffline = availableOffline.toImmutableList(),
+        favorites = favorites.toImmutableList(),
+        watchLater = watchLater.toImmutableList(),
     )
 }
 
@@ -204,8 +291,10 @@ private fun buildRecencyRows(movies: List<MovieSummary>, shows: List<ShowSummary
 }
 
 private fun parseSavedTab(tab: String): HomeTab = when (tab.uppercase()) {
+    "HOME", "SEARCH" -> HomeTab.HOME
     "MOVIES" -> HomeTab.MOVIES
     "SHOWS" -> HomeTab.SHOWS
-    "SEARCH" -> HomeTab.SEARCH
-    else -> HomeTab.MOVIES
+    "FAVORITES" -> HomeTab.FAVORITES
+    "WATCH_LATER" -> HomeTab.WATCH_LATER
+    else -> HomeTab.HOME
 }

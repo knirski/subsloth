@@ -97,6 +97,9 @@ fun DesktopNavHost(
                             },
                             syncCatalog = { container.catalogRepository.sync() },
                             isCatalogStale = { container.catalogRepository.isStale() },
+                            listLibrary = { container.libraryPortAdapter.listLibrary() },
+                            listDownloads = container.downloadController::listDownloads,
+                            listProgress = { container.listAccountPlaybackProgress() },
                         )
                     }
                     HomeScreen(
@@ -105,6 +108,7 @@ fun DesktopNavHost(
                         onLibraryClick = { backStack += LibraryKey },
                         onDownloadsClick = { backStack += DownloadsKey },
                         onSettingsClick = { backStack += SettingsKey },
+                        onTabSelected = vm::selectTab,
                         onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
                         onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
                     )

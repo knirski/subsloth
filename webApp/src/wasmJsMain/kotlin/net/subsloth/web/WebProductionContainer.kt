@@ -292,6 +292,9 @@ class WebProductionContainer : WebRuntime {
             }
         },
         isCatalogStale = { false },
+        listLibrary = { listLibrary() },
+        listDownloads = { listDownloads() },
+        listProgress = { listAccountPlaybackProgress() },
     )
 
     override suspend fun listAllMedia(): Outcome<List<Media>> = listCatalog()
