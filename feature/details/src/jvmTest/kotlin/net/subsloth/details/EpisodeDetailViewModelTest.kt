@@ -22,6 +22,7 @@ import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.Quality
 import net.subsloth.core.model.media.QualityDescriptor
+import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -104,6 +105,30 @@ class EpisodeDetailViewModelTest {
     }
 
     @Test
+    fun `resumable progress fills the play fraction`() = runTest(testDispatcher) {
+        val viewModel = EpisodeDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(episodeDetails) },
+            listProgress = { Result.success(listOf(progress(300, 1_000))) },
+        )
+
+        val content = viewModel.uiState.value as EpisodeDetailUiState.Content
+        assertThat(content.progressFraction).isEqualTo(0.3)
+    }
+
+    @Test
+    fun `completed progress is not resumable`() = runTest(testDispatcher) {
+        val viewModel = EpisodeDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(episodeDetails) },
+            listProgress = { Result.success(listOf(progress(990, 1_000))) },
+        )
+
+        val content = viewModel.uiState.value as EpisodeDetailUiState.Content
+        assertThat(content.progressFraction).isNull()
+    }
+
+    @Test
     fun `toggleDownload enqueues default capped quality`() = runTest(testDispatcher) {
         val requested = mutableListOf<Resolution>()
         val viewModel = EpisodeDetailViewModel(
@@ -163,5 +188,13 @@ class EpisodeDetailViewModelTest {
         downloadedAtEpochSeconds = Instant.fromEpochSeconds(0),
         sizeBytes = 1024,
         videoPath = OfflineRelativePath.safe("videos/episode-10.mp4"),
+    )
+
+    private fun progress(positionSeconds: Long, durationSeconds: Long) = PlaybackProgress(
+        mediaId = mediaId,
+        positionSeconds = positionSeconds,
+        durationSeconds = durationSeconds,
+        lastUpdatedEpochSeconds = Instant.fromEpochSeconds(1),
+        isWatched = false,
     )
 }

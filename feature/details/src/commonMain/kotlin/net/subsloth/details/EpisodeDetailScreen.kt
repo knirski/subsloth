@@ -58,6 +58,7 @@ fun EpisodeDetailScreen(
                 details = s.details,
                 isWatched = s.isWatched,
                 isDownloaded = s.isDownloaded,
+                progressFraction = s.progressFraction,
                 modifier = Modifier.fillMaxSize(),
                 onNavigateBack = onNavigateBack,
                 onPlayClick = onPlayClick,
@@ -73,6 +74,7 @@ private fun EpisodeDetailContent(
     details: EpisodeDetails,
     isWatched: Boolean,
     isDownloaded: Boolean,
+    progressFraction: Double?,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
     onPlayClick: (EpisodeDetails) -> Unit,
@@ -156,11 +158,16 @@ private fun EpisodeDetailContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (isAvailable) {
+                val playLabel = when (val action = detailPlayAction(progressFraction)) {
+                    is DetailPlayAction.Play -> "Play"
+                    is DetailPlayAction.Resume -> "Resume"
+                    is DetailPlayAction.ResumeAt -> "Resume ${action.percent}%"
+                }
                 Button(
                     onClick = { onPlayClick(details) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = "Play")
+                    Text(text = playLabel)
                 }
             } else {
                 OutlinedButton(

@@ -6,8 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +70,8 @@ sealed interface ShowDetailUiState {
         val isWatchLater: Boolean = false,
         val progressFraction: Double? = null,
         val watchedEpisodeIds: ImmutableList<Int> = persistentListOf(),
+        /** Resumable playback fraction per episode id, for per-episode "Resume N%" hints. */
+        val episodeProgress: ImmutableMap<Int, Double> = persistentMapOf(),
         val seasonQueues: ImmutableList<SeasonDownloadQueue> = persistentListOf(),
     ) : ShowDetailUiState
 
@@ -301,7 +306,8 @@ class ShowDetailViewModel(
                             emptySet()
                         }
                         val flags = loadFlags()
-                        val progress = resumableShowProgress(details)
+                        val progressRows = loadProgressRows()
+                        val progress = resumableShowProgress(details, progressRows)
                         val seasonQueues = loadSeasonQueues()
                         val restoredSeason = parseSeason(savedState["selectedSeason"].orEmpty(), details.seasons)
                         _uiState.value =
@@ -316,6 +322,7 @@ class ShowDetailViewModel(
                                     .filter { episode -> watchedIds.contains(episode.id.value.toString()) }
                                     .map { episode -> episode.id.value }
                                     .toImmutableList(),
+                                episodeProgress = episodeProgressMap(details, progressRows),
                                 seasonQueues = seasonQueues.toImmutableList(),
                             )
                         if (seasonQueues.any { it.isActive() }) {
@@ -450,13 +457,9 @@ class ShowDetailViewModel(
      * filtered through [ResumePolicy] so the detail Play label matches the
      * player's resume decision.
      */
-    private suspend fun resumableShowProgress(details: ShowDetails): PlaybackProgress? {
+    private fun resumableShowProgress(details: ShowDetails, progressRows: List<PlaybackProgress>): PlaybackProgress? {
         val episodeIds = details.seasons.flatMap { season -> season.episodes }.map { episode -> episode.id }.toSet()
-        return listProgress()
-            .getOrElse { error ->
-                log.w { "Failed to load progress: $error" }
-                emptyList()
-            }
+        return progressRows
             .filter { progress ->
                 progress.mediaId == mediaId ||
                     (progress.mediaId as? Media.MediaId.Episode)?.value in episodeIds
@@ -464,6 +467,34 @@ class ShowDetailViewModel(
             .maxByOrNull { it.lastUpdatedEpochSeconds }
             ?.takeIf { ResumePolicy.resumablePosition(it) != null }
     }
+
+    /**
+     * Resumable fraction for every episode with stored progress, so each
+     * episode row can show its own "Resume N%" hint.
+     */
+    private fun episodeProgressMap(
+        details: ShowDetails,
+        progressRows: List<PlaybackProgress>,
+    ): ImmutableMap<Int, Double> {
+        val episodeIds = details.seasons.flatMap { season ->
+            season.episodes
+        }.map { episode -> episode.id.value }.toSet()
+        return progressRows
+            .filter { progress ->
+                val episodeId = (progress.mediaId as? Media.MediaId.Episode)?.value?.value
+                episodeId != null && episodeId in episodeIds && ResumePolicy.resumablePosition(progress) != null
+            }
+            .associate { progress ->
+                (progress.mediaId as Media.MediaId.Episode).value.value to progress.fraction
+            }
+            .toImmutableMap()
+    }
+
+    private suspend fun loadProgressRows(): List<PlaybackProgress> = listProgress()
+        .getOrElse { error ->
+            log.w { "Failed to load progress: $error" }
+            emptyList()
+        }
 
     private fun parseSeason(saved: String, seasons: List<Season>): Int {
         val parsed = saved.toIntOrNull()
@@ -486,6 +517,7 @@ sealed interface EpisodeDetailUiState {
         val details: EpisodeDetails,
         val isWatched: Boolean = false,
         val isDownloaded: Boolean = false,
+        val progressFraction: Double? = null,
     ) : EpisodeDetailUiState
 
     @Immutable
@@ -503,6 +535,9 @@ class EpisodeDetailViewModel(
         Outcome.Failure(DecodeError.SerializationFailed)
     },
     private val isWatched: suspend (Media.MediaId) -> Boolean = { false },
+    private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
+        Result.success(emptyList())
+    },
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
     },
@@ -537,6 +572,7 @@ class EpisodeDetailViewModel(
                                 false
                             },
                             isDownloaded = isDownloaded(),
+                            progressFraction = resumableProgressFraction(),
                         )
                     } else {
                         _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))
@@ -566,6 +602,15 @@ class EpisodeDetailViewModel(
             refreshDownloadFlag()
         }
     }
+
+    private suspend fun resumableProgressFraction(): Double? = listProgress()
+        .getOrElse { error ->
+            log.w { "Failed to load progress: $error" }
+            emptyList()
+        }
+        .firstOrNull { it.mediaId == mediaId }
+        ?.takeIf { ResumePolicy.resumablePosition(it) != null }
+        ?.fraction
 
     private suspend fun isDownloaded(): Boolean = listDownloads().getOrElse { error ->
         log.w { "Failed to load downloads: $error" }

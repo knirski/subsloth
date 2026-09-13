@@ -263,6 +263,7 @@ fun SubSlothNavHost(
                                         // it whenever the session's credentials change.
                                         getDetails = { id -> container.catalogRepository.getDetails(id) },
                                         isWatched = { container.isWatched(it) },
+                                        listProgress = { container.listAccountPlaybackProgress() },
                                         listDownloads = { container.downloadController.listDownloads() },
                                         enqueueDownload = { id, resolution ->
                                             container.downloadController.enqueue(id, resolution)
