@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
 import subsloth.feature.settings.generated.resources.settings_diagnostics
@@ -54,47 +55,57 @@ import subsloth.feature.settings.generated.resources.settings_title
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
     onNavigateToDiagnostics: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val s = state) {
-        is SettingsUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            SubSlothBackButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            )
         }
 
-        is SettingsUiState.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize().padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = s.error.detail ?: "Something went wrong",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
+        when (val s = state) {
+            is SettingsUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is SettingsUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = s.error.detail ?: "Something went wrong",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            is SettingsUiState.Content -> {
+                SettingsContent(
+                    state = s,
+                    modifier = Modifier,
+                    onSubtitleEnabledChanged = viewModel::onSubtitleEnabledChanged,
+                    onSubtitleLanguageChanged = viewModel::onSubtitleLanguageChanged,
+                    onQualityChanged = viewModel::onQualityChanged,
+                    onPlaybackSpeedChanged = viewModel::onPlaybackSpeedChanged,
+                    onDownloadsWifiOnlyChanged = viewModel::onDownloadsWifiOnlyChanged,
+                    onLogoutClick = viewModel::showLogoutCleanup,
+                    onNavigateToDiagnostics = onNavigateToDiagnostics,
+                    onPerformLogoutCleanup = viewModel::performLogoutCleanup,
+                    onDismissLogoutCleanup = viewModel::dismissLogoutCleanup,
                 )
             }
-        }
-
-        is SettingsUiState.Content -> {
-            SettingsContent(
-                state = s,
-                modifier = modifier,
-                onSubtitleEnabledChanged = viewModel::onSubtitleEnabledChanged,
-                onSubtitleLanguageChanged = viewModel::onSubtitleLanguageChanged,
-                onQualityChanged = viewModel::onQualityChanged,
-                onPlaybackSpeedChanged = viewModel::onPlaybackSpeedChanged,
-                onDownloadsWifiOnlyChanged = viewModel::onDownloadsWifiOnlyChanged,
-                onLogoutClick = viewModel::showLogoutCleanup,
-                onNavigateToDiagnostics = onNavigateToDiagnostics,
-                onPerformLogoutCleanup = viewModel::performLogoutCleanup,
-                onDismissLogoutCleanup = viewModel::dismissLogoutCleanup,
-            )
         }
     }
 }

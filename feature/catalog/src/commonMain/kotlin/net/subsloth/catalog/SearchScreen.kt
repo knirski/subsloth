@@ -29,12 +29,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
+import net.subsloth.core.ui.SubSlothBackButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     viewModel: SearchViewModel,
     modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
@@ -55,14 +57,22 @@ fun SearchScreen(
         }
     }
 
-    SearchContent(
-        state = state,
-        query = query,
-        onQueryChange = onQueryChange,
-        modifier = modifier,
-        onMovieClick = onMovieClick,
-        onShowClick = onShowClick,
-    )
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            SubSlothBackButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            )
+        }
+        SearchContent(
+            state = state,
+            query = query,
+            onQueryChange = onQueryChange,
+            modifier = Modifier,
+            onMovieClick = onMovieClick,
+            onShowClick = onShowClick,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

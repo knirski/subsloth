@@ -31,6 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +47,9 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     onSearchClick: () -> Unit = {},
+    onLibraryClick: () -> Unit = {},
+    onDownloadsClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
@@ -79,6 +84,27 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = onSearchClick) {
                         Text("🔍", style = MaterialTheme.typography.titleLarge)
+                    }
+                    IconButton(onClick = onLibraryClick) {
+                        Text(
+                            text = "📚",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.semantics { contentDescription = "Library" },
+                        )
+                    }
+                    IconButton(onClick = onDownloadsClick) {
+                        Text(
+                            text = "⬇",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.semantics { contentDescription = "Downloads" },
+                        )
+                    }
+                    IconButton(onClick = onSettingsClick) {
+                        Text(
+                            text = "⚙",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.semantics { contentDescription = "Settings" },
+                        )
                     }
                     if (isSyncing) {
                         CircularProgressIndicator(

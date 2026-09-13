@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.media.Media
+import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.library.generated.resources.Res
 import subsloth.feature.library.generated.resources.library_available_offline
@@ -40,28 +41,38 @@ import subsloth.feature.library.generated.resources.library_watch_later
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
     onMovieClick: (Media.MediaId.Movie) -> Unit = {},
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val s = state) {
-        is LibraryUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (onNavigateBack != null) {
+            SubSlothBackButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            )
         }
 
-        is LibraryUiState.Content -> {
-            LibraryContent(
-                state = s,
-                modifier = modifier,
-                onMovieClick = onMovieClick,
-                onShowClick = onShowClick,
-            )
+        when (val s = state) {
+            is LibraryUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is LibraryUiState.Content -> {
+                LibraryContent(
+                    state = s,
+                    modifier = Modifier,
+                    onMovieClick = onMovieClick,
+                    onShowClick = onShowClick,
+                )
+            }
         }
     }
 }

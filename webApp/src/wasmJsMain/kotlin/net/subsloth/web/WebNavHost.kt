@@ -108,6 +108,9 @@ fun WebNavHost(
                 CatalogContent(
                     runtime = runtime,
                     onSearchClick = { navigate(SearchKey) },
+                    onLibraryClick = { navigate(LibraryKey) },
+                    onDownloadsClick = { navigate(DownloadsKey) },
+                    onSettingsClick = { navigate(SettingsKey) },
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
@@ -116,6 +119,7 @@ fun WebNavHost(
             entry<SearchKey> {
                 SearchContent(
                     runtime = runtime,
+                    onNavigateBack = ::popHistory,
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
@@ -183,30 +187,33 @@ fun WebNavHost(
                 AuthRepairContent(
                     runtime = runtime,
                     onRepaired = ::popHistory,
+                    onNavigateBack = ::popHistory,
                 )
             }
 
             entry<LibraryKey> {
                 LibraryContent(
                     runtime = runtime,
+                    onNavigateBack = ::popHistory,
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
                     onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
                 )
             }
 
             entry<DownloadsKey> {
-                DownloadsContent(runtime = runtime)
+                DownloadsContent(runtime = runtime, onNavigateBack = ::popHistory)
             }
 
             entry<SettingsKey> {
                 SettingsContent(
                     runtime = runtime,
+                    onNavigateBack = ::popHistory,
                     onNavigateToDiagnostics = { navigate(DiagnosticsKey) },
                 )
             }
 
             entry<DiagnosticsKey> {
-                DiagnosticsContent()
+                DiagnosticsContent(onNavigateBack = ::popHistory)
             }
 
             entry<OfflineLibraryKey> {
@@ -224,6 +231,9 @@ fun WebNavHost(
 private fun CatalogContent(
     runtime: WebRuntime,
     onSearchClick: () -> Unit,
+    onLibraryClick: () -> Unit,
+    onDownloadsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -240,6 +250,9 @@ private fun CatalogContent(
         HomeScreen(
             viewModel = vm,
             onSearchClick = onSearchClick,
+            onLibraryClick = onLibraryClick,
+            onDownloadsClick = onDownloadsClick,
+            onSettingsClick = onSettingsClick,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,
         )
@@ -249,6 +262,7 @@ private fun CatalogContent(
 @Composable
 private fun SearchContent(
     runtime: WebRuntime,
+    onNavigateBack: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -269,6 +283,7 @@ private fun SearchContent(
         }
         SearchScreen(
             viewModel = vm,
+            onNavigateBack = onNavigateBack,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,
         )
@@ -388,7 +403,7 @@ private fun EpisodeDetailContent(
 }
 
 @Composable
-private fun AuthRepairContent(runtime: WebRuntime, onRepaired: () -> Unit) {
+private fun AuthRepairContent(runtime: WebRuntime, onRepaired: () -> Unit, onNavigateBack: () -> Unit) {
     val storeOwner = remember("auth_repair") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -411,13 +426,14 @@ private fun AuthRepairContent(runtime: WebRuntime, onRepaired: () -> Unit) {
         LaunchedEffect(vm) {
             vm.retryAuth()
         }
-        AuthRepairScreen(viewModel = vm, onRepaired = onRepaired)
+        AuthRepairScreen(viewModel = vm, onRepaired = onRepaired, onNavigateBack = onNavigateBack)
     }
 }
 
 @Composable
 private fun LibraryContent(
     runtime: WebRuntime,
+    onNavigateBack: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
     onShowClick: (Media.MediaId.Show) -> Unit,
 ) {
@@ -443,6 +459,7 @@ private fun LibraryContent(
         }
         LibraryScreen(
             viewModel = vm,
+            onNavigateBack = onNavigateBack,
             onMovieClick = onMovieClick,
             onShowClick = onShowClick,
         )
@@ -450,7 +467,7 @@ private fun LibraryContent(
 }
 
 @Composable
-private fun DownloadsContent(runtime: WebRuntime) {
+private fun DownloadsContent(runtime: WebRuntime, onNavigateBack: () -> Unit) {
     val storeOwner = remember("downloads") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -476,12 +493,12 @@ private fun DownloadsContent(runtime: WebRuntime) {
                 },
             )
         }
-        DownloadsScreen(viewModel = vm)
+        DownloadsScreen(viewModel = vm, onNavigateBack = onNavigateBack)
     }
 }
 
 @Composable
-private fun SettingsContent(runtime: WebRuntime, onNavigateToDiagnostics: () -> Unit) {
+private fun SettingsContent(runtime: WebRuntime, onNavigateBack: () -> Unit, onNavigateToDiagnostics: () -> Unit) {
     val storeOwner = remember("settings") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -512,13 +529,14 @@ private fun SettingsContent(runtime: WebRuntime, onNavigateToDiagnostics: () -> 
         }
         SettingsScreen(
             viewModel = vm,
+            onNavigateBack = onNavigateBack,
             onNavigateToDiagnostics = onNavigateToDiagnostics,
         )
     }
 }
 
 @Composable
-private fun DiagnosticsContent() {
+private fun DiagnosticsContent(onNavigateBack: () -> Unit) {
     val storeOwner = remember("diagnostics") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -529,7 +547,7 @@ private fun DiagnosticsContent() {
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
         val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") { DiagnosticsViewModel() }
-        DiagnosticsScreen(viewModel = vm)
+        DiagnosticsScreen(viewModel = vm, onNavigateBack = onNavigateBack)
     }
 }
 

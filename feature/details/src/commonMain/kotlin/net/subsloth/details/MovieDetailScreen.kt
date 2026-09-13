@@ -23,7 +23,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
 import org.jetbrains.compose.resources.stringResource
@@ -53,12 +53,10 @@ fun MovieDetailScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         if (onNavigateBack != null) {
-            TextButton(
+            SubSlothBackButton(
                 onClick = onNavigateBack,
                 modifier = Modifier.padding(start = 8.dp, top = 8.dp),
-            ) {
-                Text(stringResource(Res.string.detail_back))
-            }
+            )
         }
 
         when (val s = state) {
