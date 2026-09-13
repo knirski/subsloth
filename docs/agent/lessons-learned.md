@@ -208,3 +208,15 @@ manifest. Concrete trap: `VectorRaster` rejects vector drawables larger than
 200×200 and the Android TV banner is 320×180 by convention; suppress it
 narrowly with `tools:ignore="VectorRaster"` on the `<vector>` and a rationale
 rather than shrinking the banner below the leanback requirement.
+
+## 23. Headless CI Emulator Never Grants Window Focus
+
+Compose focus tests (`assertIsFocused`, `FocusRequester.requestFocus`) cannot
+pass on the CI Android emulator: the activity composes and clicks work, but
+the test window never receives focus, so every focus request is dropped
+(`Focused = false`), even with `onPlaced` requests, frame retries, or
+`input keyevent WAKEUP` + `wm dismiss-keyguard`. Verify focus behaviour in the
+JVM/Desktop test host instead (`TvFocusDesktopTest`) and keep Android focus
+tests as on-device recipes (`@Ignore` with the reason, run on a TV device).
+A useful diagnostic: `assertIsFocused` prints the node's `Focused` semantics,
+which distinguishes "node not found" from "focus never landed".

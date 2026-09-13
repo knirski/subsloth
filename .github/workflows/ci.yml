@@ -408,3 +408,17 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 600
           script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx1g" :core:database:connectedAndroidDeviceTest :core:preferences:connectedAndroidDeviceTest :androidApp:connectedDebugAndroidTest
+
+      # Instrumented failures are otherwise only visible as a red job: the
+      # connected-test HTML/XML reports are not printed to the Gradle log.
+      - name: Upload instrumented test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-results
+          path: |
+            androidApp/build/reports/androidTests
+            androidApp/build/outputs/androidTest-results
+            core/database/build/reports/androidTests
+            core/preferences/build/reports/androidTests
+          if-no-files-found: ignore

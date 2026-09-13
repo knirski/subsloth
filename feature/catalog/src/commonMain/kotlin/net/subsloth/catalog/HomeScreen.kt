@@ -100,7 +100,11 @@ fun HomeScreen(
                         onClick = onSearchClick,
                         modifier = Modifier.tvInitialFocus(),
                     ) {
-                        Text("🔍", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "🔍",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.semantics { contentDescription = "Search" },
+                        )
                     }
                     IconButton(onClick = onLibraryClick) {
                         Text(
@@ -129,12 +133,6 @@ fun HomeScreen(
                             strokeWidth = 2.dp,
                         )
                     } else {
-                        IconButton(
-                            onClick = { viewModel.sync() },
-                            enabled = !isSyncing,
-                        ) {
-                            Text("⟳", style = MaterialTheme.typography.titleLarge)
-                        }
                     }
                 },
             )

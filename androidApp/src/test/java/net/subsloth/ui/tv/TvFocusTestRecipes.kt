@@ -1,13 +1,19 @@
 package net.subsloth.ui.tv
 
 /**
- * Test recipes for TV D-pad focus, media-key handling, and focus restoration.
+ * Test recipe pointer for TV D-pad focus traversal.
  *
- * These tests require a TV emulator or Robolectric with Compose UI test support.
- * Run them via `./gradlew :app:testDebugUnitTest` with Robolectric configured, or
- * on a TV emulator as instrumented tests.
+ * The harness sends Android key events, so it runs as an **instrumented** test,
+ * not a JVM unit test: `androidTestImplementation(project(":testing:tv-focus-harness"))`.
+ * On a regular (phone) emulator, force the TV behaviour with
+ * `CompositionLocalProvider(LocalIsTelevision provides true)`.
  *
- * Usage example for downstream features:
+ * The working example is
+ * `net.subsloth.ui.TvFocusTraversalTest` in `androidApp/src/androidTest`, which
+ * covers initial focus (back button, Home search action) and D-pad traversal
+ * into media cards.
+ *
+ * Usage sketch for new screens:
  *
  * ```kotlin
  * class MyFeatureTvFocusTest {
@@ -18,15 +24,8 @@ package net.subsloth.ui.tv
  *     @Test
  *     fun dPadTraversalThroughRows() {
  *         tvFocusRule.setContent {
- *             Column {
- *                 Button(
- *                     onClick = {},
- *                     modifier = Modifier.size(100.dp).focusable().testTag("item1"),
- *                 ) {}
- *                 Button(
- *                     onClick = {},
- *                     modifier = Modifier.size(100.dp).focusable().testTag("item2"),
- *                 ) {}
+ *             CompositionLocalProvider(LocalIsTelevision provides true) {
+ *                 MyScreen()
  *             }
  *         }
  *         tvFocusRule.assertFocused("item1")

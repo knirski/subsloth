@@ -261,8 +261,10 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
-    testImplementation(project(":testing:tv-focus-harness"))
 
+    // The harness sends Android key events and asserts Compose focus, so it
+    // belongs on the instrumented-test classpath, not the JVM unit tests.
+    androidTestImplementation(project(":testing:tv-focus-harness"))
     androidTestImplementation(libs.kotlinx.collections.immutable)
     androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.coroutines.test)

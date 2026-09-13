@@ -87,8 +87,8 @@ Note: the remediation plan's gap "authenticated flow starts another login naviga
 
 | Task | Disposition | Evidence / owning change |
 |---|---|---|
-| 2.4 Implement TV Downloads layout, focus order, focus restoration, overscan-safe spacing, and simplified destructive actions | **Still required** | `feature/library/src/commonMain/kotlin/net/subsloth/library/DownloadsScreen.kt` has no TV-specific focus/layout/overscan code, and `TvFocusRequester`/`rememberTvFocusRequester` (`androidApp/src/main/java/net/subsloth/ui/tv/TvFocus.kt`) are used only in test recipes and the `testing/tv-focus-harness` module, never in production screens. Owned by Change 5 (`enforce-platform-test-gates`), which adds "TV focus traversal, restoration, and remote-control interaction tests that consume the existing focus rule." |
-| 5.2 Run TV focus tests for Downloads after UI test infrastructure exists | **Still required** | Blocked on the same gap as 2.4. Owned by Change 5. |
+| 2.4 Implement TV Downloads layout, focus order, focus restoration, overscan-safe spacing, and simplified destructive actions | **Partially delivered** | Overscan-safe spacing now comes from `LocalIsTelevision`/`tvSafeHorizontalPadding` in `:core:ui` (applied to Downloads and the other content screens), and `Modifier.tvInitialFocus()` gives the shared back button and Home search action a deterministic initial D-pad target, verified by `TvFocusDesktopTest`. Remaining: explicit focus restoration after dialogs/back and simplified destructive actions. |
+| 5.2 Run TV focus tests for Downloads after UI test infrastructure exists | **Partially delivered** | Initial focus is verified in the JVM/Desktop job (`TvFocusDesktopTest`); `androidApp/src/androidTest/.../TvFocusTraversalTest.kt` consumes `testing/tv-focus-harness` for on-device D-pad traversal but is `@Ignore`d in CI because the headless emulator never grants window focus (see lessons-learned §23). Run it on a TV device/emulator; Downloads-specific traversal assertions can build on the same rule. |
 
 ## `2026-05-19-android-ui-foundation` (2 items — intentionally deferred)
 

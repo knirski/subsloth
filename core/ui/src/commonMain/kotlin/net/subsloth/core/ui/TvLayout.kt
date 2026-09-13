@@ -31,23 +31,26 @@ fun tvSafeHorizontalPadding(default: Dp): Dp =
     if (LocalIsTelevision.current) maxOf(default, TvOverscanPadding) else default
 
 /**
- * Requests focus when the element enters composition on TV, giving each
- * screen a deterministic initial D-pad target (back button, search action).
- * A no-op elsewhere.
+ * Requests focus for this element when it appears on TV, giving each screen a
+ * deterministic initial D-pad target (back button, search action). A no-op
+ * elsewhere.
+ *
+ * The request is retried over a few frames: the very first effect run can
+ * happen before the focus target exists (or before the window is ready), and
+ * a single fire-and-forget request would be lost.
  */
 @Composable
 fun Modifier.tvInitialFocus(): Modifier {
-    val enabled = LocalIsTelevision.current
+    if (!LocalIsTelevision.current) return this
     val requester = remember { FocusRequester() }
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            // Wait for the first layout pass; requesting focus before the
-            // target is placed can silently fail.
+    LaunchedEffect(Unit) {
+        repeat(MAX_FOCUS_ATTEMPTS) {
+            if (runCatching { requester.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
             withFrameNanos { }
-            runCatching { requester.requestFocus() }
         }
     }
     return this.then(Modifier.focusRequester(requester))
 }
 
+private const val MAX_FOCUS_ATTEMPTS = 3
 private val TvOverscanPadding = 48.dp
