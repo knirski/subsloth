@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +33,8 @@ import net.subsloth.core.model.media.Media
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.ui.SubSlothBackButton
+import net.subsloth.core.ui.WindowWidthClass
+import net.subsloth.core.ui.currentWindowWidthClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +98,7 @@ fun SearchContent(
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),
             placeholder = { Text("Search movies and shows") },
             singleLine = true,
         )
@@ -134,27 +139,51 @@ fun SearchContent(
                         )
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(s.items, key = { it.id.key }, contentType = { it::class }) { media ->
-                            SearchResultItem(
-                                media = media,
-                                onClick = {
-                                    when (val id = media.id) {
-                                        is Media.MediaId.Movie -> onMovieClick(id)
-                                        is Media.MediaId.Show -> onShowClick(id)
-                                        is Media.MediaId.Episode -> {}
-                                    }
-                                },
-                            )
+                    if (currentWindowWidthClass() == WindowWidthClass.EXPANDED) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 260.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(s.items.size, key = { index -> s.items[index].id.key }) { index ->
+                                val media = s.items[index]
+                                SearchResultItem(
+                                    media = media,
+                                    onClick = searchResultClick(media, onMovieClick, onShowClick),
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(s.items, key = { it.id.key }, contentType = { it::class }) { media ->
+                                SearchResultItem(
+                                    media = media,
+                                    onClick = searchResultClick(media, onMovieClick, onShowClick),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private fun searchResultClick(
+    media: Media,
+    onMovieClick: (Media.MediaId.Movie) -> Unit,
+    onShowClick: (Media.MediaId.Show) -> Unit,
+): () -> Unit = {
+    when (val id = media.id) {
+        is Media.MediaId.Movie -> onMovieClick(id)
+        is Media.MediaId.Show -> onShowClick(id)
+        is Media.MediaId.Episode -> {}
     }
 }
 
