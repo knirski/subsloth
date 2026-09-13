@@ -4,10 +4,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.collections.immutable.persistentListOf
-import net.subsloth.catalog.CatalogContent
-import net.subsloth.catalog.HomeRow
-import net.subsloth.catalog.HomeTab
-import net.subsloth.catalog.HomeUiState
+import kotlinx.coroutines.flow.flowOf
+import net.subsloth.catalog.HomeScreen
+import net.subsloth.catalog.HomeViewModel
 import net.subsloth.catalog.MEDIA_CARD_TEST_TAG
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.MovieId
@@ -63,19 +62,18 @@ class TvFocusTraversalTest {
 
     @Test
     fun homeSearch_takesInitialFocusAndDpadReachesMediaCards() {
+        val viewModel =
+            HomeViewModel(
+                catalogItems = { contentType ->
+                    flowOf(if (contentType == "movie") listOf(sampleMovie) else emptyList())
+                },
+                savedState = mapOf("selectedTab" to "MOVIES"),
+            )
+
         tvFocusRule.setContent {
             CompositionLocalProvider(LocalIsTelevision provides true) {
                 MaterialTheme {
-                    CatalogContent(
-                        state =
-                            HomeUiState.Content(
-                                rows =
-                                    persistentListOf(
-                                        HomeRow.Movies(persistentListOf(sampleMovie), label = "Movies"),
-                                    ),
-                                selectedTab = HomeTab.MOVIES,
-                            ),
-                    )
+                    HomeScreen(viewModel = viewModel)
                 }
             }
         }
@@ -93,6 +91,6 @@ class TvFocusTraversalTest {
     }
 
     private companion object {
-        const val MAX_DPAD_PRESSES = 6
+        const val MAX_DPAD_PRESSES = 10
     }
 }

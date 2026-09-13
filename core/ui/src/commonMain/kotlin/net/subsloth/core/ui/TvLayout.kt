@@ -5,7 +5,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -41,9 +40,9 @@ fun Modifier.tvInitialFocus(): Modifier {
     val requester = remember { FocusRequester() }
     LaunchedEffect(enabled) {
         if (enabled) {
-            // Wait for the first layout pass; requesting focus before the
-            // target is placed can silently fail.
-            withFrameNanos { }
+            // Effects run after composition is applied, so the focus target is
+            // attached; a direct request is reliable. Guarded because a screen
+            // can navigate away in the same frame.
             runCatching { requester.requestFocus() }
         }
     }
