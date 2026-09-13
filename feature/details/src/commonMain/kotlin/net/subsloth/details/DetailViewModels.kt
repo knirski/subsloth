@@ -478,16 +478,15 @@ class ShowDetailViewModel(
     ): ImmutableMap<Int, Double> {
         val episodeIds = details.seasons.flatMap { season ->
             season.episodes
-        }.map { episode -> episode.id.value }.toSet()
-        return progressRows
-            .filter { progress ->
-                val episodeId = (progress.mediaId as? Media.MediaId.Episode)?.value?.value
-                episodeId != null && episodeId in episodeIds && ResumePolicy.resumablePosition(progress) != null
+        }.map { episode -> episode.id }.toSet()
+        return buildMap<Int, Double> {
+            progressRows.forEach { progress ->
+                val episode = progress.mediaId as? Media.MediaId.Episode ?: return@forEach
+                if (episode.value !in episodeIds) return@forEach
+                if (ResumePolicy.resumablePosition(progress) == null) return@forEach
+                put(episode.value.value, progress.fraction)
             }
-            .associate { progress ->
-                (progress.mediaId as Media.MediaId.Episode).value.value to progress.fraction
-            }
-            .toImmutableMap()
+        }.toImmutableMap()
     }
 
     private suspend fun loadProgressRows(): List<PlaybackProgress> = listProgress()
