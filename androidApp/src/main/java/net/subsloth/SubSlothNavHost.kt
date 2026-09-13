@@ -38,6 +38,7 @@ import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
 import net.subsloth.player.AndroidFullscreenWindowController
+import net.subsloth.player.PlayerOrientationViewModel
 import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.catalog.HomeScreen
@@ -284,6 +285,27 @@ fun SubSlothNavHost(
                 }
                 DisposableEffect(fullscreenWindowController) {
                     onDispose { fullscreenWindowController.restore() }
+                }
+
+                val orientationViewModel: PlayerOrientationViewModel = viewModel(
+                    key = "player_orientation",
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                            requireNotNull(modelClass.cast(PlayerOrientationViewModel()))
+                    },
+                )
+                DisposableEffect(orientationViewModel, activity) {
+                    orientationViewModel.enterPlayer(
+                        readOrientation = { activity.requestedOrientation },
+                        writeOrientation = { activity.requestedOrientation = it },
+                    )
+                    onDispose {
+                        // A configuration change disposes this entry too; only
+                        // a real exit must restore the pre-playback orientation.
+                        if (!activity.isChangingConfigurations) {
+                            orientationViewModel.exitPlayer { activity.requestedOrientation = it }
+                        }
+                    }
                 }
 
                 val app = LocalContext.current.applicationContext
