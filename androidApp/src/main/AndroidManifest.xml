@@ -25,6 +25,7 @@
         <activity
       android:name="net.subsloth.MainActivity"
       android:exported="true"
+      android:launchMode="singleTop"
       android:enableOnBackInvokedCallback="true"
       tools:targetApi="33"
       android:theme="@style/Theme.SubSloth"

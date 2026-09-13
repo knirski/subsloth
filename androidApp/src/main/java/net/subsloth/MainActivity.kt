@@ -1,5 +1,6 @@
 package net.subsloth
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,22 +16,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
+import net.subsloth.core.media.download.DownloadForegroundService
+import net.subsloth.core.ui.AppNavKey
+import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 
 class MainActivity : ComponentActivity() {
+    private val deepLinkDestination = MutableStateFlow<AppNavKey?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
 
         setContent {
+            val destination by deepLinkDestination.collectAsStateWithLifecycle()
             SubSlothTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val app = LocalContext.current.applicationContext
@@ -79,10 +89,36 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         },
-                        authenticated = { SubSlothNavHost() },
+                        authenticated = {
+                            SubSlothNavHost(
+                                deepLinkDestination = destination,
+                                onConsumeDeepLink = { deepLinkDestination.value = null },
+                            )
+                        },
                     )
                 }
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        destinationForAction(intent?.action)?.let { destination ->
+            deepLinkDestination.value = destination
+        }
+    }
+}
+
+/**
+ * Maps a launch intent action to the navigation destination it should open.
+ * Pure so it is unit-testable without an Activity.
+ */
+internal fun destinationForAction(action: String?): AppNavKey? = when (action) {
+    DownloadForegroundService.ACTION_OPEN_DOWNLOADS -> DownloadsKey
+    else -> null
 }
