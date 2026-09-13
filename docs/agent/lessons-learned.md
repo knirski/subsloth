@@ -186,3 +186,15 @@ Slider(value = localValue, onValueChange = { localValue = it },
 ```
 
 Without this pattern, every drag pixel triggers a disk write (DataStore). Always debounce sliders with local state + `onValueChangeFinished`.
+
+## 21. Long-Lived Gradle Daemons Cache X11 State
+
+Desktop Compose tests can fail with
+`NoClassDefFoundError: Could not initialize class sun.awt.X11.XToolkit`
+(`AWTError: Can't connect to X11 window server using ':99'`) although Xvfb is
+running. The daemon was started before the X server came back (or against a
+different display) and keeps the broken connection, so every window-creating
+test in that daemon fails. Fix: `./gradlew --stop` and rerun with
+`DISPLAY=:99`; restart Xvfb only once a process check confirms it is gone.
+CI sidesteps the issue by wrapping each test invocation in `xvfb-run`.
+
