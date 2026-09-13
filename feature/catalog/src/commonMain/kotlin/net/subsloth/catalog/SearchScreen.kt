@@ -35,6 +35,7 @@ import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.WindowWidthClass
 import net.subsloth.core.ui.currentWindowWidthClass
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +94,7 @@ fun SearchContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp), vertical = 16.dp),
     ) {
         OutlinedTextField(
             value = query,

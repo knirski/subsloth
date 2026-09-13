@@ -51,6 +51,8 @@ import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.ui.WindowWidthClass
 import net.subsloth.core.ui.currentWindowWidthClass
+import net.subsloth.core.ui.tvInitialFocus
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +96,10 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("SubSloth") },
                 actions = {
-                    IconButton(onClick = onSearchClick) {
+                    IconButton(
+                        onClick = onSearchClick,
+                        modifier = Modifier.tvInitialFocus(),
+                    ) {
                         Text("🔍", style = MaterialTheme.typography.titleLarge)
                     }
                     IconButton(onClick = onLibraryClick) {
@@ -249,7 +254,7 @@ private fun HomeDashboard(
             columns = GridCells.Adaptive(minSize = 180.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -283,7 +288,7 @@ private fun HomeDashboard(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (state.continueWatching.isNotEmpty()) {
@@ -328,7 +333,7 @@ private fun MediaRowsContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (showMoviesUnavailableNotice) {
@@ -365,7 +370,7 @@ private fun PersonalRowContent(
             columns = GridCells.Adaptive(minSize = 180.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -382,7 +387,7 @@ private fun PersonalRowContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = tvSafeHorizontalPadding(16.dp)),
     ) {
         item(key = "personal_row") {
             HomeRowSection(

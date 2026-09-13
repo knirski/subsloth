@@ -23,7 +23,7 @@ fun SubSlothBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val backDescription = stringResource(Res.string.action_back)
     IconButton(
         onClick = onClick,
-        modifier = modifier.semantics { contentDescription = backDescription },
+        modifier = modifier.tvInitialFocus().semantics { contentDescription = backDescription },
     ) {
         Text(text = "←", style = MaterialTheme.typography.titleLarge)
     }

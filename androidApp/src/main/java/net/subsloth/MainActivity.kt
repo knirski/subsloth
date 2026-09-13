@@ -1,12 +1,16 @@
 package net.subsloth
 
+import android.app.UiModeManager
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,12 +31,18 @@ import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.media.download.DownloadForegroundService
 import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.DownloadsKey
+import net.subsloth.core.ui.LocalIsTelevision
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
 
 class MainActivity : ComponentActivity() {
     private val deepLinkDestination = MutableStateFlow<AppNavKey?>(null)
+
+    private val isTelevision: Boolean by lazy {
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+        uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -41,8 +51,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val destination by deepLinkDestination.collectAsStateWithLifecycle()
-            SubSlothTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            CompositionLocalProvider(LocalIsTelevision provides isTelevision) {
+                SubSlothTheme {
+                    Surface(modifier = Modifier.fillMaxSize()) {
                     val app = LocalContext.current.applicationContext
                     val container = (app as? SubSlothApplication)?.container
                     val userPreferences = container?.userPreferences ?: run {
@@ -98,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
         }
     }
 

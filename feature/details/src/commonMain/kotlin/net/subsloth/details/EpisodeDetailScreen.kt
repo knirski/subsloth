@@ -30,6 +30,7 @@ import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
 import net.subsloth.core.ui.SubSlothBackButton
+import net.subsloth.core.ui.tvSafeHorizontalPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +102,7 @@ private fun EpisodeDetailContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = tvSafeHorizontalPadding(16.dp), vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -196,7 +197,7 @@ private fun EpisodeDetailContent(
 @Composable
 private fun EpisodeDetailErrorContent(modifier: Modifier = Modifier, onNavigateBack: () -> Unit) {
     Column(
-        modifier = modifier.padding(24.dp),
+        modifier = modifier.padding(horizontal = tvSafeHorizontalPadding(24.dp), vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
