@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
@@ -124,7 +125,7 @@ fun SettingsContent(
     onPerformLogoutCleanup: (Boolean, Boolean, Boolean) -> Unit = { _, _, _ -> },
     onDismissLogoutCleanup: () -> Unit = {},
 ) {
-    Box(modifier = modifier) {
+    AdaptiveContentFrame(modifier = modifier) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

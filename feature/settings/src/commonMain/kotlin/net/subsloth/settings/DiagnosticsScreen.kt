@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.subsloth.core.ui.AdaptiveContentFrame
 import net.subsloth.core.ui.SubSlothBackButton
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
@@ -61,97 +62,105 @@ fun DiagnosticsScreen(
 
 @Composable
 fun DiagnosticsContent(state: DiagnosticsState, modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-    ) {
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
-        }
+    AdaptiveContentFrame(modifier = modifier) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+        ) {
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+            }
 
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_version_section),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
-        }
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_version_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
 
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_installed_version), state.installedAppVersion) }
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_build_type), state.buildType) }
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_version_code), state.versionCode) }
-        state.gitSha?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_git_sha), it) } }
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_release_channel), state.releaseChannel) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_installed_version), state.installedAppVersion) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_build_type), state.buildType) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_version_code), state.versionCode) }
+            state.gitSha?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_git_sha), it) } }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_release_channel), state.releaseChannel) }
 
-        item {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
 
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_device_section),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
-        }
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_device_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
 
-        state.deviceApiLevel?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_api_level), it) } }
+            state.deviceApiLevel?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_api_level), it) } }
 
-        item {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
 
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_network_section),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
-        }
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_network_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
 
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_api_base_url), state.apiBaseUrl) }
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_auth_state), state.authStateCategory) }
-        item { DiagnosticRow(stringResource(Res.string.diagnostics_kodi_mode), state.kodiMode) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_api_base_url), state.apiBaseUrl) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_auth_state), state.authStateCategory) }
+            item { DiagnosticRow(stringResource(Res.string.diagnostics_kodi_mode), state.kodiMode) }
 
-        item {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
 
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_cache_section),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
-        }
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_cache_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+            }
 
-        state.cacheAge?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_cache_age), it) } }
-        state.lastRefreshTime?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_last_refresh), it) } }
-        state.downloadQueueCounts?.let {
-            item { DiagnosticRow(stringResource(Res.string.diagnostics_download_queue), it) }
-        }
-        state.storageUsage?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_storage_usage), it) } }
-        state.lastStatusCategory?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_last_status), it) } }
-        state.lastSuccessfulRefreshAge?.let {
-            item { DiagnosticRow(stringResource(Res.string.diagnostics_last_successful_refresh), it) }
-        }
+            state.cacheAge?.let { item { DiagnosticRow(stringResource(Res.string.diagnostics_cache_age), it) } }
+            state.lastRefreshTime?.let {
+                item { DiagnosticRow(stringResource(Res.string.diagnostics_last_refresh), it) }
+            }
+            state.downloadQueueCounts?.let {
+                item { DiagnosticRow(stringResource(Res.string.diagnostics_download_queue), it) }
+            }
+            state.storageUsage?.let {
+                item { DiagnosticRow(stringResource(Res.string.diagnostics_storage_usage), it) }
+            }
+            state.lastStatusCategory?.let {
+                item { DiagnosticRow(stringResource(Res.string.diagnostics_last_status), it) }
+            }
+            state.lastSuccessfulRefreshAge?.let {
+                item { DiagnosticRow(stringResource(Res.string.diagnostics_last_successful_refresh), it) }
+            }
 
-        item {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
 
-        item {
-            Text(
-                text = stringResource(Res.string.diagnostics_no_export),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
+            item {
+                Text(
+                    text = stringResource(Res.string.diagnostics_no_export),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+            }
         }
     }
 }
