@@ -588,6 +588,38 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `episode resolution is deduplicated and cached across refreshes`() = runTest(testDispatcher) {
+        val show = showSummary(2, "Watched Show")
+        val resolutions = mutableMapOf<EpisodeId, Int>()
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(listOf(show)),
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(Media.MediaId.Episode(EpisodeId(21)), fraction = 0.5),
+                        progress(Media.MediaId.Episode(EpisodeId(21)), fraction = 0.6),
+                    ),
+                )
+            },
+            resolveShowForEpisode = { episodeId ->
+                resolutions[episodeId] = (resolutions[episodeId] ?: 0) + 1
+                ShowId(2)
+            },
+        )
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val content = viewModel.uiState.value as HomeUiState.Content
+        assertThat(content.continueWatching).containsExactly(show)
+        assertThat(resolutions[EpisodeId(21)]).isEqualTo(1)
+
+        viewModel.selectTab(HomeTab.FAVORITES)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(resolutions[EpisodeId(21)]).isEqualTo(1)
+    }
+
+    @Test
     fun `multiple episodes of one show collapse to a single continue watching entry`() = runTest(testDispatcher) {
         val show = showSummary(2, "Watched Show")
         val viewModel = HomeViewModel(
