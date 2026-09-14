@@ -95,11 +95,11 @@ private class ControllerMetadataDao : OfflineDisplayMetadataDao {
 
     override fun getAll(): Flow<List<OfflineDisplayMetadataEntity>> = MutableStateFlow(rows)
 
-    override suspend fun getByContentId(contentId: String): OfflineDisplayMetadataEntity? =
-        rows.firstOrNull { it.contentId == contentId }
+    override suspend fun getByContentId(contentType: String, contentId: String): OfflineDisplayMetadataEntity? =
+        rows.firstOrNull { it.contentType == contentType && it.contentId == contentId }
 
     override suspend fun upsert(entity: OfflineDisplayMetadataEntity) {
-        rows.removeAll { it.contentId == entity.contentId }
+        rows.removeAll { it.contentType == entity.contentType && it.contentId == entity.contentId }
         rows += entity
     }
 
@@ -171,8 +171,9 @@ private fun subtitleRow(downloadId: Long, localFilePath: String = "1/abc.en.srt"
     localFilePath = localFilePath,
 )
 
-private fun metadata(contentId: String) = OfflineDisplayMetadataEntity(
+private fun metadata(contentId: String, contentType: String = "movie") = OfflineDisplayMetadataEntity(
     contentId = contentId,
+    contentType = contentType,
     title = "Title",
     posterCacheKey = null,
     backdropCacheKey = null,

@@ -91,7 +91,7 @@ class LibraryPortAdapterTest {
                 ),
             )
 
-            assertNotNull(db.watchLaterDao().getByProfileAndContentId("user", "4"))
+            assertNotNull(db.watchLaterDao().getByProfileAndContentId("user", "movie", "4"))
             val items = adapter.listLibrary().fold(
                 onSuccess = { it },
                 onFailure = { error("unexpected failure: $it") },
@@ -113,7 +113,7 @@ class LibraryPortAdapterTest {
 
             adapter.removeFromLibrary(Media.MediaId.Movie(MovieId(2)))
 
-            assertNull(db.watchLaterDao().getByProfileAndContentId("user", "2"))
+            assertNull(db.watchLaterDao().getByProfileAndContentId("user", "movie", "2"))
         } finally {
             db.close()
         }

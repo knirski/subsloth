@@ -90,14 +90,15 @@ class LibraryPortAdapter(
     override suspend fun removeFromLibrary(mediaId: Media.MediaId): Outcome<Unit> = try {
         val key = profileKey()
         val contentId = mediaId.toContentId()
+        val contentType = mediaId.toContentType()
 
-        val favorite = favoriteDao.getByProfileAndContentId(key, contentId)
+        val favorite = favoriteDao.getByProfileAndContentId(key, contentType, contentId)
         if (favorite != null) favoriteDao.delete(favorite)
 
-        val watchLater = watchLaterDao.getByProfileAndContentId(key, contentId)
+        val watchLater = watchLaterDao.getByProfileAndContentId(key, contentType, contentId)
         if (watchLater != null) watchLaterDao.delete(watchLater)
 
-        val localRecord = localLibraryDao.getByProfileAndContentId(key, contentId)
+        val localRecord = localLibraryDao.getByProfileAndContentId(key, contentType, contentId)
         if (localRecord != null) localLibraryDao.delete(localRecord)
 
         Outcome.Success(Unit)

@@ -46,8 +46,11 @@ interface FavoriteDao {
     @Query("SELECT * FROM favorites WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<FavoriteEntity>>
 
-    @Query("SELECT * FROM favorites WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): FavoriteEntity?
+    @Query(
+        "SELECT * FROM favorites WHERE profileKey = :profileKey AND contentType = :contentType " +
+            "AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(profileKey: String, contentType: String, contentId: String): FavoriteEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: FavoriteEntity)
@@ -64,8 +67,11 @@ interface WatchLaterDao {
     @Query("SELECT * FROM watch_later WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<WatchLaterEntity>>
 
-    @Query("SELECT * FROM watch_later WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): WatchLaterEntity?
+    @Query(
+        "SELECT * FROM watch_later WHERE profileKey = :profileKey AND contentType = :contentType " +
+            "AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(profileKey: String, contentType: String, contentId: String): WatchLaterEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: WatchLaterEntity)
@@ -82,8 +88,15 @@ interface WatchedStateDao {
     @Query("SELECT * FROM watched_state WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<WatchedStateEntity>>
 
-    @Query("SELECT * FROM watched_state WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): WatchedStateEntity?
+    @Query(
+        "SELECT * FROM watched_state WHERE profileKey = :profileKey AND contentType = :contentType " +
+            "AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(
+        profileKey: String,
+        contentType: String,
+        contentId: String,
+    ): WatchedStateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: WatchedStateEntity)
@@ -97,8 +110,15 @@ interface SubscriptionDao {
     @Query("SELECT * FROM subscriptions WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<SubscriptionEntity>>
 
-    @Query("SELECT * FROM subscriptions WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): SubscriptionEntity?
+    @Query(
+        "SELECT * FROM subscriptions WHERE profileKey = :profileKey AND contentType = :contentType " +
+            "AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(
+        profileKey: String,
+        contentType: String,
+        contentId: String,
+    ): SubscriptionEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SubscriptionEntity)
@@ -112,8 +132,15 @@ interface LocalLibraryRecordDao {
     @Query("SELECT * FROM local_library_records WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<LocalLibraryRecordEntity>>
 
-    @Query("SELECT * FROM local_library_records WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): LocalLibraryRecordEntity?
+    @Query(
+        "SELECT * FROM local_library_records WHERE profileKey = :profileKey AND contentType = :contentType " +
+            "AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(
+        profileKey: String,
+        contentType: String,
+        contentId: String,
+    ): LocalLibraryRecordEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: LocalLibraryRecordEntity)
@@ -177,8 +204,8 @@ interface OfflineDisplayMetadataDao {
     @Query("SELECT * FROM offline_display_metadata")
     fun getAll(): Flow<List<OfflineDisplayMetadataEntity>>
 
-    @Query("SELECT * FROM offline_display_metadata WHERE contentId = :contentId")
-    suspend fun getByContentId(contentId: String): OfflineDisplayMetadataEntity?
+    @Query("SELECT * FROM offline_display_metadata WHERE contentType = :contentType AND contentId = :contentId")
+    suspend fun getByContentId(contentType: String, contentId: String): OfflineDisplayMetadataEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: OfflineDisplayMetadataEntity)

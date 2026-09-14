@@ -114,7 +114,12 @@ class LogoutCleanupInstrumentedTest {
 
             // Re-fetch by natural key before deleting (id is unset on the local object).
             val favoriteDao = container.database.favoriteDao()
-            val persisted = favoriteDao.getByProfileAndContentId(controlFavorite.profileKey, controlFavorite.contentId)
+            val persisted =
+                favoriteDao.getByProfileAndContentId(
+                    controlFavorite.profileKey,
+                    controlFavorite.contentType,
+                    controlFavorite.contentId,
+                )
             if (persisted != null) {
                 favoriteDao.delete(persisted)
             }

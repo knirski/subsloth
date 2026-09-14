@@ -57,6 +57,10 @@ class AccountMediaRuntime(
     private val clock: Clock,
     private val anonymousProfileKey: String,
 ) {
+    private companion object {
+        const val EPISODE_CONTENT_TYPE = "episode"
+    }
+
     /** Profile key for the active session; [anonymousProfileKey] when signed out. */
     fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
         is Session.Authenticated -> AccountProfileKey(session.userId)
@@ -186,17 +190,27 @@ class AccountMediaRuntime(
         )
     }
 
-    /** Content ids marked watched for the active profile. */
+    /**
+     * Episode ids marked watched for the active profile.
+     *
+     * Episodes only: this feeds per-episode watched flags, and movie ids come
+     * from a separate counter, so including movie rows would mark an
+     * unrelated episode with the same numeric id as watched.
+     */
     suspend fun listWatchedContentIds(): Set<String> = watchedStateDao()
         .getAllForProfile(currentProfileKey().value)
         .first()
-        .filter { it.isWatched }
+        .filter { it.isWatched && it.contentType == EPISODE_CONTENT_TYPE }
         .map { it.contentId }
         .toSet()
 
     /** Watched state for a single media item, for the active profile. */
     suspend fun isWatched(mediaId: Media.MediaId): Boolean = watchedStateDao()
-        .getByProfileAndContentId(currentProfileKey().value, mediaId.toContentId())
+        .getByProfileAndContentId(
+            currentProfileKey().value,
+            mediaId.toContentType(),
+            mediaId.toContentId(),
+        )
         ?.isWatched == true
 
     // ── Subtitle tracks ──────────────────────────────────────────────────

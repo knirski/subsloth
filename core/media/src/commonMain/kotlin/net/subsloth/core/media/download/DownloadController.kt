@@ -205,7 +205,7 @@ class DownloadController(
         downloadedMediaDao.delete(entity)
         val remainingForContent = downloadedMediaDao.getByContent(entity.contentId, entity.mediaType)
         if (remainingForContent == null) {
-            val metadata = offlineDisplayMetadataDao.getByContentId(entity.contentId)
+            val metadata = offlineDisplayMetadataDao.getByContentId(entity.mediaType, entity.contentId)
             if (metadata != null) offlineDisplayMetadataDao.delete(metadata)
         }
         DownloadCommandOutcome.Applied
