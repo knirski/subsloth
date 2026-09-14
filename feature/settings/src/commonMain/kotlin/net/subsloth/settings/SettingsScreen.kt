@@ -9,19 +9,22 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +39,7 @@ import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.settings.generated.resources.Res
+import subsloth.feature.settings.generated.resources.settings_cancel
 import subsloth.feature.settings.generated.resources.settings_diagnostics
 import subsloth.feature.settings.generated.resources.settings_downloads_section
 import subsloth.feature.settings.generated.resources.settings_downloads_wifi_only
@@ -270,43 +274,92 @@ private fun SubtitleLanguageRow(subtitleLanguage: String?, onSubtitleLanguageCha
             subtitleLanguageLabel(code) ?: code
         } ?: defaultLabel
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(Res.string.settings_subtitle_language),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = currentLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(defaultLabel) },
-                onClick = {
-                    expanded = false
-                    onSubtitleLanguageChanged(null)
-                },
-            )
-            SubtitleLanguageOptions.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.label) },
-                    onClick = {
-                        expanded = false
-                        onSubtitleLanguageChanged(option.code)
-                    },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = true }
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(Res.string.settings_subtitle_language),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = currentLabel,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (expanded) {
+        SubtitleLanguageDialog(
+            currentLanguage = subtitleLanguage,
+            defaultLabel = defaultLabel,
+            onSelect = { code ->
+                expanded = false
+                onSubtitleLanguageChanged(code)
+            },
+            onDismiss = { expanded = false },
+        )
+    }
+}
+
+/**
+ * AlertDialog instead of Material3's DropdownMenu: the multiplatform
+ * DropdownMenu implementation does not resolve on Android (it links the
+ * desktop-only Skiko menu), and AlertDialog is already the dialog pattern
+ * used on this screen.
+ */
+@Composable
+private fun SubtitleLanguageDialog(
+    currentLanguage: String?,
+    defaultLabel: String,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.settings_subtitle_language)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                LanguageOption(
+                    label = defaultLabel,
+                    selected = currentLanguage == null,
+                    onClick = { onSelect(null) },
                 )
+                SubtitleLanguageOptions.forEach { option ->
+                    LanguageOption(
+                        label = option.label,
+                        selected = currentLanguage == option.code,
+                        onClick = { onSelect(option.code) },
+                    )
+                }
             }
-        }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.settings_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun LanguageOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
