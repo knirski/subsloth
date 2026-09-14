@@ -58,7 +58,8 @@ fun EpisodeDetailScreen(
             is EpisodeDetailUiState.Content -> EpisodeDetailContent(
                 details = s.details,
                 isWatched = s.isWatched,
-                isDownloaded = s.isDownloaded,
+                downloadStatus = s.downloadStatus,
+                downloadProgressPercent = s.downloadProgressPercent,
                 progressFraction = s.progressFraction,
                 modifier = Modifier.fillMaxSize(),
                 onNavigateBack = onNavigateBack,
@@ -74,7 +75,8 @@ fun EpisodeDetailScreen(
 private fun EpisodeDetailContent(
     details: EpisodeDetails,
     isWatched: Boolean,
-    isDownloaded: Boolean,
+    downloadStatus: DownloadStatus,
+    downloadProgressPercent: Int?,
     progressFraction: Double?,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
@@ -181,11 +183,21 @@ private fun EpisodeDetailContent(
             }
 
             if (LocalDownloadActionsEnabled.current) {
+                val downloadLabel = when (downloadStatus) {
+                    DownloadStatus.DOWNLOADED -> "Downloaded"
+                    DownloadStatus.QUEUED -> "Queued"
+                    DownloadStatus.DOWNLOADING -> "Downloading ${downloadProgressPercent ?: 0}%"
+                    DownloadStatus.FAILED -> "Retry download"
+                    DownloadStatus.NOT_DOWNLOADED -> "Download"
+                }
                 OutlinedButton(
                     onClick = onDownloadClick,
+                    enabled =
+                    downloadStatus != DownloadStatus.QUEUED &&
+                        downloadStatus != DownloadStatus.DOWNLOADING,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = if (isDownloaded) "Downloaded" else "Download")
+                    Text(text = downloadLabel)
                 }
             } else {
                 DownloadUnavailableNotice(modifier = Modifier.fillMaxWidth())

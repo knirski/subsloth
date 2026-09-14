@@ -5,7 +5,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.domain.port.DownloadCommandOutcome
@@ -313,7 +315,7 @@ class MovieDetailViewModelTest {
     }
 
     @Test
-    fun `in-progress download does not set downloaded flag`() = runTest(testDispatcher) {
+    fun `queued download surfaces QUEUED status`() = runTest(testDispatcher) {
         val queued = DownloadState.Queued(
             localId = LocalMediaIdentifier("movie-1"),
             mediaId = Media.MediaId.Movie(MovieId(1)),
@@ -326,9 +328,70 @@ class MovieDetailViewModelTest {
         )
         viewModel.uiState.test {
             val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.downloadStatus).isEqualTo(DownloadStatus.QUEUED)
             assertThat(content.isDownloaded).isFalse()
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `active download surfaces progress percent`() = runTest(testDispatcher) {
+        val active = DownloadState.Active(
+            localId = LocalMediaIdentifier("movie-1"),
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            quality = sampleQuality,
+            progressPercent = 42,
+        )
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listDownloads = { Result.success(listOf(active)) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as MovieDetailUiState.Content
+            assertThat(content.downloadStatus).isEqualTo(DownloadStatus.DOWNLOADING)
+            assertThat(content.downloadProgressPercent).isEqualTo(42)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `failed enqueue surfaces a retryable status`() = runTest(testDispatcher) {
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            enqueueDownload = { _, _ -> Result.failure(IllegalStateException("metered network")) },
+        )
+
+        viewModel.toggleDownload()
+
+        val content = viewModel.uiState.value as MovieDetailUiState.Content
+        assertThat(content.downloadStatus).isEqualTo(DownloadStatus.FAILED)
+    }
+
+    @Test
+    fun `monitor follows a queued download to completion`() = runTest(testDispatcher) {
+        var downloads: List<DownloadState> = listOf(
+            DownloadState.Queued(
+                localId = LocalMediaIdentifier("movie-1"),
+                mediaId = Media.MediaId.Movie(MovieId(1)),
+                quality = sampleQuality,
+            ),
+        )
+        val viewModel = MovieDetailViewModel(
+            mediaId = Media.MediaId.Movie(MovieId(1)),
+            getDetails = { Outcome.Success(sampleMovieDetails) },
+            listDownloads = { Result.success(downloads) },
+        )
+        assertThat((viewModel.uiState.value as MovieDetailUiState.Content).downloadStatus)
+            .isEqualTo(DownloadStatus.QUEUED)
+
+        downloads = listOf(completedDownload())
+        advanceTimeBy(1_001)
+        runCurrent()
+
+        assertThat((viewModel.uiState.value as MovieDetailUiState.Content).downloadStatus)
+            .isEqualTo(DownloadStatus.DOWNLOADED)
     }
 
     @Test

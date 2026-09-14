@@ -11,6 +11,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,22 @@ import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.ui.error.toUiError
 import kotlin.time.Clock
 
+/**
+ * UI-facing download lifecycle for the media item shown on a detail screen.
+ *
+ * [QUEUED] covers everything with a local row that is not actively
+ * transferring (queued, partial, paused); [FAILED] covers failed and
+ * unavailable rows, so the button offers a retry instead of silently
+ * staying on "Download".
+ */
+enum class DownloadStatus {
+    NOT_DOWNLOADED,
+    QUEUED,
+    DOWNLOADING,
+    FAILED,
+    DOWNLOADED,
+}
+
 @Stable
 sealed interface MovieDetailUiState {
     data object Loading : MovieDetailUiState
@@ -50,9 +67,12 @@ sealed interface MovieDetailUiState {
         val details: MovieDetails,
         val isFavorite: Boolean = false,
         val isWatchLater: Boolean = false,
-        val isDownloaded: Boolean = false,
+        val downloadStatus: DownloadStatus = DownloadStatus.NOT_DOWNLOADED,
+        val downloadProgressPercent: Int? = null,
         val progressFraction: Double? = null,
-    ) : MovieDetailUiState
+    ) : MovieDetailUiState {
+        val isDownloaded: Boolean get() = downloadStatus == DownloadStatus.DOWNLOADED
+    }
 
     @Immutable
     data class Error(val error: UiError) : MovieDetailUiState
@@ -112,6 +132,7 @@ class MovieDetailViewModel(
 
     private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
     val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
+    private var downloadMonitor: Job? = null
 
     init {
         loadDetails()
@@ -131,9 +152,15 @@ class MovieDetailViewModel(
                                 details = details,
                                 isFavorite = flags.isFavorite,
                                 isWatchLater = flags.isWatchLater,
-                                isDownloaded = flags.isDownloaded,
+                                downloadStatus = flags.downloadStatus,
+                                downloadProgressPercent = flags.downloadProgressPercent,
                                 progressFraction = progress?.fraction,
                             )
+                        if (flags.downloadStatus == DownloadStatus.QUEUED ||
+                            flags.downloadStatus == DownloadStatus.DOWNLOADING
+                        ) {
+                            startDownloadMonitor()
+                        }
                     } else {
                         _uiState.value = MovieDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
@@ -178,9 +205,15 @@ class MovieDetailViewModel(
 
     fun toggleDownload() {
         val content = _uiState.value as? MovieDetailUiState.Content ?: return
+        if (content.downloadStatus == DownloadStatus.QUEUED ||
+            content.downloadStatus == DownloadStatus.DOWNLOADING
+        ) {
+            return
+        }
         viewModelScope.launch {
             if (content.isDownloaded) {
                 removeCompletedDownload()
+                refreshDownloadState()
             } else {
                 val quality = QualityPolicy.selectDefault(content.details.qualities, isTvDevice)
                 // Items without per-quality variants only expose a top-level
@@ -188,9 +221,15 @@ class MovieDetailViewModel(
                 // resolver prefers the top-level URL and ignores this label.
                 val resolution = quality?.info?.resolution ?: Resolution.HD_720
                 enqueueDownload(mediaId, resolution)
-                    .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
+                    .onSuccess {
+                        refreshDownloadState()
+                        startDownloadMonitor()
+                    }
+                    .onFailure { error ->
+                        log.w(error) { "Failed to enqueue download" }
+                        setDownloadStatus(DownloadStatus.FAILED)
+                    }
             }
-            refreshFlags()
         }
     }
 
@@ -207,10 +246,12 @@ class MovieDetailViewModel(
             log.w { "Failed to load downloads: $error" }
             emptyList()
         }
+        val download = downloadSnapshot(downloads, mediaId)
         return DetailFlags(
             isFavorite = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.FAVORITES },
             isWatchLater = library.any { it.mediaId == mediaId && it.collection == LibraryCollection.WATCH_LATER },
-            isDownloaded = downloads.any { it.mediaId == mediaId && it is DownloadState.Completed },
+            downloadStatus = download.status,
+            downloadProgressPercent = download.progressPercent,
         )
     }
 
@@ -220,8 +261,71 @@ class MovieDetailViewModel(
         _uiState.value = content.copy(
             isFavorite = flags.isFavorite,
             isWatchLater = flags.isWatchLater,
-            isDownloaded = flags.isDownloaded,
+            downloadStatus = flags.downloadStatus,
+            downloadProgressPercent = flags.downloadProgressPercent,
         )
+    }
+
+    private suspend fun refreshDownloadState() {
+        val download = downloadSnapshot()
+        _uiState.update { current ->
+            if (current is MovieDetailUiState.Content) {
+                current.copy(
+                    downloadStatus = download.status,
+                    downloadProgressPercent = download.progressPercent,
+                )
+            } else {
+                current
+            }
+        }
+    }
+
+    private suspend fun downloadSnapshot(): DownloadSnapshot = downloadSnapshot(
+        listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        },
+        mediaId,
+    )
+
+    private fun setDownloadStatus(status: DownloadStatus) {
+        _uiState.update { current ->
+            if (current is MovieDetailUiState.Content) {
+                current.copy(downloadStatus = status, downloadProgressPercent = null)
+            } else {
+                current
+            }
+        }
+    }
+
+    /**
+     * Polls the download row while the item is queued or transferring so the
+     * detail button reaches "Downloaded"/"Retry" without leaving the screen.
+     * Bounded: the transfer may legitimately take longer than the window.
+     */
+    private fun startDownloadMonitor() {
+        if (downloadMonitor?.isActive == true) return
+        downloadMonitor = viewModelScope.launch {
+            repeat(DOWNLOAD_MONITOR_ATTEMPTS) {
+                delay(DOWNLOAD_MONITOR_INTERVAL_MS)
+                val download = downloadSnapshot()
+                _uiState.update { current ->
+                    if (current is MovieDetailUiState.Content) {
+                        current.copy(
+                            downloadStatus = download.status,
+                            downloadProgressPercent = download.progressPercent,
+                        )
+                    } else {
+                        current
+                    }
+                }
+                if (download.status != DownloadStatus.QUEUED &&
+                    download.status != DownloadStatus.DOWNLOADING
+                ) {
+                    return@launch
+                }
+            }
+        }
     }
 
     private suspend fun removeCompletedDownload() {
@@ -515,9 +619,12 @@ sealed interface EpisodeDetailUiState {
     data class Content(
         val details: EpisodeDetails,
         val isWatched: Boolean = false,
-        val isDownloaded: Boolean = false,
+        val downloadStatus: DownloadStatus = DownloadStatus.NOT_DOWNLOADED,
+        val downloadProgressPercent: Int? = null,
         val progressFraction: Double? = null,
-    ) : EpisodeDetailUiState
+    ) : EpisodeDetailUiState {
+        val isDownloaded: Boolean get() = downloadStatus == DownloadStatus.DOWNLOADED
+    }
 
     @Immutable
     data class Error(val error: UiError) : EpisodeDetailUiState
@@ -552,6 +659,7 @@ class EpisodeDetailViewModel(
 
     private val _uiState = MutableStateFlow<EpisodeDetailUiState>(EpisodeDetailUiState.Loading)
     val uiState: StateFlow<EpisodeDetailUiState> = _uiState.asStateFlow()
+    private var downloadMonitor: Job? = null
 
     init {
         loadDetails()
@@ -564,15 +672,22 @@ class EpisodeDetailViewModel(
                 is Outcome.Success -> {
                     val details = detailsResult.value
                     if (details is EpisodeDetails) {
+                        val download = downloadSnapshot()
                         _uiState.value = EpisodeDetailUiState.Content(
                             details = details,
                             isWatched = runCatching { isWatched(mediaId) }.getOrElse { error ->
                                 log.w { "Failed to load watched state: $error" }
                                 false
                             },
-                            isDownloaded = isDownloaded(),
+                            downloadStatus = download.status,
+                            downloadProgressPercent = download.progressPercent,
                             progressFraction = resumableProgressFraction(),
                         )
+                        if (download.status == DownloadStatus.QUEUED ||
+                            download.status == DownloadStatus.DOWNLOADING
+                        ) {
+                            startDownloadMonitor()
+                        }
                     } else {
                         _uiState.value = EpisodeDetailUiState.Error(UiError.NotFound("Unexpected media type"))
                     }
@@ -587,18 +702,30 @@ class EpisodeDetailViewModel(
 
     fun toggleDownload() {
         val content = _uiState.value as? EpisodeDetailUiState.Content ?: return
+        if (content.downloadStatus == DownloadStatus.QUEUED ||
+            content.downloadStatus == DownloadStatus.DOWNLOADING
+        ) {
+            return
+        }
         viewModelScope.launch {
             if (content.isDownloaded) {
                 removeCompletedDownload()
+                refreshDownloadState()
             } else {
                 val quality = QualityPolicy.selectDefault(content.details.qualities, isTvDevice)
                 // Episodes without per-quality variants only expose a
                 // top-level download URL; enqueue a nominal resolution.
                 val resolution = quality?.info?.resolution ?: Resolution.HD_720
                 enqueueDownload(mediaId, resolution)
-                    .onFailure { error -> log.w(error) { "Failed to enqueue download" } }
+                    .onSuccess {
+                        refreshDownloadState()
+                        startDownloadMonitor()
+                    }
+                    .onFailure { error ->
+                        log.w(error) { "Failed to enqueue download" }
+                        setDownloadStatus(DownloadStatus.FAILED)
+                    }
             }
-            refreshDownloadFlag()
         }
     }
 
@@ -611,14 +738,61 @@ class EpisodeDetailViewModel(
         ?.takeIf { ResumePolicy.resumablePosition(it) != null }
         ?.fraction
 
-    private suspend fun isDownloaded(): Boolean = listDownloads().getOrElse { error ->
-        log.w { "Failed to load downloads: $error" }
-        emptyList()
-    }.any { it.mediaId == mediaId && it is DownloadState.Completed }
+    private suspend fun downloadSnapshot(): DownloadSnapshot = downloadSnapshot(
+        listDownloads().getOrElse { error ->
+            log.w { "Failed to load downloads: $error" }
+            emptyList()
+        },
+        mediaId,
+    )
 
-    private suspend fun refreshDownloadFlag() {
-        val content = _uiState.value as? EpisodeDetailUiState.Content ?: return
-        _uiState.value = content.copy(isDownloaded = isDownloaded())
+    private suspend fun refreshDownloadState() {
+        val download = downloadSnapshot()
+        _uiState.update { current ->
+            if (current is EpisodeDetailUiState.Content) {
+                current.copy(
+                    downloadStatus = download.status,
+                    downloadProgressPercent = download.progressPercent,
+                )
+            } else {
+                current
+            }
+        }
+    }
+
+    private fun setDownloadStatus(status: DownloadStatus) {
+        _uiState.update { current ->
+            if (current is EpisodeDetailUiState.Content) {
+                current.copy(downloadStatus = status, downloadProgressPercent = null)
+            } else {
+                current
+            }
+        }
+    }
+
+    private fun startDownloadMonitor() {
+        if (downloadMonitor?.isActive == true) return
+        downloadMonitor = viewModelScope.launch {
+            repeat(DOWNLOAD_MONITOR_ATTEMPTS) {
+                delay(DOWNLOAD_MONITOR_INTERVAL_MS)
+                val download = downloadSnapshot()
+                _uiState.update { current ->
+                    if (current is EpisodeDetailUiState.Content) {
+                        current.copy(
+                            downloadStatus = download.status,
+                            downloadProgressPercent = download.progressPercent,
+                        )
+                    } else {
+                        current
+                    }
+                }
+                if (download.status != DownloadStatus.QUEUED &&
+                    download.status != DownloadStatus.DOWNLOADING
+                ) {
+                    return@launch
+                }
+            }
+        }
     }
 
     private suspend fun removeCompletedDownload() {
@@ -639,5 +813,50 @@ class EpisodeDetailViewModel(
 private data class DetailFlags(
     val isFavorite: Boolean = false,
     val isWatchLater: Boolean = false,
-    val isDownloaded: Boolean = false,
+    val downloadStatus: DownloadStatus = DownloadStatus.NOT_DOWNLOADED,
+    val downloadProgressPercent: Int? = null,
 )
+
+private data class DownloadSnapshot(val status: DownloadStatus, val progressPercent: Int?)
+
+/**
+ * Picks the most significant download row for [mediaId] (a completed copy
+ * wins over an active transfer, which wins over queued/failed leftovers).
+ */
+private fun downloadSnapshot(downloads: List<DownloadState>, mediaId: Media.MediaId): DownloadSnapshot {
+    val state =
+        downloads
+            .filter { it.mediaId == mediaId }
+            .maxByOrNull { it.downloadRank() }
+            ?: return DownloadSnapshot(DownloadStatus.NOT_DOWNLOADED, null)
+    return when (state) {
+        is DownloadState.Completed -> DownloadSnapshot(DownloadStatus.DOWNLOADED, null)
+
+        is DownloadState.Active -> DownloadSnapshot(DownloadStatus.DOWNLOADING, state.progressPercent)
+
+        is DownloadState.Queued,
+        is DownloadState.Partial,
+        is DownloadState.Paused,
+        -> DownloadSnapshot(DownloadStatus.QUEUED, null)
+
+        is DownloadState.Failed,
+        is DownloadState.Unavailable,
+        -> DownloadSnapshot(DownloadStatus.FAILED, null)
+
+        is DownloadState.Removed -> DownloadSnapshot(DownloadStatus.NOT_DOWNLOADED, null)
+    }
+}
+
+private fun DownloadState.downloadRank(): Int = when (this) {
+    is DownloadState.Completed -> 6
+    is DownloadState.Active -> 5
+    is DownloadState.Queued -> 4
+    is DownloadState.Partial -> 3
+    is DownloadState.Paused -> 2
+    is DownloadState.Failed -> 1
+    is DownloadState.Unavailable -> 1
+    is DownloadState.Removed -> 0
+}
+
+private const val DOWNLOAD_MONITOR_INTERVAL_MS = 1_000L
+private const val DOWNLOAD_MONITOR_ATTEMPTS = 180

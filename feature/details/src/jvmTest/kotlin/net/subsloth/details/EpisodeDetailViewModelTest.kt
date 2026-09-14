@@ -102,6 +102,44 @@ class EpisodeDetailViewModelTest {
 
         val content = viewModel.uiState.value as EpisodeDetailUiState.Content
         assertThat(content.isDownloaded).isTrue()
+        assertThat(content.downloadStatus).isEqualTo(DownloadStatus.DOWNLOADED)
+    }
+
+    @Test
+    fun `queued download surfaces QUEUED status`() = runTest(testDispatcher) {
+        val viewModel = EpisodeDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(episodeDetails) },
+            listDownloads = {
+                Result.success(
+                    listOf(
+                        DownloadState.Queued(
+                            localId = LocalMediaIdentifier("episode-10"),
+                            mediaId = mediaId,
+                            quality = sampleQuality.info,
+                        ),
+                    ),
+                )
+            },
+        )
+
+        val content = viewModel.uiState.value as EpisodeDetailUiState.Content
+        assertThat(content.downloadStatus).isEqualTo(DownloadStatus.QUEUED)
+        assertThat(content.isDownloaded).isFalse()
+    }
+
+    @Test
+    fun `failed enqueue surfaces a retryable status`() = runTest(testDispatcher) {
+        val viewModel = EpisodeDetailViewModel(
+            mediaId = mediaId,
+            getDetails = { Outcome.Success(episodeDetails) },
+            enqueueDownload = { _, _ -> Result.failure(IllegalStateException("metered network")) },
+        )
+
+        viewModel.toggleDownload()
+
+        val content = viewModel.uiState.value as EpisodeDetailUiState.Content
+        assertThat(content.downloadStatus).isEqualTo(DownloadStatus.FAILED)
     }
 
     @Test
