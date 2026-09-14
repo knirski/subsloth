@@ -329,6 +329,7 @@ fun MediaListRow(media: Media, onClick: () -> Unit = {}) {
         title = media.title,
         subtitle = media.subtitleLine(),
         glyph = if (media is ShowSummary) "📺" else "🎬",
+        posterUrl = media.posterUrl,
         onClick = onClick,
         testTag = MEDIA_CARD_TEST_TAG,
     )

@@ -209,6 +209,7 @@ private fun LibraryMediaRow(media: Media, onClick: () -> Unit = {}) {
         title = media.title,
         subtitle = media.year?.toString(),
         glyph = if (media is ShowSummary) "📺" else "🎬",
+        posterUrl = media.posterUrl,
         onClick = onClick,
     )
 }
