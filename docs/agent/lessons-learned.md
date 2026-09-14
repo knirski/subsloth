@@ -220,3 +220,12 @@ JVM/Desktop test host instead (`TvFocusDesktopTest`) and keep Android focus
 tests as on-device recipes (`@Ignore` with the reason, run on a TV device).
 A useful diagnostic: `assertIsFocused` prints the node's `Focused` semantics,
 which distinguishes "node not found" from "focus never landed".
+
+## 24. Screenshot Sources Compile Only in the Manual Workflow
+
+The screenshot-test sources under `androidApp/src/screenshotTest/` are not
+compiled by the pre-commit one-liner or the Android CI job, so a signature
+change to a `*UiState.Content` type can silently break them for weeks (only
+the manual Screenshots workflow fails). Both now include
+`:androidApp:compileDebugScreenshotTestKotlin`; keep it in sync when a
+detail-screen state type changes.

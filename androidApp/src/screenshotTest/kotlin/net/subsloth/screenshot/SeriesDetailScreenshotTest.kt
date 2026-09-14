@@ -142,6 +142,5 @@ private fun showDetailContentState(): ShowDetailUiState.Content =
         selectedSeason = 1,
         isFavorite = true,
         isWatchLater = false,
-        isDownloaded = false,
         progressFraction = 0.33,
     )

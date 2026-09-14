@@ -203,7 +203,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/kmp-setup
-      - run: ./gradlew lintDebug testDebugUnitTest assembleDebug
+      - run: ./gradlew lintDebug testDebugUnitTest assembleDebug compileDebugScreenshotTestKotlin
 
   # JVM tests + Desktop compilation — merged into one job so Gradle's own
   # build cache and daemon are shared naturally between the two Gradle
