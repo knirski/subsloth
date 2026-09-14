@@ -92,6 +92,6 @@ class SearchDesktopTest {
         }
 
         composeRule.onNodeWithText("The Grand Adventure").assertIsDisplayed()
-        composeRule.onNodeWithText("An epic journey across uncharted lands.").assertIsDisplayed()
+        composeRule.onNodeWithText("2024", substring = true).assertIsDisplayed()
     }
 }

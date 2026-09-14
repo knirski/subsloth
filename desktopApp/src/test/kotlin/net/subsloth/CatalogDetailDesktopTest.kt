@@ -8,7 +8,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import kotlinx.collections.immutable.persistentListOf
-import net.subsloth.catalog.MediaCard
+import net.subsloth.catalog.MediaListRow
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.MovieId
@@ -101,32 +101,32 @@ class CatalogDetailDesktopTest {
     fun mediaCard_displaysMovieTitleAndRating() {
         composeRule.setContent {
             MaterialTheme {
-                MediaCard(media = sampleMovie, onClick = {})
+                MediaListRow(media = sampleMovie, onClick = {})
             }
         }
 
         composeRule.onNodeWithText("The Grand Adventure").assertIsDisplayed()
-        composeRule.onNodeWithText("★ 8.5").assertIsDisplayed()
+        composeRule.onNodeWithText("★ 8.5", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun mediaCard_displaysShowInfo() {
         composeRule.setContent {
             MaterialTheme {
-                MediaCard(media = sampleShow, onClick = {})
+                MediaListRow(media = sampleShow, onClick = {})
             }
         }
 
         composeRule.onNodeWithText("The Last Kingdom").assertIsDisplayed()
-        composeRule.onNodeWithText("★ 8.9").assertIsDisplayed()
-        composeRule.onNodeWithText("Ongoing").assertIsDisplayed()
+        composeRule.onNodeWithText("★ 8.9", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Ongoing", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun mediaCard_hasClickAction() {
         composeRule.setContent {
             MaterialTheme {
-                MediaCard(media = sampleMovie, onClick = {})
+                MediaListRow(media = sampleMovie, onClick = {})
             }
         }
 
@@ -138,7 +138,7 @@ class CatalogDetailDesktopTest {
         var clicked = false
         composeRule.setContent {
             MaterialTheme {
-                MediaCard(media = sampleMovie, onClick = { clicked = true })
+                MediaListRow(media = sampleMovie, onClick = { clicked = true })
             }
         }
 
@@ -158,7 +158,7 @@ class CatalogDetailDesktopTest {
 
         composeRule.onNodeWithText("The Grand Adventure").assertIsDisplayed()
         composeRule.onNodeWithText("2024").assertIsDisplayed()
-        composeRule.onNodeWithText("★ 8.5").assertIsDisplayed()
+        composeRule.onNodeWithText("★ 8.5", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Adventure, Drama").assertIsDisplayed()
     }
 

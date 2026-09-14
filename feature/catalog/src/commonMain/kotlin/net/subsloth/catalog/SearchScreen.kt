@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -26,15 +23,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.media.Media
-import net.subsloth.core.model.media.MovieSummary
-import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.ui.SubSlothBackButton
-import net.subsloth.core.ui.WindowWidthClass
-import net.subsloth.core.ui.currentWindowWidthClass
 import net.subsloth.core.ui.tvSafeHorizontalPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,34 +132,16 @@ fun SearchContent(
                         )
                     }
                 } else {
-                    if (currentWindowWidthClass() == WindowWidthClass.EXPANDED) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 260.dp),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(s.items.size, key = { index -> s.items[index].id.key }) { index ->
-                                val media = s.items[index]
-                                SearchResultItem(
-                                    media = media,
-                                    onClick = searchResultClick(media, onMovieClick, onShowClick),
-                                )
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(s.items, key = { it.id.key }, contentType = { it::class }) { media ->
-                                SearchResultItem(
-                                    media = media,
-                                    onClick = searchResultClick(media, onMovieClick, onShowClick),
-                                )
-                            }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(s.items, key = { it.id.key }, contentType = { it::class }) { media ->
+                            MediaListRow(
+                                media = media,
+                                onClick = searchResultClick(media, onMovieClick, onShowClick),
+                            )
                         }
                     }
                 }
@@ -185,53 +159,5 @@ private fun searchResultClick(
         is Media.MediaId.Movie -> onMovieClick(id)
         is Media.MediaId.Show -> onShowClick(id)
         is Media.MediaId.Episode -> {}
-    }
-}
-
-@Composable
-private fun SearchResultItem(media: Media, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-        ) {
-            Text(
-                text = media.title,
-                style = MaterialTheme.typography.titleSmall,
-            )
-            media.plot?.let { plot ->
-                Text(
-                    text = plot,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-            val subtitle = buildString {
-                media.year?.let { append(it) }
-                when (media) {
-                    is MovieSummary -> {
-                        if (media.genres.isNotEmpty()) {
-                            if (isNotEmpty()) append(" · ")
-                            append(media.genres.joinToString(", "))
-                        }
-                    }
-
-                    is ShowSummary -> {}
-                }
-            }
-            if (subtitle.isNotEmpty()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-        }
     }
 }

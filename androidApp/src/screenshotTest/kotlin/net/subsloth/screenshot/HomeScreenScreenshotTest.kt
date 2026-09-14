@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import net.subsloth.catalog.MediaCard
+import net.subsloth.catalog.MediaListRow
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -194,7 +194,7 @@ private fun MediaRow(items: ImmutableList<Media>) {
     ) {
         items.forEach { media ->
             item(key = media.title) {
-                MediaCard(media = media)
+                MediaListRow(media = media)
             }
         }
     }

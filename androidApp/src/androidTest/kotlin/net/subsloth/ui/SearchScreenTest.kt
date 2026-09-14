@@ -99,7 +99,7 @@ class SearchScreenTest {
     }
 
     @Test
-    fun resultsState_displaysMoviePlot() {
+    fun resultsState_displaysMovieMetadata() {
         val resultsState =
             SearchUiState.Results(
                 query = "matrix",
@@ -110,7 +110,7 @@ class SearchScreenTest {
             SearchContent(state = resultsState, query = "matrix")
         }
 
-        composeTestRule.onNodeWithText("Neo fights more agents").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2003", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -125,7 +125,7 @@ class SearchScreenTest {
             SearchContent(state = resultsState, query = "matrix")
         }
 
-        composeTestRule.onNodeWithText("2003 · Sci-Fi, Action").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sci-Fi, Action", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -194,8 +194,8 @@ class SearchScreenTest {
             SearchContent(state = resultsState, query = "matrix")
         }
 
-        // Year is displayed as part of the subtitle: "2003 · Sci-Fi, Action"
-        composeTestRule.onNodeWithText("2003 · Sci-Fi, Action").assertIsDisplayed()
+        // Year is part of the compact row's metadata line.
+        composeTestRule.onNodeWithText("2003", substring = true).assertIsDisplayed()
     }
 
     @Test
