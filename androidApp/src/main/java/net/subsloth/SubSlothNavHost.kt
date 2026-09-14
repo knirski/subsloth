@@ -497,11 +497,22 @@ fun SubSlothNavHost(
             }
 
             entry<DiagnosticsKey> {
+                val app = LocalContext.current.applicationContext
+                val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val apiBaseUrl = container.apiBaseUrlFlow()
+                val session = container.sessionPort.state
                 val viewModel: DiagnosticsViewModel = viewModel(
                     key = "diagnostics",
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(modelClass.cast(DiagnosticsViewModel()))
+                            requireNotNull(
+                                modelClass.cast(
+                                    DiagnosticsViewModel(
+                                        apiBaseUrl = apiBaseUrl,
+                                        session = session,
+                                    ),
+                                ),
+                            )
                     },
                 )
                 DiagnosticsScreen(

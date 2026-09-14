@@ -10,7 +10,6 @@ import net.subsloth.core.ui.theme.SubSlothTheme
 import net.subsloth.screenshot.DEVICE_PHONE
 import net.subsloth.screenshot.DEVICE_TABLET
 import net.subsloth.screenshot.DEVICE_TV
-import net.subsloth.settings.DiagnosticsState
 import net.subsloth.settings.SettingsContent
 import net.subsloth.settings.SettingsUiState
 
@@ -29,7 +28,6 @@ fun SettingsScreenLightScreenshot() {
                         subtitleLanguage = "en",
                         quality = "1080p",
                         downloadsWifiOnly = true,
-                        diagnostics = DiagnosticsState.REDACTED,
                     ),
             )
         }
@@ -51,7 +49,6 @@ fun SettingsScreenDarkScreenshot() {
                         subtitleLanguage = "en",
                         quality = "1080p",
                         downloadsWifiOnly = true,
-                        diagnostics = DiagnosticsState.REDACTED,
                     ),
             )
         }

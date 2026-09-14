@@ -10,7 +10,6 @@ fun SettingsScreenPreview() {
             subtitleLanguage = "en",
             quality = "1080p",
             downloadsWifiOnly = true,
-            diagnostics = DiagnosticsState.REDACTED,
         ),
     )
 }

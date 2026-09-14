@@ -62,13 +62,19 @@ class DiagnosticsScreenTest {
     @Test
     fun diagnostics_displaysNetworkFields() {
         composeTestRule.setContent {
-            DiagnosticsContent(state = DiagnosticsState.REDACTED)
+            DiagnosticsContent(
+                state =
+                    DiagnosticsState(
+                        apiBaseUrl = "https://api.example.test/api/v2/",
+                        authStateCategory = "authenticated",
+                    ),
+            )
         }
 
         composeTestRule.onNodeWithText("API base URL").assertIsDisplayed()
-        composeTestRule.onNodeWithText("redacted").assertIsDisplayed()
+        composeTestRule.onNodeWithText("https://api.example.test/api/v2/").assertIsDisplayed()
         composeTestRule.onNodeWithText("Auth state").assertIsDisplayed()
-        composeTestRule.onNodeWithText("unknown").assertIsDisplayed()
+        composeTestRule.onNodeWithText("authenticated").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kodi mode").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kodi-compatible request mode: enabled").assertIsDisplayed()
     }
@@ -263,7 +269,7 @@ class DiagnosticsScreenTest {
                 buildType = "release",
                 versionCode = "210",
                 releaseChannel = "stable",
-                apiBaseUrl = "redacted",
+                apiBaseUrl = "https://api.example.test",
                 authStateCategory = "authenticated",
                 kodiMode = "Kodi-compatible request mode: enabled",
             )
