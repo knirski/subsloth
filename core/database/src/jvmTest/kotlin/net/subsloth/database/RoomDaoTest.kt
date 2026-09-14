@@ -465,7 +465,7 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.accountPlaybackProgressDao()
         dao.upsert(progress())
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals("movie", result?.contentType)
         assertEquals(300L, result?.positionSeconds)
         db.close()
@@ -477,7 +477,7 @@ class RoomDaoTest {
         val dao = db.accountPlaybackProgressDao()
         dao.upsert(progress(positionSeconds = 300))
         dao.upsert(progress(positionSeconds = 600, updatedAtEpochSeconds = 2000))
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals(600L, result?.positionSeconds)
         db.close()
     }
@@ -503,8 +503,8 @@ class RoomDaoTest {
         dao.upsert(progress(profileKey = "user1", contentId = "100"))
         dao.upsert(progress(profileKey = "user2", contentId = "200"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertEquals(300L, dao.getByProfileAndContentId("user2", "200")?.positionSeconds)
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
+        assertEquals(300L, dao.getByProfileAndContentId("user2", "movie", "200")?.positionSeconds)
         db.close()
     }
 
@@ -931,11 +931,13 @@ class RoomDaoTest {
 
     private fun offlineProgress(
         contentId: String = "100",
+        contentType: String = "movie",
         positionSeconds: Long = 600,
         durationSeconds: Long = 3600,
         updatedAtEpochSeconds: Long = 2000,
     ) = OfflinePlaybackProgressEntity(
         contentId = contentId,
+        contentType = contentType,
         positionSeconds = positionSeconds,
         durationSeconds = durationSeconds,
         updatedAtEpochSeconds = updatedAtEpochSeconds,
@@ -946,7 +948,7 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.offlinePlaybackProgressDao()
         dao.upsert(offlineProgress())
-        val result = dao.getByContentId("100")
+        val result = dao.getByContentId("movie", "100")
         assertEquals(600L, result?.positionSeconds)
         db.close()
     }
@@ -957,7 +959,19 @@ class RoomDaoTest {
         val dao = db.offlinePlaybackProgressDao()
         dao.upsert(offlineProgress(positionSeconds = 600))
         dao.upsert(offlineProgress(positionSeconds = 1200, updatedAtEpochSeconds = 3000))
-        assertEquals(1200L, dao.getByContentId("100")?.positionSeconds)
+        assertEquals(1200L, dao.getByContentId("movie", "100")?.positionSeconds)
+        db.close()
+    }
+
+    @Test
+    fun `offlinePlaybackProgress keeps a movie and an episode with the same numeric id`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlinePlaybackProgressDao()
+        dao.upsert(offlineProgress(contentId = "7", contentType = "movie", positionSeconds = 100))
+        dao.upsert(offlineProgress(contentId = "7", contentType = "episode", positionSeconds = 200))
+
+        assertEquals(100L, dao.getByContentId("movie", "7")?.positionSeconds)
+        assertEquals(200L, dao.getByContentId("episode", "7")?.positionSeconds)
         db.close()
     }
 
@@ -979,7 +993,7 @@ class RoomDaoTest {
         val dao = db.offlinePlaybackProgressDao()
         dao.upsert(offlineProgress())
         dao.deleteAll()
-        assertNull(dao.getByContentId("100"))
+        assertNull(dao.getByContentId("movie", "100"))
         db.close()
     }
 }

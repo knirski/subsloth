@@ -89,6 +89,7 @@ class LogoutRetentionPartitionTest {
         db.offlinePlaybackProgressDao().upsert(
             OfflinePlaybackProgressEntity(
                 contentId = contentId,
+                contentType = "movie",
                 positionSeconds = 600L,
                 durationSeconds = 3600L,
                 updatedAtEpochSeconds = 2000L,
@@ -134,11 +135,11 @@ class LogoutRetentionPartitionTest {
         assertNull(db.watchedStateDao().getByProfileAndContentId(profileA, profileAContentId))
         assertNull(db.subscriptionDao().getByProfileAndContentId(profileA, profileAContentId))
         assertNull(db.localLibraryRecordDao().getByProfileAndContentId(profileA, profileAContentId))
-        assertNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileA, profileAContentId))
+        assertNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileA, "movie", profileAContentId))
 
         // Shared downloads and progress survive
         assertNotNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
-        assertNotNull(db.offlinePlaybackProgressDao().getByContentId(sharedContentId))
+        assertNotNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
         assertNotNull(db.offlineDisplayMetadataDao().getByContentId(sharedContentId))
 
         db.close()
@@ -164,7 +165,7 @@ class LogoutRetentionPartitionTest {
         assertNotNull(db.watchedStateDao().getByProfileAndContentId(profileB, profileBContentId))
         assertNotNull(db.subscriptionDao().getByProfileAndContentId(profileB, profileBContentId))
         assertNotNull(db.localLibraryRecordDao().getByProfileAndContentId(profileB, profileBContentId))
-        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileB, profileBContentId))
+        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileB, "movie", profileBContentId))
 
         db.close()
     }
@@ -182,7 +183,7 @@ class LogoutRetentionPartitionTest {
 
         // Shared offline data is cleared
         assertNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
-        assertNull(db.offlinePlaybackProgressDao().getByContentId(sharedContentId))
+        assertNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
         assertNull(db.offlineDisplayMetadataDao().getByContentId(sharedContentId))
 
         // Profile A library data is untouched
@@ -201,7 +202,7 @@ class LogoutRetentionPartitionTest {
         // Simulate logout with NO cleanup options (just clear credentials, no Room changes)
         // Shared downloads and progress survive
         assertNotNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
-        assertNotNull(db.offlinePlaybackProgressDao().getByContentId(sharedContentId))
+        assertNotNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
         assertNotNull(db.offlineDisplayMetadataDao().getByContentId(sharedContentId))
 
         // Both profiles' library data remains
@@ -232,8 +233,8 @@ class LogoutRetentionPartitionTest {
         assertNotNull(db.subscriptionDao().getByProfileAndContentId(profileB, profileBContentId))
         assertNotNull(db.localLibraryRecordDao().getByProfileAndContentId(profileA, profileAContentId))
         assertNotNull(db.localLibraryRecordDao().getByProfileAndContentId(profileB, profileBContentId))
-        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileA, profileAContentId))
-        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileB, profileBContentId))
+        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileA, "movie", profileAContentId))
+        assertNotNull(db.accountPlaybackProgressDao().getByProfileAndContentId(profileB, "movie", profileBContentId))
 
         db.close()
     }

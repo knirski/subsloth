@@ -60,14 +60,20 @@ private class FakeAccountDao : AccountPlaybackProgressDao {
     val rows = mutableListOf<AccountPlaybackProgressEntity>()
     override suspend fun getByProfileAndContentId(
         profileKey: String,
+        contentType: String,
         contentId: String,
-    ): AccountPlaybackProgressEntity? = rows.firstOrNull { it.profileKey == profileKey && it.contentId == contentId }
+    ): AccountPlaybackProgressEntity? = rows.firstOrNull {
+        it.profileKey == profileKey && it.contentType == contentType && it.contentId == contentId
+    }
 
     override fun getAllForProfile(profileKey: String): Flow<List<AccountPlaybackProgressEntity>> =
         MutableStateFlow(rows.filter { it.profileKey == profileKey })
 
     override suspend fun upsert(entity: AccountPlaybackProgressEntity) {
-        rows.removeAll { it.profileKey == entity.profileKey && it.contentId == entity.contentId }
+        rows.removeAll {
+            it.profileKey == entity.profileKey && it.contentType == entity.contentType &&
+                it.contentId == entity.contentId
+        }
         rows += entity
     }
 
@@ -79,11 +85,11 @@ private class FakeAccountDao : AccountPlaybackProgressDao {
 private class FakeOfflineDao : OfflinePlaybackProgressDao {
     val rows = mutableListOf<OfflinePlaybackProgressEntity>()
     override fun getAll(): Flow<List<OfflinePlaybackProgressEntity>> = MutableStateFlow(rows)
-    override suspend fun getByContentId(contentId: String): OfflinePlaybackProgressEntity? =
-        rows.firstOrNull { it.contentId == contentId }
+    override suspend fun getByContentId(contentType: String, contentId: String): OfflinePlaybackProgressEntity? =
+        rows.firstOrNull { it.contentType == contentType && it.contentId == contentId }
 
     override suspend fun upsert(entity: OfflinePlaybackProgressEntity) {
-        rows.removeAll { it.contentId == entity.contentId }
+        rows.removeAll { it.contentType == entity.contentType && it.contentId == entity.contentId }
         rows += entity
     }
 
@@ -172,6 +178,72 @@ class AccountMediaRuntimeTest {
 
         assertThat(accountDao.rows).isEmpty()
         assertThat(offlineDao.rows.map { it.contentId }).contains("5")
+        assertThat(offlineDao.rows.single().contentType).isEqualTo("movie")
+    }
+
+    @Test
+    fun `continue watching merges offline progress for the same media`() = runTest {
+        session.open(Credentials("user", "password"))
+        runtime().savePlaybackProgress(
+            net.subsloth.core.model.media.Media.MediaId.Movie(MovieId(5)),
+            positionSeconds = 120,
+            durationSeconds = 600,
+            playbackMode = PlaybackMode.OFFLINE,
+        )
+
+        val progress = runtime().listAccountPlaybackProgress().getOrThrow().single()
+
+        assertThat(progress.mediaId).isEqualTo(net.subsloth.core.model.media.Media.MediaId.Movie(MovieId(5)))
+        assertThat(progress.positionSeconds).isEqualTo(120)
+    }
+
+    @Test
+    fun `continue watching keeps the most recent of account and offline progress`() = runTest {
+        session.open(Credentials("user", "password"))
+        val mediaId = net.subsloth.core.model.media.Media.MediaId.Movie(MovieId(5))
+        accountDao.upsert(
+            AccountPlaybackProgressEntity(
+                profileKey = PROFILE,
+                contentId = "5",
+                contentType = "movie",
+                positionSeconds = 300,
+                durationSeconds = 600,
+                updatedAtEpochSeconds = 50,
+            ),
+        )
+        offlineDao.upsert(
+            OfflinePlaybackProgressEntity(
+                contentId = "5",
+                contentType = "movie",
+                positionSeconds = 420,
+                durationSeconds = 600,
+                updatedAtEpochSeconds = 90,
+            ),
+        )
+
+        val progress = runtime().listAccountPlaybackProgress().getOrThrow().single()
+
+        assertThat(progress.mediaId).isEqualTo(mediaId)
+        assertThat(progress.positionSeconds).isEqualTo(420)
+        assertThat(progress.lastUpdatedEpochSeconds).isEqualTo(Instant.fromEpochSeconds(90))
+    }
+
+    @Test
+    fun `offline progress is visible to anonymous sessions`() = runTest {
+        offlineDao.upsert(
+            OfflinePlaybackProgressEntity(
+                contentId = "9",
+                contentType = "episode",
+                positionSeconds = 60,
+                durationSeconds = 1_200,
+                updatedAtEpochSeconds = 10,
+            ),
+        )
+
+        val progress = runtime().listAccountPlaybackProgress().getOrThrow().single()
+
+        assertThat(progress.mediaId)
+            .isEqualTo(net.subsloth.core.model.media.Media.MediaId.Episode(EpisodeId(9)))
     }
 
     @Test

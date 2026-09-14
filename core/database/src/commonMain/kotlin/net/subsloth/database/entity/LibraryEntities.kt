@@ -8,10 +8,14 @@ import androidx.room3.PrimaryKey
 
 /**
  * Streamed/online playback progress, scoped by account.
+ *
+ * The key includes `contentType`: movie and episode ids are independent
+ * counters, so keying on `contentId` alone let an episode overwrite a
+ * movie's progress row (and vice versa).
  */
 @Entity(
     tableName = "account_playback_progress",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class AccountPlaybackProgressEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -162,14 +166,19 @@ data class OfflineDisplayMetadataEntity(
 
 /**
  * Shared offline playback progress — visible across accounts.
+ *
+ * The key includes [contentType]: movie and episode ids are independent
+ * counters, so keying on `contentId` alone let an episode overwrite a
+ * movie's progress row (and vice versa).
  */
 @Entity(
     tableName = "offline_playback_progress",
-    indices = [Index(value = ["contentId"], unique = true)],
+    indices = [Index(value = ["contentType", "contentId"], unique = true)],
 )
 data class OfflinePlaybackProgressEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val contentId: String,
+    val contentType: String, // "movie" or "episode"
     val positionSeconds: Long,
     val durationSeconds: Long,
     val updatedAtEpochSeconds: Long,
