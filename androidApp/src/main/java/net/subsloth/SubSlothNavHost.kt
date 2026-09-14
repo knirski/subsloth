@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import net.subsloth.core.domain.port.DownloadCommandOutcome
@@ -70,6 +71,10 @@ import net.subsloth.settings.SettingsViewModel
  * Uses Navigation3 [NavDisplay] with typed [AppNavKey] routes.
  * - State survives process death via [rememberSaveableStateHolderNavEntryDecorator]
  *   which retains composable state (scroll position, selected tabs, etc.).
+ * - ViewModels are scoped to their entry via
+ *   [rememberViewModelStoreNavEntryDecorator]: popping an entry clears its
+ *   ViewModels (matching Desktop/Web), so re-opening the player builds a
+ *   fresh `PlayerViewModel` and the final progress flush runs on exit.
  * - Predictive back is handled by [NavDisplay.onBack] popping the stack;
  *   per-destination interception is available via [NavDestinationBackHandler].
  * - Feature screen composables are wired as [entryProvider] entries.
@@ -103,6 +108,7 @@ fun SubSlothNavHost(
         entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
             ),
         entryProvider = entryProvider {
             entry<CatalogKey> {
