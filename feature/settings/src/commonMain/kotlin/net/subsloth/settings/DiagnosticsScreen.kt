@@ -44,19 +44,13 @@ import subsloth.feature.settings.generated.resources.diagnostics_version_code
 import subsloth.feature.settings.generated.resources.diagnostics_version_section
 
 @Composable
-fun DiagnosticsScreen(
-    viewModel: DiagnosticsViewModel,
-    modifier: Modifier = Modifier,
-    onNavigateBack: (() -> Unit)? = null,
-) {
+fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     Column(modifier = modifier.fillMaxSize()) {
-        if (onNavigateBack != null) {
-            SubSlothBackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
-            )
-        }
+        SubSlothBackButton(
+            onClick = onNavigateBack,
+            modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+        )
         DiagnosticsContent(state = state, modifier = Modifier)
     }
 }

@@ -491,6 +491,7 @@ fun SubSlothNavHost(
                 SettingsScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
                     onNavigateToDiagnostics = { backStack += DiagnosticsKey },
                 )
             }
@@ -506,6 +507,7 @@ fun SubSlothNavHost(
                 DiagnosticsScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
+                    onNavigateBack = { backStack.removeLastOrNull() },
                 )
             }
 
