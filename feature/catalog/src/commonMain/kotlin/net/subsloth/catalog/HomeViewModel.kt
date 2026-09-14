@@ -246,7 +246,7 @@ class HomeViewModel(
         }
         return resolved
             .groupBy { it.mediaId }
-            .map { (_, entries) -> entries.maxBy { it.lastUpdatedEpochSeconds } }
+            .mapNotNull { (_, entries) -> entries.maxByOrNull { it.lastUpdatedEpochSeconds } }
     }
 }
 
