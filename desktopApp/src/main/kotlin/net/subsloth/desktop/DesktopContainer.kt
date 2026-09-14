@@ -341,7 +341,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
      */
     private val downloadTransferer: DownloadTransferer by lazy {
         DownloadTransferer(
-            client = ClientFactory.create(),
+            client = ClientFactory.createForDownloads(),
             store = downloadStore,
         )
     }
