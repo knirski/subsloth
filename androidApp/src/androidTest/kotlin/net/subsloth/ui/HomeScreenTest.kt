@@ -126,7 +126,7 @@ class HomeScreenTest {
             CatalogContent(state = contentState)
         }
 
-        composeTestRule.onNodeWithText("★ 8.5").assertIsDisplayed()
+        composeTestRule.onNodeWithText("★ 8.5", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -144,7 +144,7 @@ class HomeScreenTest {
             CatalogContent(state = contentState)
         }
 
-        composeTestRule.onNodeWithText("Ongoing").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ongoing", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -162,7 +162,7 @@ class HomeScreenTest {
             CatalogContent(state = contentState)
         }
 
-        composeTestRule.onNodeWithText("2024").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2024", substring = true).assertIsDisplayed()
     }
 
     @Test

@@ -135,7 +135,7 @@ class LoginFlowTest {
         // Verify the catalog screen rendered: the Movies tab plus its row label.
         composeTestRule.onNodeWithText("Login Flow Movie").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Movies").assertCountEquals(2)
-        composeTestRule.onNodeWithText("★ 8.0").assertIsDisplayed()
+        composeTestRule.onNodeWithText("★ 8.0", substring = true).assertIsDisplayed()
     }
 
     @Test

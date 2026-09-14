@@ -251,7 +251,7 @@ private fun MediaListContent(
             section.label?.let { label ->
                 item(key = "label_$label", contentType = "label") { SectionLabel(label) }
             }
-            items(section.items, key = { it.id.key }) { media ->
+            items(section.items, key = { media -> "${section.label ?: "row"}_${media.id.key}" }) { media ->
                 MediaListRow(media = media, onClick = mediaClick(media, onMovieClick, onShowClick))
             }
         }
@@ -296,7 +296,7 @@ private fun MediaRowsContent(
             row.label?.let { label ->
                 item(key = "label_$label", contentType = "label") { SectionLabel(label) }
             }
-            items(row.items, key = { it.id.key }) { media ->
+            items(row.items, key = { media -> "${row.label ?: "row"}_${media.id.key}" }) { media ->
                 MediaListRow(media = media, onClick = mediaClick(media, onMovieClick, onShowClick))
             }
         }
