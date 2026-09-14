@@ -368,7 +368,7 @@ class AppContainer(context: Context) {
      */
     private val downloadTransferer: DownloadTransferer by lazy {
         DownloadTransferer(
-            client = ClientFactory.create(),
+            client = ClientFactory.createForDownloads(),
             store = downloadStorageManager,
         )
     }

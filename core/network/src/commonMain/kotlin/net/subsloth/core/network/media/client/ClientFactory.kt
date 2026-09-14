@@ -44,7 +44,38 @@ object ClientFactory {
         if (ClientConfig.useMock && engine == null) {
             return createMockClient(login, password, baseUrl, enableHttpLogging)
         }
-        return createRealClient(login, password, baseUrl, enableHttpLogging, engine)
+        return createRealClient(login, password, baseUrl, enableHttpLogging, engine, forDownloads = false)
+    }
+
+    /**
+     * Creates an [HttpClient] for progressive media downloads (video, audio,
+     * subtitle sidecars). Unlike [create], this client:
+     *
+     * - does not install [ResponseValidationPlugin]: media responses are not
+     *   JSON and signed CDN URLs may redirect, so JSON validation would reject
+     *   every transfer before a single byte is written;
+     * - has no whole-request timeout: a large download legitimately streams
+     *   for minutes, while connect/socket timeouts still apply;
+     * - sends a wildcard Accept header and no JSON content-type hint.
+     *
+     * No auth is installed: download URLs are pre-signed by the API.
+     */
+    fun createForDownloads(
+        baseUrl: String = DEFAULT_BASE_URL,
+        enableHttpLogging: Boolean = false,
+        engine: HttpClientEngine? = null,
+    ): HttpClient {
+        if (ClientConfig.useMock && engine == null) {
+            return createMockClient(login = null, password = null, baseUrl, enableHttpLogging)
+        }
+        return createRealClient(
+            login = null,
+            password = null,
+            baseUrl = baseUrl,
+            enableHttpLogging = enableHttpLogging,
+            engine = engine,
+            forDownloads = true,
+        )
     }
 
     private fun createRealClient(
@@ -53,6 +84,7 @@ object ClientFactory {
         baseUrl: String,
         enableHttpLogging: Boolean,
         engine: HttpClientEngine? = null,
+        forDownloads: Boolean = false,
     ): HttpClient {
         val builder: HttpClientConfig<*>.() -> Unit = {
             install(ContentNegotiation) {
@@ -65,14 +97,18 @@ object ClientFactory {
             }
 
             install(HttpTimeout) {
-                requestTimeoutMillis = 30_000
                 connectTimeoutMillis = 10_000
                 socketTimeoutMillis = 30_000
+                if (!forDownloads) {
+                    requestTimeoutMillis = 30_000
+                }
             }
 
-            install(ResponseValidationPlugin)
+            if (!forDownloads) {
+                install(ResponseValidationPlugin)
+            }
 
-            if (login != null && password != null) {
+            if (!forDownloads && login != null && password != null) {
                 install(Auth) {
                     basic {
                         credentials {
@@ -97,8 +133,12 @@ object ClientFactory {
             defaultRequest {
                 url(baseUrl)
                 header(HttpHeaders.UserAgent, "Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
-                header(HttpHeaders.Accept, "application/json, */*")
-                header(HttpHeaders.ContentType, "application/json")
+                if (forDownloads) {
+                    header(HttpHeaders.Accept, "*/*")
+                } else {
+                    header(HttpHeaders.Accept, "application/json, */*")
+                    header(HttpHeaders.ContentType, "application/json")
+                }
                 header(HttpHeaders.AcceptLanguage, "en-US,en;q=0.5")
             }
         }
