@@ -4,7 +4,9 @@
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle_section">Subtitle</string>
     <string name="settings_subtitles_enabled">Subtitles enabled</string>
-    <string name="settings_subtitle_language">Subtitle language</string>
+    <string name="settings_subtitle_language">Subtitles language</string>
+    <string name="settings_subtitle_language_default">Default</string>
+    <string name="settings_cancel">Cancel</string>
     <string name="settings_quality_playback_section">Quality &amp; Playback</string>
     <string name="settings_preferred_quality">Preferred quality</string>
     <string name="settings_downloads_section">Downloads</string>
