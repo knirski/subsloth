@@ -91,10 +91,10 @@ See [`docs/agent/emulator-testing.md`](docs/agent/emulator-testing.md) for instr
 Before committing, run the full pre-commit suite defined in `AGENTS.md` to catch formatting, lint, and compilation issues early:
 
 ```bash
-./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug test
+./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug :androidApp:compileDebugScreenshotTestKotlin :androidApp:lintDebug test
 ```
 
-This is stricter than the CI-only command set (`check testDebugUnitTest lintDebug assembleDebug`) — it includes spotless formatting, detekt, and targeted KMP compilation checks that CI also runs. Running it locally avoids commit-then-fix cycles.
+This is stricter than the CI-only command set (`check testDebugUnitTest lintDebug assembleDebug`) — it includes spotless formatting, detekt, Android lint, and targeted KMP compilation checks that CI also runs. Running it locally avoids commit-then-fix cycles.
 
 ### Building
 

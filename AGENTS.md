@@ -39,8 +39,9 @@ if ! git diff --quiet; then git add -A && git commit --amend --no-edit; fi
 | 3 | Core KMP | `./gradlew :core:model:compileKotlinJvm :core:domain:compileKotlinJvm` |
 | 4 | Full build | `./gradlew :androidApp:assembleDebug :androidApp:compileDebugScreenshotTestKotlin` |
 | 5 | Tests | `./gradlew test` (or `:feature:X:jvmTest` for a single feature) |
+| 6 | Android lint | `./gradlew :androidApp:lintDebug` |
 
-One-liner: `./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug :androidApp:compileDebugScreenshotTestKotlin test`
+One-liner: `./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug :androidApp:compileDebugScreenshotTestKotlin :androidApp:lintDebug test`
 
 ## Verification Selection
 

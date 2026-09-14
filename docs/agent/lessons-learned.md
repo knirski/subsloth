@@ -199,12 +199,12 @@ test in that daemon fails. Fix: `./gradlew --stop` and rerun with
 CI sidesteps the issue by wrapping each test invocation in `xvfb-run`.
 
 
-## 22. Android Lint Is Not in the Local One-Liner
+## 22. Android Lint Runs in the Local One-Liner
 
-The Android CI job runs `lintDebug testDebugUnitTest assembleDebug`, while the
-local pre-commit one-liner in `AGENTS.md` does not run `lintDebug`. Run
-`:androidApp:lintDebug` locally when touching Android resources or the
-manifest. Concrete trap: `VectorRaster` rejects vector drawables larger than
+The local pre-commit one-liner in `AGENTS.md` runs `:androidApp:lintDebug`
+(matching the Android CI job), so Android resource and manifest mistakes fail
+before commit instead of only in CI. Concrete trap: `VectorRaster` rejects
+vector drawables larger than
 200×200 and the Android TV banner is 320×180 by convention; suppress it
 narrowly with `tools:ignore="VectorRaster"` on the `<vector>` and a rationale
 rather than shrinking the banner below the leanback requirement.
