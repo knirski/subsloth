@@ -1,5 +1,6 @@
 package net.subsloth.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -47,6 +50,7 @@ import subsloth.feature.settings.generated.resources.settings_logout_confirm
 import subsloth.feature.settings.generated.resources.settings_preferred_quality
 import subsloth.feature.settings.generated.resources.settings_quality_playback_section
 import subsloth.feature.settings.generated.resources.settings_subtitle_language
+import subsloth.feature.settings.generated.resources.settings_subtitle_language_default
 import subsloth.feature.settings.generated.resources.settings_subtitle_section
 import subsloth.feature.settings.generated.resources.settings_subtitles_enabled
 import subsloth.feature.settings.generated.resources.settings_title
@@ -161,21 +165,10 @@ fun SettingsContent(
             }
 
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        stringResource(Res.string.settings_subtitle_language),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = state.subtitleLanguage ?: "Default",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                SubtitleLanguageRow(
+                    subtitleLanguage = state.subtitleLanguage,
+                    onSubtitleLanguageChanged = onSubtitleLanguageChanged,
+                )
             }
 
             item {
@@ -264,6 +257,55 @@ fun SettingsContent(
                 onConfirm = onPerformLogoutCleanup,
                 onDismiss = onDismissLogoutCleanup,
             )
+        }
+    }
+}
+
+@Composable
+private fun SubtitleLanguageRow(subtitleLanguage: String?, onSubtitleLanguageChanged: (String?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val defaultLabel = stringResource(Res.string.settings_subtitle_language_default)
+    val currentLabel =
+        subtitleLanguage?.let { code ->
+            subtitleLanguageLabel(code) ?: code
+        } ?: defaultLabel
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(Res.string.settings_subtitle_language),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = currentLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(defaultLabel) },
+                onClick = {
+                    expanded = false
+                    onSubtitleLanguageChanged(null)
+                },
+            )
+            SubtitleLanguageOptions.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    onClick = {
+                        expanded = false
+                        onSubtitleLanguageChanged(option.code)
+                    },
+                )
+            }
         }
     }
 }
