@@ -78,23 +78,28 @@ stop-subsloth-emulator
 
 ### CI
 
-A dedicated [`Screenshots`](/.github/workflows/screenshots.yml) workflow
-can be triggered manually (`workflow_dispatch`) in two modes:
+PR CI validates goldens: the `📱 Instrumented` job in
+[`ci.yml`](/.github/workflows/ci.yml) runs
+`:androidApp:validateDebugScreenshotTest` on its emulator after the
+instrumented tests, so UI drift fails the PR.
+
+Regeneration lives in the dedicated
+[`Screenshots`](/.github/workflows/screenshots.yml) workflow, triggered
+manually (`workflow_dispatch`) in two modes:
 
 | Mode | Action |
 |------|--------|
-| `verify` | Run `:androidApp:connectedDebugAndroidTest` — compares rendered previews against stored golden images (fails on pixel diff) |
-| `update` | Run with `-Pandroid.test.screenshot.update.golden=true` to regenerate goldens, then export selected images to `docs/screenshots/` for README.md, and commit both |
+| `verify` | Run `:androidApp:validateDebugScreenshotTest` — compares rendered previews against stored golden images (fails on pixel diff) |
+| `update` | Run `:androidApp:updateDebugScreenshotTest` to regenerate goldens, then export selected images to `docs/screenshots/` for README.md, and commit both |
 
-Use `verify` on any branch to check whether UI changes drifted from the
-committed goldens. Use `update` after intentionally redesigning a screen —
-it handles the full pipeline: emulator boot → regolden → export → commit.
+Use `update` after intentionally redesigning a screen — it handles the full
+pipeline: emulator boot → regolden → export → commit (run it on the branch
+that contains the UI change). Because local machines generally lack the
+emulator/system images, `update` is the supported way to refresh goldens.
 
-> **Note:** This workflow is manually triggered (`workflow_dispatch`) rather
-> than running automatically on every PR because screenshot tests require an
-> Android emulator (~5-10 min boot + run). Run `update` once to bootstrap
-> the golden images before using `verify`. Once goldens exist in the repo,
-> the workflow can be added to `ci.yml` as a path-gated job.
+> **Note:** PR CI cannot regenerate goldens (no write access), so a UI
+> change and its goldens/README screenshots must land in the same PR: run
+> the `update` mode on the PR branch, then let CI re-run.
 
 ---
 
@@ -103,11 +108,14 @@ it handles the full pipeline: emulator boot → regolden → export → commit.
 When a UI change intentionally alters a screen's appearance, the golden images must be updated:
 
 ```bash
-# Run with update flag
-./gradlew :androidApp:connectedDebugAndroidTest -Pandroid.test.screenshot.update.golden=true
+./gradlew :androidApp:updateDebugScreenshotTest
 ```
 
-This replaces the stored golden images with the newly rendered output. **Commit the updated golden images alongside the UI change.**
+This replaces the stored golden images with the newly rendered output.
+**Commit the updated golden images alongside the UI change**, and refresh
+`docs/screenshots/` for the README with
+`./scripts/screenshots/export-readme-screenshots.sh` (the manual
+`Screenshots` workflow does both).
 
 ### Golden Image Location
 
@@ -152,7 +160,7 @@ Each golden is a PNG file named after the test function and device variant (e.g.
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
-| Test fails with image diff | UI changed intentionally | Update goldens with `-Pandroid.test.screenshot.update.golden=true` |
+| Test fails with image diff | UI changed intentionally | Run the `Screenshots` workflow in `update` mode (or `:androidApp:updateDebugScreenshotTest`) |
 | Test fails with image diff | UI changed unintentionally | Fix the UI regression |
 | `@PreviewTest` annotation not found | Missing `compose.screenshot` plugin | Verify `alias(libs.plugins.compose.screenshot)` in `:androidApp/build.gradle.kts` |
 | Golden image not found for new test | First run | Run once to generate, then commit the goldens |

@@ -229,3 +229,15 @@ change to a `*UiState.Content` type can silently break them for weeks (only
 the manual Screenshots workflow fails). Both now include
 `:androidApp:compileDebugScreenshotTestKotlin`; keep it in sync when a
 detail-screen state type changes.
+
+## 25. Screenshot Drift Fails PR CI, Goldens Refresh in the Manual Workflow
+
+`:androidApp:validateDebugScreenshotTest` runs in the `📱 Instrumented` job,
+so a UI change that alters rendered pixels now fails the PR instead of
+silently shipping stale goldens (which is how the compact-list redesign
+initially drifted). Goldens cannot be regenerated on a PR (CI has no write
+access) and local machines generally lack the emulator/system images, so use
+the manual `Screenshots` workflow in `update` mode **on the PR branch**: it
+regenerates `androidApp/src/screenshotTest/goldens/`, re-exports the subset
+used by the README into `docs/screenshots/`, and commits both. That keeps
+goldens and README screenshots in the same PR as the UI change.
