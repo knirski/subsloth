@@ -184,18 +184,20 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.favoriteDao()
         dao.upsert(FavoriteEntity(profileKey = "user1", contentId = "100", contentType = "movie"))
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals("movie", result?.contentType)
         db.close()
     }
 
     @Test
-    fun `favorite upsert replaces existing entity`() = runTest {
+    fun `favorite keeps a movie and a show with the same numeric id`() = runTest {
         val db = createTestDatabase()
         val dao = db.favoriteDao()
         dao.upsert(FavoriteEntity(profileKey = "user1", contentId = "100", contentType = "movie"))
         dao.upsert(FavoriteEntity(profileKey = "user1", contentId = "100", contentType = "show"))
-        assertEquals("show", dao.getByProfileAndContentId("user1", "100")?.contentType)
+
+        assertEquals("movie", dao.getByProfileAndContentId("user1", "movie", "100")?.contentType)
+        assertEquals("show", dao.getByProfileAndContentId("user1", "show", "100")?.contentType)
         db.close()
     }
 
@@ -218,9 +220,9 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.favoriteDao()
         dao.upsert(FavoriteEntity(profileKey = "user1", contentId = "100", contentType = "movie"))
-        val inserted = dao.getByProfileAndContentId("user1", "100")!!
+        val inserted = dao.getByProfileAndContentId("user1", "movie", "100")!!
         dao.delete(inserted)
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
         db.close()
     }
 
@@ -231,8 +233,8 @@ class RoomDaoTest {
         dao.upsert(FavoriteEntity(profileKey = "user1", contentId = "100", contentType = "movie"))
         dao.upsert(FavoriteEntity(profileKey = "user2", contentId = "200", contentType = "show"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertEquals("show", dao.getByProfileAndContentId("user2", "200")?.contentType)
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
+        assertEquals("show", dao.getByProfileAndContentId("user2", "show", "200")?.contentType)
         db.close()
     }
 
@@ -534,18 +536,20 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.watchLaterDao()
         dao.upsert(watchLater())
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals("movie", result?.contentType)
         db.close()
     }
 
     @Test
-    fun `watchLater upsert replaces existing`() = runTest {
+    fun `watchLater keeps a movie and a show with the same numeric id`() = runTest {
         val db = createTestDatabase()
         val dao = db.watchLaterDao()
         dao.upsert(watchLater(contentType = "movie"))
         dao.upsert(watchLater(contentType = "show"))
-        assertEquals("show", dao.getByProfileAndContentId("user1", "100")?.contentType)
+
+        assertEquals("movie", dao.getByProfileAndContentId("user1", "movie", "100")?.contentType)
+        assertEquals("show", dao.getByProfileAndContentId("user1", "show", "100")?.contentType)
         db.close()
     }
 
@@ -568,9 +572,9 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.watchLaterDao()
         dao.upsert(watchLater())
-        val inserted = dao.getByProfileAndContentId("user1", "100")!!
+        val inserted = dao.getByProfileAndContentId("user1", "movie", "100")!!
         dao.delete(inserted)
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
         db.close()
     }
 
@@ -581,8 +585,8 @@ class RoomDaoTest {
         dao.upsert(watchLater(profileKey = "user1", contentId = "100"))
         dao.upsert(watchLater(profileKey = "user2", contentId = "200"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertEquals("200", dao.getByProfileAndContentId("user2", "200")?.contentId)
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
+        assertEquals("200", dao.getByProfileAndContentId("user2", "movie", "200")?.contentId)
         db.close()
     }
 
@@ -607,7 +611,7 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.watchedStateDao()
         dao.upsert(watchedState())
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals(true, result?.isWatched)
         assertEquals(1000L, result?.watchedAtEpochSeconds)
         db.close()
@@ -619,7 +623,7 @@ class RoomDaoTest {
         val dao = db.watchedStateDao()
         dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 1000))
         dao.upsert(watchedState(isWatched = true, watchedAtEpochSeconds = 2000))
-        assertEquals(2000L, dao.getByProfileAndContentId("user1", "100")?.watchedAtEpochSeconds)
+        assertEquals(2000L, dao.getByProfileAndContentId("user1", "movie", "100")?.watchedAtEpochSeconds)
         db.close()
     }
 
@@ -644,8 +648,8 @@ class RoomDaoTest {
         dao.upsert(watchedState(profileKey = "user1", contentId = "100"))
         dao.upsert(watchedState(profileKey = "user2", contentId = "200"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertTrue(dao.getByProfileAndContentId("user2", "200")?.isWatched == true)
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
+        assertTrue(dao.getByProfileAndContentId("user2", "movie", "200")?.isWatched == true)
         db.close()
     }
 
@@ -668,7 +672,7 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.subscriptionDao()
         dao.upsert(subscription())
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "movie", "100")
         assertEquals("movie", result?.contentType)
         assertEquals(5000L, result?.subscribedAtEpochSeconds)
         db.close()
@@ -680,7 +684,7 @@ class RoomDaoTest {
         val dao = db.subscriptionDao()
         dao.upsert(subscription(subscribedAtEpochSeconds = 5000))
         dao.upsert(subscription(subscribedAtEpochSeconds = 6000))
-        assertEquals(6000L, dao.getByProfileAndContentId("user1", "100")?.subscribedAtEpochSeconds)
+        assertEquals(6000L, dao.getByProfileAndContentId("user1", "movie", "100")?.subscribedAtEpochSeconds)
         db.close()
     }
 
@@ -705,8 +709,8 @@ class RoomDaoTest {
         dao.upsert(subscription(profileKey = "user1", contentId = "100"))
         dao.upsert(subscription(profileKey = "user2", contentId = "200"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertEquals(5000L, dao.getByProfileAndContentId("user2", "200")?.subscribedAtEpochSeconds)
+        assertNull(dao.getByProfileAndContentId("user1", "movie", "100"))
+        assertEquals(5000L, dao.getByProfileAndContentId("user2", "movie", "200")?.subscribedAtEpochSeconds)
         db.close()
     }
 
@@ -729,19 +733,21 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.localLibraryRecordDao()
         dao.upsert(libraryRecord())
-        val result = dao.getByProfileAndContentId("user1", "100")
+        val result = dao.getByProfileAndContentId("user1", "show", "100")
         assertEquals("show", result?.contentType)
         assertEquals(8000L, result?.addedAtEpochSeconds)
         db.close()
     }
 
     @Test
-    fun `localLibraryRecord upsert replaces existing`() = runTest {
+    fun `localLibraryRecord keeps a show and a movie with the same numeric id`() = runTest {
         val db = createTestDatabase()
         val dao = db.localLibraryRecordDao()
         dao.upsert(libraryRecord(contentType = "show"))
         dao.upsert(libraryRecord(contentType = "movie"))
-        assertEquals("movie", dao.getByProfileAndContentId("user1", "100")?.contentType)
+
+        assertEquals("show", dao.getByProfileAndContentId("user1", "show", "100")?.contentType)
+        assertEquals("movie", dao.getByProfileAndContentId("user1", "movie", "100")?.contentType)
         db.close()
     }
 
@@ -764,9 +770,9 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.localLibraryRecordDao()
         dao.upsert(libraryRecord())
-        val inserted = dao.getByProfileAndContentId("user1", "100")!!
+        val inserted = dao.getByProfileAndContentId("user1", "show", "100")!!
         dao.delete(inserted)
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
+        assertNull(dao.getByProfileAndContentId("user1", "show", "100"))
         db.close()
     }
 
@@ -777,8 +783,8 @@ class RoomDaoTest {
         dao.upsert(libraryRecord(profileKey = "user1", contentId = "100"))
         dao.upsert(libraryRecord(profileKey = "user2", contentId = "200"))
         dao.deleteAllForProfile("user1")
-        assertNull(dao.getByProfileAndContentId("user1", "100"))
-        assertEquals("200", dao.getByProfileAndContentId("user2", "200")?.contentId)
+        assertNull(dao.getByProfileAndContentId("user1", "show", "100"))
+        assertEquals("200", dao.getByProfileAndContentId("user2", "show", "200")?.contentId)
         db.close()
     }
 
@@ -855,11 +861,13 @@ class RoomDaoTest {
 
     private fun displayMetadata(
         contentId: String = "100",
+        contentType: String = "movie",
         title: String = "Test Movie",
         posterCacheKey: String? = null,
         durationSeconds: Long? = 3600,
     ) = OfflineDisplayMetadataEntity(
         contentId = contentId,
+        contentType = contentType,
         title = title,
         posterCacheKey = posterCacheKey,
         backdropCacheKey = null,
@@ -877,7 +885,7 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.offlineDisplayMetadataDao()
         dao.upsert(displayMetadata())
-        val result = dao.getByContentId("100")
+        val result = dao.getByContentId("movie", "100")
         assertEquals("Test Movie", result?.title)
         db.close()
     }
@@ -888,7 +896,7 @@ class RoomDaoTest {
         val dao = db.offlineDisplayMetadataDao()
         dao.upsert(displayMetadata(title = "Original"))
         dao.upsert(displayMetadata(title = "Updated"))
-        assertEquals("Updated", dao.getByContentId("100")?.title)
+        assertEquals("Updated", dao.getByContentId("movie", "100")?.title)
         db.close()
     }
 
@@ -921,9 +929,21 @@ class RoomDaoTest {
         val db = createTestDatabase()
         val dao = db.offlineDisplayMetadataDao()
         dao.upsert(displayMetadata())
-        val entity = dao.getByContentId("100")!!
+        val entity = dao.getByContentId("movie", "100")!!
         dao.delete(entity)
-        assertNull(dao.getByContentId("100"))
+        assertNull(dao.getByContentId("movie", "100"))
+        db.close()
+    }
+
+    @Test
+    fun `offlineDisplayMetadata keeps a movie and an episode with the same numeric id`() = runTest {
+        val db = createTestDatabase()
+        val dao = db.offlineDisplayMetadataDao()
+        dao.upsert(displayMetadata(contentId = "7", contentType = "movie", title = "Movie 7"))
+        dao.upsert(displayMetadata(contentId = "7", contentType = "episode", title = "Episode 7"))
+
+        assertEquals("Movie 7", dao.getByContentId("movie", "7")?.title)
+        assertEquals("Episode 7", dao.getByContentId("episode", "7")?.title)
         db.close()
     }
 

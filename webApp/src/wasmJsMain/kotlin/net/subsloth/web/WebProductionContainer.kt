@@ -87,6 +87,7 @@ private const val DEFAULT_LANGUAGE = "en"
 
 /** Fallback profile key for anonymous sessions, mirroring the other containers. */
 private const val DEFAULT_PROFILE_KEY = "default"
+private const val EPISODE_CONTENT_TYPE = "episode"
 
 /**
  * Production web composition root — the wasmJs counterpart of
@@ -496,12 +497,16 @@ class WebProductionContainer : WebRuntime {
     override suspend fun listWatchedContentIds(): Set<String> = database.watchedStateDao()
         .getAllForProfile(currentProfileKey().value)
         .first()
-        .filter { it.isWatched }
+        .filter { it.isWatched && it.contentType == EPISODE_CONTENT_TYPE }
         .map { it.contentId }
         .toSet()
 
     override suspend fun isWatched(mediaId: Media.MediaId): Boolean = database.watchedStateDao()
-        .getByProfileAndContentId(currentProfileKey().value, mediaId.toContentId())
+        .getByProfileAndContentId(
+            currentProfileKey().value,
+            mediaId.toContentType(),
+            mediaId.toContentId(),
+        )
         ?.isWatched == true
 
     // ── Session / settings ──────────────────────────────────────────────

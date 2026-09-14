@@ -29,10 +29,14 @@ data class AccountPlaybackProgressEntity(
 
 /**
  * Favorite items, scoped by account.
+ *
+ * The key includes `contentType`: movie and show ids are independent
+ * counters, so keying on `contentId` alone let one type overwrite the
+ * other type's row.
  */
 @Entity(
     tableName = "favorites",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class FavoriteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -43,10 +47,12 @@ data class FavoriteEntity(
 
 /**
  * Watch-later items, scoped by account.
+ *
+ * Key includes `contentType` for the same reason as [FavoriteEntity].
  */
 @Entity(
     tableName = "watch_later",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class WatchLaterEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -57,10 +63,13 @@ data class WatchLaterEntity(
 
 /**
  * Watched state (fully watched or watched to a point), scoped by account.
+ *
+ * Key includes `contentType`: keying on `contentId` alone made a movie
+ * whose id equals an episode id appear watched.
  */
 @Entity(
     tableName = "watched_state",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class WatchedStateEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -73,10 +82,12 @@ data class WatchedStateEntity(
 
 /**
  * Subscriptions/server mirrors, scoped by account.
+ *
+ * Key includes `contentType` for the same reason as [FavoriteEntity].
  */
 @Entity(
     tableName = "subscriptions",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class SubscriptionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -88,10 +99,12 @@ data class SubscriptionEntity(
 
 /**
  * Local-only library records, scoped by account.
+ *
+ * Key includes `contentType` for the same reason as [FavoriteEntity].
  */
 @Entity(
     tableName = "local_library_records",
-    indices = [Index(value = ["profileKey", "contentId"], unique = true)],
+    indices = [Index(value = ["profileKey", "contentType", "contentId"], unique = true)],
 )
 data class LocalLibraryRecordEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -147,11 +160,12 @@ data class DownloadedSubtitleEntity(
  */
 @Entity(
     tableName = "offline_display_metadata",
-    indices = [Index(value = ["contentId"], unique = true)],
+    indices = [Index(value = ["contentType", "contentId"], unique = true)],
 )
 data class OfflineDisplayMetadataEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val contentId: String,
+    val contentType: String, // "movie" or "episode"
     val title: String,
     val posterCacheKey: String?,
     val backdropCacheKey: String?,

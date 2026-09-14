@@ -17,7 +17,7 @@ actual fun createSubSlothDatabase(name: String): SubSlothDatabase = Room
     .databaseBuilder<SubSlothDatabase>(
         name = name,
         factory = SubSlothDatabaseCtor::initialize,
-    ).addMigrations(MIGRATION_5_6)
+    ).addMigrations(MIGRATION_5_6, MIGRATION_6_7)
     .setDriver(BundledSQLiteDriver())
     .fallbackToDestructiveMigration()
     .build()

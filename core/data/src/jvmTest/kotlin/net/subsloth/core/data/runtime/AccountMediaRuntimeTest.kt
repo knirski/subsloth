@@ -103,11 +103,20 @@ private class FakeWatchedDao : WatchedStateDao {
     override fun getAllForProfile(profileKey: String): Flow<List<WatchedStateEntity>> =
         MutableStateFlow(rows.filter { it.profileKey == profileKey })
 
-    override suspend fun getByProfileAndContentId(profileKey: String, contentId: String): WatchedStateEntity? =
-        rows.firstOrNull { it.profileKey == profileKey && it.contentId == contentId }
+    override suspend fun getByProfileAndContentId(
+        profileKey: String,
+        contentType: String,
+        contentId: String,
+    ): WatchedStateEntity? = rows.firstOrNull {
+        it.profileKey == profileKey && it.contentType == contentType && it.contentId == contentId
+    }
 
     override suspend fun upsert(entity: WatchedStateEntity) {
-        rows.removeAll { it.profileKey == entity.profileKey && it.contentId == entity.contentId }
+        rows.removeAll {
+            it.profileKey == entity.profileKey &&
+                it.contentType == entity.contentType &&
+                it.contentId == entity.contentId
+        }
         rows += entity
     }
 
