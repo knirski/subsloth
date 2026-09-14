@@ -8,7 +8,10 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +39,9 @@ import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
 import kotlin.time.Instant
+
+/** Max number of concurrent episode->show lookups when loading Continue Watching. */
+private const val EPISODE_RESOLUTION_CONCURRENCY = 4
 
 @Stable
 sealed interface HomeUiState {
@@ -135,6 +141,14 @@ class HomeViewModel(
     private val selectedTab = MutableStateFlow(parseSavedTab(savedState["selectedTab"].orEmpty()))
 
     private val auxData = MutableStateFlow(HomeAuxData())
+
+    /**
+     * Episode->show mapping resolved from the API. Episode ownership is
+     * stable, so null results are cached too: an unresolvable episode is not
+     * retried on every refresh. Only touched from `viewModelScope` on the
+     * main dispatcher, so a plain map is enough.
+     */
+    private val episodeShowCache = mutableMapOf<EpisodeId, ShowId?>()
 
     init {
         viewModelScope.launch {
@@ -237,16 +251,47 @@ class HomeViewModel(
      * Rewrites episode progress to the owning show, so Continue Watching
      * resolves it against the movie/show catalog. Multiple episodes of one
      * show collapse to the most recently watched.
+     *
+     * Episode->show resolution hits the API, so distinct episodes are
+     * resolved concurrently (bounded by
+     * [EPISODE_RESOLUTION_CONCURRENCY]) and cached for later refreshes.
      */
     private suspend fun List<PlaybackProgress>.toShowLevelProgress(): List<PlaybackProgress> {
+        val episodeIds = mapNotNull { (it.mediaId as? Media.MediaId.Episode)?.value }
+        val resolvedShows = resolveShowsFor(episodeIds)
         val resolved = mapNotNull { progress ->
-            val episode = progress.mediaId as? Media.MediaId.Episode ?: return@mapNotNull progress
-            val showId = resolveShowForEpisode(episode.value) ?: return@mapNotNull null
-            progress.copy(mediaId = Media.MediaId.Show(showId))
+            when (val mediaId = progress.mediaId) {
+                is Media.MediaId.Episode -> {
+                    val showId = resolvedShows[mediaId.value] ?: return@mapNotNull null
+                    progress.copy(mediaId = Media.MediaId.Show(showId))
+                }
+
+                else -> progress
+            }
         }
         return resolved
             .groupBy { it.mediaId }
             .mapNotNull { (_, entries) -> entries.maxByOrNull { it.lastUpdatedEpochSeconds } }
+    }
+
+    private suspend fun resolveShowsFor(episodeIds: List<EpisodeId>): Map<EpisodeId, ShowId> {
+        val distinct = episodeIds.distinct()
+        val cached = episodeShowCache.toMap()
+        val missing = distinct.filterNot { cached.containsKey(it) }
+        if (missing.isNotEmpty()) {
+            val fetched = coroutineScope {
+                missing
+                    .chunked(EPISODE_RESOLUTION_CONCURRENCY)
+                    .flatMap { chunk ->
+                        chunk.map { episodeId -> async { episodeId to resolveShowForEpisode(episodeId) } }
+                            .awaitAll()
+                    }
+            }
+            episodeShowCache.putAll(fetched)
+        }
+        return distinct.mapNotNull { episodeId ->
+            episodeShowCache[episodeId]?.let { showId -> episodeId to showId }
+        }.toMap()
     }
 }
 
