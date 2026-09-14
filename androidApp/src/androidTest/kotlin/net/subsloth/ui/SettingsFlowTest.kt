@@ -50,7 +50,6 @@ class SettingsFlowTest {
                             quality = "1080p",
                             downloadsWifiOnly = true,
                             showLogoutCleanup = false,
-                            diagnostics = DiagnosticsState.REDACTED,
                         ),
                     onNavigateToDiagnostics = onNavigateToDiagnostics,
                 )

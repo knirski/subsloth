@@ -336,7 +336,12 @@ fun DesktopNavHost(
 
             entry<DiagnosticsKey> {
                 ScopedViewModel(key = "diagnostics") {
-                    val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") { DiagnosticsViewModel() }
+                    val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") {
+                        DiagnosticsViewModel(
+                            apiBaseUrl = container.apiBaseUrlFlow(),
+                            session = container.sessionPort.state,
+                        )
+                    }
                     DiagnosticsScreen(
                         viewModel = vm,
                         onNavigateBack = { backStack.removeLastOrNull() },

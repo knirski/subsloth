@@ -22,7 +22,6 @@ import net.subsloth.library.DownloadsContent
 import net.subsloth.library.DownloadsUiState
 import net.subsloth.library.LibraryContent
 import net.subsloth.library.LibraryUiState
-import net.subsloth.settings.DiagnosticsState
 import net.subsloth.settings.SettingsContent
 import net.subsloth.settings.SettingsUiState
 import org.junit.Rule
@@ -235,7 +234,6 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleLanguage = "English",
             quality = "1080p",
             downloadsWifiOnly = true,
-            diagnostics = DiagnosticsState(),
         )
 
         composeRule.setContent {
@@ -259,7 +257,6 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleLanguage = null,
             quality = "1080p",
             downloadsWifiOnly = false,
-            diagnostics = DiagnosticsState(),
         )
 
         composeRule.setContent {

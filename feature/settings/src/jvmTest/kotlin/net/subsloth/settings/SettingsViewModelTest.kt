@@ -208,41 +208,4 @@ class SettingsViewModelTest {
         assertThat(clearedLibrary).isFalse()
         assertThat(clearedCredentials).isTrue()
     }
-
-    @Test
-    fun `diagnostics state shows redacted fields`() = runTest(testDispatcher) {
-        val viewModel = SettingsViewModel(
-            profileKey = { AccountProfileKey("profile1") },
-            readSubtitleEnabled = { flowOf(true) },
-            readSubtitleLanguage = { flowOf("en") },
-            readQuality = { flowOf("1080p") },
-            readDownloadsWifiOnly = { flowOf(true) },
-        )
-        viewModel.uiState.test {
-            val content = awaitItem() as SettingsUiState.Content
-            assertThat(content.diagnostics.installedAppVersion).isNotEmpty()
-            assertThat(content.diagnostics.buildType).isEqualTo("debug")
-            assertThat(content.diagnostics.apiBaseUrl).doesNotContain("http")
-        }
-    }
-
-    @Test
-    fun `diagnostics does not expose sensitive fields`() = runTest(testDispatcher) {
-        val viewModel = SettingsViewModel(
-            profileKey = { AccountProfileKey("profile1") },
-            readSubtitleEnabled = { flowOf(true) },
-            readSubtitleLanguage = { flowOf("en") },
-            readQuality = { flowOf("1080p") },
-            readDownloadsWifiOnly = { flowOf(true) },
-        )
-        viewModel.uiState.test {
-            val content = awaitItem() as SettingsUiState.Content
-            val diag = content.diagnostics
-            assertThat(diag.gitSha).isNull()
-            assertThat(diag.deviceApiLevel).isNull()
-            assertThat(diag.cacheAge).isNull()
-            assertThat(diag.downloadQueueCounts).isNull()
-            assertThat(diag.storageUsage).isNull()
-        }
-    }
 }

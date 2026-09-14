@@ -215,7 +215,7 @@ fun WebNavHost(
             }
 
             entry<DiagnosticsKey> {
-                DiagnosticsContent(onNavigateBack = ::popHistory)
+                DiagnosticsContent(runtime = runtime, onNavigateBack = ::popHistory)
             }
 
             entry<OfflineLibraryKey> {
@@ -541,7 +541,7 @@ private fun SettingsContent(runtime: WebRuntime, onNavigateBack: () -> Unit, onN
 }
 
 @Composable
-private fun DiagnosticsContent(onNavigateBack: () -> Unit) {
+private fun DiagnosticsContent(runtime: WebRuntime, onNavigateBack: () -> Unit) {
     val storeOwner = remember("diagnostics") {
         object : ViewModelStoreOwner {
             override val viewModelStore = ViewModelStore()
@@ -551,7 +551,12 @@ private fun DiagnosticsContent(onNavigateBack: () -> Unit) {
         onDispose { storeOwner.viewModelStore.clear() }
     }
     CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") { DiagnosticsViewModel() }
+        val vm: DiagnosticsViewModel = viewModel(key = "diagnostics") {
+            DiagnosticsViewModel(
+                apiBaseUrl = runtime.apiBaseUrlFlow(),
+                session = runtime.sessionPort.state,
+            )
+        }
         DiagnosticsScreen(viewModel = vm, onNavigateBack = onNavigateBack)
     }
 }

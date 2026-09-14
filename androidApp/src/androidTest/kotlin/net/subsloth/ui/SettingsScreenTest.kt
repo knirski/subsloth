@@ -10,7 +10,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import net.subsloth.settings.DiagnosticsState
 import net.subsloth.settings.SettingsContent
 import net.subsloth.settings.SettingsUiState
 import org.junit.Rule
@@ -36,7 +35,6 @@ class SettingsScreenTest {
             quality = null,
             downloadsWifiOnly = true,
             showLogoutCleanup = false,
-            diagnostics = DiagnosticsState.REDACTED,
         )
 
     @Test

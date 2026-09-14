@@ -27,7 +27,6 @@ sealed interface SettingsUiState {
         val quality: String?,
         val downloadsWifiOnly: Boolean,
         val showLogoutCleanup: Boolean = false,
-        val diagnostics: DiagnosticsState,
     ) : SettingsUiState
 
     @Immutable
@@ -96,7 +95,6 @@ class SettingsViewModel(
                         subtitleLanguage = lang,
                         quality = qual,
                         downloadsWifiOnly = wifi,
-                        diagnostics = DiagnosticsState.REDACTED,
                     )
                 }.collect { content ->
                     _uiState.value = content
