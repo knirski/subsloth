@@ -212,7 +212,7 @@ This document describes the manual device acceptance checklist for the three sup
 
 ### 9.1 Orientation — phone
 1. On a phone, start in portrait orientation.
-2. Rotate to landscape. Verify the UI reflows correctly (e.g., catalog grid adjusts columns, detail layout adapts).
+2. Rotate to landscape. Verify the UI reflows correctly (e.g., content stays a readable, centered single-column list, detail layout adapts).
 3. Rotate back to portrait. Verify the UI returns to the original layout.
 
 ### 9.2 Orientation — tablet
