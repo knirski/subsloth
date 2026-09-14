@@ -39,6 +39,7 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.player.AndroidDialogFullscreenBars
 import net.subsloth.player.AndroidFullscreenWindowController
 import net.subsloth.player.PlayerOrientationViewModel
 import net.subsloth.auth.AuthRepairScreen
@@ -379,6 +380,7 @@ fun SubSlothNavHost(
                     onNavigateBack = { backStack.removeLastOrNull() },
                     onNavigateToAuthRepair = { backStack += AuthRepairKey },
                     onFullscreenChanged = fullscreenWindowController::setFullscreen,
+                    fullscreenEffect = { isFullscreen -> AndroidDialogFullscreenBars(isFullscreen) },
                 )
             }
 
