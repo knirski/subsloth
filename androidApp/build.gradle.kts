@@ -195,6 +195,8 @@ dependencies {
     // Ktor — needed for ClientFactory and Api access
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor3)
 
     implementation(project(":feature:auth"))
     implementation(project(":feature:catalog"))

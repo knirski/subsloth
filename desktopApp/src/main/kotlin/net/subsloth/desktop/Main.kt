@@ -15,6 +15,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
 import net.subsloth.core.ui.OfflineLibraryKey
@@ -26,7 +29,18 @@ import java.awt.Dimension
 private const val MIN_WINDOW_WIDTH_PX = 480
 private const val MIN_WINDOW_HEIGHT_PX = 640
 
-fun main() = application {
+fun main() {
+    // Poster artwork is fetched through Coil; add the Ktor network fetcher
+    // explicitly. Artwork URLs are signed, so no auth is required.
+    SingletonImageLoader.setSafe { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory()) }
+            .build()
+    }
+    runDesktopApp()
+}
+
+private fun runDesktopApp() = application {
     val windowState = rememberWindowState(size = DpSize(1280.dp, 800.dp))
 
     Window(

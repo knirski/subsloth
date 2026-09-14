@@ -14,6 +14,7 @@ kotlin {
             implementation(libs.compose.multiplatform.foundation)
             implementation(libs.compose.multiplatform.material3)
             implementation(libs.compose.multiplatform.ui)
+            implementation(libs.coil.compose)
             implementation(libs.compose.components.resources)
             api(libs.kotlinx.serialization)
             api(libs.savedstate)

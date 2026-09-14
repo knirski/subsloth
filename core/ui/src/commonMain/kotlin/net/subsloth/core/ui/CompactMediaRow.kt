@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,14 +27,15 @@ import androidx.compose.ui.unit.dp
  * single metadata line on the right. Used by every content screen so lists
  * scroll vertically on all window sizes (no tiles/grids).
  *
- * The poster slot is a placeholder: the catalog summaries carry poster URLs
- * but there is no image loading in the app yet.
+ * The poster slot shows [posterUrl] when present, and keeps the [glyph]
+ * placeholder underneath while the image loads or when it fails.
  */
 @Composable
 fun CompactMediaRow(
     title: String,
     subtitle: String? = null,
     glyph: String = "🎬",
+    posterUrl: String? = null,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     testTag: String? = null,
@@ -55,10 +57,16 @@ fun CompactMediaRow(
             Box(
                 modifier = Modifier
                     .size(width = 40.dp, height = 56.dp)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(6.dp)),
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = glyph, style = MaterialTheme.typography.titleMedium)
+                MediaArtwork(
+                    url = posterUrl,
+                    contentDescription = title,
+                    modifier = Modifier.matchParentSize(),
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
