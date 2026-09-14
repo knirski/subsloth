@@ -22,7 +22,6 @@ val subslothNavConfig: SavedStateConfiguration = SavedStateConfiguration {
             subclass(MovieDetailKey::class, MovieDetailKey.serializer())
             subclass(ShowDetailKey::class, ShowDetailKey.serializer())
             subclass(PlayerKey::class, PlayerKey.serializer())
-            subclass(LibraryKey::class, LibraryKey.serializer())
             subclass(DownloadsKey::class, DownloadsKey.serializer())
             subclass(SettingsKey::class, SettingsKey.serializer())
             subclass(DiagnosticsKey::class, DiagnosticsKey.serializer())

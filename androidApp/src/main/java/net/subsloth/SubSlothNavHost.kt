@@ -27,7 +27,6 @@ import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.EpisodeDetailKey
-import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.LocalIsTelevision
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
@@ -127,7 +126,6 @@ fun SubSlothNavHost(
                     viewModel = viewModel,
                     modifier = Modifier,
                     onSearchClick = { backStack += SearchKey },
-                    onLibraryClick = { backStack += LibraryKey },
                     onDownloadsClick = { backStack += DownloadsKey },
                     onSettingsClick = { backStack += SettingsKey },
                     onTabSelected = viewModel::selectTab,
@@ -381,42 +379,6 @@ fun SubSlothNavHost(
                     onNavigateBack = { backStack.removeLastOrNull() },
                     onNavigateToAuthRepair = { backStack += AuthRepairKey },
                     onFullscreenChanged = fullscreenWindowController::setFullscreen,
-                )
-            }
-
-            entry<LibraryKey> {
-                val app = LocalContext.current.applicationContext
-                val container = (app as? SubSlothApplication)?.container ?: return@entry
-                val viewModel: LibraryViewModel = viewModel(
-                    key = "library",
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                            requireNotNull(
-                                modelClass.cast(
-                                    LibraryViewModel(
-                                        libraryPort = container.libraryPortAdapter::listLibrary,
-                                        downloadsPort = container.downloadController::listDownloads,
-                                        listMovies = container::listMovies,
-                                        listShows = container::listShows,
-                                        // listProgress: only the account-scoped DAO has a clean
-                                        // mapping to PlaybackProgress (see AppContainer's doc on
-                                        // listAccountPlaybackProgress); this is that mapping.
-                                        listProgress = container::listAccountPlaybackProgress,
-                                        isLoggedIn = { container.sessionPort.current() is Session.Authenticated },
-                                        removeDownload = { localId ->
-                                            container.downloadController.remove(LocalMediaIdentifier(localId))
-                                        },
-                                    ),
-                                ),
-                            )
-                    },
-                )
-                LibraryScreen(
-                    viewModel = viewModel,
-                    modifier = Modifier,
-                    onNavigateBack = { backStack.removeLastOrNull() },
-                    onMovieClick = { backStack += MovieDetailKey(it.toNavKeyValue()) },
-                    onShowClick = { backStack += ShowDetailKey(it.toNavKeyValue()) },
                 )
             }
 

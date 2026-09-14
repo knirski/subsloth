@@ -20,7 +20,6 @@ class NavigationEntryPointsDesktopTest {
 
     @Test
     fun homeScreen_entryPointButtons_invokeCallbacks() {
-        var libraryClicks = 0
         var downloadsClicks = 0
         var settingsClicks = 0
 
@@ -28,18 +27,15 @@ class NavigationEntryPointsDesktopTest {
             MaterialTheme {
                 HomeScreen(
                     viewModel = HomeViewModel(),
-                    onLibraryClick = { libraryClicks++ },
                     onDownloadsClick = { downloadsClicks++ },
                     onSettingsClick = { settingsClicks++ },
                 )
             }
         }
 
-        composeRule.onNodeWithContentDescription("Library").assertHasClickAction().performClick()
         composeRule.onNodeWithContentDescription("Downloads").assertHasClickAction().performClick()
         composeRule.onNodeWithContentDescription("Settings").assertHasClickAction().performClick()
 
-        assertEquals(1, libraryClicks)
         assertEquals(1, downloadsClicks)
         assertEquals(1, settingsClicks)
     }

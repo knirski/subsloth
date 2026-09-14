@@ -41,10 +41,6 @@ data class EpisodeDetailKey(val episodeId: String) : AppNavKey
 @Serializable
 data class PlayerKey(val contentId: String, val contentType: String) : AppNavKey
 
-/** Library screen. */
-@Serializable
-data object LibraryKey : AppNavKey
-
 /** Downloads screen. */
 @Serializable
 data object DownloadsKey : AppNavKey
