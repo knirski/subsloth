@@ -35,7 +35,6 @@ import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.EpisodeDetailKey
-import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -110,7 +109,6 @@ fun WebNavHost(
                 CatalogContent(
                     runtime = runtime,
                     onSearchClick = { navigate(SearchKey) },
-                    onLibraryClick = { navigate(LibraryKey) },
                     onDownloadsClick = { navigate(DownloadsKey) },
                     onSettingsClick = { navigate(SettingsKey) },
                     onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
@@ -193,15 +191,6 @@ fun WebNavHost(
                 )
             }
 
-            entry<LibraryKey> {
-                LibraryContent(
-                    runtime = runtime,
-                    onNavigateBack = ::popHistory,
-                    onMovieClick = { navigate(MovieDetailKey(it.value.value.toString())) },
-                    onShowClick = { navigate(ShowDetailKey(it.value.value.toString())) },
-                )
-            }
-
             entry<DownloadsKey> {
                 DownloadsContent(runtime = runtime, onNavigateBack = ::popHistory)
             }
@@ -236,7 +225,6 @@ fun WebNavHost(
 private fun CatalogContent(
     runtime: WebRuntime,
     onSearchClick: () -> Unit,
-    onLibraryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onMovieClick: (Media.MediaId.Movie) -> Unit,
@@ -255,7 +243,6 @@ private fun CatalogContent(
         HomeScreen(
             viewModel = vm,
             onSearchClick = onSearchClick,
-            onLibraryClick = onLibraryClick,
             onDownloadsClick = onDownloadsClick,
             onSettingsClick = onSettingsClick,
             onTabSelected = vm::selectTab,
@@ -434,42 +421,6 @@ private fun AuthRepairContent(runtime: WebRuntime, onRepaired: () -> Unit, onNav
             vm.retryAuth()
         }
         AuthRepairScreen(viewModel = vm, onRepaired = onRepaired, onNavigateBack = onNavigateBack)
-    }
-}
-
-@Composable
-private fun LibraryContent(
-    runtime: WebRuntime,
-    onNavigateBack: () -> Unit,
-    onMovieClick: (Media.MediaId.Movie) -> Unit,
-    onShowClick: (Media.MediaId.Show) -> Unit,
-) {
-    val storeOwner = remember("library") {
-        object : ViewModelStoreOwner {
-            override val viewModelStore = ViewModelStore()
-        }
-    }
-    DisposableEffect(storeOwner) {
-        onDispose { storeOwner.viewModelStore.clear() }
-    }
-    CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-        val vm: LibraryViewModel = viewModel(key = "library") {
-            LibraryViewModel(
-                libraryPort = { runtime.listLibrary() },
-                downloadsPort = { runtime.listDownloads() },
-                listMovies = { runtime.listMovies() },
-                listShows = { runtime.listShows() },
-                listProgress = { runtime.listAccountPlaybackProgress() },
-                isLoggedIn = { runtime.sessionPort.current() is Session.Authenticated },
-                removeDownload = { localId -> runtime.removeDownload(localId) },
-            )
-        }
-        LibraryScreen(
-            viewModel = vm,
-            onNavigateBack = onNavigateBack,
-            onMovieClick = onMovieClick,
-            onShowClick = onShowClick,
-        )
     }
 }
 

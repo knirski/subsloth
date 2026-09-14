@@ -60,7 +60,6 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     onSearchClick: () -> Unit = {},
-    onLibraryClick: () -> Unit = {},
     onDownloadsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onTabSelected: (HomeTab) -> Unit = {},
@@ -104,13 +103,6 @@ fun HomeScreen(
                             text = "🔍",
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.semantics { contentDescription = "Search" },
-                        )
-                    }
-                    IconButton(onClick = onLibraryClick) {
-                        Text(
-                            text = "📚",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.semantics { contentDescription = "Library" },
                         )
                     }
                     IconButton(onClick = onDownloadsClick) {

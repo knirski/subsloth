@@ -33,7 +33,6 @@ import net.subsloth.core.ui.CatalogKey
 import net.subsloth.core.ui.DiagnosticsKey
 import net.subsloth.core.ui.DownloadsKey
 import net.subsloth.core.ui.EpisodeDetailKey
-import net.subsloth.core.ui.LibraryKey
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
@@ -105,7 +104,6 @@ fun DesktopNavHost(
                     HomeScreen(
                         viewModel = vm,
                         onSearchClick = { backStack += SearchKey },
-                        onLibraryClick = { backStack += LibraryKey },
                         onDownloadsClick = { backStack += DownloadsKey },
                         onSettingsClick = { backStack += SettingsKey },
                         onTabSelected = vm::selectTab,
@@ -248,30 +246,6 @@ fun DesktopNavHost(
                         }
                     },
                 )
-            }
-
-            entry<LibraryKey> {
-                ScopedViewModel(key = "library") {
-                    val vm: LibraryViewModel = viewModel(key = "library") {
-                        LibraryViewModel(
-                            libraryPort = container.libraryPortAdapter::listLibrary,
-                            downloadsPort = container.downloadController::listDownloads,
-                            listMovies = container::listMovies,
-                            listShows = container::listShows,
-                            listProgress = container::listAccountPlaybackProgress,
-                            isLoggedIn = { container.sessionPort.current() is Session.Authenticated },
-                            removeDownload = { localId ->
-                                container.downloadController.remove(LocalMediaIdentifier(localId))
-                            },
-                        )
-                    }
-                    LibraryScreen(
-                        viewModel = vm,
-                        onNavigateBack = { backStack.removeLastOrNull() },
-                        onMovieClick = { backStack += MovieDetailKey(it.value.value.toString()) },
-                        onShowClick = { backStack += ShowDetailKey(it.value.value.toString()) },
-                    )
-                }
             }
 
             entry<DownloadsKey> {

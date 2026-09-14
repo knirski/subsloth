@@ -9,12 +9,12 @@ class NavBackTest {
 
     @Test
     fun `mid-stack back pops the last destination`() {
-        val backStack = mutableListOf<AppNavKey>(CatalogKey, LibraryKey, MovieDetailKey("1"))
+        val backStack = mutableListOf<AppNavKey>(CatalogKey, DownloadsKey, MovieDetailKey("1"))
         var exited = false
 
         navigateBack(backStack) { exited = true }
 
-        assertEquals(listOf<AppNavKey>(CatalogKey, LibraryKey), backStack)
+        assertEquals(listOf<AppNavKey>(CatalogKey, DownloadsKey), backStack)
         assertFalse(exited)
     }
 
