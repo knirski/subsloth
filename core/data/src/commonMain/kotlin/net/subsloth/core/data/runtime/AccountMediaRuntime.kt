@@ -111,7 +111,7 @@ class AccountMediaRuntime(
     // ── Playback progress ────────────────────────────────────────────────
 
     suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> = runCatching {
-        when (val session = sessionPort.current()) {
+        val account = when (val session = sessionPort.current()) {
             Session.Anonymous -> emptyList()
 
             is Session.Authenticated -> accountPlaybackProgressDao()
@@ -119,6 +119,13 @@ class AccountMediaRuntime(
                 .first()
                 .map { it.toPlaybackProgress() }
         }
+        // Playback of downloaded media is persisted to the offline table; it
+        // is merged here so Continue Watching also reflects offline sessions.
+        val offline = offlinePlaybackProgressDao()
+            .getAll()
+            .first()
+            .mapNotNull { it.toPlaybackProgressOrNull() }
+        mergeProgressByRecency(account, offline)
     }.onFailure { if (it is CancellationException) throw it }
 
     suspend fun loadPlaybackProgress(mediaId: Media.MediaId): PlaybackProgress? =
@@ -139,6 +146,7 @@ class AccountMediaRuntime(
             PlaybackMode.OFFLINE -> offlinePlaybackProgressDao().upsert(
                 OfflinePlaybackProgressEntity(
                     contentId = mediaId.toContentId(),
+                    contentType = mediaId.toContentType(),
                     positionSeconds = positionSeconds,
                     durationSeconds = durationSeconds,
                     updatedAtEpochSeconds = clock.now().epochSeconds,
@@ -222,16 +230,34 @@ class AccountMediaRuntime(
         )
     }
 
-    private fun parsePlaybackMediaId(contentId: String, contentType: String): Media.MediaId = when (contentType) {
-        "movie" -> Media.MediaId.Movie(MovieId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
-
-        "show" -> Media.MediaId.Show(ShowId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")))
-
-        "episode" -> Media.MediaId.Episode(
-            EpisodeId(contentId.toIntOrNull() ?: error("Invalid contentId: $contentId")),
+    private fun OfflinePlaybackProgressEntity.toPlaybackProgressOrNull(): PlaybackProgress? {
+        val mediaId = parsePlaybackMediaIdOrNull(contentId, contentType) ?: return null
+        val fraction = if (durationSeconds > 0) {
+            positionSeconds.toDouble() / durationSeconds.toDouble()
+        } else {
+            0.0
+        }
+        return PlaybackProgress(
+            mediaId = mediaId,
+            positionSeconds = positionSeconds,
+            durationSeconds = durationSeconds,
+            lastUpdatedEpochSeconds = Instant.fromEpochSeconds(updatedAtEpochSeconds),
+            isWatched = fraction > CompletionPolicy.WATCHED_THRESHOLD,
         )
+    }
 
-        else -> error("Unknown contentType: $contentType")
+    private fun parsePlaybackMediaId(contentId: String, contentType: String): Media.MediaId =
+        parsePlaybackMediaIdOrNull(contentId, contentType)
+            ?: error("Unknown contentType: $contentType")
+
+    private fun parsePlaybackMediaIdOrNull(contentId: String, contentType: String): Media.MediaId? {
+        val id = contentId.toIntOrNull() ?: return null
+        return when (contentType) {
+            "movie" -> Media.MediaId.Movie(MovieId(id))
+            "show" -> Media.MediaId.Show(ShowId(id))
+            "episode" -> Media.MediaId.Episode(EpisodeId(id))
+            else -> null
+        }
     }
 }
 
@@ -247,4 +273,23 @@ internal fun Media.MediaId.toContentType(): String = when (this) {
     is Media.MediaId.Movie -> "movie"
     is Media.MediaId.Show -> "show"
     is Media.MediaId.Episode -> "episode"
+}
+
+/**
+ * Merges account and offline progress, keeping the most recently updated row
+ * per media item. A media item can have both (watched online and downloaded
+ * later, or vice versa), and Continue Watching must show one resumable entry.
+ */
+private fun mergeProgressByRecency(
+    account: List<PlaybackProgress>,
+    offline: List<PlaybackProgress>,
+): List<PlaybackProgress> {
+    val latest = LinkedHashMap<Media.MediaId, PlaybackProgress>(account.size + offline.size)
+    (account + offline).forEach { progress ->
+        val existing = latest[progress.mediaId]
+        if (existing == null || progress.lastUpdatedEpochSeconds > existing.lastUpdatedEpochSeconds) {
+            latest[progress.mediaId] = progress
+        }
+    }
+    return latest.values.toList()
 }

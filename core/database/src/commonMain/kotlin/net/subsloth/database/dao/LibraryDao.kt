@@ -21,8 +21,15 @@ import net.subsloth.database.entity.WatchedStateEntity
 
 @Dao
 interface AccountPlaybackProgressDao {
-    @Query("SELECT * FROM account_playback_progress WHERE profileKey = :profileKey AND contentId = :contentId")
-    suspend fun getByProfileAndContentId(profileKey: String, contentId: String): AccountPlaybackProgressEntity?
+    @Query(
+        "SELECT * FROM account_playback_progress " +
+            "WHERE profileKey = :profileKey AND contentType = :contentType AND contentId = :contentId",
+    )
+    suspend fun getByProfileAndContentId(
+        profileKey: String,
+        contentType: String,
+        contentId: String,
+    ): AccountPlaybackProgressEntity?
 
     @Query("SELECT * FROM account_playback_progress WHERE profileKey = :profileKey")
     fun getAllForProfile(profileKey: String): Flow<List<AccountPlaybackProgressEntity>>
@@ -185,8 +192,8 @@ interface OfflineDisplayMetadataDao {
 
 @Dao
 interface OfflinePlaybackProgressDao {
-    @Query("SELECT * FROM offline_playback_progress WHERE contentId = :contentId")
-    suspend fun getByContentId(contentId: String): OfflinePlaybackProgressEntity?
+    @Query("SELECT * FROM offline_playback_progress WHERE contentType = :contentType AND contentId = :contentId")
+    suspend fun getByContentId(contentType: String, contentId: String): OfflinePlaybackProgressEntity?
 
     @Query("SELECT * FROM offline_playback_progress")
     fun getAll(): Flow<List<OfflinePlaybackProgressEntity>>

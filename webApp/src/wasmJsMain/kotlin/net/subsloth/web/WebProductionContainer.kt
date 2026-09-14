@@ -348,6 +348,7 @@ class WebProductionContainer : WebRuntime {
             PlaybackMode.OFFLINE -> database.offlinePlaybackProgressDao().upsert(
                 OfflinePlaybackProgressEntity(
                     contentId = mediaId.toContentId(),
+                    contentType = mediaId.toContentType(),
                     positionSeconds = positionSeconds,
                     durationSeconds = durationSeconds,
                     updatedAtEpochSeconds = clock.now().epochSeconds,
