@@ -67,6 +67,7 @@ fun PlayerScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
     onFullscreenChanged: (Boolean) -> Unit = {},
+    fullscreenEffect: @Composable (Boolean) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -81,6 +82,7 @@ fun PlayerScreen(
             PlayerBridgeSurface(
                 modifier = modifier.fillMaxSize(),
                 playCommands = viewModel.playCommands,
+                fullscreenEffect = fullscreenEffect,
                 onEvent = { event ->
                     when (event) {
                         is PlayerEvent.Snapshot -> viewModel.onPlayerSnapshot(event.value)
