@@ -54,19 +54,17 @@ import subsloth.feature.settings.generated.resources.settings_title
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onNavigateBack: (() -> Unit)? = null,
     onNavigateToDiagnostics: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
-        if (onNavigateBack != null) {
-            SubSlothBackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
-            )
-        }
+        SubSlothBackButton(
+            onClick = onNavigateBack,
+            modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+        )
 
         when (val s = state) {
             is SettingsUiState.Loading -> {
