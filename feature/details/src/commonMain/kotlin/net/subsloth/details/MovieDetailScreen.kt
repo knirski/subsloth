@@ -234,7 +234,8 @@ private fun MovieDetailWideLayout(
             DetailActionButtons(
                 isFavorite = state.isFavorite,
                 isWatchLater = state.isWatchLater,
-                isDownloaded = state.isDownloaded,
+                downloadStatus = state.downloadStatus,
+                downloadProgressPercent = state.downloadProgressPercent,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
                 onFavoriteClick = onFavoriteClick,
@@ -385,7 +386,8 @@ private fun MovieDetailCompactLayout(
             DetailActionButtons(
                 isFavorite = state.isFavorite,
                 isWatchLater = state.isWatchLater,
-                isDownloaded = state.isDownloaded,
+                downloadStatus = state.downloadStatus,
+                downloadProgressPercent = state.downloadProgressPercent,
                 progressFraction = state.progressFraction,
                 onPlayClick = onPlayClick,
                 onFavoriteClick = onFavoriteClick,
@@ -443,7 +445,8 @@ private fun MovieDetailCompactLayout(
 private fun DetailActionButtons(
     isFavorite: Boolean,
     isWatchLater: Boolean,
-    isDownloaded: Boolean,
+    downloadStatus: DownloadStatus,
+    downloadProgressPercent: Int?,
     progressFraction: Double?,
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
@@ -501,16 +504,27 @@ private fun DetailActionButtons(
             }
 
             if (LocalDownloadActionsEnabled.current) {
+                val downloadLabel = when (downloadStatus) {
+                    DownloadStatus.DOWNLOADED -> stringResource(Res.string.detail_downloaded)
+
+                    DownloadStatus.QUEUED -> stringResource(Res.string.detail_download_queued)
+
+                    DownloadStatus.DOWNLOADING ->
+                        stringResource(Res.string.detail_download_downloading, downloadProgressPercent ?: 0)
+
+                    DownloadStatus.FAILED -> stringResource(Res.string.detail_download_retry)
+
+                    DownloadStatus.NOT_DOWNLOADED -> stringResource(Res.string.detail_download)
+                }
                 OutlinedButton(
                     onClick = onDownloadClick,
+                    enabled =
+                    downloadStatus != DownloadStatus.QUEUED &&
+                        downloadStatus != DownloadStatus.DOWNLOADING,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
-                        text = if (isDownloaded) {
-                            stringResource(Res.string.detail_downloaded)
-                        } else {
-                            stringResource(Res.string.detail_download)
-                        },
+                        text = downloadLabel,
                         style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                     )

@@ -70,6 +70,5 @@ private fun movieDetailContentState(): MovieDetailUiState.Content =
             ),
         isFavorite = true,
         isWatchLater = false,
-        isDownloaded = false,
         progressFraction = 0.0,
     )
