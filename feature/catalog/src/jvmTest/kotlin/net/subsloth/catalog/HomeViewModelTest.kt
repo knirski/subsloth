@@ -17,6 +17,7 @@ import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.error.asFailure
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.Resolution
@@ -568,11 +569,84 @@ class HomeViewModelTest {
         }
     }
 
+    @Test
+    fun `episode progress resolves to its show in continue watching`() = runTest(testDispatcher) {
+        val show = showSummary(2, "Watched Show")
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(listOf(show)),
+            listProgress = {
+                Result.success(listOf(progress(Media.MediaId.Episode(EpisodeId(21)), fraction = 0.5)))
+            },
+            resolveShowForEpisode = { episodeId -> if (episodeId == EpisodeId(21)) ShowId(2) else null },
+        )
+
+        viewModel.uiState.test {
+            var content = awaitItem() as HomeUiState.Content
+            while (content.continueWatching.isEmpty()) content = awaitItem() as HomeUiState.Content
+            assertThat(content.continueWatching).containsExactly(show)
+        }
+    }
+
+    @Test
+    fun `multiple episodes of one show collapse to a single continue watching entry`() = runTest(testDispatcher) {
+        val show = showSummary(2, "Watched Show")
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(listOf(show)),
+            listProgress = {
+                Result.success(
+                    listOf(
+                        progress(Media.MediaId.Episode(EpisodeId(21)), fraction = 0.5),
+                        progress(Media.MediaId.Episode(EpisodeId(22)), fraction = 0.2),
+                    ),
+                )
+            },
+            resolveShowForEpisode = { ShowId(2) },
+        )
+
+        viewModel.uiState.test {
+            var content = awaitItem() as HomeUiState.Content
+            while (content.continueWatching.isEmpty()) content = awaitItem() as HomeUiState.Content
+            assertThat(content.continueWatching).containsExactly(show)
+        }
+    }
+
+    @Test
+    fun `unresolved episode progress is ignored`() = runTest(testDispatcher) {
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            listProgress = {
+                Result.success(listOf(progress(Media.MediaId.Episode(EpisodeId(21)), fraction = 0.5)))
+            },
+            resolveShowForEpisode = { null },
+        )
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val content = viewModel.uiState.value as HomeUiState.Content
+        assertThat(content.continueWatching).isEmpty()
+    }
+
     private fun libraryItem(mediaId: Media.MediaId, collection: LibraryCollection) = LibraryItem(
         mediaId = mediaId,
         collection = collection,
         addedAtEpochSeconds = Instant.fromEpochSeconds(1),
         sortOrder = 0,
+    )
+
+    private fun showSummary(id: Int, title: String) = ShowSummary(
+        id = Media.MediaId.Show(ShowId(id)),
+        title = title,
+        plot = null,
+        availability = Availability.Available,
+        rating = null,
+        year = null,
+        genres = persistentListOf(),
+        durationMinutes = null,
+        slug = null,
+        imdbId = null,
+        backdropUrl = null,
+        status = ShowStatus.ONGOING,
+        countries = persistentListOf(),
     )
 
     private fun completedDownload(mediaId: Media.MediaId) = DownloadState.Completed(

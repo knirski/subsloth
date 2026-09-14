@@ -26,6 +26,8 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
+import net.subsloth.core.model.identifier.EpisodeId
+import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
@@ -94,6 +96,12 @@ class HomeViewModel(
     private val listProgress: suspend () -> Result<List<PlaybackProgress>> = {
         Result.success(emptyList())
     },
+    /**
+     * Resolves an episode to the show that owns it, so episode playback can
+     * feed show-level rows (Continue Watching) whose catalog only contains
+     * movies and shows.
+     */
+    private val resolveShowForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     private val catalogItems: (String) -> Flow<List<Media>> = { flowOf(emptyList()) },
     private val syncCatalog: suspend () -> Outcome<Unit> = { Outcome.Success(Unit) },
     private val isCatalogStale: suspend () -> Boolean = { true },
@@ -216,12 +224,29 @@ class HomeViewModel(
             val progress = listProgress()
                 .onFailure { log.e(it) { "listProgress failed" } }
                 .getOrDefault(auxData.value.progress)
+                .toShowLevelProgress()
             auxData.value = HomeAuxData(
                 library = library,
                 downloads = downloads,
                 progress = progress,
             )
         }
+    }
+
+    /**
+     * Rewrites episode progress to the owning show, so Continue Watching
+     * resolves it against the movie/show catalog. Multiple episodes of one
+     * show collapse to the most recently watched.
+     */
+    private suspend fun List<PlaybackProgress>.toShowLevelProgress(): List<PlaybackProgress> {
+        val resolved = mapNotNull { progress ->
+            val episode = progress.mediaId as? Media.MediaId.Episode ?: return@mapNotNull progress
+            val showId = resolveShowForEpisode(episode.value) ?: return@mapNotNull null
+            progress.copy(mediaId = Media.MediaId.Show(showId))
+        }
+        return resolved
+            .groupBy { it.mediaId }
+            .mapNotNull { (_, entries) -> entries.maxByOrNull { it.lastUpdatedEpochSeconds } }
     }
 }
 

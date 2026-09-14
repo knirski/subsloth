@@ -295,6 +295,7 @@ class WebProductionContainer : WebRuntime {
         listLibrary = { listLibrary() },
         listDownloads = { listDownloads() },
         listProgress = { listAccountPlaybackProgress() },
+        resolveShowForEpisode = ::resolveShowIdForEpisode,
     )
 
     override suspend fun listAllMedia(): Outcome<List<Media>> = listCatalog()

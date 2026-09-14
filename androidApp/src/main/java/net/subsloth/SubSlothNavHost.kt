@@ -121,6 +121,7 @@ fun SubSlothNavHost(
                         listLibrary = { container.libraryPortAdapter.listLibrary() },
                         listDownloads = container.downloadController::listDownloads,
                         listProgress = { container.listAccountPlaybackProgress() },
+                        resolveShowForEpisode = { episodeId -> container.resolveShowIdForEpisode(episodeId) },
                     ),
                 )
                 HomeScreen(
