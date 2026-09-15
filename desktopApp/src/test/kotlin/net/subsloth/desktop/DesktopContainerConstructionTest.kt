@@ -1,7 +1,12 @@
 package net.subsloth.desktop
 
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 
 /**
  * Regression test for the Kotlin property-initialization-order crash that
@@ -12,23 +17,37 @@ import java.nio.file.Files
  * #239's OfflineFirstPlaybackPort wiring). Constructing the container here
  * keeps that ordering enforced by the compiler+runtime themselves.
  *
- * `user.home` is pointed at a temp dir because the JVM DataStore factory
- * resolves the app-data dir from it (independent of [DesktopContainer]'s
- * `dataDirOverride`, which only redirects Room/downloads) — the test must
- * not touch the developer's real preferences.
+ * It uses a temp data directory and closes the container, so the test
+ * neither touches the developer's real preferences nor mutates global JVM
+ * state (`user.home`) that other tests read while constructing their own
+ * containers.
  */
 class DesktopContainerConstructionTest {
     @Test
     fun `container constructs without initialization-order failures`() {
-        val fakeHome = Files.createTempDirectory("subsloth-desktop-test-home").toFile()
         val dataDir = Files.createTempDirectory("subsloth-desktop-test-data").toFile()
-        val originalHome = System.getProperty("user.home")
-        System.setProperty("user.home", fakeHome.path)
         try {
-            DesktopContainer(dataDirOverride = dataDir)
+            DesktopContainer(dataDirOverride = dataDir).close()
         } finally {
-            System.setProperty("user.home", originalHome)
-            fakeHome.deleteRecursively()
+            dataDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `close cancels background work and closes the database`() {
+        val dataDir = Files.createTempDirectory("subsloth-desktop-close-test").toFile()
+        try {
+            val container = DesktopContainer(dataDirOverride = dataDir)
+            val countBefore = runBlocking { container.database.cachedCatalogDao().count() }
+            assertEquals(0, countBefore)
+
+            container.close()
+
+            assertFalse(container.externalScope.isActive, "close() must cancel the container scope")
+            assertFailsWith<IllegalStateException> {
+                runBlocking { container.database.cachedCatalogDao().count() }
+            }
+        } finally {
             dataDir.deleteRecursively()
         }
     }
