@@ -190,7 +190,6 @@ class WebProductionContainer : WebRuntime {
             connectivityChecker = BrowserConnectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
-            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
         )
     }
 

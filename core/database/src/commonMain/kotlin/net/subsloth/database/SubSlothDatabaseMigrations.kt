@@ -226,3 +226,17 @@ private suspend fun SQLiteConnection.rebuildProfileScopedTable(
             "ON `$table` (`profileKey`, `contentType`, `contentId`)",
     )
 }
+
+/**
+ * v7 -> v8: drop the unused `offline_display_metadata` table.
+ *
+ * The table never had a production writer (only `DownloadController.remove`
+ * deleted from it) and nothing read it back; offline browsing uses
+ * `downloaded_media` plus the cached catalog. Dropping it removes schema that
+ * could not be exercised or tested in practice.
+ */
+val MIGRATION_7_8: Migration = object : Migration(7, 8) {
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("DROP TABLE IF EXISTS `offline_display_metadata`")
+    }
+}

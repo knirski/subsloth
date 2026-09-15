@@ -11,7 +11,6 @@ import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.QueueItemEntity
 import net.subsloth.database.entity.SeasonQueueEntity
@@ -854,96 +853,6 @@ class RoomDaoTest {
         dao.getForDownload(1).test {
             assertTrue(awaitItem().isEmpty())
         }
-        db.close()
-    }
-
-    // ── OfflineDisplayMetadata DAO tests ──────────────────────────────
-
-    private fun displayMetadata(
-        contentId: String = "100",
-        contentType: String = "movie",
-        title: String = "Test Movie",
-        posterCacheKey: String? = null,
-        durationSeconds: Long? = 3600,
-    ) = OfflineDisplayMetadataEntity(
-        contentId = contentId,
-        contentType = contentType,
-        title = title,
-        posterCacheKey = posterCacheKey,
-        backdropCacheKey = null,
-        episodeTitle = null,
-        seasonNumber = null,
-        episodeNumber = null,
-        effectiveQuality = null,
-        subtitleLanguages = null,
-        durationSeconds = durationSeconds,
-        localProgressSeconds = null,
-    )
-
-    @Test
-    fun `offlineDisplayMetadata upsert and getByContentId`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata())
-        val result = dao.getByContentId("movie", "100")
-        assertEquals("Test Movie", result?.title)
-        db.close()
-    }
-
-    @Test
-    fun `offlineDisplayMetadata upsert replaces existing`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata(title = "Original"))
-        dao.upsert(displayMetadata(title = "Updated"))
-        assertEquals("Updated", dao.getByContentId("movie", "100")?.title)
-        db.close()
-    }
-
-    @Test
-    fun `offlineDisplayMetadata getAll returns all`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata(contentId = "100", title = "Movie 1"))
-        dao.upsert(displayMetadata(contentId = "200", title = "Movie 2"))
-        dao.getAll().test {
-            assertEquals(2, awaitItem().size)
-        }
-        db.close()
-    }
-
-    @Test
-    fun `offlineDisplayMetadata deleteAll clears all`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata())
-        dao.deleteAll()
-        dao.getAll().test {
-            assertTrue(awaitItem().isEmpty())
-        }
-        db.close()
-    }
-
-    @Test
-    fun `offlineDisplayMetadata delete removes single`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata())
-        val entity = dao.getByContentId("movie", "100")!!
-        dao.delete(entity)
-        assertNull(dao.getByContentId("movie", "100"))
-        db.close()
-    }
-
-    @Test
-    fun `offlineDisplayMetadata keeps a movie and an episode with the same numeric id`() = runTest {
-        val db = createTestDatabase()
-        val dao = db.offlineDisplayMetadataDao()
-        dao.upsert(displayMetadata(contentId = "7", contentType = "movie", title = "Movie 7"))
-        dao.upsert(displayMetadata(contentId = "7", contentType = "episode", title = "Episode 7"))
-
-        assertEquals("Movie 7", dao.getByContentId("movie", "7")?.title)
-        assertEquals("Episode 7", dao.getByContentId("episode", "7")?.title)
         db.close()
     }
 

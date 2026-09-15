@@ -155,30 +155,6 @@ data class DownloadedSubtitleEntity(
 )
 
 /**
- * Shared offline display metadata — persists indefinitely while downloaded
- * media exists. Contains last known metadata for offline browsing.
- */
-@Entity(
-    tableName = "offline_display_metadata",
-    indices = [Index(value = ["contentType", "contentId"], unique = true)],
-)
-data class OfflineDisplayMetadataEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val contentId: String,
-    val contentType: String, // "movie" or "episode"
-    val title: String,
-    val posterCacheKey: String?,
-    val backdropCacheKey: String?,
-    val episodeTitle: String?,
-    val seasonNumber: Int?,
-    val episodeNumber: Int?,
-    val effectiveQuality: String?,
-    val subtitleLanguages: String?, // JSON-encoded list
-    val durationSeconds: Long?,
-    val localProgressSeconds: Long?,
-)
-
-/**
  * Shared offline playback progress — visible across accounts.
  *
  * The key includes [contentType]: movie and episode ids are independent

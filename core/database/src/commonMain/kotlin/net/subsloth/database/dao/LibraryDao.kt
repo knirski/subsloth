@@ -11,7 +11,6 @@ import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.SubscriptionEntity
 import net.subsloth.database.entity.WatchLaterEntity
@@ -197,24 +196,6 @@ interface DownloadedSubtitleDao {
 
     @Query("DELETE FROM downloaded_subtitles WHERE downloadId = :downloadId")
     suspend fun deleteForDownload(downloadId: Long)
-}
-
-@Dao
-interface OfflineDisplayMetadataDao {
-    @Query("SELECT * FROM offline_display_metadata")
-    fun getAll(): Flow<List<OfflineDisplayMetadataEntity>>
-
-    @Query("SELECT * FROM offline_display_metadata WHERE contentType = :contentType AND contentId = :contentId")
-    suspend fun getByContentId(contentType: String, contentId: String): OfflineDisplayMetadataEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(entity: OfflineDisplayMetadataEntity)
-
-    @Delete
-    suspend fun delete(entity: OfflineDisplayMetadataEntity)
-
-    @Query("DELETE FROM offline_display_metadata")
-    suspend fun deleteAll()
 }
 
 @Dao
