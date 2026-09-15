@@ -314,7 +314,7 @@ fun SubSlothNavHost(
                     AndroidFullscreenWindowController(activity)
                 }
                 DisposableEffect(fullscreenWindowController) {
-                    onDispose { fullscreenWindowController.restore() }
+                    onDispose { fullscreenWindowController.dispose() }
                 }
 
                 val orientationViewModel: PlayerOrientationViewModel = viewModel(
