@@ -20,6 +20,7 @@ import coil3.SingletonImageLoader
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import net.subsloth.auth.LoginScreen
 import net.subsloth.auth.LoginViewModel
+import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
 import net.subsloth.core.ui.SessionGate
@@ -30,11 +31,12 @@ private const val MIN_WINDOW_WIDTH_PX = 480
 private const val MIN_WINDOW_HEIGHT_PX = 640
 
 fun main() {
-    // Poster artwork is fetched through Coil; add the Ktor network fetcher
-    // explicitly. Artwork URLs are signed, so no auth is required.
+    // Poster artwork is fetched through Coil with the same Kodi-identity,
+    // signed-URL client as downloads (wildcard Accept, no JSON response
+    // validation, no auth) instead of Coil's anonymous default client.
     SingletonImageLoader.setSafe { context ->
         ImageLoader.Builder(context)
-            .components { add(KtorNetworkFetcherFactory()) }
+            .components { add(KtorNetworkFetcherFactory(httpClient = { ClientFactory.createForDownloads() })) }
             .build()
     }
     runDesktopApp()
