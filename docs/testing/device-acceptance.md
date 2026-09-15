@@ -44,13 +44,22 @@ This document describes the manual device acceptance checklist for the three sup
 
 ### 2.1 Home screen — phone / tablet
 1. Verify the home screen loads recommended / recently added rows.
-2. Scroll through all rows. Verify artwork, titles, and metadata display correctly.
-3. Tap a movie poster. Verify navigation to movie detail.
+2. Scroll vertically through the list. Every item is one compact row (small
+   poster slot, title, single metadata line: year · rating · genre/status) —
+   there are no poster tiles anywhere in Home, Search, Library or Downloads.
+3. Verify poster artwork renders in the row's poster slot, with the movie/show
+   glyph as fallback while loading or when the provider returns no usable URL.
+4. Tap a row. Verify navigation to movie detail.
+5. Select the **Shows** tab, open a show, then go back: the **Shows** tab must
+   still be selected.
 
 ### 2.2 Home screen — TV
-1. Verify the home screen is fully navigable with the D-pad (left/right within a row, up/down between rows).
-2. Verify the focused item is visually highlighted.
-3. Verify that pressing **OK/Select** on an item navigates to its detail screen.
+1. Verify the home screen is fully navigable with the D-pad: up/down between
+   the compact rows, and section labels/section boundaries are reachable.
+2. Verify the focused row is visually highlighted.
+3. Verify that pressing **OK/Select** on a row navigates to its detail screen.
+4. Verify that pressing **Back** from a detail screen returns to the same Home
+   tab that was selected before.
 
 ### 2.3 Search
 1. Navigate to the search screen.
@@ -58,10 +67,10 @@ This document describes the manual device acceptance checklist for the three sup
 3. Tap a result. Verify navigation to the correct detail screen.
 
 ### 2.4 Library
-1. Navigate to the **Library** tab/section.
-2. Verify the library shows known movies and TV series.
-3. Toggle between **Movies** and **Series** views (if available).
-4. Tap an item. Verify navigation to detail.
+1. Navigate to the **Library** section (offline library; it is no longer a
+   separate top-level route — it is reached from Home).
+2. Verify the library shows known movies and TV series as compact rows.
+3. Tap an item. Verify navigation to detail.
 
 ### 2.5 Catalog navigation — TV
 1. Verify D-pad can navigate between all top-level sections (Home, Search, Library, Downloads, Settings).
@@ -236,6 +245,52 @@ This document describes the manual device acceptance checklist for the three sup
 
 ---
 
+## 10. Pending Verification — 2026-09-15 Batch
+
+These behaviours shipped with automated coverage that cannot assert what a
+human sees; this section is the on-device close-out. Run it once per target
+before the next release gate.
+
+### 10.1 Poster artwork (all targets)
+Prerequisites: signed in with a working provider account and a reachable
+catalog.
+1. Open Home, Search and the offline Library with known poster URLs.
+2. Verify real posters render in the poster slots (not just the glyph
+   fallback), and that scrolling stays smooth while they load.
+3. If only glyphs appear, capture `adb logcat` for `Coil`/`Ktor` errors: the
+   fetcher reuses the downloads client (Kodi `User-Agent`, wildcard `Accept`).
+   The Wasm build intentionally keeps the glyph (no Coil singleton there).
+
+### 10.2 Immersive player — Android
+1. Start playback, open the fullscreen player (rotate to landscape / select
+   fullscreen on TV).
+2. Verify the status and navigation bars are hidden while fullscreen.
+3. Exit fullscreen (Back). Verify both system bars are restored.
+
+### 10.3 Play, leave, play again — resume (Android + Desktop)
+1. Play an episode, let it run > 1 minute, then leave the player.
+2. Immediately tap **Play** again on the same episode.
+3. Verify playback starts (no dead button) and resumes near the left position;
+   verify the progress shown on Home/Continue Watching is up to date.
+
+### 10.4 Home tab restoration (all targets)
+1. Select **Favorites** (or **Shows**) on Home.
+2. Open a movie/show detail, then press Back.
+3. Verify Home is on the same tab, including after the app was backgrounded
+   long enough to be recreated (Developer options → "Don't keep activities"
+   on Android).
+
+### 10.5 TV focus traversal
+1. On a TV device, verify D-pad focus starts on the first interactive element
+   after launch.
+2. Verify focus traversal across Home tabs, rows, top-bar actions, and detail
+   screens does not get stuck or skip elements.
+3. Expected coverage: `TvFocusDesktopTest` covers initial focus on the desktop
+   JVM host; `TvFocusTraversalTest` is `@Ignore`d on CI because the headless
+   emulator never grants window focus — this on-device pass is its replacement.
+
+---
+
 ## Appendix: Logout Retention Partition
 
 When testing logout flows (see [1.3 Logout](#13-logout)), verify the following retention boundaries:
@@ -256,3 +311,4 @@ When testing logout flows (see [1.3 Logout](#13-logout)), verify the following r
 | Date | Version | Notes |
 |---|---|---|
 | 2026-07-18 | 1.0 | Initial device acceptance checklist |
+| 2026-09-15 | 1.1 | List layout (compact rows) across Browsing/Library; Home tab restoration; pending-verification section for artwork, immersive player, second-play resume and TV focus |
