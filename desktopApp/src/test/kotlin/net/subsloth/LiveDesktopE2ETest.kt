@@ -66,6 +66,7 @@ class LiveDesktopE2ETest {
 
     @After
     fun tearDown() {
+        container.close()
         dataDir.deleteRecursively()
     }
 

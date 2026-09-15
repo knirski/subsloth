@@ -9,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -135,9 +136,11 @@ class DesktopContainer(dataDirOverride: File? = null) {
     val clock: Clock = Clock.System
 
     /**
-     * Process-lifetime coroutine scope. Never cancelled — the container
-     * lives as long as the desktop process, mirroring `AppContainer`'s
-     * documented pattern.
+     * Process-lifetime coroutine scope. Production never cancels it — the
+     * container lives as long as the desktop process, mirroring
+     * `AppContainer`'s documented pattern. Tests must call [close] so leaked
+     * scopes (session recovery, download watcher) cannot keep touching Room
+     * after a test finished.
      */
     private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -170,8 +173,11 @@ class DesktopContainer(dataDirOverride: File? = null) {
      */
     private val accountProfileStore: AccountProfileStore by lazy { AccountProfileStore(dataStore) }
 
+    private val databaseLazy =
+        lazy { createSubSlothDatabase(File(dataDir, "subsloth.db").path) }
+
     /** Room database for cached catalog, library, and playback state. */
-    val database: SubSlothDatabase by lazy { createSubSlothDatabase(File(dataDir, "subsloth.db").path) }
+    val database: SubSlothDatabase get() = databaseLazy.value
 
     private val cachedCatalogDao: CachedCatalogDao by lazy { database.cachedCatalogDao() }
 
@@ -815,6 +821,18 @@ class DesktopContainer(dataDirOverride: File? = null) {
 
             else -> File("$userHome/.subsloth")
         }
+    }
+
+    /**
+     * Stops background work and closes the database.
+     *
+     * Production never calls this (the process owns the container); tests
+     * must, so an open SQLite connection or a still-running IO coroutine
+     * cannot surface as a failure in an unrelated later test.
+     */
+    fun close() {
+        containerScope.cancel()
+        if (databaseLazy.isInitialized()) databaseLazy.value.close()
     }
 }
 

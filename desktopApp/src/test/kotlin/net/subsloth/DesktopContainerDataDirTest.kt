@@ -15,11 +15,18 @@ class DesktopContainerDataDirTest {
         val dataDir = Files.createTempDirectory("subsloth-container-test").toFile()
         try {
             val container = DesktopContainer(dataDir)
-            runBlocking { container.userPreferences.setApiBaseUrl(API_BASE_URL) }
+            try {
+                runBlocking { container.userPreferences.setApiBaseUrl(API_BASE_URL) }
 
-            val prefsFile = File(dataDir, "subsloth.preferences_pb")
-            assertTrue(prefsFile.isFile, "Expected preferences at ${prefsFile.absolutePath}")
-            assertEquals(API_BASE_URL, runBlocking { container.userPreferences.storedApiBaseUrl().first() })
+                val prefsFile = File(dataDir, "subsloth.preferences_pb")
+                assertTrue(prefsFile.isFile, "Expected preferences at ${prefsFile.absolutePath}")
+                assertEquals(
+                    API_BASE_URL,
+                    runBlocking { container.userPreferences.storedApiBaseUrl().first() },
+                )
+            } finally {
+                container.close()
+            }
         } finally {
             dataDir.deleteRecursively()
         }

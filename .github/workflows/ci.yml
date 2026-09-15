@@ -237,6 +237,18 @@ jobs:
         if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.shared == 'true' || github.event_name == 'workflow_dispatch'
         run: xvfb-run -a ./gradlew :desktopApp:test
 
+      # Desktop test failures are otherwise only visible as a red job: the
+      # console shows the failing test name but not the stack trace.
+      - name: Upload desktop test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-test-results
+          path: |
+            desktopApp/build/reports/tests
+            desktopApp/build/test-results
+          if-no-files-found: ignore
+
       # Linux bundling: the unpacked app image (input for the flake's
       # packages.x86_64-linux.subsloth wrapper) and the .deb via jpackage.
       # dpkg-deb ships preinstalled on ubuntu runners, so the deb type
