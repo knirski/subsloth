@@ -263,6 +263,7 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
                 requested: net.subsloth.core.model.identifier.Resolution,
                 requiredBytes: Long?,
                 transferPreference: net.subsloth.core.model.download.TransferPreference,
+                displayTitle: String?,
             ): Result<EnqueueOutcome> = Result.success(EnqueueOutcome.Queued)
 
             override suspend fun enqueueSubtitle(

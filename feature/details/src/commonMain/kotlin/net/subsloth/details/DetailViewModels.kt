@@ -119,7 +119,7 @@ class MovieDetailViewModel(
     private val removeFromLibrary: suspend (Media.MediaId) -> Outcome<Unit> = {
         Outcome.Success(Unit)
     },
-    private val enqueueDownload: suspend (Media.MediaId, Resolution) -> Result<EnqueueOutcome> = { _, _ ->
+    private val enqueueDownload: suspend (Media.MediaId, Resolution, String?) -> Result<EnqueueOutcome> = { _, _, _ ->
         Result.success(EnqueueOutcome.Queued)
     },
     private val removeDownload: suspend (LocalMediaIdentifier) -> Result<DownloadCommandOutcome> = {
@@ -220,7 +220,7 @@ class MovieDetailViewModel(
                 // download URL, so enqueue a nominal resolution; the transfer
                 // resolver prefers the top-level URL and ignores this label.
                 val resolution = quality?.info?.resolution ?: Resolution.HD_720
-                enqueueDownload(mediaId, resolution)
+                enqueueDownload(mediaId, resolution, content.details.title)
                     .onSuccess {
                         refreshDownloadState()
                         startDownloadMonitor()
@@ -647,7 +647,7 @@ class EpisodeDetailViewModel(
     private val listDownloads: suspend () -> Result<List<DownloadState>> = {
         Result.success(emptyList())
     },
-    private val enqueueDownload: suspend (Media.MediaId, Resolution) -> Result<EnqueueOutcome> = { _, _ ->
+    private val enqueueDownload: suspend (Media.MediaId, Resolution, String?) -> Result<EnqueueOutcome> = { _, _, _ ->
         Result.success(EnqueueOutcome.Queued)
     },
     private val removeDownload: suspend (LocalMediaIdentifier) -> Result<DownloadCommandOutcome> = {
@@ -716,7 +716,7 @@ class EpisodeDetailViewModel(
                 // Episodes without per-quality variants only expose a
                 // top-level download URL; enqueue a nominal resolution.
                 val resolution = quality?.info?.resolution ?: Resolution.HD_720
-                enqueueDownload(mediaId, resolution)
+                enqueueDownload(mediaId, resolution, content.details.title)
                     .onSuccess {
                         refreshDownloadState()
                         startDownloadMonitor()

@@ -29,6 +29,9 @@ private const val MAX_PROGRESS_PERCENT = 100
 sealed interface DownloadState {
     val localId: LocalMediaIdentifier
     val mediaId: Media.MediaId
+
+    /** Title persisted at enqueue time; null for downloads created before it was stored. */
+    val displayTitle: String?
     val quality: QualityDescriptor
     val subtitleLanguages: ImmutableSet<LanguageCode>
 
@@ -38,6 +41,7 @@ sealed interface DownloadState {
         override val quality: QualityDescriptor,
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState
 
     data class Active(
@@ -47,6 +51,7 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val progressPercent: Int,
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState {
         init {
             require(
@@ -62,6 +67,7 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val stagedPath: OfflineRelativePath,
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState
 
     data class Completed(
@@ -72,6 +78,7 @@ sealed interface DownloadState {
         val sizeBytes: Long?,
         val videoPath: OfflineRelativePath,
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        override val displayTitle: String? = null,
     ) : DownloadState {
         init {
             require(sizeBytes == null || sizeBytes >= 0) { "sizeBytes must be non-negative when provided" }
@@ -85,6 +92,7 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val reason: DownloadFailureReason,
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState
 
     data class Paused(
@@ -94,6 +102,7 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val reason: DownloadFailureReason,
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState
 
     data class Unavailable(
@@ -103,6 +112,7 @@ sealed interface DownloadState {
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
         val reason: DownloadFailureReason,
         val queueId: QueueId? = null,
+        override val displayTitle: String? = null,
     ) : DownloadState
 
     data class Removed(
@@ -110,5 +120,6 @@ sealed interface DownloadState {
         override val mediaId: Media.MediaId,
         override val quality: QualityDescriptor,
         override val subtitleLanguages: ImmutableSet<LanguageCode> = persistentSetOf(),
+        override val displayTitle: String? = null,
     ) : DownloadState
 }

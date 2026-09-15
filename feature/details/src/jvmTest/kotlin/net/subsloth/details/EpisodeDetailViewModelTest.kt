@@ -133,7 +133,7 @@ class EpisodeDetailViewModelTest {
         val viewModel = EpisodeDetailViewModel(
             mediaId = mediaId,
             getDetails = { Outcome.Success(episodeDetails) },
-            enqueueDownload = { _, _ -> Result.failure(IllegalStateException("metered network")) },
+            enqueueDownload = { _, _, _ -> Result.failure(IllegalStateException("metered network")) },
         )
 
         viewModel.toggleDownload()
@@ -172,7 +172,7 @@ class EpisodeDetailViewModelTest {
         val viewModel = EpisodeDetailViewModel(
             mediaId = mediaId,
             getDetails = { Outcome.Success(episodeDetails) },
-            enqueueDownload = { _, resolution ->
+            enqueueDownload = { _, resolution, _ ->
                 requested += resolution
                 Result.success(EnqueueOutcome.Queued)
             },
@@ -189,7 +189,7 @@ class EpisodeDetailViewModelTest {
         val viewModel = EpisodeDetailViewModel(
             mediaId = mediaId,
             getDetails = { Outcome.Success(episodeDetails.copy(qualities = persistentListOf())) },
-            enqueueDownload = { _, resolution ->
+            enqueueDownload = { _, resolution, _ ->
                 requested += resolution
                 Result.success(EnqueueOutcome.Queued)
             },

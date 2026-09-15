@@ -65,6 +65,37 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `title comes from the source display name`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = {
+                    Outcome.Success(
+                        createVideoSource(
+                            mediaId = Media.MediaId.Episode(EpisodeId(82476)),
+                            displayName = "Part 1: Black Fire Orchid",
+                        ),
+                    )
+                },
+            )
+
+        val content = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(content.title).isEqualTo("Part 1: Black Fire Orchid")
+    }
+
+    @Test
+    fun `title is never the raw media id when the source has no display name`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = {
+                    Outcome.Success(createVideoSource(mediaId = Media.MediaId.Episode(EpisodeId(82476))))
+                },
+            )
+
+        val content = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(content.title).isEmpty()
+    }
+
+    @Test
     fun `loads content and transitions to Content state`() = runTest(testDispatcher) {
         val source = createVideoSource()
         val viewModel =
@@ -1056,6 +1087,7 @@ class PlayerViewModelTest {
 
     private fun createVideoSource(
         mediaId: Media.MediaId = Media.MediaId.Movie(MovieId(1)),
+        displayName: String? = null,
         streamUrl: String = "https://example.com/stream.m3u8",
         availableSubtitles: ImmutableList<Subtitle> = persistentListOf(),
         availableQualities: ImmutableList<Quality> = persistentListOf(createQuality()),
@@ -1064,6 +1096,7 @@ class PlayerViewModelTest {
         playbackMode: PlaybackMode = PlaybackMode.ONLINE,
     ): VideoSource = VideoSource(
         mediaId = mediaId,
+        displayName = displayName,
         streamUrl = streamUrl,
         selectedQuality = selectedQuality,
         availableQualities = availableQualities,

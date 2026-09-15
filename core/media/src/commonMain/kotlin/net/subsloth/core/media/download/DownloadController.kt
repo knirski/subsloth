@@ -56,7 +56,7 @@ class DownloadController(
                     bitrate = null,
                     mimeType = null,
                 ),
-                displayTitle = entity.contentId,
+                displayTitle = entity.displayTitle,
                 isPlayable = entity.localFilePath.isNotBlank(),
                 subtitles = subtitles,
             )
@@ -88,6 +88,7 @@ class DownloadController(
         requested: Resolution,
         requiredBytes: Long?,
         transferPreference: TransferPreference,
+        displayTitle: String?,
     ): Result<EnqueueOutcome> = runCatching {
         val contentId = mediaId.toContentId()
         val mediaType = mediaId.toMediaType()
@@ -137,6 +138,7 @@ class DownloadController(
             id = reusable?.id ?: 0,
             contentId = contentId,
             mediaType = mediaType,
+            displayTitle = displayTitle,
             localFilePath = reusable?.localFilePath.orEmpty(),
             sizeBytes = reusable?.sizeBytes ?: needBytes,
             status = DownloadStatus.QUEUED.name.lowercase(),
@@ -227,12 +229,14 @@ class DownloadController(
             DownloadStatus.QUEUED -> DownloadState.Queued(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
             )
 
             DownloadStatus.DOWNLOADING -> DownloadState.Active(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
                 progressPercent = 0,
             )
@@ -240,6 +244,7 @@ class DownloadController(
             DownloadStatus.COMPLETED -> DownloadState.Completed(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
                 downloadedAtEpochSeconds = downloadedAtEpochSeconds?.let { Instant.fromEpochSeconds(it) }
                     ?: Instant.fromEpochSeconds(0),
@@ -250,6 +255,7 @@ class DownloadController(
             DownloadStatus.FAILED -> DownloadState.Failed(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
                 reason = DownloadFailureReason.DownloadFailed,
             )
@@ -257,6 +263,7 @@ class DownloadController(
             DownloadStatus.PAUSED -> DownloadState.Paused(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
                 reason = DownloadFailureReason.NeedsWifi,
             )
@@ -264,6 +271,7 @@ class DownloadController(
             DownloadStatus.REMOVED -> DownloadState.Removed(
                 localId = localId,
                 mediaId = mediaId,
+                displayTitle = displayTitle,
                 quality = quality,
             )
         }

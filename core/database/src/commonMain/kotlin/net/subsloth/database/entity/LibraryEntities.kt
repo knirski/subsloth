@@ -134,6 +134,8 @@ data class DownloadedMediaEntity(
     val localFilePath: String, // opaque app-private path
     val sizeBytes: Long,
     val status: String, // "downloading", "completed", "failed", "paused"
+    /** Human-readable title persisted at enqueue time; null for legacy rows. */
+    val displayTitle: String? = null,
     val selectedQuality: String?,
     val downloadedAtEpochSeconds: Long?,
 )

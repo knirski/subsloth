@@ -116,7 +116,7 @@ data class OfflineAsset(
     val videoRelativePath: OfflineRelativePath,
     val subtitleLanguages: ImmutableSet<LanguageCode>,
     val effectiveQuality: QualityDescriptor,
-    val displayTitle: String,
+    val displayTitle: String?,
     val isPlayable: Boolean,
     /** Subtitle files whose bytes were transferred alongside the media. */
     val subtitles: ImmutableList<OfflineSubtitle> = persistentListOf(),

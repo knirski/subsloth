@@ -307,7 +307,9 @@ private fun MovieDetailContent(
                 listProgress = { runtime.listAccountPlaybackProgress() },
                 addToLibrary = { item -> runtime.libraryPort.addToLibrary(item) },
                 removeFromLibrary = { id -> runtime.libraryPort.removeFromLibrary(id) },
-                enqueueDownload = { id, resolution -> runtime.downloadController.enqueue(id, resolution) },
+                enqueueDownload = { id, resolution, title ->
+                    runtime.downloadController.enqueue(id, resolution, displayTitle = title)
+                },
                 removeDownload = { localId -> runtime.downloadController.remove(localId) },
             )
         }
@@ -383,7 +385,9 @@ private fun EpisodeDetailContent(
                 isWatched = { runtime.isWatched(it) },
                 listProgress = { runtime.listAccountPlaybackProgress() },
                 listDownloads = { runtime.listDownloads() },
-                enqueueDownload = { id, resolution -> runtime.downloadController.enqueue(id, resolution) },
+                enqueueDownload = { id, resolution, title ->
+                    runtime.downloadController.enqueue(id, resolution, displayTitle = title)
+                },
                 removeDownload = { localId -> runtime.downloadController.remove(localId) },
             )
         }

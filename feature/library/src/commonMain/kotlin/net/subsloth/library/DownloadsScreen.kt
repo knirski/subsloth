@@ -391,7 +391,7 @@ private fun DownloadRow(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = formatMediaId(download.state.mediaId),
+                text = download.state.displayTitle ?: formatMediaId(download.state.mediaId),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
