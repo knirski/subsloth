@@ -163,6 +163,19 @@ class CatalogDetailDesktopTest {
     }
 
     @Test
+    fun movieDetail_resumeLabel_hasNoDoubledPercent() {
+        composeRule.setContent {
+            MaterialTheme {
+                MovieDetailContent(
+                    state = MovieDetailUiState.Content(details = movieDetails, progressFraction = 0.33),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Resume 33%").assertIsDisplayed()
+    }
+
+    @Test
     fun movieDetail_displaysPlayButton() {
         composeRule.setContent {
             MaterialTheme {

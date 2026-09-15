@@ -458,7 +458,7 @@ private fun DetailActionButtons(
         val playLabel = when (val action = detailPlayAction(progressFraction)) {
             is DetailPlayAction.Play -> stringResource(Res.string.detail_play)
             is DetailPlayAction.Resume -> stringResource(Res.string.detail_resume)
-            is DetailPlayAction.ResumeAt -> stringResource(Res.string.detail_resume_play, action.percent)
+            is DetailPlayAction.ResumeAt -> stringResource(Res.string.detail_resume_play, "${action.percent}%")
         }
         Button(
             onClick = onPlayClick,
@@ -510,7 +510,10 @@ private fun DetailActionButtons(
                     DownloadStatus.QUEUED -> stringResource(Res.string.detail_download_queued)
 
                     DownloadStatus.DOWNLOADING ->
-                        stringResource(Res.string.detail_download_downloading, downloadProgressPercent ?: 0)
+                        stringResource(
+                            Res.string.detail_download_downloading,
+                            "${downloadProgressPercent ?: 0}%",
+                        )
 
                     DownloadStatus.FAILED -> stringResource(Res.string.detail_download_retry)
 
