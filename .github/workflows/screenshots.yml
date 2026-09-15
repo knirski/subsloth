@@ -123,7 +123,7 @@ jobs:
         if: ${{ github.event.inputs.mode == 'update' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run ci.yml --ref "${{ github.ref_name }}"
+        run: gh workflow run ci.yml --ref "${{ github.ref_name }}" -f skip_devshell_cache=true
 
       - name: Summarise
         run: |

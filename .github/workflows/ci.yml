@@ -2,6 +2,11 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      skip_devshell_cache:
+        description: "Skip the devShell cache job (used when re-dispatching CI for image-only bot commits)"
+        type: boolean
+        default: false
   pull_request:
     branches:
       - "**"
@@ -19,6 +24,11 @@ permissions:
 jobs:
   cache-devshell:
     name: Cache devShell
+    # The Screenshots workflow re-dispatches CI for its image-only regolden
+    # commit; the flake cannot have changed there, and a second concurrent
+    # devShell build competes with the push-triggered run for the Cachix
+    # cache (observed failing and hanging in post-steps).
+    if: ${{ !inputs.skip_devshell_cache }}
     runs-on: ubuntu-latest
     outputs:
       flake-changed: ${{ steps.flake.outputs.changed }}
