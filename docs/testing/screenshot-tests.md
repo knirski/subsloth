@@ -111,17 +111,17 @@ When a UI change intentionally alters a screen's appearance, the golden images m
 ./gradlew :androidApp:updateDebugScreenshotTest
 ```
 
-This replaces the stored golden images with the newly rendered output.
-**Commit the updated golden images alongside the UI change**, and refresh
+This replaces the stored reference images with the newly rendered output.
+**Commit the updated reference images alongside the UI change**, and refresh
 `docs/screenshots/` for the README with
 `./scripts/screenshots/export-readme-screenshots.sh` (the manual
 `Screenshots` workflow does both).
 
 ### Golden Image Location
 
-Golden images are stored in the repository at:
+Reference images are stored in the repository at:
 ```
-androidApp/src/screenshotTest/goldens/
+androidApp/src/screenshotTestDebug/reference/
 ```
 
 Each golden is a PNG file named after the test function and device variant (e.g. `LoginScreenScreenshot_Phone.png`).

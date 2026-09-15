@@ -238,6 +238,6 @@ silently shipping stale goldens (which is how the compact-list redesign
 initially drifted). Goldens cannot be regenerated on a PR (CI has no write
 access) and local machines generally lack the emulator/system images, so use
 the manual `Screenshots` workflow in `update` mode **on the PR branch**: it
-regenerates `androidApp/src/screenshotTest/goldens/`, re-exports the subset
+regenerates `androidApp/src/screenshotTestDebug/reference/`, re-exports the subset
 used by the README into `docs/screenshots/`, and commits both. That keeps
 goldens and README screenshots in the same PR as the UI change.
