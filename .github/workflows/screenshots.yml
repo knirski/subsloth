@@ -78,7 +78,9 @@ jobs:
           script: ./gradlew -Dorg.gradle.jvmargs="-Xmx3g" -Pkotlin.daemon.jvmargs="-Xmx512m" :androidApp:updateDebugScreenshotTest
 
       # ── Update mode only: export + commit ──────────────────────────────
-      - name: Export goldens to docs/screenshots/
+      # Reference images live at src/screenshotTestDebug/reference/ (the
+      # path the compose-screenshot plugin writes for the debug variant).
+      - name: Export reference images to docs/screenshots/
         if: ${{ github.event.inputs.mode == 'update' }}
         run: ./scripts/screenshots/export-readme-screenshots.sh
 
@@ -91,7 +93,7 @@ jobs:
           git config user.email "bot@subsloth.net"
 
           git add \
-            androidApp/src/screenshotTest/goldens/ \
+            androidApp/src/screenshotTestDebug/reference/ \
             docs/screenshots/
 
           if git diff --cached --quiet; then
