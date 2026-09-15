@@ -2,10 +2,8 @@ package net.subsloth.screenshot
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -165,12 +163,12 @@ private fun HomeScreenScreenshotContent() {
                 Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             HomeRowLabel(label = "Movies")
-            MediaRow(items = movieItems)
+            MediaList(items = movieItems)
             HomeRowLabel(label = "Shows")
-            MediaRow(items = showItems)
+            MediaList(items = showItems)
         }
     }
 }
@@ -180,22 +178,16 @@ private fun HomeRowLabel(label: String) {
     Text(
         text = label,
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(vertical = 8.dp),
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
 }
 
+/** Mirrors the app''s vertical list: one compact row per item, no horizontal scrolling. */
 @Composable
-private fun MediaRow(items: ImmutableList<Media>) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp),
-    ) {
-        items.forEach { media ->
-            item(key = media.title) {
-                MediaListRow(media = media)
-            }
-        }
+private fun MediaList(items: ImmutableList<Media>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEach { media -> MediaListRow(media = media) }
     }
 }
