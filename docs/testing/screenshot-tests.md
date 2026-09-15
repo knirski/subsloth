@@ -99,7 +99,10 @@ emulator/system images, `update` is the supported way to refresh goldens.
 
 > **Note:** PR CI cannot regenerate goldens (no write access), so a UI
 > change and its goldens/README screenshots must land in the same PR: run
-> the `update` mode on the PR branch, then let CI re-run.
+> the `update` mode on the PR branch. The workflow pushes its commit with
+> `GITHUB_TOKEN`, which makes GitHub park the `pull_request` run in
+> `action_required`; the workflow therefore re-dispatches `ci.yml` for the
+> branch so the new head still gets a real CI run.
 
 ---
 

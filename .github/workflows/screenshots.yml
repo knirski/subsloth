@@ -18,9 +18,11 @@ concurrency:
   group: screenshots-${{ github.ref }}-${{ github.event.inputs.mode }}
   cancel-in-progress: true
 
-# Manual trigger only — safe to grant write access; update mode pushes commits.
+# Manual trigger only — safe to grant write access; update mode pushes commits
+# and re-dispatches CI for the new head.
 permissions:
   contents: write
+  actions: write
 
 jobs:
   screenshots:
@@ -110,13 +112,25 @@ jobs:
           # Configure auth using GITHUB_TOKEN (persist-credentials: false above
           # means no token is stored — set it explicitly for push).
           git remote set-url origin \
-            https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           git push --force-with-lease
+
+      # A commit pushed with GITHUB_TOKEN does not run workflows: GitHub
+      # parks the pull_request run in `action_required` until a human
+      # approves it. Dispatching CI explicitly gives the new head a real
+      # run (this covers the regolden commit, which is pushed by the bot).
+      - name: Re-run CI for the updated branch
+        if: ${{ github.event.inputs.mode == 'update' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run ci.yml --ref "${{ github.ref_name }}"
 
       - name: Summarise
         run: |
-          echo "## Screenshot CI result" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Mode**: ${{ github.event.inputs.mode }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Trigger**: ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Ref**: ${{ github.ref }}" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Screenshot CI result"
+            echo ""
+            echo "- **Mode**: ${{ github.event.inputs.mode }}"
+            echo "- **Trigger**: ${{ github.actor }}"
+            echo "- **Ref**: ${{ github.ref }}"
+          } >> "$GITHUB_STEP_SUMMARY"
