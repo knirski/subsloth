@@ -4,6 +4,7 @@ import android.app.Application
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.network.ktor3.KtorNetworkFetcherFactory
+import net.subsloth.core.network.media.client.ClientFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,12 +18,12 @@ class SubSlothApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Poster artwork is fetched through Coil; the Ktor network fetcher is
-        // added explicitly so the loader does not depend on JVM service
-        // loading. Artwork URLs are signed, so no auth is required.
+        // Poster artwork is fetched through Coil with the same Kodi-identity,
+        // signed-URL client as downloads (wildcard Accept, no JSON response
+        // validation, no auth) instead of Coil's anonymous default client.
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
-                .components { add(KtorNetworkFetcherFactory()) }
+                .components { add(KtorNetworkFetcherFactory(httpClient = { ClientFactory.createForDownloads() })) }
                 .build()
         }
         DatabaseAndroidContext.init(this)

@@ -2,6 +2,7 @@ package net.subsloth.core.network.media.client
 
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
@@ -37,6 +38,27 @@ class ClientFactoryDownloadsTest {
 
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
         assertThat(response.bodyAsBytes().size).isEqualTo(mediaBytes.size)
+    }
+
+    @Test
+    fun `download client identifies as Kodi and accepts any content type`() = runTest {
+        var captured: HttpRequestData? = null
+        val engine = MockEngine { request ->
+            captured = request
+            respond(
+                content = mediaBytes,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "image/jpeg"),
+            )
+        }
+        val client = ClientFactory.createForDownloads(engine = engine)
+
+        client.get("https://media.example.test/poster.jpg")
+
+        assertThat(captured?.headers?.get(HttpHeaders.UserAgent))
+            .isEqualTo("Kodi/20.2 (Nexus; Linux; Android) Media/4.0.1")
+        assertThat(captured?.headers?.get(HttpHeaders.Accept)).isEqualTo("*/*")
+        assertThat(captured?.headers?.get(HttpHeaders.Authorization)).isNull()
     }
 
     @Test

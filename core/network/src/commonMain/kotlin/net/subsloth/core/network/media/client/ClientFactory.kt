@@ -59,6 +59,10 @@ object ClientFactory {
      * - sends a wildcard Accept header and no JSON content-type hint.
      *
      * No auth is installed: download URLs are pre-signed by the API.
+     *
+     * The same identity is reused for poster artwork (Coil opens this client
+     * through its Ktor network fetcher), which is why it must keep the Kodi
+     * `User-Agent` and the wildcard `Accept` header.
      */
     fun createForDownloads(
         baseUrl: String = DEFAULT_BASE_URL,
