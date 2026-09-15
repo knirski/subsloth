@@ -151,10 +151,6 @@ fun SubSlothNavHost(
                                 modelClass.cast(
                                     SearchViewModel(
                                         listCatalog = { container.listAllMedia() },
-                                        // Read catalogRepository live on every call
-                                        // (not captured once) since AppContainer rebuilds
-                                        // it whenever the session's credentials change.
-                                        getDetails = { id -> container.catalogRepository.getDetails(id) },
                                     ),
                                 ),
                             )

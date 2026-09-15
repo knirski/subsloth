@@ -362,8 +362,6 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
     override fun clearCredentials() = Unit
 
     override fun createHomeViewModel(): HomeViewModel = HomeViewModel(
-        listCatalog = ::listCatalog,
-        getDetails = ::getDetails,
         catalogItems = ::catalogItems,
         syncCatalog = {
             when (val result = listCatalog()) {

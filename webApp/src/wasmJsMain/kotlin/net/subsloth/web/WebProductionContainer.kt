@@ -283,8 +283,6 @@ class WebProductionContainer : WebRuntime {
     }
 
     override fun createHomeViewModel(): HomeViewModel = HomeViewModel(
-        listCatalog = ::listCatalog,
-        getDetails = ::getDetails,
         catalogItems = ::catalogItems,
         syncCatalog = {
             when (val result = listCatalog()) {

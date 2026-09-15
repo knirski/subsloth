@@ -123,10 +123,6 @@ fun DesktopNavHost(
                     val vm: SearchViewModel = viewModel(key = "catalog_search") {
                         SearchViewModel(
                             listCatalog = { container.listAllMedia() },
-                            // Read catalogRepository live on every call so
-                            // session rebuilds never leave a stale adapter
-                            // captured — same discipline as every entry.
-                            getDetails = { id -> container.catalogRepository.getDetails(id) },
                         )
                     }
                     SearchScreen(

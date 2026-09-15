@@ -271,7 +271,6 @@ private fun SearchContent(
         val vm: SearchViewModel = viewModel(key = "catalog_search") {
             SearchViewModel(
                 listCatalog = { runtime.listCatalog() },
-                getDetails = { id -> runtime.getDetails(id) },
             )
         }
         SearchScreen(
