@@ -12,10 +12,10 @@
     <string name="detail_download">Download</string>
     <string name="detail_downloaded">Downloaded</string>
     <string name="detail_download_queued">Queued</string>
-    <string name="detail_download_downloading">Downloading %1$d%%</string>
+    <string name="detail_download_downloading">Downloading %1$s</string>
     <string name="detail_download_retry">Retry download</string>
     <string name="detail_resume">Resume</string>
-    <string name="detail_resume_play">Resume %1$d%%</string>
+    <string name="detail_resume_play">Resume %1$s</string>
     <string name="detail_poster_content_desc">Poster for %1$s</string>
     <string name="detail_duration_format">%1$d min</string>
     <string name="detail_quality_format">Quality: %1$s</string>
