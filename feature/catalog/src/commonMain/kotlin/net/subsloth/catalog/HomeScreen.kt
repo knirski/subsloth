@@ -75,6 +75,39 @@ fun HomeScreen(
         }
     }
 
+    HomeScreenScaffold(
+        state = state,
+        isSyncing = isSyncing,
+        snackbarHostState = snackbarHostState,
+        modifier = modifier,
+        onSearchClick = onSearchClick,
+        onDownloadsClick = onDownloadsClick,
+        onSettingsClick = onSettingsClick,
+        onTabSelected = onTabSelected,
+        onMovieClick = onMovieClick,
+        onShowClick = onShowClick,
+    )
+}
+
+/**
+ * The Home screen's chrome (top bar, tabs, snackbar host) for a given
+ * [state]. [HomeScreen] wraps it with the ViewModel wiring; screenshot
+ * previews render it directly with fabricated state.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenScaffold(
+    state: HomeUiState,
+    isSyncing: Boolean,
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    onSearchClick: () -> Unit = {},
+    onDownloadsClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onTabSelected: (HomeTab) -> Unit = {},
+    onMovieClick: (Media.MediaId.Movie) -> Unit = {},
+    onShowClick: (Media.MediaId.Show) -> Unit = {},
+) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {

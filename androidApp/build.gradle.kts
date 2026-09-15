@@ -271,6 +271,7 @@ dependencies {
     androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.coroutines.test)
 
+    screenshotTestImplementation(libs.coil.test)
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(platform(libs.androidx.compose.bom))
     screenshotTestImplementation(libs.androidx.compose.ui.tooling)
