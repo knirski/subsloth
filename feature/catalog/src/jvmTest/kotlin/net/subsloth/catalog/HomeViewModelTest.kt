@@ -368,33 +368,6 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `shows cached data when offline`() = runTest(testDispatcher) {
-        val movies = listOf(
-            MovieSummary(
-                id = Media.MediaId.Movie(MovieId(1)),
-                title = "Offline Movie",
-                plot = null,
-                availability = Availability.Available,
-                rating = null,
-                year = null,
-                genres = persistentListOf(),
-                durationMinutes = null,
-                slug = null,
-                imdbId = null,
-                backdropUrl = null,
-            ),
-        )
-        val viewModel = HomeViewModel(
-            catalogItems = catalogItemsFor(movies),
-            isOnline = { false },
-        )
-        viewModel.uiState.test {
-            val content = awaitItem() as HomeUiState.Content
-            assertThat(content.rows).isNotEmpty()
-        }
-    }
-
-    @Test
     fun `does not include comments-related data in any row`() = runTest(testDispatcher) {
         val movies = listOf(
             MovieSummary(

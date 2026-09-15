@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.error.DecodeError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.SyncError
 import net.subsloth.core.model.identifier.EpisodeId
@@ -34,11 +33,9 @@ import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.library.LibraryCollection
 import net.subsloth.core.model.library.LibraryItem
 import net.subsloth.core.model.media.Media
-import net.subsloth.core.model.media.MediaDetails
 import net.subsloth.core.model.media.MovieSummary
 import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.progress.PlaybackProgress
-import kotlin.time.Instant
 
 /** Max number of concurrent episode->show lookups when loading Continue Watching. */
 private const val EPISODE_RESOLUTION_CONCURRENCY = 4
@@ -89,10 +86,6 @@ private data class HomeAuxData(
 )
 
 class HomeViewModel(
-    private val listCatalog: suspend () -> Outcome<List<Media>> = { Outcome.Success(emptyList()) },
-    private val getDetails: suspend (Media.MediaId) -> Outcome<MediaDetails> = {
-        Outcome.Failure(DecodeError.SerializationFailed)
-    },
     private val listLibrary: suspend () -> Outcome<List<LibraryItem>> = {
         Outcome.Success(emptyList())
     },
@@ -111,13 +104,7 @@ class HomeViewModel(
     private val catalogItems: (String) -> Flow<List<Media>> = { flowOf(emptyList()) },
     private val syncCatalog: suspend () -> Outcome<Unit> = { Outcome.Success(Unit) },
     private val isCatalogStale: suspend () -> Boolean = { true },
-    private val isOnline: () -> Boolean = { true },
-    private val isMetered: () -> Boolean = { false },
-    private val now: () -> Instant = { Instant.fromEpochSeconds(0L) },
-    private val savedState: Map<String, String> = mapOf(
-        "selectedTab" to "",
-        "searchQuery" to "",
-    ),
+    private val savedState: Map<String, String> = mapOf("selectedTab" to ""),
     /**
      * Persists the selected tab for the host's saveable state. The tab lives
      * in this ViewModel, which hosts may clear when the Home entry leaves
