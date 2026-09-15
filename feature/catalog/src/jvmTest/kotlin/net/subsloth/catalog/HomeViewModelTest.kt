@@ -306,6 +306,20 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `selecting a tab persists it for a recreated view model`() = runTest(testDispatcher) {
+        val persisted = mutableListOf<String>()
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            onTabPersisted = persisted::add,
+        )
+
+        viewModel.selectTab(HomeTab.SHOWS)
+        viewModel.selectTab(HomeTab.SHOWS)
+
+        assertThat(persisted).containsExactly("SHOWS")
+    }
+
+    @Test
     fun `defaults to home tab when no saved state tab`() = runTest(testDispatcher) {
         val viewModel = HomeViewModel(
             catalogItems = catalogItemsFor(emptyList()),

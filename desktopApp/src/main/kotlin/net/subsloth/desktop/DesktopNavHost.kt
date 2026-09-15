@@ -40,6 +40,7 @@ import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
 import net.subsloth.core.ui.navigateBack
+import net.subsloth.core.ui.rememberHomeTabState
 import net.subsloth.core.ui.subslothNavConfig
 import net.subsloth.details.EpisodeDetailScreen
 import net.subsloth.details.EpisodeDetailViewModel
@@ -88,6 +89,7 @@ fun DesktopNavHost(
         ),
         entryProvider = entryProvider {
             entry<CatalogKey> {
+                val savedTab = rememberHomeTabState()
                 ScopedViewModel(key = "catalog_home") {
                     val vm: HomeViewModel = viewModel(key = "catalog_home") {
                         HomeViewModel(
@@ -100,6 +102,8 @@ fun DesktopNavHost(
                             listDownloads = container.downloadController::listDownloads,
                             listProgress = { container.listAccountPlaybackProgress() },
                             resolveShowForEpisode = { episodeId -> container.resolveShowIdForEpisode(episodeId) },
+                            savedState = mapOf("selectedTab" to savedTab.value),
+                            onTabPersisted = { savedTab.value = it },
                         )
                     }
                     HomeScreen(

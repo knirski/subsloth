@@ -31,6 +31,7 @@ import net.subsloth.core.ui.LocalIsTelevision
 import net.subsloth.core.ui.MovieDetailKey
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.PlayerKey
+import net.subsloth.core.ui.rememberHomeTabState
 import net.subsloth.core.ui.SearchKey
 import net.subsloth.core.ui.SettingsKey
 import net.subsloth.core.ui.ShowDetailKey
@@ -114,6 +115,7 @@ fun SubSlothNavHost(
             entry<CatalogKey> {
                 val app = LocalContext.current.applicationContext
                 val container = (app as? SubSlothApplication)?.container ?: return@entry
+                val savedTab = rememberHomeTabState()
                 val viewModel: HomeViewModel = viewModel(
                     key = "catalog_home",
                     factory = HomeViewModelFactory(
@@ -122,6 +124,8 @@ fun SubSlothNavHost(
                         listDownloads = container.downloadController::listDownloads,
                         listProgress = { container.listAccountPlaybackProgress() },
                         resolveShowForEpisode = { episodeId -> container.resolveShowIdForEpisode(episodeId) },
+                        savedState = { mapOf("selectedTab" to savedTab.value) },
+                        onTabPersisted = { savedTab.value = it },
                     ),
                 )
                 HomeScreen(
