@@ -9,7 +9,6 @@ import net.subsloth.database.dao.DownloadedMediaDao
 import net.subsloth.database.dao.DownloadedSubtitleDao
 import net.subsloth.database.dao.FavoriteDao
 import net.subsloth.database.dao.LocalLibraryRecordDao
-import net.subsloth.database.dao.OfflineDisplayMetadataDao
 import net.subsloth.database.dao.OfflinePlaybackProgressDao
 import net.subsloth.database.dao.SeasonQueueDao
 import net.subsloth.database.dao.SubscriptionDao
@@ -23,7 +22,6 @@ import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.QueueItemEntity
 import net.subsloth.database.entity.SeasonQueueEntity
@@ -45,12 +43,11 @@ import net.subsloth.database.entity.WatchedStateEntity
         LocalLibraryRecordEntity::class,
         DownloadedMediaEntity::class,
         DownloadedSubtitleEntity::class,
-        OfflineDisplayMetadataEntity::class,
         OfflinePlaybackProgressEntity::class,
         SeasonQueueEntity::class,
         QueueItemEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class SubSlothDatabase : RoomDatabase() {
@@ -71,8 +68,6 @@ abstract class SubSlothDatabase : RoomDatabase() {
     abstract fun downloadedMediaDao(): DownloadedMediaDao
 
     abstract fun downloadedSubtitleDao(): DownloadedSubtitleDao
-
-    abstract fun offlineDisplayMetadataDao(): OfflineDisplayMetadataDao
 
     abstract fun offlinePlaybackProgressDao(): OfflinePlaybackProgressDao
 

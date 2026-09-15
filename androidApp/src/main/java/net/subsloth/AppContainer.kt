@@ -259,7 +259,6 @@ class AppContainer(context: Context) {
             connectivityChecker = connectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
-            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
         )
     }
 

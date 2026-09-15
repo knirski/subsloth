@@ -8,10 +8,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * Exercises [MIGRATION_5_6] and [MIGRATION_6_7] directly on a bundled SQLite
- * connection: the migrations must preserve rows, backfill the offline content
- * type, and make the new `(contentType, contentId)` keys accept a movie and an
- * episode that share a numeric id.
+ * Exercises [MIGRATION_5_6], [MIGRATION_6_7] and [MIGRATION_7_8] directly on a
+ * bundled SQLite connection: the migrations must preserve rows, backfill the
+ * offline content type, make the new `(contentType, contentId)` keys accept a
+ * movie and an episode that share a numeric id, and drop the retired
+ * offline-display-metadata table.
  */
 class SubSlothDatabaseMigrationTest {
 
@@ -149,6 +150,30 @@ class SubSlothDatabaseMigrationTest {
                 2L,
                 connection.scalarLong(
                     "SELECT COUNT(*) FROM offline_display_metadata WHERE contentId = '7'",
+                ),
+            )
+        } finally {
+            connection.close()
+        }
+    }
+
+    @Test
+    fun `migration 7 to 8 drops the unused offline display metadata table`() = runTest {
+        val driver = BundledSQLiteDriver()
+        val connection = driver.open(":memory:")
+        try {
+            createV6Schema(connection)
+            connection.execSQL(
+                "INSERT INTO offline_display_metadata (contentId, title) VALUES ('7', 'Movie 7')",
+            )
+
+            MIGRATION_7_8.migrate(connection)
+
+            assertEquals(
+                0L,
+                connection.scalarLong(
+                    "SELECT COUNT(*) FROM sqlite_master " +
+                        "WHERE type = 'table' AND name = 'offline_display_metadata'",
                 ),
             )
         } finally {

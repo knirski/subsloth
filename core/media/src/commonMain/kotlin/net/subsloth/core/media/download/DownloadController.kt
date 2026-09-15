@@ -26,7 +26,6 @@ import net.subsloth.core.model.media.QualityDescriptor
 import net.subsloth.core.model.media.SubtitleFormat
 import net.subsloth.database.dao.DownloadedMediaDao
 import net.subsloth.database.dao.DownloadedSubtitleDao
-import net.subsloth.database.dao.OfflineDisplayMetadataDao
 import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
 import kotlin.time.Instant
@@ -37,7 +36,6 @@ class DownloadController(
     private val connectivityChecker: ConnectivityPort,
     private val downloadedMediaDao: DownloadedMediaDao,
     private val downloadedSubtitleDao: DownloadedSubtitleDao,
-    private val offlineDisplayMetadataDao: OfflineDisplayMetadataDao,
 ) : DownloadsPort {
 
     override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> = runCatching {
@@ -203,11 +201,6 @@ class DownloadController(
         deleteStoredSubtitles(entity.id)
         downloadedSubtitleDao.deleteForDownload(entity.id)
         downloadedMediaDao.delete(entity)
-        val remainingForContent = downloadedMediaDao.getByContent(entity.contentId, entity.mediaType)
-        if (remainingForContent == null) {
-            val metadata = offlineDisplayMetadataDao.getByContentId(entity.mediaType, entity.contentId)
-            if (metadata != null) offlineDisplayMetadataDao.delete(metadata)
-        }
         DownloadCommandOutcome.Applied
     }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 

@@ -253,7 +253,6 @@ class DesktopContainer(dataDirOverride: File? = null) {
             connectivityChecker = connectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
-            offlineDisplayMetadataDao = database.offlineDisplayMetadataDao(),
         )
     }
 

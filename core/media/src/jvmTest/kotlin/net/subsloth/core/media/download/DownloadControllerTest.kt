@@ -17,10 +17,8 @@ import net.subsloth.core.model.identifier.Resolution
 import net.subsloth.core.model.media.Media
 import net.subsloth.database.dao.DownloadedMediaDao
 import net.subsloth.database.dao.DownloadedSubtitleDao
-import net.subsloth.database.dao.OfflineDisplayMetadataDao
 import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.DownloadedSubtitleEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.testing.assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -90,28 +88,6 @@ private class ControllerSubtitleDao : DownloadedSubtitleDao {
     }
 }
 
-private class ControllerMetadataDao : OfflineDisplayMetadataDao {
-    val rows = mutableListOf<OfflineDisplayMetadataEntity>()
-
-    override fun getAll(): Flow<List<OfflineDisplayMetadataEntity>> = MutableStateFlow(rows)
-
-    override suspend fun getByContentId(contentType: String, contentId: String): OfflineDisplayMetadataEntity? =
-        rows.firstOrNull { it.contentType == contentType && it.contentId == contentId }
-
-    override suspend fun upsert(entity: OfflineDisplayMetadataEntity) {
-        rows.removeAll { it.contentType == entity.contentType && it.contentId == entity.contentId }
-        rows += entity
-    }
-
-    override suspend fun delete(entity: OfflineDisplayMetadataEntity) {
-        rows.remove(entity)
-    }
-
-    override suspend fun deleteAll() {
-        rows.clear()
-    }
-}
-
 private class ControllerFileStore : DownloadFileStore {
     val deleted = mutableListOf<OfflineRelativePath>()
 
@@ -139,7 +115,6 @@ private class Fixtures(
     val controller: DownloadController,
     val dao: ControllerMediaDao,
     val subtitles: ControllerSubtitleDao,
-    val metadata: ControllerMetadataDao,
     val store: ControllerFileStore,
 )
 
@@ -171,21 +146,6 @@ private fun subtitleRow(downloadId: Long, localFilePath: String = "1/abc.en.srt"
     localFilePath = localFilePath,
 )
 
-private fun metadata(contentId: String, contentType: String = "movie") = OfflineDisplayMetadataEntity(
-    contentId = contentId,
-    contentType = contentType,
-    title = "Title",
-    posterCacheKey = null,
-    backdropCacheKey = null,
-    episodeTitle = null,
-    seasonNumber = null,
-    episodeNumber = null,
-    effectiveQuality = null,
-    subtitleLanguages = null,
-    durationSeconds = null,
-    localProgressSeconds = null,
-)
-
 private fun fixtures(
     metered: Boolean = false,
     storageAvailable: Long = 10L * 1024 * 1024 * 1024,
@@ -193,7 +153,6 @@ private fun fixtures(
 ): Fixtures {
     val dao = ControllerMediaDao()
     val subtitles = ControllerSubtitleDao()
-    val metadata = ControllerMetadataDao()
     val store = ControllerFileStore()
     val storage = ControllerStorage(available = storageAvailable, reserve = storageReserve)
     val connectivity = ControllerConnectivity(metered = metered)
@@ -204,11 +163,9 @@ private fun fixtures(
             connectivityChecker = connectivity,
             downloadedMediaDao = dao,
             downloadedSubtitleDao = subtitles,
-            offlineDisplayMetadataDao = metadata,
         ),
         dao = dao,
         subtitles = subtitles,
-        metadata = metadata,
         store = store,
     )
 }
@@ -353,7 +310,7 @@ class DownloadControllerTest {
     }
 
     @Test
-    fun `remove deletes the row and only deletes metadata when no rows remain`() = runTest {
+    fun `remove deletes only the addressed row`() = runTest {
         val fixtures = fixtures()
         fixtures.dao.set(
             listOf(
@@ -361,17 +318,11 @@ class DownloadControllerTest {
                 entity(id = 2, contentId = "1"),
             ),
         )
-        fixtures.metadata.upsert(metadata(contentId = "1"))
 
         fixtures.controller.remove(LocalMediaIdentifier("1/1"))
 
         assertThat(fixtures.dao.entity(1)).isNull()
-        assertThat(fixtures.metadata.rows.map { it.contentId }).containsExactly("1")
-
-        fixtures.controller.remove(LocalMediaIdentifier("1/2"))
-
-        assertThat(fixtures.dao.entity(2)).isNull()
-        assertThat(fixtures.metadata.rows).isEmpty()
+        assertThat(fixtures.dao.entity(2)).isNotNull()
     }
 
     @Test

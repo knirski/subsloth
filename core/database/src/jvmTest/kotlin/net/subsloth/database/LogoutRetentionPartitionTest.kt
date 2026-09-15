@@ -5,7 +5,6 @@ import net.subsloth.database.entity.AccountPlaybackProgressEntity
 import net.subsloth.database.entity.DownloadedMediaEntity
 import net.subsloth.database.entity.FavoriteEntity
 import net.subsloth.database.entity.LocalLibraryRecordEntity
-import net.subsloth.database.entity.OfflineDisplayMetadataEntity
 import net.subsloth.database.entity.OfflinePlaybackProgressEntity
 import net.subsloth.database.entity.SubscriptionEntity
 import net.subsloth.database.entity.WatchLaterEntity
@@ -95,22 +94,6 @@ class LogoutRetentionPartitionTest {
                 updatedAtEpochSeconds = 2000L,
             ),
         )
-        db.offlineDisplayMetadataDao().upsert(
-            OfflineDisplayMetadataEntity(
-                contentId = contentId,
-                contentType = "movie",
-                title = "Shared Movie",
-                posterCacheKey = null,
-                backdropCacheKey = null,
-                episodeTitle = null,
-                seasonNumber = null,
-                episodeNumber = null,
-                effectiveQuality = null,
-                subtitleLanguages = null,
-                durationSeconds = 3600L,
-                localProgressSeconds = null,
-            ),
-        )
     }
 
     // ── Tests ──────────────────────────────────────────────────────────────
@@ -141,7 +124,6 @@ class LogoutRetentionPartitionTest {
         // Shared downloads and progress survive
         assertNotNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
         assertNotNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
-        assertNotNull(db.offlineDisplayMetadataDao().getByContentId("movie", sharedContentId))
 
         db.close()
     }
@@ -180,12 +162,10 @@ class LogoutRetentionPartitionTest {
         // Simulate "delete all downloads"
         db.downloadedMediaDao().deleteAll()
         db.offlinePlaybackProgressDao().deleteAll()
-        db.offlineDisplayMetadataDao().deleteAll()
 
         // Shared offline data is cleared
         assertNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
         assertNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
-        assertNull(db.offlineDisplayMetadataDao().getByContentId("movie", sharedContentId))
 
         // Profile A library data is untouched
         assertNotNull(db.favoriteDao().getByProfileAndContentId(profileA, "movie", profileAContentId))
@@ -204,7 +184,6 @@ class LogoutRetentionPartitionTest {
         // Shared downloads and progress survive
         assertNotNull(db.downloadedMediaDao().getByContent(sharedContentId, "movie"))
         assertNotNull(db.offlinePlaybackProgressDao().getByContentId("movie", sharedContentId))
-        assertNotNull(db.offlineDisplayMetadataDao().getByContentId("movie", sharedContentId))
 
         // Both profiles' library data remains
         assertNotNull(db.favoriteDao().getByProfileAndContentId(profileA, "movie", profileAContentId))
