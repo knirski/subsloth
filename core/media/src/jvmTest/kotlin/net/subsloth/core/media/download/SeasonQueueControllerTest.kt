@@ -338,6 +338,7 @@ class SeasonQueueControllerTest {
 
     private fun fakeDownloadsPort(onSubtitleEnqueue: () -> Unit = {}): DownloadsPort {
         val enqueued = mutableListOf<Media.MediaId>()
+        val enqueuedTitles = mutableListOf<String?>()
         return object : DownloadsPort {
             override suspend fun listDownloads(): Result<kotlinx.collections.immutable.ImmutableList<DownloadState>> =
                 Result.success(
@@ -362,8 +363,10 @@ class SeasonQueueControllerTest {
                 requested: Resolution,
                 requiredBytes: Long?,
                 transferPreference: TransferPreference,
+                displayTitle: String?,
             ): Result<EnqueueOutcome> {
                 enqueued += mediaId
+                enqueuedTitles += displayTitle
                 return Result.success(EnqueueOutcome.Queued)
             }
 

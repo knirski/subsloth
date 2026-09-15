@@ -10,6 +10,7 @@ import net.subsloth.core.domain.port.SubtitleEnqueueOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.OfflineRelativePath
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.MovieId
@@ -323,6 +324,24 @@ class DownloadControllerTest {
 
         assertThat(fixtures.dao.entity(1)).isNull()
         assertThat(fixtures.dao.entity(2)).isNotNull()
+    }
+
+    @Test
+    fun `enqueue stores the display title and exposes it on the offline asset`() = runTest {
+        val fixtures = fixtures()
+        val outcome = fixtures.controller.enqueue(
+            mediaId = Media.MediaId.Episode(EpisodeId(42)),
+            requested = Resolution.HD_720,
+            displayTitle = "Part 1: Black Fire Orchid",
+        )
+        assertThat(outcome.getOrNull()).isEqualTo(EnqueueOutcome.Queued)
+
+        // Offline assets are the completed rows; promote the queued row.
+        val stored = fixtures.dao.entity(1)!!
+        fixtures.dao.set(listOf(stored.copy(status = "completed", localFilePath = "videos/ep.mp4")))
+
+        val asset = fixtures.controller.listOfflineAssets().getOrThrow().single()
+        assertThat(asset.displayTitle).isEqualTo("Part 1: Black Fire Orchid")
     }
 
     @Test

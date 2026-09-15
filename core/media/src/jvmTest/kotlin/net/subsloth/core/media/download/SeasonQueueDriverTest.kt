@@ -73,6 +73,7 @@ private class DriverFakeQueueDao : SeasonQueueDao {
 
 private class DriverFakeDownloadsPort(private val stateForMedia: (Media.MediaId) -> DownloadState?) : DownloadsPort {
     val enqueued = mutableListOf<Media.MediaId>()
+    val enqueuedTitles = mutableListOf<String?>()
 
     override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> =
         Result.success(enqueued.mapNotNull(stateForMedia).toImmutableList())
@@ -84,8 +85,10 @@ private class DriverFakeDownloadsPort(private val stateForMedia: (Media.MediaId)
         requested: Resolution,
         requiredBytes: Long?,
         transferPreference: TransferPreference,
+        displayTitle: String?,
     ): Result<EnqueueOutcome> {
         enqueued += mediaId
+        enqueuedTitles += displayTitle
         return Result.success(EnqueueOutcome.Queued)
     }
 

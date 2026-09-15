@@ -8,7 +8,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * Exercises [MIGRATION_5_6], [MIGRATION_6_7] and [MIGRATION_7_8] directly on a
+ * Exercises [MIGRATION_5_6], [MIGRATION_6_7], [MIGRATION_7_8] and [MIGRATION_8_9]
+ * directly on a
  * bundled SQLite connection: the migrations must preserve rows, backfill the
  * offline content type, make the new `(contentType, contentId)` keys accept a
  * movie and an episode that share a numeric id, and drop the retired
@@ -174,6 +175,30 @@ class SubSlothDatabaseMigrationTest {
                 connection.scalarLong(
                     "SELECT COUNT(*) FROM sqlite_master " +
                         "WHERE type = 'table' AND name = 'offline_display_metadata'",
+                ),
+            )
+        } finally {
+            connection.close()
+        }
+    }
+
+    @Test
+    fun `migration 8 to 9 adds the download display title column`() = runTest {
+        val driver = BundledSQLiteDriver()
+        val connection = driver.open(":memory:")
+        try {
+            createV6Schema(connection)
+
+            MIGRATION_8_9.migrate(connection)
+
+            connection.execSQL(
+                "INSERT INTO downloaded_media (contentId, mediaType, displayTitle) " +
+                    "VALUES ('7', 'episode', 'Part 1: Black Fire Orchid')",
+            )
+            assertEquals(
+                "Part 1: Black Fire Orchid",
+                connection.scalarText(
+                    "SELECT displayTitle FROM downloaded_media WHERE contentId = '7'",
                 ),
             )
         } finally {

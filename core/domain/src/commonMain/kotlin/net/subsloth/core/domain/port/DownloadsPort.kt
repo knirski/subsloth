@@ -24,6 +24,8 @@ interface DownloadsPort {
         requested: Resolution,
         requiredBytes: Long? = null,
         transferPreference: TransferPreference = TransferPreference.WifiOnly,
+        /** Title to show for offline playback and the Downloads list; null when unknown. */
+        displayTitle: String? = null,
     ): Result<EnqueueOutcome>
 
     /** Enqueues a subtitle download for an existing offline asset. */

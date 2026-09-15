@@ -190,8 +190,8 @@ fun SubSlothNavHost(
                                         removeFromLibrary = { id ->
                                             container.libraryPortAdapter.removeFromLibrary(id)
                                         },
-                                        enqueueDownload = { id, resolution ->
-                                            container.downloadController.enqueue(id, resolution)
+                                        enqueueDownload = { id, resolution, title ->
+                                            container.downloadController.enqueue(id, resolution, displayTitle = title)
                                         },
                                         removeDownload = { localId ->
                                             container.downloadController.remove(localId)
@@ -276,8 +276,8 @@ fun SubSlothNavHost(
                                         listProgress = { container.listAccountPlaybackProgress() },
                                         listDownloads = { container.downloadController.listDownloads() },
                                         isTvDevice = isTvDevice,
-                                        enqueueDownload = { id, resolution ->
-                                            container.downloadController.enqueue(id, resolution)
+                                        enqueueDownload = { id, resolution, title ->
+                                            container.downloadController.enqueue(id, resolution, displayTitle = title)
                                         },
                                         removeDownload = { localId ->
                                             container.downloadController.remove(localId)

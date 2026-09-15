@@ -147,8 +147,8 @@ fun DesktopNavHost(
                                 listProgress = container::listAccountPlaybackProgress,
                                 addToLibrary = { item -> container.libraryPortAdapter.addToLibrary(item) },
                                 removeFromLibrary = { id -> container.libraryPortAdapter.removeFromLibrary(id) },
-                                enqueueDownload = { id, resolution ->
-                                    container.downloadController.enqueue(id, resolution)
+                                enqueueDownload = { id, resolution, title ->
+                                    container.downloadController.enqueue(id, resolution, displayTitle = title)
                                 },
                                 removeDownload = { localId -> container.downloadController.remove(localId) },
                             )
@@ -213,8 +213,8 @@ fun DesktopNavHost(
                                 isWatched = { id -> container.isWatched(id) },
                                 listProgress = { container.listAccountPlaybackProgress() },
                                 listDownloads = { container.downloadController.listDownloads() },
-                                enqueueDownload = { id, resolution ->
-                                    container.downloadController.enqueue(id, resolution)
+                                enqueueDownload = { id, resolution, title ->
+                                    container.downloadController.enqueue(id, resolution, displayTitle = title)
                                 },
                                 removeDownload = { localId -> container.downloadController.remove(localId) },
                             )

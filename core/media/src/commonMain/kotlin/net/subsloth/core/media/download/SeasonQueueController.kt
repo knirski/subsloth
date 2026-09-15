@@ -147,6 +147,7 @@ class SeasonQueueController(
             requested = parseResolution(nextPending.qualityLabel),
             requiredBytes = nextPending.sizeBytes,
             transferPreference = TransferPreference.WifiOnly,
+            displayTitle = nextPending.episodeTitle.takeIf { it.isNotBlank() },
         )
 
         fun parseFailureReason(error: Throwable): DownloadFailureReason {

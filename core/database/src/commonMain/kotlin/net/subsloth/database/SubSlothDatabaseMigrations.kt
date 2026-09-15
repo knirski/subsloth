@@ -240,3 +240,17 @@ val MIGRATION_7_8: Migration = object : Migration(7, 8) {
         connection.execSQL("DROP TABLE IF EXISTS `offline_display_metadata`")
     }
 }
+
+/**
+ * v8 -> v9: persist a display title for downloads.
+ *
+ * Offline playback resolves through [DownloadedMediaEntity] and previously had
+ * no title to show, so the player and the Downloads list fell back to the
+ * numeric content id. New rows carry the title the detail screen already had;
+ * legacy rows keep null and fall back at the UI layer.
+ */
+val MIGRATION_8_9: Migration = object : Migration(8, 9) {
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `downloaded_media` ADD COLUMN `displayTitle` TEXT")
+    }
+}
