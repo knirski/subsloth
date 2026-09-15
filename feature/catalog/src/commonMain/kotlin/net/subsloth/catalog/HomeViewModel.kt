@@ -118,6 +118,13 @@ class HomeViewModel(
         "selectedTab" to "",
         "searchQuery" to "",
     ),
+    /**
+     * Persists the selected tab for the host's saveable state. The tab lives
+     * in this ViewModel, which hosts may clear when the Home entry leaves
+     * composition; persisting it lets a recreated ViewModel restore the tab
+     * instead of falling back to [HomeTab.HOME].
+     */
+    private val onTabPersisted: (String) -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("HomeViewModel")
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -212,6 +219,7 @@ class HomeViewModel(
     fun selectTab(tab: HomeTab) {
         if (selectedTab.value == tab) return
         selectedTab.value = tab
+        onTabPersisted(tab.name)
         if (tab != HomeTab.MOVIES && tab != HomeTab.SHOWS) {
             refreshAuxData()
         }
