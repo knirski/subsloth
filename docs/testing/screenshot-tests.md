@@ -102,7 +102,10 @@ emulator/system images, `update` is the supported way to refresh goldens.
 > the `update` mode on the PR branch. The workflow pushes its commit with
 > `GITHUB_TOKEN`, which makes GitHub park the `pull_request` run in
 > `action_required`; the workflow therefore re-dispatches `ci.yml` for the
-> branch so the new head still gets a real CI run.
+> branch so the new head still gets a real CI run. The re-dispatch passes
+> `skip_devshell_cache=true`: the regolden commit only changes images, and a
+> second concurrent devShell build competes with the push-triggered run for
+> the Cachix cache.
 
 ---
 
