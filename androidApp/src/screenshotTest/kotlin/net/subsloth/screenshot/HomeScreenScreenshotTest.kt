@@ -1,21 +1,16 @@
 package net.subsloth.screenshot
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import net.subsloth.catalog.MediaListRow
+import net.subsloth.catalog.HomeRow
+import net.subsloth.catalog.HomeScreenScaffold
+import net.subsloth.catalog.HomeTab
+import net.subsloth.catalog.HomeUiState
 import net.subsloth.core.model.Availability
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
@@ -28,7 +23,7 @@ import net.subsloth.screenshot.DEVICE_PHONE
 import net.subsloth.screenshot.DEVICE_TABLET
 import net.subsloth.screenshot.DEVICE_TV
 
-private val movieItems: ImmutableList<Media> =
+private val movieItems: ImmutableList<MovieSummary> =
     persistentListOf(
         MovieSummary(
             id = Media.MediaId.Movie(MovieId(1)),
@@ -40,6 +35,7 @@ private val movieItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "the-grand-adventure",
+            posterUrl = "https://artwork.invalid/movie-1.jpg",
             imdbId = null,
             durationMinutes = 120,
         ),
@@ -53,6 +49,7 @@ private val movieItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "stellar-origins",
+            posterUrl = "https://artwork.invalid/movie-2.jpg",
             imdbId = null,
             durationMinutes = 135,
         ),
@@ -66,6 +63,7 @@ private val movieItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "the-lost-kingdom",
+            posterUrl = "https://artwork.invalid/movie-3.jpg",
             imdbId = null,
             durationMinutes = 150,
         ),
@@ -79,12 +77,13 @@ private val movieItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "midnight-express",
+            posterUrl = "https://artwork.invalid/movie-4.jpg",
             imdbId = null,
             durationMinutes = 110,
         ),
     )
 
-private val showItems: ImmutableList<Media> =
+private val showItems: ImmutableList<ShowSummary> =
     persistentListOf(
         ShowSummary(
             id = Media.MediaId.Show(ShowId(1)),
@@ -96,6 +95,7 @@ private val showItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "the-last-kingdom",
+            posterUrl = "https://artwork.invalid/show-1.jpg",
             imdbId = null,
             durationMinutes = 55,
             status = ShowStatus.ONGOING,
@@ -111,6 +111,7 @@ private val showItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "quantum-break",
+            posterUrl = "https://artwork.invalid/show-2.jpg",
             imdbId = null,
             durationMinutes = 45,
             status = ShowStatus.ENDED,
@@ -126,6 +127,7 @@ private val showItems: ImmutableList<Media> =
             availability = Availability.Available,
             backdropUrl = null,
             slug = "oceans-reach",
+            posterUrl = "https://artwork.invalid/show-3.jpg",
             imdbId = null,
             durationMinutes = 50,
             status = ShowStatus.UPCOMING,
@@ -157,37 +159,21 @@ fun HomeScreenDarkScreenshot() {
 
 @Composable
 private fun HomeScreenScreenshotContent() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            HomeRowLabel(label = "Movies")
-            MediaList(items = movieItems)
-            HomeRowLabel(label = "Shows")
-            MediaList(items = showItems)
-        }
-    }
-}
-
-@Composable
-private fun HomeRowLabel(label: String) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+    installFakeArtworkLoader()
+    val state =
+        HomeUiState.Content(
+            rows =
+                persistentListOf(
+                    HomeRow.Movies(items = movieItems),
+                    HomeRow.Shows(items = showItems),
+                ),
+            selectedTab = HomeTab.HOME,
+            continueWatching = persistentListOf(movieItems[0], showItems[0]),
+            availableOffline = persistentListOf(movieItems[1]),
+        )
+    HomeScreenScaffold(
+        state = state,
+        isSyncing = false,
+        snackbarHostState = remember { SnackbarHostState() },
     )
-}
-
-/** Mirrors the app''s vertical list: one compact row per item, no horizontal scrolling. */
-@Composable
-private fun MediaList(items: ImmutableList<Media>) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.forEach { media -> MediaListRow(media = media) }
-    }
 }

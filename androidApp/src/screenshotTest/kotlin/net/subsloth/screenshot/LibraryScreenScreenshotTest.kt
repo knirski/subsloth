@@ -27,6 +27,7 @@ import net.subsloth.screenshot.DEVICE_TV
 @Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
 fun LibraryScreenLightScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = false) {
         Surface(modifier = Modifier.fillMaxSize()) {
             LibraryContent(
@@ -47,6 +48,7 @@ fun LibraryScreenLightScreenshot() {
                                     slug = null,
                                     imdbId = null,
                                     durationMinutes = 120,
+                                    posterUrl = "https://artwork.invalid/library-1.jpg",
                                 ),
                             ),
                         favorites =
@@ -65,6 +67,7 @@ fun LibraryScreenLightScreenshot() {
                                     durationMinutes = 55,
                                     status = ShowStatus.ONGOING,
                                     countries = persistentListOf("US"),
+                                    posterUrl = "https://artwork.invalid/library-2.jpg",
                                 ),
                             ),
                         watchLater = persistentListOf(),
@@ -82,6 +85,7 @@ fun LibraryScreenLightScreenshot() {
 @Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
 fun LibraryScreenDarkScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = true) {
         Surface(modifier = Modifier.fillMaxSize()) {
             LibraryContent(
@@ -102,6 +106,7 @@ fun LibraryScreenDarkScreenshot() {
                                     slug = null,
                                     imdbId = null,
                                     durationMinutes = 120,
+                                    posterUrl = "https://artwork.invalid/library-1.jpg",
                                 ),
                             ),
                         favorites =
@@ -120,6 +125,7 @@ fun LibraryScreenDarkScreenshot() {
                                     durationMinutes = 55,
                                     status = ShowStatus.ONGOING,
                                     countries = persistentListOf("US"),
+                                    posterUrl = "https://artwork.invalid/library-2.jpg",
                                 ),
                             ),
                         watchLater = persistentListOf(),
