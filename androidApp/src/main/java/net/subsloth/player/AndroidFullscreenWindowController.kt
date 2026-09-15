@@ -1,6 +1,7 @@
 package net.subsloth.player
 
 import android.app.Activity
+import android.view.ViewTreeObserver
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -27,6 +28,22 @@ class AndroidFullscreenWindowController(
         .isVisible(WindowInsetsCompat.Type.systemBars())
     private var active = false
 
+    /**
+     * Insets-controller requests made before a window gains focus are dropped;
+     * re-apply whenever this activity window regains focus while fullscreen is
+     * active (returning to the app, dismissing a transient bar reveal).
+     */
+    private val focusListener =
+        ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
+            if (hasFocus && active) {
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+
+    init {
+        activity.window.decorView.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
+    }
+
     fun setFullscreen(fullscreen: Boolean) {
         if (fullscreen) {
             active = true
@@ -46,5 +63,11 @@ class AndroidFullscreenWindowController(
     /** Restores the pre-fullscreen window state; safe to call repeatedly. */
     fun restore() {
         setFullscreen(false)
+    }
+
+    /** Restores the window state and stops listening; call when leaving the player. */
+    fun dispose() {
+        restore()
+        activity.window.decorView.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
     }
 }
