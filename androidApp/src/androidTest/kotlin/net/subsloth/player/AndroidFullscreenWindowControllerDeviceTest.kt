@@ -25,6 +25,9 @@ import android.graphics.Color as AndroidColor
  * (see `docs/agent/lessons-learned.md`, lesson 23). Run it on a local
  * emulator: `./gradlew :androidApp:connectedDebugAndroidTest
  * -Pandroid.testInstrumentationRunnerArguments.class=net.subsloth.player.AndroidFullscreenWindowControllerDeviceTest`
+ *
+ * Covers entering fullscreen (bars hidden), a system/OEM re-show (re-hidden)
+ * and exiting fullscreen (bars restored).
  */
 @Ignore("Requires window focus; the headless CI emulator never grants it. Run on a local emulator.")
 class AndroidFullscreenWindowControllerDeviceTest {
@@ -68,6 +71,16 @@ class AndroidFullscreenWindowControllerDeviceTest {
             val reShownNav = reShownInsets?.isVisible(WindowInsetsCompat.Type.navigationBars())
             println("IMMERSIVE-CHECK reShownNavVisible=$reShownNav")
             assertTrue(reShownNav == false, "navigation bar re-appeared after a system reveal")
+
+            // Exiting fullscreen must bring both bars back.
+            composeRule.runOnUiThread { controller.setFullscreen(false) }
+            Thread.sleep(1_000)
+            val exitInsets = ViewCompat.getRootWindowInsets(activity.window.decorView)
+            val exitStatus = exitInsets?.isVisible(WindowInsetsCompat.Type.statusBars())
+            val exitNav = exitInsets?.isVisible(WindowInsetsCompat.Type.navigationBars())
+            println("IMMERSIVE-CHECK exitStatusVisible=$exitStatus exitNavVisible=$exitNav")
+            assertTrue(exitStatus == true, "status bar not restored on exit")
+            assertTrue(exitNav == true, "navigation bar not restored on exit")
 
             // Screenshot for manual inspection.
             val screenshot: Bitmap =
