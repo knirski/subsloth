@@ -46,12 +46,6 @@ fun PlayerBridgeSurface(
     subtitleBackground: Color = Color.Transparent,
     playCommands: Flow<PlayCommand> = emptyFlow(),
     onEvent: (PlayerEvent) -> Unit = {},
-    /**
-     * Platform hook for fullscreen window effects (system bars). It is
-     * emitted from inside the surface content, i.e. inside the library's
-     * fullscreen Dialog on Android, so the host can target that window.
-     */
-    fullscreenEffect: @Composable (Boolean) -> Unit = {},
     overlay: @Composable (VideoPlayerState) -> Unit = {},
 ) {
     val playerState = rememberVideoPlayerState()
@@ -136,7 +130,6 @@ fun PlayerBridgeSurface(
         modifier = modifier,
         contentScale = contentScale,
     ) {
-        fullscreenEffect(playerState.isFullscreen)
         overlay(playerState)
     }
 }

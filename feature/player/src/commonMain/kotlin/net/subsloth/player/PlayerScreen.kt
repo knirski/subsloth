@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,17 @@ private fun PlayerUiState.Notice.resolve(): String = when (this) {
     is PlayerUiState.Notice.Raw -> message
 }
 
+/**
+ * Host-owned fullscreen state.
+ *
+ * Android keeps the video in the activity window and hides the system bars
+ * natively instead of opening the player library's fullscreen [Dialog], which
+ * cannot cover the status bar. Platforms that use the library's fullscreen
+ * leave this null.
+ */
+@Immutable
+data class PlayerFullscreenControl(val isFullscreen: Boolean, val onToggle: () -> Unit)
+
 @Composable
 fun PlayerScreen(
     viewModel: PlayerViewModel,
@@ -67,7 +79,7 @@ fun PlayerScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
     onFullscreenChanged: (Boolean) -> Unit = {},
-    fullscreenEffect: @Composable (Boolean) -> Unit = {},
+    fullscreen: PlayerFullscreenControl? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -82,7 +94,6 @@ fun PlayerScreen(
             PlayerBridgeSurface(
                 modifier = modifier.fillMaxSize(),
                 playCommands = viewModel.playCommands,
-                fullscreenEffect = fullscreenEffect,
                 onEvent = { event ->
                     when (event) {
                         is PlayerEvent.Snapshot -> viewModel.onPlayerSnapshot(event.value)
@@ -104,6 +115,8 @@ fun PlayerScreen(
                         onNavigateBack = onNavigateBack,
                         onNavigateToAuthRepair = onNavigateToAuthRepair,
                         onFullscreenChanged = onFullscreenChanged,
+                        isFullscreen = fullscreen?.isFullscreen ?: playerState.isFullscreen,
+                        onToggleFullscreen = fullscreen?.onToggle ?: playerState::toggleFullscreen,
                     )
                 },
             )
@@ -125,6 +138,8 @@ fun PlayerOverlay(
     onNavigateBack: () -> Unit = {},
     onNavigateToAuthRepair: () -> Unit = {},
     onFullscreenChanged: (Boolean) -> Unit = {},
+    isFullscreen: Boolean = playerState.isFullscreen,
+    onToggleFullscreen: () -> Unit = playerState::toggleFullscreen,
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
@@ -312,8 +327,8 @@ fun PlayerOverlay(
                         onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                         onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
                         onToggleQuality = { showQualityPicker = !showQualityPicker },
-                        isFullscreen = playerState.isFullscreen,
-                        onToggleFullscreen = playerState::toggleFullscreen,
+                        isFullscreen = isFullscreen,
+                        onToggleFullscreen = onToggleFullscreen,
                     )
                 }
 

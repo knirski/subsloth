@@ -6,8 +6,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -40,8 +44,8 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
-import net.subsloth.player.AndroidDialogFullscreenBars
 import net.subsloth.player.AndroidFullscreenWindowController
+import net.subsloth.player.PlayerFullscreenControl
 import net.subsloth.player.PlayerOrientationViewModel
 import net.subsloth.auth.AuthRepairScreen
 import net.subsloth.auth.LoginViewModel
@@ -375,13 +379,25 @@ fun SubSlothNavHost(
                             )
                     },
                 )
+                // Android fullscreen stays in the activity window and hides
+                // the system bars natively; the library's fullscreen Dialog
+                // cannot cover the status bar.
+                var isImmersive by rememberSaveable { mutableStateOf(false) }
+                NavDestinationBackHandler(enabled = isImmersive) {
+                    isImmersive = false
+                    fullscreenWindowController.setFullscreen(false)
+                }
                 PlayerScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
                     onNavigateBack = { backStack.removeLastOrNull() },
                     onNavigateToAuthRepair = { backStack += AuthRepairKey },
-                    onFullscreenChanged = fullscreenWindowController::setFullscreen,
-                    fullscreenEffect = { isFullscreen -> AndroidDialogFullscreenBars(isFullscreen) },
+                    fullscreen =
+                    PlayerFullscreenControl(isFullscreen = isImmersive) {
+                        val next = !isImmersive
+                        isImmersive = next
+                        fullscreenWindowController.setFullscreen(next)
+                    },
                 )
             }
 
