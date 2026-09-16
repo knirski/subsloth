@@ -2,6 +2,7 @@ package net.subsloth.player
 
 import android.app.Activity
 import android.view.ViewTreeObserver
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -40,6 +41,23 @@ class AndroidFullscreenWindowController(
             }
         }
 
+    /**
+     * Re-assert immersive mode whenever the system reports the bars visible
+     * again while fullscreen is active. Some devices re-show the navigation
+     * bar on their own (OEM behaviour, transient reveals, insets re-dispatch),
+     * and the controller must keep the screen fullscreen as requested.
+     */
+    private val insetsListener =
+        ViewCompat.setOnApplyWindowInsetsListener(activity.window.decorView) { _, insets ->
+            if (active &&
+                (insets.isVisible(WindowInsetsCompat.Type.statusBars()) ||
+                    insets.isVisible(WindowInsetsCompat.Type.navigationBars()))
+            ) {
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            }
+            insets
+        }
+
     init {
         activity.window.decorView.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
     }
@@ -69,5 +87,6 @@ class AndroidFullscreenWindowController(
     fun dispose() {
         restore()
         activity.window.decorView.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
+        ViewCompat.setOnApplyWindowInsetsListener(activity.window.decorView, null)
     }
 }

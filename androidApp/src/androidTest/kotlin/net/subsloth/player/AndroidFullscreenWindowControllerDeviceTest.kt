@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import net.subsloth.MainActivity
@@ -54,6 +55,19 @@ class AndroidFullscreenWindowControllerDeviceTest {
             println("IMMERSIVE-CHECK statusVisible=$statusVisible navVisible=$navVisible")
             assertTrue(statusVisible == false, "status bar still visible")
             assertTrue(navVisible == false, "navigation bar still visible")
+
+            // Simulate the system (or an OEM quirk) re-showing the bars while
+            // fullscreen is active; the controller must re-hide them.
+            composeRule.runOnUiThread {
+                WindowCompat
+                    .getInsetsController(activity.window, activity.window.decorView)
+                    .show(WindowInsetsCompat.Type.systemBars())
+            }
+            Thread.sleep(1_000)
+            val reShownInsets = ViewCompat.getRootWindowInsets(activity.window.decorView)
+            val reShownNav = reShownInsets?.isVisible(WindowInsetsCompat.Type.navigationBars())
+            println("IMMERSIVE-CHECK reShownNavVisible=$reShownNav")
+            assertTrue(reShownNav == false, "navigation bar re-appeared after a system reveal")
 
             // Screenshot for manual inspection.
             val screenshot: Bitmap =
