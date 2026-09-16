@@ -383,9 +383,13 @@ fun SubSlothNavHost(
                 // the system bars natively; the library's fullscreen Dialog
                 // cannot cover the status bar.
                 var isImmersive by rememberSaveable { mutableStateOf(false) }
+                // Drive the window from state, so a recreated activity (or a
+                // restored process) re-applies the immersive state.
+                LaunchedEffect(fullscreenWindowController, isImmersive) {
+                    fullscreenWindowController.setFullscreen(isImmersive)
+                }
                 NavDestinationBackHandler(enabled = isImmersive) {
                     isImmersive = false
-                    fullscreenWindowController.setFullscreen(false)
                 }
                 PlayerScreen(
                     viewModel = viewModel,
@@ -394,9 +398,7 @@ fun SubSlothNavHost(
                     onNavigateToAuthRepair = { backStack += AuthRepairKey },
                     fullscreen =
                     PlayerFullscreenControl(isFullscreen = isImmersive) {
-                        val next = !isImmersive
-                        isImmersive = next
-                        fullscreenWindowController.setFullscreen(next)
+                        isImmersive = !isImmersive
                     },
                 )
             }
