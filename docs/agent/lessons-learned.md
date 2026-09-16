@@ -241,3 +241,21 @@ the manual `Screenshots` workflow in `update` mode **on the PR branch**: it
 regenerates `androidApp/src/screenshotTestDebug/reference/`, re-exports the subset
 used by the README into `docs/screenshots/`, and commits both. That keeps
 goldens and README screenshots in the same PR as the UI change.
+
+## 26. A Player Library Fullscreen Dialog Cannot Cover the Status Bar
+
+The player library (`composemediaplayer`) renders fullscreen video in its own
+Compose `Dialog` (`FullScreenLayout`) with `decorFitsSystemWindows = true`, so
+the dialog window is laid out inset from the status bar and never covers that
+strip; hiding bars on the dialog window also left the strip visible over the
+activity behind it (verified on an API 36 emulator: a red full-screen dialog
+still showed the theme background at y=4). Android playback therefore keeps
+the video in the activity window and uses native immersive mode
+(`WindowInsetsControllerCompat.hide` on the activity window via
+`AndroidFullscreenWindowController`) with an app-owned fullscreen state
+(`PlayerFullscreenControl`); the library dialog remains for desktop/web.
+Related trap: insets-controller requests issued before the window gains focus
+are dropped, so re-apply them on `OnWindowFocusChangeListener`; and the CI
+emulator never grants focus, so verify with the `@Ignore`d device test
+`AndroidFullscreenWindowControllerDeviceTest` (asserts
+`rootWindowInsets.isVisible(systemBars()) == false`) plus a screenshot.

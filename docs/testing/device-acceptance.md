@@ -264,8 +264,11 @@ catalog.
 ### 10.2 Immersive player — Android
 1. Start playback, open the fullscreen player (rotate to landscape / select
    fullscreen on TV).
-2. Verify the status and navigation bars are hidden while fullscreen.
-3. Exit fullscreen (Back). Verify both system bars are restored.
+2. Verify the status and navigation bars are hidden while fullscreen, and the
+   video fills the screen edge to edge (Android uses native immersive mode on
+   the activity window, not the player library's fullscreen dialog).
+3. Exit fullscreen (Back or the overlay button). Verify both system bars are
+   restored.
 
 ### 10.3 Play, leave, play again — resume (Android + Desktop)
 1. Play an episode, let it run > 1 minute, then leave the player.
