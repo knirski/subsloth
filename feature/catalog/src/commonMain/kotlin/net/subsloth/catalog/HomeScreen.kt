@@ -2,6 +2,7 @@ package net.subsloth.catalog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -183,13 +185,32 @@ fun CatalogContent(
     onShowClick: (Media.MediaId.Show) -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        PrimaryTabRow(selectedTabIndex = state.selectedTab.ordinal) {
-            HomeTab.entries.forEach { tab ->
-                Tab(
-                    selected = state.selectedTab == tab,
-                    onClick = { onTabSelected(tab) },
-                    text = { Text(tab.label) },
-                )
+        // Five tabs with these labels do not fit equally on a phone: an
+        // equal-width row wraps "Favorites" mid-word. Narrow windows get a
+        // scrollable row (tabs keep their natural width), wide windows keep
+        // the evenly distributed row.
+        BoxWithConstraints {
+            val tabs: @Composable () -> Unit = {
+                HomeTab.entries.forEach { tab ->
+                    Tab(
+                        selected = state.selectedTab == tab,
+                        onClick = { onTabSelected(tab) },
+                        text = { Text(tab.label) },
+                    )
+                }
+            }
+            if (maxWidth < TAB_ROW_SCROLL_THRESHOLD) {
+                PrimaryScrollableTabRow(
+                    selectedTabIndex = state.selectedTab.ordinal,
+                    edgePadding = 0.dp,
+                    minTabWidth = TAB_ROW_MIN_TAB_WIDTH,
+                ) {
+                    tabs()
+                }
+            } else {
+                PrimaryTabRow(selectedTabIndex = state.selectedTab.ordinal) {
+                    tabs()
+                }
             }
         }
 
@@ -391,3 +412,9 @@ private fun mediaClick(
         is Media.MediaId.Episode -> {}
     }
 }
+
+/** Below this width the tab labels do not fit equally; scroll instead of wrapping. */
+private val TAB_ROW_SCROLL_THRESHOLD = 600.dp
+
+/** Keeps the five labels on one line while they still fit a phone width. */
+private val TAB_ROW_MIN_TAB_WIDTH = 64.dp
