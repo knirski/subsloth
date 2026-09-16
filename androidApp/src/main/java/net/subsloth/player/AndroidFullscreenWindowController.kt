@@ -24,9 +24,6 @@ class AndroidFullscreenWindowController(
     private val insetsController =
         WindowCompat.getInsetsController(activity.window, activity.window.decorView)
     private val originalBehavior: Int = insetsController.systemBarsBehavior
-    private val barsInitiallyVisible: Boolean = WindowInsetsCompat
-        .toWindowInsetsCompat(activity.window.decorView.rootWindowInsets)
-        .isVisible(WindowInsetsCompat.Type.systemBars())
     private var active = false
 
     /**
@@ -71,10 +68,12 @@ class AndroidFullscreenWindowController(
         } else if (active) {
             active = false
             insetsController.systemBarsBehavior = originalBehavior
-            // Bars hidden by someone else before entry stay hidden.
-            if (barsInitiallyVisible) {
-                insetsController.show(WindowInsetsCompat.Type.systemBars())
-            }
+            // Always restore the bars this controller hid. Deciding from a
+            // captured "were they visible before?" flag is unreliable: the
+            // decor view's insets can be missing when the controller is
+            // constructed, and a stale flag left users in a player with no
+            // navigation bar after leaving fullscreen.
+            insetsController.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 
