@@ -42,3 +42,18 @@ PR title rule is enforced in CI — treat as required check.
 - Code changed: task-specific checks (`./gradlew test` or narrower)
 - Docs-only PR: narrowest meaningful verification; say explicitly if none exists
 - Minimum safe fallback: do not commit if verification unclear. Do not push if PR title, branch, or base is unclear. Report blocker with exact detail.
+
+## Release APK Signing
+
+Release APKs are signed with the keystore configured through the
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`
+and `ANDROID_KEY_PASSWORD` repository secrets. The expected signing
+certificate is pinned in `.github/release-signing-sha256.txt`; the release
+workflow fails the build when the produced APK is signed by a different
+certificate (which is what happens when the secrets are missing or corrupt
+and the workflow falls back to a per-run debug keystore — those APKs cannot
+be installed over earlier releases).
+
+Rotating the signing key requires a one-time uninstall on devices that have
+an APK signed with the previous key, so update the secrets and the pinned
+digest together and call the break out in the PR description.
