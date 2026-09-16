@@ -105,6 +105,7 @@ jobs:
               echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
               echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
               echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+              echo "HAS_RELEASE_KEYSTORE=true"
             } >> "$GITHUB_ENV"
           elif [ ! -f "$HOME/.android/debug.keystore" ]; then
             # No release keystore configured: generate the standard debug
@@ -123,6 +124,34 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: ./gradlew ${{ matrix.tasks }} ${RELEASE_VERSION:+-PsubslothVersion=$RELEASE_VERSION}
+
+      # A missing or corrupt ANDROID_KEYSTORE_* secret silently falls back to
+      # an ephemeral debug keystore, which produces an APK that cannot be
+      # installed over previous releases. Fail the release instead, pinning the
+      # expected signing certificate in .github/release-signing-sha256.txt.
+      - name: Verify release APK signing certificate
+        if: matrix.type == 'android' && env.HAS_RELEASE_KEYSTORE == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=$(find androidApp/build/outputs/apk/release -name '*.apk' | head -1)
+          if [ -z "$apk" ]; then
+            echo "::error::Android release APK not found"
+            exit 1
+          fi
+          apksigner_bin=$(command -v apksigner || find -L "$ANDROID_HOME/build-tools" -maxdepth 2 -name apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -z "$apksigner_bin" ]; then
+            echo "::error::apksigner not found (looked on PATH and in $ANDROID_HOME/build-tools)"
+            exit 1
+          fi
+          cert=$("$apksigner_bin" verify --print-certs "$apk" \
+            | sed -n 's/.*certificate SHA-256 digest: //p' | head -1 | tr 'A-F' 'a-f')
+          expected=$(tr -d '[:space:]:' < .github/release-signing-sha256.txt | tr 'A-F' 'a-f')
+          if [ "$cert" != "$expected" ]; then
+            echo "::error::Release APK signed by $cert, expected $expected — check ANDROID_KEYSTORE_* secrets"
+            exit 1
+          fi
+          echo "Release APK signing certificate matches the pinned digest."
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
