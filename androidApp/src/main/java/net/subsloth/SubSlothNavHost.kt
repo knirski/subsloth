@@ -45,6 +45,7 @@ import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
 import net.subsloth.player.AndroidFullscreenWindowController
+import net.subsloth.player.AndroidKeepScreenOn
 import net.subsloth.player.PlayerFullscreenControl
 import net.subsloth.player.PlayerOrientationViewModel
 import net.subsloth.auth.AuthRepairScreen
@@ -320,6 +321,8 @@ fun SubSlothNavHost(
                 DisposableEffect(fullscreenWindowController) {
                     onDispose { fullscreenWindowController.dispose() }
                 }
+                // Playback must not let the display dim or sleep.
+                AndroidKeepScreenOn(activity)
 
                 val orientationViewModel: PlayerOrientationViewModel = viewModel(
                     key = "player_orientation",

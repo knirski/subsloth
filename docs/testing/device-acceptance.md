@@ -113,6 +113,12 @@ This document describes the manual device acceptance checklist for the three sup
 2. Verify **Play/Pause**, **Seek forward/backward**, and **Stop** work correctly.
 3. Verify the current playback position and duration are displayed.
 
+### 4.2b Screen stays on
+1. Start playback on Android and leave the device untouched until the system
+   display timeout would normally fire.
+2. Verify the screen does not dim or turn off while the player is on screen.
+3. Leave the player. Verify the display timeout applies again.
+
 ### 4.3 Playback resume
 1. Start playing a movie or episode.
 2. Seek to a position at least 3 minutes in, then stop or navigate away.
