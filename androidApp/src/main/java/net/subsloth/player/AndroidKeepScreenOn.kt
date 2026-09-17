@@ -15,12 +15,9 @@ import androidx.compose.runtime.DisposableEffect
 @Composable
 fun AndroidKeepScreenOn(activity: Activity?) {
     DisposableEffect(activity) {
-        val window = activity?.window
-        if (window == null) {
-            onDispose {}
-        } else {
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            onDispose { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 }
