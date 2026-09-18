@@ -26,6 +26,7 @@ import net.subsloth.screenshot.DEVICE_TV
 @Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
 fun MovieDetailLightScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = false) {
         Surface(modifier = Modifier.fillMaxSize()) {
             MovieDetailContent(state = movieDetailContentState())
@@ -39,6 +40,7 @@ fun MovieDetailLightScreenshot() {
 @Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
 fun MovieDetailDarkScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = true) {
         Surface(modifier = Modifier.fillMaxSize()) {
             MovieDetailContent(state = movieDetailContentState())
@@ -65,8 +67,8 @@ private fun movieDetailContentState(): MovieDetailUiState.Content =
                 imdbId = null,
                 tmdbId = null,
                 countries = persistentListOf("US", "UK"),
-                posterUrl = null,
-                backdropUrl = null,
+                posterUrl = "https://artwork.invalid/detail-poster.jpg",
+                backdropUrl = "https://artwork.invalid/detail-backdrop.jpg",
             ),
         isFavorite = true,
         isWatchLater = false,
