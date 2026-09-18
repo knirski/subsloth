@@ -1,5 +1,6 @@
 package net.subsloth.core.data.runtime
 
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import net.subsloth.core.data.media.CatalogRepository
@@ -57,6 +58,8 @@ class AccountMediaRuntime(
     private val clock: Clock,
     private val anonymousProfileKey: String,
 ) {
+    private val log = Logger.withTag("AccountMediaRuntime")
+
     private companion object {
         const val EPISODE_CONTENT_TYPE = "episode"
     }
@@ -214,6 +217,33 @@ class AccountMediaRuntime(
         ?.isWatched == true
 
     // ── Subtitle tracks ──────────────────────────────────────────────────
+
+    /**
+     * Best-effort display title for [mediaId], used to backfill download
+     * titles that predate their persistence.
+     *
+     * Movies and shows prefer the cached catalog (works offline) and fall
+     * back to the API; episodes are only available from the API.
+     */
+    suspend fun resolveMediaTitle(mediaId: Media.MediaId): String? = try {
+        when (mediaId) {
+            is Media.MediaId.Movie ->
+                listMovies().getOrNull()?.firstOrNull { it.id == mediaId }?.title
+                    ?: api().getMovie(mediaId.value.value).let { it.title ?: it.name }
+
+            is Media.MediaId.Show ->
+                listShows().getOrNull()?.firstOrNull { it.id == mediaId }?.title
+                    ?: api().getShow(mediaId.value.value).let { it.name ?: it.title }
+
+            is Media.MediaId.Episode ->
+                api().getEpisode(mediaId.value.value).let { it.name ?: it.title ?: it.showName }
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log.e(e) { "resolveMediaTitle failed for $mediaId" }
+        null
+    }
 
     /**
      * Resolves the subtitle tracks offered for [mediaId] at transfer time.

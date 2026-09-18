@@ -151,6 +151,7 @@ private fun fixtures(
     metered: Boolean = false,
     storageAvailable: Long = 10L * 1024 * 1024 * 1024,
     storageReserve: Long = 0L,
+    resolveTitle: suspend (Media.MediaId) -> String? = { null },
 ): Fixtures {
     val dao = ControllerMediaDao()
     val subtitles = ControllerSubtitleDao()
@@ -164,6 +165,7 @@ private fun fixtures(
             connectivityChecker = connectivity,
             downloadedMediaDao = dao,
             downloadedSubtitleDao = subtitles,
+            resolveTitle = resolveTitle,
         ),
         dao = dao,
         subtitles = subtitles,
@@ -342,6 +344,46 @@ class DownloadControllerTest {
 
         val asset = fixtures.controller.listOfflineAssets().getOrThrow().single()
         assertThat(asset.displayTitle).isEqualTo("Part 1: Black Fire Orchid")
+    }
+
+    @Test
+    fun `legacy downloads are backfilled with a resolved title once`() = runTest {
+        val lookups = mutableListOf<Media.MediaId>()
+        val fixtures = fixtures(resolveTitle = { mediaId ->
+            lookups += mediaId
+            "Resolved Title"
+        })
+        fixtures.dao.set(listOf(entity(id = 1, status = "completed", localFilePath = "videos/42.mp4")))
+
+        val first = fixtures.controller.listDownloads().getOrThrow().single()
+        assertThat(first.displayTitle).isEqualTo("Resolved Title")
+        assertThat(lookups).hasSize(1)
+        assertThat(fixtures.dao.entity(1)?.displayTitle).isEqualTo("Resolved Title")
+
+        // The persisted title is reused; no further lookups.
+        val second = fixtures.controller.listDownloads().getOrThrow().single()
+        assertThat(second.displayTitle).isEqualTo("Resolved Title")
+        assertThat(lookups).hasSize(1)
+    }
+
+    @Test
+    fun `legacy offline assets are backfilled with a resolved title`() = runTest {
+        val fixtures = fixtures(resolveTitle = { "Offline Title" })
+        fixtures.dao.set(listOf(entity(id = 1, status = "completed", localFilePath = "videos/42.mp4")))
+
+        val asset = fixtures.controller.listOfflineAssets().getOrThrow().single()
+
+        assertThat(asset.displayTitle).isEqualTo("Offline Title")
+    }
+
+    @Test
+    fun `legacy downloads keep a null title when it cannot be resolved`() = runTest {
+        val fixtures = fixtures(resolveTitle = { null })
+        fixtures.dao.set(listOf(entity(id = 1, status = "completed", localFilePath = "videos/42.mp4")))
+
+        val state = fixtures.controller.listDownloads().getOrThrow().single()
+
+        assertThat(state.displayTitle).isNull()
     }
 
     @Test

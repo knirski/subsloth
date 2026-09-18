@@ -253,6 +253,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
             connectivityChecker = connectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            resolveTitle = { mediaId -> accountMediaRuntime.resolveMediaTitle(mediaId) },
         )
     }
 

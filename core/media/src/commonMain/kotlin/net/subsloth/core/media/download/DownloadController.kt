@@ -36,13 +36,38 @@ class DownloadController(
     private val connectivityChecker: ConnectivityPort,
     private val downloadedMediaDao: DownloadedMediaDao,
     private val downloadedSubtitleDao: DownloadedSubtitleDao,
+    /**
+     * Best-effort title lookup for rows created before download titles were
+     * persisted. Backfilled lazily when the downloads are listed.
+     */
+    private val resolveTitle: suspend (Media.MediaId) -> String? = { null },
 ) : DownloadsPort {
 
     override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> = runCatching {
+        backfillDisplayTitles(downloadedMediaDao.getAll().first())
         downloadedMediaDao.getAll().first().map { it.toDownloadState() }.toImmutableList()
     }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
+    /**
+     * Fills in missing titles for downloads created before the column existed.
+     * Resolution is best-effort: offline or unknown media stay null and the UI
+     * keeps its fallback label.
+     */
+    private suspend fun backfillDisplayTitles(rows: List<DownloadedMediaEntity>) {
+        rows.filter { it.displayTitle == null }.forEach { row ->
+            val mediaId = runCatching { parseMediaId(row.contentId, row.mediaType) }.getOrNull()
+                ?: return@forEach
+            val title = runCatching { resolveTitle(mediaId) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+                .getOrNull()
+                ?.takeIf { it.isNotBlank() }
+                ?: return@forEach
+            downloadedMediaDao.upsert(row.copy(displayTitle = title))
+        }
+    }
+
     override suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>> = runCatching {
+        backfillDisplayTitles(downloadedMediaDao.getCompleted().first())
         downloadedMediaDao.getCompleted().first().map { entity ->
             val subtitles = entity.offlineSubtitles()
             OfflineAsset(
