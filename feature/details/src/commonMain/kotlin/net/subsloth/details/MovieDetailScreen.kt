@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.DownloadUnavailableNotice
 import net.subsloth.core.ui.LocalDownloadActionsEnabled
+import net.subsloth.core.ui.MediaArtwork
 import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.toDisplayString
 import net.subsloth.core.ui.toUiErrorMessage
@@ -168,6 +169,11 @@ private fun MovieDetailWideLayout(
                     text = details.title.take(1),
                     style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+                )
+                MediaArtwork(
+                    url = details.backdropUrl ?: details.posterUrl,
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
                 )
             }
 
@@ -326,6 +332,11 @@ private fun MovieDetailCompactLayout(
                 text = details.title.take(1),
                 style = MaterialTheme.typography.displayLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+            )
+            MediaArtwork(
+                url = details.backdropUrl ?: details.posterUrl,
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
             )
         }
 

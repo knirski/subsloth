@@ -31,6 +31,7 @@ import kotlin.time.Instant
 @Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
 fun SeriesDetailLightScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = false) {
         Surface(modifier = Modifier.fillMaxSize()) {
             ShowDetailContent(state = showDetailContentState())
@@ -44,6 +45,7 @@ fun SeriesDetailLightScreenshot() {
 @Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
 fun SeriesDetailDarkScreenshot() {
+    installFakeArtworkLoader()
     SubSlothTheme(darkTheme = true) {
         Surface(modifier = Modifier.fillMaxSize()) {
             ShowDetailContent(state = showDetailContentState())
@@ -70,8 +72,8 @@ private fun showDetailContentState(): ShowDetailUiState.Content =
                 imdbId = null,
                 tmdbId = null,
                 countries = persistentListOf("US", "UK", "Canada"),
-                posterUrl = null,
-                backdropUrl = null,
+                posterUrl = "https://artwork.invalid/series-poster.jpg",
+                backdropUrl = "https://artwork.invalid/series-backdrop.jpg",
                 status = ShowStatus.ONGOING,
                 popularity = 95,
                 seasons =
