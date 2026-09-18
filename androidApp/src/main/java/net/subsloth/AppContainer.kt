@@ -259,6 +259,7 @@ class AppContainer(context: Context) {
             connectivityChecker = connectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            resolveTitle = { mediaId -> accountMediaRuntime.resolveMediaTitle(mediaId) },
         )
     }
 

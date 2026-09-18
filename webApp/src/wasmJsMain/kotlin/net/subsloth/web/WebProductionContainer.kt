@@ -190,7 +190,32 @@ class WebProductionContainer : WebRuntime {
             connectivityChecker = BrowserConnectivityChecker,
             downloadedMediaDao = database.downloadedMediaDao(),
             downloadedSubtitleDao = database.downloadedSubtitleDao(),
+            resolveTitle = { mediaId -> resolveMediaTitle(mediaId) },
         )
+    }
+
+    /** Best-effort title lookup for downloads created before titles were persisted. */
+    private suspend fun resolveMediaTitle(mediaId: Media.MediaId): String? = try {
+        when (mediaId) {
+            is Media.MediaId.Movie ->
+                catalogRepository.catalogItems("movie").first()
+                    .filterIsInstance<MovieSummary>()
+                    .firstOrNull { it.id == mediaId }?.title
+                    ?: api.getMovie(mediaId.value.value).let { it.title ?: it.name }
+
+            is Media.MediaId.Show ->
+                catalogRepository.catalogItems("show").first()
+                    .filterIsInstance<ShowSummary>()
+                    .firstOrNull { it.id == mediaId }?.title
+                    ?: api.getShow(mediaId.value.value).let { it.name ?: it.title }
+
+            is Media.MediaId.Episode ->
+                api.getEpisode(mediaId.value.value).let { it.name ?: it.title ?: it.showName }
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
     }
 
     private val seasonQueueController: SeasonQueueController by lazy {
