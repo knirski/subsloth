@@ -57,6 +57,7 @@ class DownloadsViewModel(
     private val cancelDownload: suspend (String) -> DownloadCommandOutcome = { DownloadCommandOutcome.NoOp },
     private val retryDownload: suspend (String) -> EnqueueOutcome = { EnqueueOutcome.Queued },
     private val removeDownload: suspend (String) -> DownloadCommandOutcome = { DownloadCommandOutcome.NoOp },
+    private val resumeSeasonQueue: suspend (String) -> Unit = {},
 ) : ViewModel() {
     private val log = Logger.withTag("DownloadsViewModel")
     private val _uiState = MutableStateFlow<DownloadsUiState>(DownloadsUiState.Loading)
@@ -143,6 +144,14 @@ class DownloadsViewModel(
     fun resume(localId: String) {
         viewModelScope.launch {
             resumeDownload(localId)
+            loadDownloads()
+        }
+    }
+
+    /** Resumes a season queue paused by the metered-network policy. */
+    fun resumeQueue(queueId: String) {
+        viewModelScope.launch {
+            resumeSeasonQueue(queueId)
             loadDownloads()
         }
     }

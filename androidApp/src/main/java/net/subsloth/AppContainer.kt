@@ -653,6 +653,17 @@ class AppContainer(context: Context) {
     }
 
     /**
+     * Resumes a season queue paused by the metered-network policy and restarts
+     * its driver in [containerScope], so it keeps running after the calling
+     * screen is gone.
+     */
+    suspend fun resumeSeasonQueue(queueId: String) {
+        val id = QueueId(queueId)
+        seasonQueueController.resumeQueue(id)
+        containerScope.launch { seasonQueueDriver.drive(id) }
+    }
+
+    /**
      * Adapts [SeasonQueueController.listQueues] (a plain suspend function
      * returning a plain [List]) to [net.subsloth.library.DownloadsViewModel]'s
      * `Result`/[ImmutableList]-wrapped shape.

@@ -437,6 +437,7 @@ fun SubSlothNavHost(
                                             container.downloadController.remove(LocalMediaIdentifier(localId))
                                                 .getOrDefault(DownloadCommandOutcome.NoOp)
                                         },
+                                        resumeSeasonQueue = container::resumeSeasonQueue,
                                     ),
                                 ),
                             )

@@ -148,7 +148,9 @@ episodes one at a time through `DownloadController` and advances each queue item
 completed/failed by observing the real download state, pausing the queue when a transfer
 defers on a metered network. On startup, the container relaunches a driver for every
 queued/running queue so a process death mid-season cannot leave the queue stuck; an
-in-flight item is re-adopted rather than enqueued a second time.
+in-flight item is re-adopted rather than enqueued a second time. A queue paused by the
+metered-network policy can be resumed from the Downloads screen, which resumes its
+in-flight item and restarts the driver.
 
 ## Web — demo tier and production composition root
 
