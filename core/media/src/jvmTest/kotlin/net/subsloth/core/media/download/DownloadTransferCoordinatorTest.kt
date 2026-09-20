@@ -269,6 +269,67 @@ class DownloadTransferCoordinatorTest {
     }
 
     @Test
+    fun `removing the download while its URL resolves does not resurrect it`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val engineCalls = mutableListOf<String>()
+        val coordinator = coordinator(
+            dao,
+            resolver = { _, _ ->
+                dao.delete(requireNotNull(dao.getById(1)))
+                DownloadTarget("https://cdn.example.com/file.mp4", "mp4")
+            },
+            engineHandler = { request ->
+                engineCalls += request.url.toString()
+                respond(content = ByteReadChannel(body), status = HttpStatusCode.OK)
+            },
+        )
+
+        coordinator.processQueued()
+
+        assertThat(dao.getById(1)).isNull()
+        assertThat(engineCalls).isEmpty()
+    }
+
+    @Test
+    fun `pausing the download while its URL resolves is not overwritten`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val engineCalls = mutableListOf<String>()
+        val coordinator = coordinator(
+            dao,
+            resolver = { _, _ ->
+                val current = requireNotNull(dao.getById(1))
+                dao.set(listOf(current.copy(status = "paused")))
+                DownloadTarget("https://cdn.example.com/file.mp4", "mp4")
+            },
+            engineHandler = { request ->
+                engineCalls += request.url.toString()
+                respond(content = ByteReadChannel(body), status = HttpStatusCode.OK)
+            },
+        )
+
+        coordinator.processQueued()
+
+        assertThat(requireNotNull(dao.getById(1)).status).isEqualTo("paused")
+        assertThat(engineCalls).isEmpty()
+    }
+
+    @Test
+    fun `removing the download while resolution fails does not resurrect it`() = runTest {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val coordinator = coordinator(
+            dao,
+            resolver = { _, _ ->
+                dao.delete(requireNotNull(dao.getById(1)))
+                null
+            },
+        )
+
+        coordinator.processQueued()
+
+        assertThat(dao.getById(1)).isNull()
+    }
+
+    @Test
     fun `pausing mid-transfer keeps the staged bytes for resume`() = runBlocking {
         val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
         val channel = ByteChannel(autoFlush = true)
