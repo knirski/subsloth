@@ -136,16 +136,25 @@ class DownloadTransferCoordinator(
             return
         }
 
-        if (connectivityChecker.isMetered()) {
-            log.d { "Deferring download ${localId.value}: metered network (Wi-Fi-only policy)" }
-            downloadedMediaDao.upsert(entity.copy(status = DownloadStatus.PAUSED.name.lowercase()))
+        // The scan snapshot can already be stale: the user may have paused
+        // or removed the row between the scan and this call. Never overwrite
+        // a user action with the snapshot's state.
+        val current = downloadedMediaDao.getById(entity.id)
+        if (current == null || !current.isResumable()) {
+            log.d { "Skipping ${localId.value}: no longer resumable (${current?.status ?: "removed"})" }
             return
         }
 
-        val target = resolveDownloadUrl(mediaId, entity.selectedQuality)
+        if (connectivityChecker.isMetered()) {
+            log.d { "Deferring download ${localId.value}: metered network (Wi-Fi-only policy)" }
+            downloadedMediaDao.upsert(current.copy(status = DownloadStatus.PAUSED.name.lowercase()))
+            return
+        }
+
+        val target = resolveDownloadUrl(mediaId, current.selectedQuality)
         if (target == null) {
-            log.e(null) { "No downloadable URL resolved for ${localId.value} (quality=${entity.selectedQuality})" }
-            fail(localId, entity, DownloadFailureReason.DownloadFailed)
+            log.e(null) { "No downloadable URL resolved for ${localId.value} (quality=${current.selectedQuality})" }
+            fail(localId, current, DownloadFailureReason.DownloadFailed)
             return
         }
 
@@ -153,11 +162,19 @@ class DownloadTransferCoordinator(
         // A path persisted by an earlier attempt points at the staged file
         // to resume; otherwise allocate a fresh one. The path is persisted
         // before streaming so pause/remove/crash can find the partial.
-        val relativePath = entity.localFilePath
+        val relativePath = current.localFilePath
             .takeIf { it.isNotBlank() }
             ?.let { runCatching { OfflineRelativePath.safe(it) }.getOrNull() }
-            ?: store.allocatePath(entity.contentId, target.extension)
-        val attempted = entity.copy(
+            ?: store.allocatePath(current.contentId, target.extension)
+        // URL resolution is a network call, so the row can change again while
+        // it runs. Re-read once more before claiming the download: pausing or
+        // removing must win over a restart.
+        val latest = downloadedMediaDao.getById(entity.id)
+        if (latest == null || !latest.isResumable()) {
+            log.d { "Skipping ${localId.value}: no longer resumable after URL resolution" }
+            return
+        }
+        val attempted = latest.copy(
             status = DownloadStatus.DOWNLOADING.name.lowercase(),
             localFilePath = relativePath.value,
         )
@@ -182,11 +199,11 @@ class DownloadTransferCoordinator(
         }
 
         result.fold(
-            onSuccess = { bytes -> complete(entity, relativePath, bytes) },
+            onSuccess = { bytes -> complete(latest, relativePath, bytes) },
             onFailure = { error ->
                 if (error is CancellationException) throw error
                 log.e(error) { "Transfer failed for ${localId.value}" }
-                fail(localId, attempted, DownloadFailureReason.DownloadFailed)
+                fail(localId, latest, DownloadFailureReason.DownloadFailed)
             },
         )
     }
@@ -318,7 +335,13 @@ class DownloadTransferCoordinator(
     ) {
         // Re-read so a path persisted at transfer start survives the FAILED
         // status: a retry of the same row can then resume the partial.
-        val current = downloadedMediaDao.getById(entity.id) ?: entity
+        val current = downloadedMediaDao.getById(entity.id)
+        if (current == null) {
+            // Removed while failing: report the failure without resurrecting
+            // the row the user deleted.
+            _events.tryEmit(TransferEvent.Failed(localId, reason))
+            return
+        }
         downloadedMediaDao.upsert(current.copy(status = DownloadStatus.FAILED.name.lowercase()))
         _events.tryEmit(TransferEvent.Failed(localId, reason))
     }
