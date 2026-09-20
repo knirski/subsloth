@@ -489,9 +489,14 @@ class PlayerViewModel(
                         positionSeconds =
                         (_uiState.value as? PlayerUiState.Content)?.positionSeconds ?: 0L,
                     )
+                    // Mark the *refreshed* session as used. Restoring the
+                    // captured pre-refresh session here would silently put the
+                    // expired source back, so a later quality switch would
+                    // reopen the stale URL.
                     _uiState.update { current ->
-                        (current as? PlayerUiState.Content)
-                            ?.copy(session = currentSession.copy(streamRefreshUsed = true)) ?: current
+                        val content = current as? PlayerUiState.Content ?: return@update current
+                        val session = content.session ?: return@update content
+                        content.copy(session = session.copy(streamRefreshUsed = true))
                     }
                 },
                 onFailure = { error ->
