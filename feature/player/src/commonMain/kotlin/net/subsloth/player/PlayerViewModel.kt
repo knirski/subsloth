@@ -63,6 +63,8 @@ sealed interface PlayerUiState {
         val nextEpisode: Episode?,
         val showNextEpisodePrompt: Boolean,
         val nextEpisodeCountdownSeconds: Int? = null,
+        /** Next episode the user dismissed; the prompt stays hidden for it. */
+        val dismissedNextEpisodeId: EpisodeId? = null,
         val playbackError: PlaybackError?,
         val playbackMode: PlaybackMode,
         val qualityFallbackNotice: Notice?,
@@ -248,6 +250,9 @@ class PlayerViewModel(
                 ?: source.selectedQuality.info.resolution.label,
             nextEpisode = null,
             showNextEpisodePrompt = false,
+            // Retries and quality switches keep a dismissal made in this
+            // playback session; a fresh ViewModel starts with none.
+            dismissedNextEpisodeId = previous?.dismissedNextEpisodeId,
             playbackError = null,
             playbackMode = source.playbackMode,
             qualityFallbackNotice = previous?.qualityFallbackNotice,
@@ -314,7 +319,9 @@ class PlayerViewModel(
             viewModelScope.launch { saveProgress(id, state.positionSeconds, state.durationSeconds, state.playbackMode) }
         }
         val nextEp = state.nextEpisode
-        if (nextEp != null) {
+        // A dismissed next episode stays dismissed for this playback session:
+        // the completion event must not resurrect the prompt or its countdown.
+        if (nextEp != null && nextEp.id != state.dismissedNextEpisodeId) {
             // Auto-advance only for a *available* next episode; the prompt
             // itself still shows for an unavailable one (Play stays a
             // no-op there), but without a countdown.
@@ -360,6 +367,9 @@ class PlayerViewModel(
             (current as? PlayerUiState.Content)?.copy(
                 showNextEpisodePrompt = false,
                 nextEpisodeCountdownSeconds = null,
+                // Remember which episode was declined so the completion
+                // event cannot re-show the prompt and restart the countdown.
+                dismissedNextEpisodeId = current.nextEpisode?.id ?: current.dismissedNextEpisodeId,
             ) ?: current
         }
     }
