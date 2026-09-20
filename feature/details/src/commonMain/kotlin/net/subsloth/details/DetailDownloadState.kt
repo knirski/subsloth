@@ -1,46 +1,7 @@
 package net.subsloth.details
 
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import net.subsloth.core.domain.policy.QualityPolicy
-import net.subsloth.core.domain.policy.ResumePolicy
-import net.subsloth.core.domain.port.DownloadCommandOutcome
 import net.subsloth.core.model.download.DownloadState
-import net.subsloth.core.model.download.EnqueueOutcome
-import net.subsloth.core.model.download.SeasonDownloadQueue
-import net.subsloth.core.model.error.DecodeError
-import net.subsloth.core.model.error.Outcome
-import net.subsloth.core.model.error.UiError
-import net.subsloth.core.model.identifier.LocalMediaIdentifier
-import net.subsloth.core.model.identifier.Resolution
-import net.subsloth.core.model.library.LibraryCollection
-import net.subsloth.core.model.library.LibraryItem
-import net.subsloth.core.model.media.Episode
-import net.subsloth.core.model.media.EpisodeDetails
 import net.subsloth.core.model.media.Media
-import net.subsloth.core.model.media.MediaDetails
-import net.subsloth.core.model.media.MovieDetails
-import net.subsloth.core.model.media.Season
-import net.subsloth.core.model.media.ShowDetails
-import net.subsloth.core.model.progress.PlaybackProgress
-import net.subsloth.core.ui.error.toUiError
-import kotlin.time.Clock
 /**
  * UI-facing download lifecycle for the media item shown on a detail screen.
  *
