@@ -315,6 +315,8 @@ fun PlayerOverlay(
                         onToggleQuality = { showQualityPicker = !showQualityPicker },
                         isFullscreen = isFullscreen,
                         onToggleFullscreen = onToggleFullscreen,
+                        playbackSpeed = state.playbackSpeed,
+                        qualityLabel = state.selectedQualityLabel,
                     )
                 }
 

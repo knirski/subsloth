@@ -4,8 +4,10 @@ package net.subsloth.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +20,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
@@ -92,37 +97,86 @@ internal fun PlaybackControls(
     onToggleQuality: () -> Unit = {},
     isFullscreen: Boolean = false,
     onToggleFullscreen: () -> Unit = {},
+    playbackSpeed: Float = 1f,
+    qualityLabel: String? = null,
 ) {
-    // Wraps so the added fullscreen control still fits narrow (portrait)
-    // layouts; wide layouts keep one centered row.
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        OutlinedButton(onClick = onTogglePlayPause) {
-            Text(if (isPlaying) stringResource(Res.string.player_pause) else stringResource(Res.string.player_play))
+    // Play/pause is the primary action: the largest control, centred, with the
+    // secondary options as compact chips on either side — the media-player
+    // convention. Compact labels keep it to one row on narrow phones.
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.align(Alignment.CenterStart),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ControlChip(
+                label = formatSpeedLabel(playbackSpeed),
+                description = stringResource(Res.string.player_speed),
+                onClick = onToggleSpeed,
+            )
+            ControlChip(
+                label = stringResource(Res.string.player_subtitles_short),
+                description = stringResource(Res.string.player_subtitles),
+                onClick = onToggleSubtitles,
+            )
         }
-        OutlinedButton(onClick = onToggleSpeed) {
-            Text(stringResource(Res.string.player_speed))
-        }
-        OutlinedButton(onClick = onToggleSubtitles) {
-            Text(stringResource(Res.string.player_subtitles))
-        }
-        OutlinedButton(onClick = onToggleQuality) {
-            Text(stringResource(Res.string.player_quality))
-        }
-        OutlinedButton(onClick = onToggleFullscreen) {
+
+        Button(
+            onClick = onTogglePlayPause,
+            modifier = Modifier.align(Alignment.Center).height(64.dp),
+            contentPadding = PaddingValues(horizontal = 28.dp),
+        ) {
             Text(
-                if (isFullscreen) {
+                text = if (isPlaying) {
+                    stringResource(Res.string.player_pause)
+                } else {
+                    stringResource(Res.string.player_play)
+                },
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ControlChip(
+                label = qualityLabel ?: stringResource(Res.string.player_quality_auto_short),
+                description = stringResource(Res.string.player_quality),
+                onClick = onToggleQuality,
+            )
+            ControlChip(
+                label = if (isFullscreen) {
+                    stringResource(Res.string.player_exit_fullscreen_short)
+                } else {
+                    stringResource(Res.string.player_fullscreen_short)
+                },
+                description = if (isFullscreen) {
                     stringResource(Res.string.player_exit_fullscreen)
                 } else {
                     stringResource(Res.string.player_fullscreen)
                 },
+                onClick = onToggleFullscreen,
             )
         }
     }
 }
+
+/** A compact secondary control; [description] keeps it readable by screen readers. */
+@Composable
+private fun ControlChip(label: String, description: String, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+        modifier = Modifier.semantics { contentDescription = description },
+    ) {
+        Text(text = label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Formats a playback speed without a trailing `.0`: `1x`, `1.5x`, `1.25x`. */
+internal fun formatSpeedLabel(speed: Float): String = if (speed % 1f == 0f) "${speed.toInt()}x" else "${speed}x"
 
 @Composable
 internal fun SpeedPicker(currentSpeed: Float, onSelect: (Float) -> Unit) {

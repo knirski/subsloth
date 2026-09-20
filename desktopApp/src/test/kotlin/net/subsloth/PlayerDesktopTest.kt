@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import io.github.kdroidfilter.composemediaplayer.PreviewableVideoPlayerState
@@ -244,11 +245,13 @@ class PlayerDesktopTest {
             }
         }
 
-        composeRule.onNodeWithText("Fullscreen").assertIsDisplayed()
-        composeRule.onNodeWithText("Fullscreen").performClick()
+        // The control bar shows the compact label ("Full"/"Exit") with the
+        // full wording as its accessibility description.
+        composeRule.onNodeWithContentDescription("Fullscreen").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Fullscreen").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Exit fullscreen").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Exit fullscreen").assertIsDisplayed()
         assertTrue(playerState.isFullscreen, "player state should be fullscreen")
         assertEquals(true, reportedFullscreen, "host should observe the fullscreen change")
     }

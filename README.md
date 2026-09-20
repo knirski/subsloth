@@ -220,7 +220,7 @@ convention's exact configuration.
 | **Dual-subtitle playback** | Watch with two simultaneous subtitle tracks for language immersion |
 | **Catalog browsing** | Movies and series with search, filters, and sort |
 | **Detail views** | Movie and series detail screens with episode structure and metadata |
-| **Video player** | Playback with quality selection, resume, speed control, and subtitle picker |
+| **Video player** | Large centered play/pause with speed, subtitle, quality, and fullscreen controls; resume support |
 | **Offline downloads** | Queue management, storage safety, and offline playback |
 | **Library & settings** | Personal library, central Downloads screen, settings, diagnostics |
 
