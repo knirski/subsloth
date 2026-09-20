@@ -44,6 +44,7 @@ import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.QueueId
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.download.SeasonQueueExecution
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
@@ -398,6 +399,22 @@ class DesktopContainer(dataDirOverride: File? = null) {
                     }
                 }
             }
+        }
+
+        // Resume season queues interrupted by process death: their queued /
+        // downloading rows persist, but the driver that advances them does
+        // not. executeNext re-adopts an in-flight item instead of starting
+        // the next episode.
+        containerScope.launch {
+            val queues = runCatching { seasonQueueController.listQueues() }
+                .onFailure { if (it is CancellationException) throw it }
+                .getOrDefault(emptyList())
+            queues
+                .filter { queue ->
+                    queue.execution is SeasonQueueExecution.Queued ||
+                        queue.execution is SeasonQueueExecution.Running
+                }
+                .forEach { queue -> launch { seasonQueueDriver.drive(queue.queueId) } }
         }
 
         // Rebuild the session-scoped adapter trio whenever the session's
