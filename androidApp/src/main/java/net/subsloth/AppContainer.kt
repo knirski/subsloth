@@ -417,12 +417,10 @@ class AppContainer(context: Context) {
                         DownloadForegroundService.updateProgress(appContext, active.size, percent)
                     }
 
-                    is TransferEvent.Completed -> {
-                        active.remove(event.localId.value)
-                        if (active.isEmpty()) DownloadForegroundService.stop(appContext)
-                    }
-
-                    is TransferEvent.Failed -> {
+                    is TransferEvent.Completed,
+                    is TransferEvent.Failed,
+                    is TransferEvent.Aborted,
+                    -> {
                         active.remove(event.localId.value)
                         if (active.isEmpty()) DownloadForegroundService.stop(appContext)
                     }

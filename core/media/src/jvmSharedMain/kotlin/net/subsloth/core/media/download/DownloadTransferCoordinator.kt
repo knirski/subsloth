@@ -27,16 +27,28 @@ data class DownloadTarget(val url: String, val extension: String)
 
 /** Events emitted while the coordinator drives transfers. */
 sealed interface TransferEvent {
-    data class Progress(val localId: LocalMediaIdentifier, val bytesWritten: Long, val totalBytes: Long?) :
+    /** The download this event belongs to. */
+    val localId: LocalMediaIdentifier
+
+    data class Progress(override val localId: LocalMediaIdentifier, val bytesWritten: Long, val totalBytes: Long?) :
         TransferEvent
 
-    data class Completed(val localId: LocalMediaIdentifier, val sizeBytes: Long) : TransferEvent
+    data class Completed(override val localId: LocalMediaIdentifier, val sizeBytes: Long) : TransferEvent
 
-    data class Failed(val localId: LocalMediaIdentifier, val reason: DownloadFailureReason) : TransferEvent
+    data class Failed(override val localId: LocalMediaIdentifier, val reason: DownloadFailureReason) : TransferEvent
+
+    /**
+     * The transfer stopped before completion because the item left the
+     * active state (paused, cancelled, or removed). The persisted row
+     * status is authoritative; this event exists so consumers holding
+     * per-transfer bookkeeping (e.g. the Android foreground service) can
+     * retire the item.
+     */
+    data class Aborted(override val localId: LocalMediaIdentifier, val status: String) : TransferEvent
 }
 
 /** Thrown from the progress callback to abort a stream mid-transfer. */
-class TransferAbortedException(status: String) : RuntimeException("Transfer aborted: $status")
+class TransferAbortedException(val status: String) : RuntimeException("Transfer aborted: $status")
 
 /**
  * Drives the byte-transfer pipeline for queued downloads: scans the
@@ -161,7 +173,13 @@ class DownloadTransferCoordinator(
         // The item left the active state while streaming (paused/removed
         // via DownloadController): its persisted status is authoritative
         // already, so don't overwrite it — the staged file stays for resume.
-        if (result.exceptionOrNull() is TransferAbortedException) return
+        // The terminal event still has to be emitted so consumers can retire
+        // the transfer (the Android notification would otherwise never stop).
+        val abort = result.exceptionOrNull() as? TransferAbortedException
+        if (abort != null) {
+            _events.tryEmit(TransferEvent.Aborted(localId, abort.status))
+            return
+        }
 
         result.fold(
             onSuccess = { bytes -> complete(entity, relativePath, bytes) },

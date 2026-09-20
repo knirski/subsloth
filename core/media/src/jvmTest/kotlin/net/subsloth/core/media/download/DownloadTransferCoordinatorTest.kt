@@ -294,6 +294,39 @@ class DownloadTransferCoordinatorTest {
     }
 
     @Test
+    fun `pausing mid-transfer emits an aborted event`() = runBlocking {
+        val dao = FakeDownloadedMediaDao().apply { set(listOf(entity())) }
+        val channel = ByteChannel(autoFlush = true)
+        val coordinator = coordinator(
+            dao,
+            engineHandler = { _ -> respond(content = channel, status = HttpStatusCode.OK) },
+        )
+
+        coordinator.events.test {
+            val processing = async { coordinator.processQueued() }
+            withTimeout(10_000) {
+                while (dao.getById(1)?.status != "downloading") delay(10)
+            }
+            val stagedPath = requireNotNull(dao.getById(1)).localFilePath
+            dao.set(listOf(entity(status = "paused", localFilePath = stagedPath)))
+            channel.writeString(body)
+            channel.flush()
+            channel.close()
+
+            withTimeout(10_000) { processing.await() }
+
+            while (true) {
+                val event = awaitItem()
+                if (event is TransferEvent.Aborted) {
+                    assertThat(event.status).isEqualTo("paused")
+                    break
+                }
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `resumes a downloading row from its staged bytes after a crash`() = runTest {
         val prefix = "hello "
         val suffix = "download-payload"
