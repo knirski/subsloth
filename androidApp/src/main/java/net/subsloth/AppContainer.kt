@@ -10,6 +10,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -126,7 +127,11 @@ class AppContainer(context: Context) {
      * scope that outlives every launch is the accepted pattern here (see
      * [dataStore]'s own scope below), not a leak.
      */
-    private val containerScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val containerScope: CoroutineScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+            log.w(throwable) { "Unhandled container coroutine failure" }
+        },
+    )
 
     /**
      * Read-only view of [containerScope] for work that must outlive a
@@ -410,7 +415,7 @@ class AppContainer(context: Context) {
             downloadTransferCoordinator.events.collect { event ->
                 when (event) {
                     is TransferEvent.Progress -> {
-                        if (active.add(event.localId.value)) DownloadForegroundService.start(appContext)
+                        if (active.add(event.localId.value)) startDownloadService(appContext)
                         val percent = event.totalBytes?.takeIf { it > 0 }
                             ?.let { total -> event.bytesWritten * 100 / total }
                             ?.toInt()
@@ -661,6 +666,19 @@ class AppContainer(context: Context) {
         val id = QueueId(queueId)
         seasonQueueController.resumeQueue(id)
         containerScope.launch { seasonQueueDriver.drive(id) }
+    }
+
+    /**
+     * Starts the download foreground service, tolerating Android 12+ background
+     * start restrictions: a failed start must not kill the process. Transfers
+     * run in-process, and the coordinator resumes them after a process death.
+     */
+    private fun startDownloadService(context: Context) {
+        try {
+            DownloadForegroundService.start(context)
+        } catch (exception: IllegalStateException) {
+            log.w(exception) { "Could not start the download foreground service" }
+        }
     }
 
     /**
