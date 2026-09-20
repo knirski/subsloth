@@ -122,6 +122,8 @@ class PlayerViewModel(
     private val loadPreferredLanguage: suspend () -> LanguageCode = {
         LanguageCode("en")
     },
+    /** Whether playback starts with the preferred subtitle selected. */
+    private val loadSubtitleEnabled: suspend () -> Boolean = { true },
     private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     private val fetchSubtitleText: suspend (String) -> Outcome<String> = {
         Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
@@ -200,7 +202,14 @@ class PlayerViewModel(
         }
 
         val preferred = loadPreferredLanguage()
-        val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
+        val subtitleEnabled = loadSubtitleEnabled()
+        // The setting controls the *initial* selection only; the player's
+        // subtitle picker can still turn a track on or off manually.
+        val initialSubtitle = if (subtitleEnabled) {
+            SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
+        } else {
+            null
+        }
 
         // A retry or quality change keeps the in-session speed; otherwise the
         // persisted preference is loaded. The bridge applies it after opening
@@ -221,6 +230,9 @@ class PlayerViewModel(
         )
 
         val subtitleNotice: PlayerUiState.Notice? = when {
+            // Disabled on purpose: no "subtitles unavailable" notice.
+            !subtitleEnabled -> null
+
             initialSubtitle == null && source.availableSubtitles.isNotEmpty() ->
                 PlayerUiState.Notice.Localized.NoSubtitles
 

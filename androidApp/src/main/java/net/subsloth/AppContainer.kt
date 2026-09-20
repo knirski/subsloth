@@ -809,6 +809,9 @@ class AppContainer(context: Context) {
     suspend fun loadPreferredLanguage(): LanguageCode =
         LanguageCode(userPreferences.subtitleLanguage(currentProfileKey()).first() ?: DEFAULT_LANGUAGE)
 
+    suspend fun loadSubtitleEnabled(): Boolean =
+        userPreferences.subtitleEnabled(currentProfileKey()).first()
+
     /**
      * Resolves an episode's parent show id via a single `/episodes/{id}`
      * lookup ([Api.getEpisode]) so

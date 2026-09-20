@@ -585,6 +585,7 @@ private fun PlayerContent(
                 savePlaybackSpeed = { runtime.savePlaybackSpeed(it) },
                 loadPlaybackSpeed = { runtime.loadPlaybackSpeed() },
                 loadPreferredLanguage = { runtime.loadPreferredLanguage() },
+                loadSubtitleEnabled = { runtime.loadSubtitleEnabled() },
                 resolveShowIdForEpisode = { runtime.resolveShowIdForEpisode(it) },
                 fetchSubtitleText = { runtime.fetchSubtitleText(it) },
                 externalScope = runtime.externalScope,

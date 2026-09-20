@@ -246,6 +246,8 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
 
     override suspend fun loadPreferredLanguage(): LanguageCode = LanguageCode("en")
 
+    override suspend fun loadSubtitleEnabled(): Boolean = true
+
     override fun invalidateSession() = Unit
 
     override val downloadController: net.subsloth.core.domain.port.DownloadsPort get() = api.let {
