@@ -392,6 +392,10 @@ class DesktopContainer(dataDirOverride: File? = null) {
                     is TransferEvent.Failed -> log.e(null) {
                         "Download ${event.localId.value} failed: ${event.reason}"
                     }
+
+                    is TransferEvent.Aborted -> log.d {
+                        "Download ${event.localId.value} aborted: ${event.status}"
+                    }
                 }
             }
         }
