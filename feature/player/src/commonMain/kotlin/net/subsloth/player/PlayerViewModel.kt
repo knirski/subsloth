@@ -317,7 +317,7 @@ class PlayerViewModel(
     }
 
     fun onPlayerError(message: String) {
-        val playbackError = categorizePlaybackError(message)
+        val playbackError = classifyPlaybackErrorMessage(message)
         val isAuth = playbackError is PlaybackError.AuthFailure
         if (isAuth) {
             saveProgressAndRouteToAuthRepair()
@@ -621,25 +621,7 @@ class PlayerViewModel(
         onAuthFailure()
     }
 
-    private fun categorizePlaybackError(message: String): PlaybackError {
-        // The player bridge reports errors as opaque strings. Parse the
-        // HTTP status code if present so the typed classifier can
-        // dispatch 401 to AuthFailure and 403 to StreamUrlExpired.
-        val code = HTTP_STATUS_REGEX.find(message)?.value?.toIntOrNull()
-        val domainError = if (code != null && code in 400..599) {
-            net.subsloth.core.model.error.NetworkError.HttpError(code, message)
-        } else {
-            net.subsloth.core.model.error.DecodeError.SerializationFailed
-        }
-        return PlaybackErrorClassifier.classify(domainError)
-    }
-
     private companion object {
-        // Matches "401", "403", etc. inside an arbitrary player error
-        // message. The player bridge is not coupled to the network
-        // shell so we recover the status code from the message.
-        val HTTP_STATUS_REGEX = Regex("""\b(40[0-9]|41[0-9]|42[0-9]|43[0-9]|44[0-9]|45[0-9])\b""")
-
         const val NEXT_EPISODE_COUNTDOWN_SECONDS = 10
     }
 }
