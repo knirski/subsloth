@@ -11,9 +11,22 @@ permissions:
   pull-requests: write
   issues: write
 
+# Releases must not race each other: queue instead of cancelling so every
+# main push that carries releasable commits gets its own release.
+concurrency:
+  group: semantic-release
+  cancel-in-progress: false
+
 jobs:
-  release:
+  # Compute the next version without publishing anything. Building and
+  # verifying happen before the release exists, so a failed build cannot
+  # leave a published release with missing assets.
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
+      tag: ${{ steps.semantic.outputs.new_release_git_tag }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -22,13 +35,18 @@ jobs:
 
       - uses: ./.github/actions/kmp-setup
 
-      - uses: cycjimmy/semantic-release-action@v6
+      - name: Compute the next release (dry run)
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          dry_run: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     name: ${{ matrix.display }}
-    needs: release
+    needs: prepare
+    if: needs.prepare.outputs.published == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -73,21 +91,6 @@ jobs:
 
       - uses: ./.github/actions/kmp-setup
 
-      - name: Resolve release tag for this commit
-        id: release
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG=$(git describe --tags --abbrev=0 --match=v* 2>/dev/null || true)
-          # Only use the tag when it points at the checked-out commit. On a
-          # non-release main push `git describe` would otherwise return the
-          # previous release tag and the upload step could clobber its assets.
-          if [ -n "$TAG" ] && [ "$(git rev-list -n 1 "$TAG")" != "$(git rev-parse HEAD)" ]; then
-            TAG=""
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
       - name: Ensure Android release-APK signing
         if: matrix.type == 'android'
         shell: bash
@@ -122,7 +125,7 @@ jobs:
 
       - name: Build (${{ matrix.display }})
         env:
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: ./gradlew ${{ matrix.tasks }} ${RELEASE_VERSION:+-PsubslothVersion=$RELEASE_VERSION}
 
       # A missing or corrupt ANDROID_KEYSTORE_* secret silently falls back to
@@ -153,58 +156,94 @@ jobs:
           fi
           echo "Release APK signing certificate matches the pinned digest."
 
-      - name: Upload workflow artifact
+      - name: Upload staged artifact
         uses: actions/upload-artifact@v4
         with:
           name: subsloth-${{ matrix.type }}
           path: ${{ matrix.artifactPath }}
           if-no-files-found: error
 
-      - name: Upload release asset
-        if: steps.release.outputs.tag != ''
+  # Publication is the final step: every artifact is built, verified and
+  # staged before this job runs.
+  publish:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/kmp-setup
+
+      - name: Publish the release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the published release matches the prepared version
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_version='${{ steps.semantic.outputs.new_release_version }}'
+          actual_tag='${{ steps.semantic.outputs.new_release_git_tag }}'
+          if [ "$actual_version" != '${{ needs.prepare.outputs.version }}' ] \
+            || [ "$actual_tag" != '${{ needs.prepare.outputs.tag }}' ]; then
+            echo "::error::Published $actual_tag ($actual_version), but the staged artifacts are for ${{ needs.prepare.outputs.tag }}"
+            exit 1
+          fi
+          echo "PUBLISHED_TAG=$actual_tag" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=$actual_version" >> "$GITHUB_ENV"
+
+      - name: Download staged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: staging
+
+      - name: Stage release assets with checksums
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          APK=$(find staging/subsloth-android -name '*.apk' 2>/dev/null | head -1)
+          DEB=$(find staging/subsloth-desktop -name '*.deb' 2>/dev/null | head -1)
+          WEB_DIR=staging/subsloth-web
+          if [ -n "$APK" ]; then cp "$APK" "release-assets/subsloth-$VERSION-release.apk"; fi
+          if [ -n "$DEB" ]; then cp "$DEB" "release-assets/subsloth-$VERSION-linux.deb"; fi
+          if [ -d "$WEB_DIR" ]; then
+            (cd "$WEB_DIR" && zip -qr "$GITHUB_WORKSPACE/release-assets/subsloth-$VERSION-web.zip" .)
+          fi
+          if [ -z "$(ls -A release-assets)" ]; then
+            echo "::error::No staged artifacts found to publish"
+            exit 1
+          fi
+          (cd release-assets && sha256sum ./* > SHA256SUMS)
+          ls -l release-assets
+
+      - name: Upload release assets
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.release.outputs.tag }}
-          VERSION: ${{ steps.release.outputs.version }}
-          ARTIFACT_TYPE: ${{ matrix.type }}
         run: |
           set -euo pipefail
-          gh release view "$TAG" >/dev/null 2>&1 || {
-            echo "::error::Release $TAG for HEAD not found"
-            exit 1
-          }
+          gh release upload "$PUBLISHED_TAG" release-assets/* --clobber
 
-          case "$ARTIFACT_TYPE" in
-            android)
-              APK=$(find androidApp/build/outputs/apk/release -name '*.apk' | head -1)
-              if [ -z "$APK" ]; then
-                echo "::error::Android release APK not found under androidApp/build/outputs/apk/release"
-                exit 1
-              fi
-              cp "$APK" /tmp/subsloth-"$VERSION"-release.apk
-              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-release.apk --clobber
-              ;;
-            desktop)
-              DEB=$(find desktopApp/build/compose/binaries/main/deb -name '*.deb' | head -1)
-              if [ -z "$DEB" ]; then
-                echo "::error::Linux .deb not found under desktopApp/build/compose/binaries/main/deb"
-                exit 1
-              fi
-              cp "$DEB" /tmp/subsloth-"$VERSION"-linux.deb
-              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-linux.deb --clobber
-              ;;
-            web)
-              DIST="webApp/build/dist/wasmJs/productionExecutable"
-              if [ ! -d "$DIST" ]; then
-                echo "::error::Wasm distribution not found at $DIST"
-                exit 1
-              fi
-              (cd "$DIST" && zip -r /tmp/subsloth-"$VERSION"-web.zip .)
-              gh release upload "$TAG" /tmp/subsloth-"$VERSION"-web.zip --clobber
-              ;;
-            *)
-              echo "::error::Unknown artifact type: $ARTIFACT_TYPE"
-              exit 1
-              ;;
-          esac
+      # Never leave a published release with partial or missing assets: if
+      # anything after publication fails, remove the release and its tag so
+      # the next push can release the same commits again.
+      - name: Delete a partial release on failure
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.semantic.outputs.new_release_git_tag || needs.prepare.outputs.tag }}"
+          if [ -n "$TAG" ] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::warning::Deleting partially published release $TAG"
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi

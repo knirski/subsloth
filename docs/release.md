@@ -14,14 +14,19 @@ Releases are managed by [semantic-release](https://github.com/semantic-release/s
 
  1. A maintainer merges changes to `main` using conventional commits (squash + merge).
  2. The PR title becomes the commit message on `main`, and `pr-title.yml` enforces the conventional commit format.
- 3. `semantic-release.yml` runs on push to `main`, sets up JDK 17 (via the shared `kmp-setup` action — CI does not use JDK 25), analyzes commits since the last tag, and creates a GitHub Release with tag `vX.Y.Z`. A separate `build` job then builds and uploads the Android debug APK, Linux desktop package, and web distribution to that release.
+ 3. `semantic-release.yml` runs on push to `main` in three ordered jobs (all set up JDK 17 via the shared `kmp-setup` action — CI does not use JDK 25):
+    - `prepare` computes the next version with a semantic-release dry run; no tag, release, or notes are created.
+    - `build` assembles the Android APK, Linux desktop package, and web distribution with that version, verifies the Android signing certificate when the release keystore secrets are configured, and stages each artifact for publication.
+    - `publish` runs semantic-release for real, checks that the published tag matches the prepared version, uploads the staged assets with a `SHA256SUMS` file, and deletes the release and tag again if any post-publication step fails.
+
+    A failed build therefore never leaves a published release with missing assets.
  4. Release notes are auto-generated from conventional commit messages and available in the GitHub Release.
 
 No commits are pushed back to `main` during the release process. The git tag and GitHub Release are the source of truth.
 
 ## APK Artifact
 
-A debug-signed sideload APK (`subsloth-{version}-debug.apk`) named with the release version is built during the release pipeline and uploaded as a release asset. Download it from the Assets section of the GitHub Release page.
+A sideload APK named `subsloth-{version}-release.apk` is built during the release pipeline and uploaded with the other release assets. When the `ANDROID_KEYSTORE_*` secrets are configured, the APK is release-signed and its certificate is verified against the digest pinned in `.github/release-signing-sha256.txt`; without them the pipeline falls back to the standard debug keystore, so the artifact is for internal sideloading only. Download it from the Assets section of the GitHub Release page.
 
 ### Manual Install / Update
 1. Download the APK from the GitHub Release page.
@@ -35,7 +40,7 @@ A debug-signed sideload APK (`subsloth-{version}-debug.apk`) named with the rele
 
 ## Release Scope
 
-v1 releases produce **debug-signed APKs for internal sideloading only**. Dedicated release signing and public distribution (e.g., Google Play Store) are deferred.
+Release APKs are release-signed when the `ANDROID_KEYSTORE_*` secrets are configured and verified against the pinned certificate digest; otherwise they are debug-signed and internal-only. Public distribution (e.g., Google Play Store) is out of scope.
 
 ## Important Notes
 
