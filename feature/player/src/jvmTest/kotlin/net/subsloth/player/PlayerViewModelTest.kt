@@ -778,6 +778,39 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `retrying clears the failure flag while the new load runs`() = runTest(testDispatcher) {
+        var fail = true
+        val gate = CompletableDeferred<Unit>()
+        val subtitle = createSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = {
+                if (fail) {
+                    Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+                } else {
+                    gate.await()
+                    Outcome.Success(srtDocument)
+                }
+            },
+        )
+        runCurrent()
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).subtitleLoadFailed).isTrue()
+
+        fail = false
+        viewModel.retrySubtitleLoad()
+        runCurrent()
+
+        // Still fetching, but the stale error is already gone.
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).subtitleLoadFailed).isFalse()
+
+        gate.complete(Unit)
+        runCurrent()
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.subtitleCues).isNotEmpty()
+    }
+
+    @Test
     fun `selecting another subtitle clears the previous track's cues until it loads`() = runTest(testDispatcher) {
         val enSubtitle = createSubtitle()
         val esSubtitle = createSpanishSubtitle()

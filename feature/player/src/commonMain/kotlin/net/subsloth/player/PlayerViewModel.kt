@@ -470,6 +470,14 @@ class PlayerViewModel(
                 applyCues(subtitle, cues = emptyList(), failed = false)
                 return@launch
             }
+            // Clear a previous failure right away so the retry does not show
+            // a stale error while the new fetch is in flight.
+            _uiState.update { current ->
+                (current as? PlayerUiState.Content)
+                    ?.takeIf { it.selectedSubtitle == subtitle }
+                    ?.copy(subtitleLoadFailed = false)
+                    ?: current
+            }
             fetchSubtitleText(url).fold(
                 onSuccess = { text ->
                     applyCues(subtitle, cues = SubtitleTextParser.parse(text, subtitle.format), failed = false)
