@@ -68,6 +68,13 @@ class DownloadTransferer(private val client: HttpClient, private val store: Down
                 if (!resuming && !response.status.isSuccess()) {
                     error("Download request failed with HTTP ${response.status.value}")
                 }
+                val contentType = response.headers[HttpHeaders.ContentType]
+                    ?.substringBefore(';')
+                    ?.trim()
+                    ?.lowercase()
+                if (contentType in NON_MEDIA_CONTENT_TYPES) {
+                    error("Download returned non-media content type '$contentType'")
+                }
                 val start = if (resuming) response.contentRangeStart() else 0L
                 if (resuming && start != resumeFrom) {
                     error("Server resumed at byte $start, expected $resumeFrom")
@@ -89,6 +96,12 @@ class DownloadTransferer(private val client: HttpClient, private val store: Down
                         onProgress(TransferProgress(written, total))
                     }
                 }
+                // A body shorter than the advertised length is a truncated
+                // download (e.g. the connection dropped); finalizing it would
+                // mark an unplayable file as complete.
+                if (total != null && written != total) {
+                    error("Download truncated: wrote $written of $total bytes")
+                }
             }
             written
         }.also { result ->
@@ -100,6 +113,21 @@ class DownloadTransferer(private val client: HttpClient, private val store: Down
 
     companion object {
         private const val CHUNK_BYTES = 64L * 1024
+
+        /**
+         * Content types that mean an error page, not media, even when the
+         * status is 2xx (expired signed URLs and captive portals do this).
+         * Anything else — including a missing header — is accepted, because
+         * providers legitimately serve media as `video/...`, `audio/...`, or
+         * `application/octet-stream`.
+         */
+        private val NON_MEDIA_CONTENT_TYPES = setOf(
+            "text/html",
+            "application/xhtml+xml",
+            "text/xml",
+            "application/xml",
+            "application/json",
+        )
     }
 }
 
