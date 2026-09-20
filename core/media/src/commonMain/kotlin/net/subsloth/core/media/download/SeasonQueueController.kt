@@ -124,6 +124,17 @@ class SeasonQueueController(
             }
         }
         val items = seasonQueueDao.getItemsForQueue(queueId.value)
+        val active = items.firstOrNull { it.status == "downloading" }
+        if (active != null) {
+            // An item is already in flight — normally left by a previous
+            // process (the transfer watcher resumes it) or by this driver.
+            // Keep waiting for it instead of starting the next episode.
+            val queueEntity = seasonQueueDao.getQueue(queueId.value)
+            if (queueEntity != null && queueEntity.status != "running") {
+                seasonQueueDao.upsertQueue(queueEntity.copy(status = "running"))
+            }
+            return SeasonQueueExecution.Running(active.toEpisodeMediaId())
+        }
         val nextPending = items.firstOrNull { it.status == "pending" }
         if (nextPending == null) {
             markQueueCompletedIfDone(queueId)
@@ -136,12 +147,7 @@ class SeasonQueueController(
             seasonQueueDao.upsertQueue(queueEntity.copy(status = "running"))
         }
 
-        val mediaId = Media.MediaId.Episode(
-            net.subsloth.core.model.identifier.EpisodeId(
-                nextPending.episodeId.toIntOrNull()
-                    ?: error("Invalid episodeId: ${nextPending.episodeId}"),
-            ),
-        )
+        val mediaId = nextPending.toEpisodeMediaId()
         val result = downloadsPort.enqueue(
             mediaId = mediaId,
             requested = parseResolution(nextPending.qualityLabel),
@@ -341,3 +347,9 @@ private fun Media.MediaId.toEpisodeIdString(): String = when (this) {
     is Media.MediaId.Movie -> value.value.toString()
     is Media.MediaId.Show -> value.value.toString()
 }
+
+private fun QueueItemEntity.toEpisodeMediaId(): Media.MediaId.Episode = Media.MediaId.Episode(
+    net.subsloth.core.model.identifier.EpisodeId(
+        episodeId.toIntOrNull() ?: error("Invalid episodeId: $episodeId"),
+    ),
+)

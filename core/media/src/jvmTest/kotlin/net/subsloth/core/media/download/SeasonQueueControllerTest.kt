@@ -109,7 +109,7 @@ class SeasonQueueControllerTest {
     }
 
     @Test
-    fun `executeNext skips downloading items and returns completed`() = runTest {
+    fun `executeNext re-adopts an existing downloading item`() = runTest {
         val dao = createPopulatedDao()
         dao.clearItems()
         dao.upsertItem(
@@ -124,7 +124,11 @@ class SeasonQueueControllerTest {
             ),
         )
         val controller = SeasonQueueController(fakeDownloadsPort(), dao, Clock.System)
-        assertThat(controller.executeNext(queueId)).isEqualTo(SeasonQueueExecution.Completed)
+
+        val result = controller.executeNext(queueId)
+
+        assertThat(result).isEqualTo(SeasonQueueExecution.Running(Media.MediaId.Episode(EpisodeId(2))))
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("running")
     }
 
     @Test

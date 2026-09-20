@@ -146,7 +146,9 @@ container's `startSeasonDownload`, which computes the preflight confirmation
 queue for the selected season, and launches a `SeasonQueueDriver`. The driver enqueues
 episodes one at a time through `DownloadController` and advances each queue item to
 completed/failed by observing the real download state, pausing the queue when a transfer
-defers on a metered network.
+defers on a metered network. On startup, the container relaunches a driver for every
+queued/running queue so a process death mid-season cannot leave the queue stuck; an
+in-flight item is re-adopted rather than enqueued a second time.
 
 ## Web — demo tier and production composition root
 

@@ -15,6 +15,7 @@ import net.subsloth.core.model.download.OfflineAsset
 import net.subsloth.core.model.download.OfflineRelativePath
 import net.subsloth.core.model.download.QueueId
 import net.subsloth.core.model.download.TransferPreference
+import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
 import net.subsloth.core.model.identifier.LocalMediaIdentifier
 import net.subsloth.core.model.identifier.Resolution
@@ -122,6 +123,23 @@ class SeasonQueueDriverTest {
     fun `drive completes every item and the queue`() = runTest {
         val dao = populatedDao()
         val port = DriverFakeDownloadsPort { mediaId -> completed(mediaId) }
+        val controller = SeasonQueueController(port, dao, Clock.System)
+
+        SeasonQueueDriver(controller, port).drive(queueId)
+
+        assertThat(port.enqueued.size).isEqualTo(2)
+        assertThat(dao.items.map { it.status }).containsExactly("completed", "completed")
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("completed")
+    }
+
+    @Test
+    fun `drive continues a queue whose item was left downloading`() = runTest {
+        val dao = populatedDao()
+        dao.upsertItem(queueItem(episodeId = "1").copy(status = "downloading"))
+        val port = DriverFakeDownloadsPort { mediaId -> completed(mediaId) }
+        // The media row survives the previous process; the transfer watcher
+        // resumes/completes it, and the driver must not enqueue it again.
+        port.enqueued += Media.MediaId.Episode(EpisodeId(1))
         val controller = SeasonQueueController(port, dao, Clock.System)
 
         SeasonQueueDriver(controller, port).drive(queueId)
