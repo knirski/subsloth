@@ -110,8 +110,10 @@ This document describes the manual device acceptance checklist for the three sup
 
 ### 4.2 Playback controls
 1. During playback, verify on-screen controls appear on tap (phone/tablet) or D-pad activation (TV).
-2. Verify **Play/Pause**, **Seek forward/backward**, and **Stop** work correctly.
-3. Verify the current playback position and duration are displayed.
+2. Verify the large centred **Play/Pause** button toggles playback, and that the compact
+   speed, **CC** (subtitles), quality, and **Full** (fullscreen) chips open their pickers.
+3. Verify seeking works by dragging the progress slider.
+4. Verify the current playback position and duration are displayed.
 
 ### 4.2b Screen stays on
 1. Start playback on Android and leave the device untouched until the system
