@@ -3,6 +3,9 @@ package net.subsloth
 import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -395,6 +398,12 @@ fun SubSlothNavHost(
                 NavDestinationBackHandler(enabled = isImmersive) {
                     isImmersive = false
                 }
+                // Keep the controls above the navigation bar / gesture area
+                // when playback is windowed; zero while immersive fullscreen
+                // hides the bars.
+                val navigationBarInset = WindowInsets.navigationBars
+                    .asPaddingValues()
+                    .calculateBottomPadding()
                 PlayerScreen(
                     viewModel = viewModel,
                     modifier = Modifier,
@@ -404,6 +413,7 @@ fun SubSlothNavHost(
                     PlayerFullscreenControl(isFullscreen = isImmersive) {
                         isImmersive = !isImmersive
                     },
+                    controlsBottomPadding = navigationBarInset,
                 )
             }
 
