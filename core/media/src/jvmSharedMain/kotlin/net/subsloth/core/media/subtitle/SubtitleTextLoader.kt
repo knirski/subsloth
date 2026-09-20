@@ -24,9 +24,10 @@ import java.net.URISyntaxException
  *   addressed with `file://` URIs by `OfflineSourceResolver`, so this path is
  *   load-bearing for offline playback.
  *
- * Every failure — a missing file, a malformed URL, a timeout, or a document
- * larger than [maxBytes] — maps to [Outcome.Failure], never a thrown
- * exception, so a bad subtitle track cannot take down playback.
+ * Every failure — a missing file, a malformed or unsupported URL, a non-2xx
+ * response, a timeout, or a document larger than [maxBytes] — maps to
+ * [Outcome.Failure], never a thrown exception, so a bad subtitle track cannot
+ * take down playback.
  */
 class SubtitleTextLoader(
     private val timeoutMs: Int = DEFAULT_TIMEOUT_MS,
@@ -59,15 +60,27 @@ class SubtitleTextLoader(
 
     private fun openStream(url: String): InputStream {
         val uri = URI(url)
-        if (uri.scheme.equals(FILE_SCHEME, ignoreCase = true)) {
-            return File(uri).inputStream()
+        return when (uri.scheme?.lowercase()) {
+            FILE_SCHEME -> File(uri).inputStream()
+            HTTP_SCHEME, HTTPS_SCHEME -> openHttpStream(uri)
+            else -> throw IOException("Unsupported subtitle URL scheme: ${uri.scheme}")
         }
-        val connection = uri.toURL().openConnection()
-        if (connection is HttpURLConnection) {
-            connection.connectTimeout = timeoutMs
-            connection.readTimeout = timeoutMs
+    }
+
+    /**
+     * Opens a remote subtitle stream with the configured timeouts. Responses
+     * outside 2xx are rejected so an empty or error body cannot masquerade as
+     * subtitle text (e.g. a `304 Not Modified`).
+     */
+    private fun openHttpStream(uri: URI): InputStream {
+        val connection = uri.toURL().openConnection() as HttpURLConnection
+        connection.connectTimeout = timeoutMs
+        connection.readTimeout = timeoutMs
+        val responseCode = connection.responseCode
+        if (responseCode !in 200..299) {
+            throw IOException("Subtitle request returned HTTP $responseCode for $uri")
         }
-        return connection.getInputStream()
+        return connection.inputStream
     }
 
     private fun readBounded(input: InputStream): ByteArray {
@@ -86,6 +99,8 @@ class SubtitleTextLoader(
 
     private companion object {
         const val FILE_SCHEME = "file"
+        const val HTTP_SCHEME = "http"
+        const val HTTPS_SCHEME = "https"
 
         /** Remote subtitle requests are small; keep the fetch budget bounded. */
         const val DEFAULT_TIMEOUT_MS = 10_000

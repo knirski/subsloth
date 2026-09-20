@@ -62,6 +62,30 @@ class SubtitleTextLoaderTest {
     }
 
     @Test
+    fun `rejects an unsupported URL scheme`() = runTest {
+        val result = loader.load("ftp://example.com/subtitle.vtt")
+
+        assertThat(result.failureError()).isEqualTo(NetworkError.UnexpectedResponse)
+    }
+
+    @Test
+    fun `returns a failure for a non-2xx response`() = runTest {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/not-modified.vtt") { exchange ->
+            exchange.sendResponseHeaders(304, -1)
+            exchange.close()
+        }
+        server.start()
+        try {
+            val result = loader.load("http://127.0.0.1:${server.address.port}/not-modified.vtt")
+
+            assertThat(result.failureError()).isEqualTo(NetworkError.UnexpectedResponse)
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    @Test
     fun `reads subtitle text from an HTTP URL`() = runTest {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/subtitle.vtt") { exchange ->
