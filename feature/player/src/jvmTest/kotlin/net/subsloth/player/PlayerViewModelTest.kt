@@ -887,6 +887,29 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `play next episode does not navigate for an upcoming next episode`() = runTest(testDispatcher) {
+        val unavailableNext = createEpisode(id = 2).copy(availability = Availability.Upcoming.UnknownDate)
+        val navigatedTo = mutableListOf<Media.MediaId>()
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = {
+                Outcome.Success(createVideoSource(mediaId = Media.MediaId.Episode(EpisodeId(1))))
+            },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), unavailableNext)) },
+            onNavigateToNextEpisode = { navigatedTo.add(it) },
+        )
+
+        viewModel.onPlaybackEnded()
+        runCurrent()
+        viewModel.playNextEpisode()
+        runCurrent()
+
+        assertThat(navigatedTo).isEmpty()
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.showNextEpisodePrompt).isTrue()
+    }
+
+    @Test
     fun `countdown does not auto-play when the next episode is unavailable`() = runTest(testDispatcher) {
         val unavailableNext = createEpisode(id = 2).copy(availability = Availability.Expired)
         val source = createVideoSource(
