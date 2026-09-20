@@ -203,7 +203,7 @@ class DownloadTransferCoordinator(
             onFailure = { error ->
                 if (error is CancellationException) throw error
                 log.e(error) { "Transfer failed for ${localId.value}" }
-                fail(localId, attempted, DownloadFailureReason.DownloadFailed)
+                fail(localId, latest, DownloadFailureReason.DownloadFailed)
             },
         )
     }
