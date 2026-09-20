@@ -54,6 +54,44 @@ class DownloadTransfererTest {
     }
 
     @Test
+    fun `rejects an HTML error page returned with a success status`() = runTest {
+        val body = "<html><body>Signed URL expired</body></html>"
+        val transferer = transfererWith { _ ->
+            respond(
+                content = ByteReadChannel(body),
+                status = HttpStatusCode.OK,
+                headers = headersOf(
+                    HttpHeaders.ContentType to listOf("text/html; charset=utf-8"),
+                    HttpHeaders.ContentLength to listOf(body.length.toString()),
+                ),
+            )
+        }
+        val relativePath = OfflineRelativePath.safe("1/asset.mp4")
+
+        val result = transferer.transfer("https://cdn.example.com/file.mp4", relativePath)
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(requireNotNull(result.exceptionOrNull())).hasMessageThat().contains("non-media content type")
+    }
+
+    @Test
+    fun `rejects a body truncated before its content length`() = runTest {
+        val transferer = transfererWith { _ ->
+            respond(
+                content = ByteReadChannel("only-part"),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentLength, "100"),
+            )
+        }
+        val relativePath = OfflineRelativePath.safe("1/asset.mp4")
+
+        val result = transferer.transfer("https://cdn.example.com/file.mp4", relativePath)
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(requireNotNull(result.exceptionOrNull())).hasMessageThat().contains("truncated")
+    }
+
+    @Test
     fun `a non-2xx response fails the transfer without creating the staged file`() = runTest {
         val transferer = transfererWith { _ ->
             respond(content = ByteReadChannel(""), status = HttpStatusCode.Forbidden)
