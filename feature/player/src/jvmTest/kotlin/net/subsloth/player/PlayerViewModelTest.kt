@@ -856,6 +856,37 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `dismissal stays in effect when playback ends`() = runTest(testDispatcher) {
+        val episode2 = createEpisode(id = 2, seasonNumber = 1, episodeNumber = 2)
+        val source = createVideoSource(
+            mediaId = Media.MediaId.Episode(EpisodeId(1)),
+            durationSeconds = 100L,
+        )
+        val navigatedTo = mutableListOf<Media.MediaId>()
+        val viewModel = createViewModel(
+            mediaId = Media.MediaId.Show(ShowId(1)),
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchEpisodes = { Outcome.Success(listOf(createEpisode(id = 1), episode2)) },
+            onNavigateToNextEpisode = { navigatedTo.add(it) },
+        )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 98L, durationSeconds = 100L))
+        runCurrent()
+        viewModel.dismissNextEpisode()
+
+        // The completion event used to re-show the prompt and restart the
+        // 10-second auto-advance the user had just cancelled.
+        viewModel.onPlaybackEnded()
+        advanceTimeBy(15_000)
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.showNextEpisodePrompt).isFalse()
+        assertThat(state.nextEpisodeCountdownSeconds).isNull()
+        assertThat(navigatedTo).isEmpty()
+    }
+
+    @Test
     fun `countdown does not auto-play when the next episode is unavailable`() = runTest(testDispatcher) {
         val unavailableNext = createEpisode(id = 2).copy(availability = Availability.Expired)
         val source = createVideoSource(
