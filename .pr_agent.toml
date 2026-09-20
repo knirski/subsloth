@@ -2,6 +2,9 @@
 model = "gemini/gemini-3.8-flash"
 fallback_models = ["gemini/gemini-3.5-flash-lite"]
 custom_model_max_tokens = 131072
+# Give the model the repo's normative rules, not just AGENTS.md.
+repo_context_files = ["AGENTS.md", "docs/codestyle.md"]
+repo_context_max_lines = 700
 
 [github_action_config]
 auto_review = true
@@ -9,7 +12,17 @@ auto_describe = true
 auto_improve = true
 verbose = false
 pr_actions = ["opened", "reopened", "ready_for_review"]
+# Re-review updated commits; without this only the first revision is reviewed.
+handle_push_trigger = true
+push_commands = ["/review", "/improve"]
 
 [pr_code_suggestions]
 commitable_code_suggestions = true
 dual_publishing_score_threshold = 5
+# Do not post a comment when there is nothing to suggest.
+publish_output_no_suggestions = false
+
+[pr_reviewer]
+# Surface findings as inline comments and stay quiet when the review is clean.
+inline_key_issues = true
+publish_output_no_suggestions = false
