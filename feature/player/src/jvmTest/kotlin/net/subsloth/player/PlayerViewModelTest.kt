@@ -735,7 +735,7 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `subtitle fetch failure leaves cues empty but keeps selection`() = runTest(testDispatcher) {
+    fun `subtitle fetch failure surfaces the error and keeps selection`() = runTest(testDispatcher) {
         val subtitle = createSubtitle()
         val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
         val viewModel = createViewModel(
@@ -747,6 +747,34 @@ class PlayerViewModelTest {
         val state = viewModel.uiState.value as PlayerUiState.Content
         assertThat(state.selectedSubtitle).isNotNull()
         assertThat(state.subtitleCues).isEmpty()
+        assertThat(state.subtitleLoadFailed).isTrue()
+    }
+
+    @Test
+    fun `retrying a failed subtitle load clears the error`() = runTest(testDispatcher) {
+        var fail = true
+        val subtitle = createSubtitle()
+        val source = createVideoSource(availableSubtitles = persistentListOf(subtitle))
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            fetchSubtitleText = {
+                if (fail) {
+                    Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
+                } else {
+                    Outcome.Success(srtDocument)
+                }
+            },
+        )
+        runCurrent()
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).subtitleLoadFailed).isTrue()
+
+        fail = false
+        viewModel.retrySubtitleLoad()
+        runCurrent()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.subtitleLoadFailed).isFalse()
+        assertThat(state.subtitleCues).isNotEmpty()
     }
 
     @Test
