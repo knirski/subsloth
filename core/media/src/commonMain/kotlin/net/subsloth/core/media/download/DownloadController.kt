@@ -52,6 +52,11 @@ class DownloadController(
      * Fills in missing titles for downloads created before the column existed.
      * Resolution is best-effort: offline or unknown media stay null and the UI
      * keeps its fallback label.
+     *
+     * Writes only the title column: the row snapshot above is stale by the
+     * time [resolveTitle] returns, and a full-row upsert would clobber
+     * transfer state (status, staged path, size) written by the coordinator
+     * while the lookup was in flight.
      */
     private suspend fun backfillDisplayTitles(rows: List<DownloadedMediaEntity>) {
         rows.filter { it.displayTitle == null }.forEach { row ->
@@ -62,7 +67,7 @@ class DownloadController(
                 .getOrNull()
                 ?.takeIf { it.isNotBlank() }
                 ?: return@forEach
-            downloadedMediaDao.upsert(row.copy(displayTitle = title))
+            downloadedMediaDao.updateDisplayTitle(row.id, title)
         }
     }
 

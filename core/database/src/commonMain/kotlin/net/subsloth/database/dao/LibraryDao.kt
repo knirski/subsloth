@@ -170,6 +170,14 @@ interface DownloadedMediaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: DownloadedMediaEntity)
 
+    /**
+     * Writes only the title column. Used by the lazy title backfill, which
+     * resolves titles over the network and must not overwrite transfer state
+     * (status, staged path, size) written by the coordinator in the meantime.
+     */
+    @Query("UPDATE downloaded_media SET displayTitle = :title WHERE id = :id")
+    suspend fun updateDisplayTitle(id: Long, title: String)
+
     @Delete
     suspend fun delete(entity: DownloadedMediaEntity)
 
