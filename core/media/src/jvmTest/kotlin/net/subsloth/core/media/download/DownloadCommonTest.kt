@@ -66,6 +66,31 @@ class DownloadCommonTest {
     }
 
     @Test
+    fun `parseResolution returns SD for SD label`() {
+        assertThat(parseResolution("SD")).isEqualTo(Resolution.SD)
+    }
+
+    @Test
+    fun `parseResolution returns SD for 360 label`() {
+        assertThat(parseResolution("360p")).isEqualTo(Resolution.SD)
+    }
+
+    @Test
+    fun `parseResolution round-trips every resolution label`() {
+        val resolutions = listOf(
+            Resolution.SD,
+            Resolution.HD_720,
+            Resolution.FULL_HD,
+            Resolution.QHD,
+            Resolution.UHD_4K,
+        )
+
+        resolutions.forEach { resolution ->
+            assertThat(parseResolution(resolution.label)).isEqualTo(resolution)
+        }
+    }
+
+    @Test
     fun `parseResolution returns HD_720 for unknown label`() {
         assertThat(parseResolution("144p")).isEqualTo(Resolution.HD_720)
     }
