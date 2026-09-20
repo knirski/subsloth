@@ -24,5 +24,5 @@ internal fun classifyPlaybackErrorMessage(message: String): PlaybackError {
     return PlaybackErrorClassifier.classify(domainError)
 }
 
-// Matches "401", "403", etc. inside an arbitrary player error message.
-private val HTTP_STATUS_REGEX = Regex("""\b(40[0-9]|41[0-9]|42[0-9]|43[0-9]|44[0-9]|45[0-9])\b""")
+// Matches an HTTP 4xx/5xx status inside an arbitrary player error message.
+private val HTTP_STATUS_REGEX = Regex("""\b([45]\d{2})\b""")
