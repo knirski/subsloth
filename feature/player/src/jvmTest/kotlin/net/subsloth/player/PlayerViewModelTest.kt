@@ -8,6 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -262,6 +264,40 @@ class PlayerViewModelTest {
         runCurrent()
 
         assertThat(saves).isEmpty()
+    }
+
+    // ── Player surface reattachment ───────────────────────────────────────
+
+    @Test
+    fun `reattaching a recreated player re-opens the source at the current position`() = runTest(testDispatcher) {
+        val source = createVideoSource(streamUrl = "https://example.com/stream.m3u8")
+        val viewModel = createViewModel(fetchVideoSource = { Outcome.Success(source) })
+
+        // The first attach happens during the initial composition.
+        viewModel.onPlayerAttached()
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 130, durationSeconds = 3600))
+
+        // The host composition is recreated and attaches a new player.
+        viewModel.onPlayerAttached()
+
+        val commands = viewModel.playCommands.take(2).toList()
+        assertThat(commands).hasSize(2)
+        assertThat(commands[1].url).isEqualTo("https://example.com/stream.m3u8")
+        assertThat(commands[1].positionSeconds).isEqualTo(130)
+    }
+
+    @Test
+    fun `the initial placeholder snapshot does not overwrite the resume position`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadProgress = { progress(positionSeconds = 120, durationSeconds = 3600) },
+            )
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).positionSeconds).isEqualTo(120)
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 0, durationSeconds = 0, isPlaying = false))
+
+        assertThat((viewModel.uiState.value as PlayerUiState.Content).positionSeconds).isEqualTo(120)
     }
 
     // ── Disposal-safe progress flush ──────────────────────────────────────

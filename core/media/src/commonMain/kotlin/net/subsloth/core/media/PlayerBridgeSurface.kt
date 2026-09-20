@@ -92,6 +92,9 @@ fun PlayerBridgeSurface(
     }
 
     LaunchedEffect(playerState) {
+        // Runs once per player instance: the first composition and every
+        // host-composition recreation (e.g. an Android configuration change).
+        currentOnEvent.value(PlayerEvent.Attached)
         playerState.onPlaybackEnded = {
             currentOnEvent.value(PlayerEvent.PlaybackEnded)
         }

@@ -298,6 +298,19 @@ catalog.
    JVM host; `TvFocusTraversalTest` is `@Ignore`d on CI because the headless
    emulator never grants window focus — this on-device pass is its replacement.
 
+### 10.6 Player reattachment after activity recreation (Android)
+1. Start playback and let it run past the resume threshold (30 seconds).
+2. Force an activity recreation: enable Developer options → "Don't keep
+   activities" and background/foreground the app, or toggle a configuration
+   (dark mode, font size) with the player open.
+3. Verify playback re-opens the same source at the position it had reached —
+   no black surface, no silent reset to 0:00.
+4. Leave the player and verify the saved resume position is the position from
+   step 3, not 0.
+5. Expected coverage: `PlayerViewModelTest` covers the reattach command and the
+   placeholder-snapshot guard; this on-device pass confirms the Compose surface
+   actually rebuilds and re-opens the source.
+
 ---
 
 ## Appendix: Logout Retention Partition
@@ -321,3 +334,4 @@ When testing logout flows (see [1.3 Logout](#13-logout)), verify the following r
 |---|---|---|
 | 2026-07-18 | 1.0 | Initial device acceptance checklist |
 | 2026-09-15 | 1.1 | List layout (compact rows) across Browsing/Library; Home tab restoration; pending-verification section for artwork, immersive player, second-play resume and TV focus |
+| 2026-09-20 | 1.2 | Pending verification: player reattachment after activity recreation |
