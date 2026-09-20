@@ -529,7 +529,13 @@ class PlayerViewModel(
         val state = _uiState.value as? PlayerUiState.Content ?: return
         val currentSession = state.session ?: return
         if (state.playbackMode == PlaybackMode.OFFLINE) return
-        if (!StreamRefreshPolicy.canRefresh(currentSession.streamRefreshUsed, isOfflinePlayback = false)) return
+        if (!StreamRefreshPolicy.canRefresh(currentSession.streamRefreshUsed, isOfflinePlayback = false)) {
+            // The one allowed refresh is spent: fall back to re-resolving the
+            // source instead of leaving the button dead. The plain retry
+            // re-fetches a fresh URL from the API anyway.
+            retryPlayback()
+            return
+        }
 
         performStreamRefresh(currentSession)
     }

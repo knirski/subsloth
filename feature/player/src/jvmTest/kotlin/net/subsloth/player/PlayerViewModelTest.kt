@@ -602,6 +602,28 @@ class PlayerViewModelTest {
         assertThat(refreshCallCount).isEqualTo(1)
     }
 
+    @Test
+    fun `refresh with a spent refresh budget re-resolves the source instead of doing nothing`() =
+        runTest(testDispatcher) {
+            var fetchCount = 0
+            val viewModel =
+                createViewModel(
+                    fetchVideoSource = {
+                        fetchCount++
+                        Outcome.Success(createVideoSource())
+                    },
+                    refreshStreamUrl = { Outcome.Success(createVideoSource()) },
+                )
+            val fetchesAfterInit = fetchCount
+
+            viewModel.retryWithRefresh()
+            viewModel.retryWithRefresh()
+
+            // The first call used the one refresh; the second fell back to a
+            // plain retry, which re-fetches the source (and its signed URL).
+            assertThat(fetchCount).isEqualTo(fetchesAfterInit + 1)
+        }
+
     // ── Playback speed ────────────────────────────────────────────────────
 
     @Test
