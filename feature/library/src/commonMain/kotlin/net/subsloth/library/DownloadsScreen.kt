@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.model.download.DownloadFailureReason
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.SeasonDownloadQueue
+import net.subsloth.core.model.download.SeasonQueueExecution
 import net.subsloth.core.model.download.SeasonQueueItemExecution
 import net.subsloth.core.model.media.Media
 import net.subsloth.core.ui.AdaptiveContentFrame
@@ -111,6 +112,7 @@ fun DownloadsScreen(
                     onRemove = viewModel::remove,
                     onDeleteAllCompleted = viewModel::deleteAllCompleted,
                     onDeleteWatchedCompleted = viewModel::deleteWatchedCompleted,
+                    onResumeQueue = viewModel::resumeQueue,
                 )
             }
         }
@@ -129,6 +131,7 @@ fun DownloadsContent(
     onRemove: (String) -> Unit = {},
     onDeleteAllCompleted: () -> Unit = {},
     onDeleteWatchedCompleted: () -> Unit = {},
+    onResumeQueue: (String) -> Unit = {},
 ) {
     var showDeleteConfirmation by remember { mutableStateOf<DeleteConfirmationType?>(null) }
 
@@ -144,6 +147,7 @@ fun DownloadsContent(
             onRemove = onRemove,
             onDeleteAllCompleted = { showDeleteConfirmation = DeleteConfirmationType.ALL },
             onDeleteWatchedCompleted = { showDeleteConfirmation = DeleteConfirmationType.WATCHED },
+            onResumeQueue = onResumeQueue,
         )
     }
 
@@ -210,6 +214,7 @@ private fun DownloadsContentBody(
     onRemove: (String) -> Unit = {},
     onDeleteAllCompleted: () -> Unit = {},
     onDeleteWatchedCompleted: () -> Unit = {},
+    onResumeQueue: (String) -> Unit = {},
 ) {
     LazyColumn(
         modifier = modifier
@@ -343,7 +348,10 @@ private fun DownloadsContentBody(
             }
             state.seasonQueues.forEach { queue ->
                 item(key = "sq_${queue.queueId.value}") {
-                    SeasonQueueCard(queue = queue)
+                    SeasonQueueCard(
+                        queue = queue,
+                        onResume = { onResumeQueue(queue.queueId.value) },
+                    )
                 }
             }
         }
@@ -484,7 +492,7 @@ private fun DownloadRow(
 }
 
 @Composable
-private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Modifier) {
+private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Modifier, onResume: () -> Unit = {}) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -529,6 +537,14 @@ private fun SeasonQueueCard(queue: SeasonDownloadQueue, modifier: Modifier = Mod
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            if (queue.execution is SeasonQueueExecution.Paused) {
+                TextButton(
+                    onClick = onResume,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(stringResource(Res.string.downloads_resume))
+                }
             }
         }
     }

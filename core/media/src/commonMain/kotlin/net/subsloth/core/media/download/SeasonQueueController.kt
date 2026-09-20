@@ -220,9 +220,22 @@ class SeasonQueueController(
         seasonQueueDao.upsertQueue(entity.copy(status = "paused", failureReason = reason.name))
     }
 
+    /**
+     * Re-queues a paused queue and resumes its in-flight item's media row.
+     * The coordinator's rows are the transfer source of truth, so without the
+     * item resume `executeNext` would immediately report the queue paused
+     * again and the driver would stop.
+     */
     suspend fun resumeQueue(queueId: QueueId) {
         val entity = seasonQueueDao.getQueue(queueId.value) ?: return
         seasonQueueDao.upsertQueue(entity.copy(status = "queued"))
+        val active = seasonQueueDao.getItemsForQueue(queueId.value)
+            .firstOrNull { it.status == "downloading" }
+            ?: return
+        val mediaId = active.toEpisodeMediaId()
+        downloadsPort.listDownloads().getOrNull()
+            ?.firstOrNull { it.mediaId == mediaId }
+            ?.let { downloadsPort.resume(it.localId) }
     }
 
     suspend fun cancelQueue(queueId: QueueId) {

@@ -181,6 +181,20 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun `resumeQueue action calls the season queue callback`() = runTest(testDispatcher) {
+        var resumedQueueId: String? = null
+        val viewModel = DownloadsViewModel(
+            listDownloads = { Result.success(persistentListOf()) },
+            listSeasonQueues = { Result.success(persistentListOf()) },
+            resumeSeasonQueue = { resumedQueueId = it },
+        )
+
+        viewModel.resumeQueue("queue-1")
+
+        assertThat(resumedQueueId).isEqualTo("queue-1")
+    }
+
+    @Test
     fun `cancel action calls cancel on port`() = runTest(testDispatcher) {
         var cancelled = false
         val viewModel = DownloadsViewModel(

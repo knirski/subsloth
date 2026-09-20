@@ -132,6 +132,42 @@ class SeasonQueueControllerTest {
     }
 
     @Test
+    fun `resumeQueue re-queues and resumes the paused active item`() = runTest {
+        val dao = createPopulatedDao()
+        dao.clearItems()
+        dao.upsertItem(
+            QueueItemEntity(
+                queueId = queueId.value,
+                episodeId = "2",
+                episodeTitle = "E2",
+                qualityLabel = null,
+                subtitleLanguages = null,
+                sizeBytes = null,
+                status = "downloading",
+            ),
+        )
+        dao.upsertQueue(requireNotNull(dao.getQueue(queueId.value)).copy(status = "paused"))
+        val episode = Media.MediaId.Episode(EpisodeId(2))
+        val paused = DownloadState.Paused(
+            localId = LocalMediaIdentifier("2/42"),
+            mediaId = episode,
+            quality = QualityDescriptor(Resolution.HD_720, "720p", null, null),
+            reason = DownloadFailureReason.NeedsWifi,
+        )
+        var resumed: LocalMediaIdentifier? = null
+        val controller = SeasonQueueController(
+            fakeDownloadsPort(preexisting = listOf(paused), onResume = { resumed = it }),
+            dao,
+            Clock.System,
+        )
+
+        controller.resumeQueue(queueId)
+
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("queued")
+        assertThat(resumed).isEqualTo(LocalMediaIdentifier("2/42"))
+    }
+
+    @Test
     fun `executeNext enqueues subtitle when available`() = runTest {
         val dao = createPopulatedDao()
         dao.clearItems()
@@ -340,25 +376,27 @@ class SeasonQueueControllerTest {
         }
     }
 
-    private fun fakeDownloadsPort(onSubtitleEnqueue: () -> Unit = {}): DownloadsPort {
+    private fun queuedState(mediaId: Media.MediaId) = DownloadState.Queued(
+        localId = LocalMediaIdentifier(mediaId.toString()),
+        mediaId = mediaId,
+        quality = QualityDescriptor(
+            resolution = Resolution.HD_720,
+            label = "720p",
+            bitrate = null,
+            mimeType = null,
+        ),
+    )
+
+    private fun fakeDownloadsPort(
+        onSubtitleEnqueue: () -> Unit = {},
+        preexisting: List<DownloadState> = emptyList(),
+        onResume: (LocalMediaIdentifier) -> Unit = {},
+    ): DownloadsPort {
         val enqueued = mutableListOf<Media.MediaId>()
         val enqueuedTitles = mutableListOf<String?>()
         return object : DownloadsPort {
             override suspend fun listDownloads(): Result<kotlinx.collections.immutable.ImmutableList<DownloadState>> =
-                Result.success(
-                    enqueued.map { mediaId ->
-                        DownloadState.Queued(
-                            localId = LocalMediaIdentifier(mediaId.toString()),
-                            mediaId = mediaId,
-                            quality = QualityDescriptor(
-                                resolution = Resolution.HD_720,
-                                label = "720p",
-                                bitrate = null,
-                                mimeType = null,
-                            ),
-                        )
-                    }.toImmutableList(),
-                )
+                Result.success((enqueued.map(::queuedState) + preexisting).toImmutableList())
 
             override suspend fun listOfflineAssets() = Result.success(persistentListOf<OfflineAsset>())
 
@@ -385,8 +423,12 @@ class SeasonQueueControllerTest {
             override suspend fun pause(localId: LocalMediaIdentifier) =
                 Result.success(net.subsloth.core.domain.port.DownloadCommandOutcome.Applied)
 
-            override suspend fun resume(localId: LocalMediaIdentifier) =
-                Result.success(net.subsloth.core.domain.port.DownloadCommandOutcome.Applied)
+            override suspend fun resume(
+                localId: LocalMediaIdentifier,
+            ): Result<net.subsloth.core.domain.port.DownloadCommandOutcome> {
+                onResume(localId)
+                return Result.success(net.subsloth.core.domain.port.DownloadCommandOutcome.Applied)
+            }
 
             override suspend fun cancel(localId: LocalMediaIdentifier) =
                 Result.success(net.subsloth.core.domain.port.DownloadCommandOutcome.Applied)
