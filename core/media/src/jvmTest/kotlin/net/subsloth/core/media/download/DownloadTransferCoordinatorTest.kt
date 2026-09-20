@@ -54,6 +54,10 @@ private class FakeDownloadedMediaDao : DownloadedMediaDao {
         state.value = state.value.filterNot { it.id == entity.id } + entity
     }
 
+    override suspend fun updateDisplayTitle(id: Long, title: String) {
+        state.value = state.value.map { if (it.id == id) it.copy(displayTitle = title) else it }
+    }
+
     override suspend fun delete(entity: DownloadedMediaEntity) {
         state.value = state.value.filterNot { it.id == entity.id }
     }

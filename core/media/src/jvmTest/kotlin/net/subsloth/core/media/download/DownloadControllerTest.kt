@@ -50,6 +50,10 @@ private class ControllerMediaDao : DownloadedMediaDao {
         } + stored
     }
 
+    override suspend fun updateDisplayTitle(id: Long, title: String) {
+        state.value = state.value.map { if (it.id == id) it.copy(displayTitle = title) else it }
+    }
+
     override suspend fun delete(entity: DownloadedMediaEntity) {
         state.value = state.value.filterNot { it.id == entity.id }
     }
@@ -364,6 +368,38 @@ class DownloadControllerTest {
         val second = fixtures.controller.listDownloads().getOrThrow().single()
         assertThat(second.displayTitle).isEqualTo("Resolved Title")
         assertThat(lookups).hasSize(1)
+    }
+
+    @Test
+    fun `title backfill does not clobber transfer state written while resolving`() = runTest {
+        lateinit var fixtures: Fixtures
+        fixtures = fixtures(resolveTitle = {
+            // The transfer coordinator completes the row while the title
+            // lookup is in flight.
+            val current = requireNotNull(fixtures.dao.entity(1))
+            fixtures.dao.set(
+                listOf(
+                    current.copy(
+                        status = "completed",
+                        localFilePath = "videos/42.mp4",
+                        sizeBytes = 1024,
+                        downloadedAtEpochSeconds = 100,
+                    ),
+                ),
+            )
+            "Resolved Title"
+        })
+        fixtures.dao.set(
+            listOf(entity(id = 1, status = "downloading", localFilePath = "videos/42.mp4.part")),
+        )
+
+        val state = fixtures.controller.listDownloads().getOrThrow().single()
+
+        assertThat(state.displayTitle).isEqualTo("Resolved Title")
+        val stored = requireNotNull(fixtures.dao.entity(1))
+        assertThat(stored.status).isEqualTo("completed")
+        assertThat(stored.sizeBytes).isEqualTo(1024)
+        assertThat(stored.localFilePath).isEqualTo("videos/42.mp4")
     }
 
     @Test
