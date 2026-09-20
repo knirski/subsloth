@@ -390,6 +390,11 @@ class PlayerViewModel(
         cancelNextEpisodeCountdown()
         val state = _uiState.value as? PlayerUiState.Content ?: return
         val nextEp = state.nextEpisode ?: return
+        // Unreleased episodes have no playable source: navigating would only
+        // open a player that fails to resolve one. Only `Upcoming` is safe to
+        // block here — `Expired` is also the mapper's fallback when the live
+        // API omits `available` on embedded episode rows.
+        if (nextEp.isUpcoming) return
         dismissNextEpisode()
         onNavigateToNextEpisode(Media.MediaId.Episode(nextEp.id))
     }
