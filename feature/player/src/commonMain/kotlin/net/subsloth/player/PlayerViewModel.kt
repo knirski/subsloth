@@ -284,6 +284,10 @@ class PlayerViewModel(
         val dur = snapshot.durationSeconds
         val stateBefore = _uiState.value as? PlayerUiState.Content ?: return
         val mediaId = stateBefore.mediaId
+        // A pause must persist right away; relying on the periodic tick alone
+        // could lose up to 60 snapshots of progress. The bridge's initial
+        // paused snapshot (position 0, before playback starts) is ignored.
+        val paused = stateBefore.isPlaying && !snapshot.isPlaying && snapshot.positionSeconds > 0L
 
         // The counter increment is computed inside `update` so the new
         // value is based on the latest snapshot, not a possibly-stale
@@ -298,7 +302,7 @@ class PlayerViewModel(
         }
         val nextCount = (_uiState.value as? PlayerUiState.Content)?.snapshotCountSinceSave ?: 0
 
-        if (nextCount % 60 == 0 && mediaId != null) {
+        if ((nextCount % 60 == 0 || paused) && mediaId != null) {
             viewModelScope.launch { saveProgress(mediaId, snapshot.positionSeconds, dur, stateBefore.playbackMode) }
         }
 
