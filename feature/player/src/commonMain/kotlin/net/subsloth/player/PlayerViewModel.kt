@@ -145,7 +145,12 @@ class PlayerViewModel(
         log.d { "Loading content for mediaId=$mediaId" }
         viewModelScope.launch {
             fetchVideoSource(mediaId).fold(
-                onSuccess = { source -> startPlayback(source, positionSeconds = resumePosition()) },
+                onSuccess = { source ->
+                    // A show route resolves to a concrete episode; resume and
+                    // save under that episode so progress and watched state
+                    // stay consistent with what is actually playing.
+                    startPlayback(source, positionSeconds = resumePosition(source.mediaId))
+                },
                 onFailure = { error ->
                     log.e { "Failed to fetch video source: $error" }
                     val playbackError = PlaybackErrorClassifier.classify(error)
@@ -180,10 +185,10 @@ class PlayerViewModel(
      * used, filtered by [ResumePolicy] (ignores the first 30 seconds and
      * near-finished items).
      */
-    private suspend fun resumePosition(): Long {
+    private suspend fun resumePosition(sourceMediaId: Media.MediaId): Long {
         val current = (_uiState.value as? PlayerUiState.Content)?.positionSeconds
         if (current != null && current > 0L) return current
-        val progress = loadProgress(mediaId) ?: return 0L
+        val progress = loadProgress(sourceMediaId) ?: return 0L
         return ResumePolicy.resumablePosition(progress) ?: 0L
     }
 
@@ -247,7 +252,9 @@ class PlayerViewModel(
             playbackMode = source.playbackMode,
             qualityFallbackNotice = previous?.qualityFallbackNotice,
             subtitleFallbackNotice = subtitleNotice,
-            mediaId = mediaId,
+            // The resolved source's id, not the route id: a show route plays a
+            // concrete episode, and progress must be saved against it.
+            mediaId = source.mediaId,
             session = PlayerSession(source = source, streamRefreshUsed = previousRefreshUsed),
             snapshotCountSinceSave = 0,
         )

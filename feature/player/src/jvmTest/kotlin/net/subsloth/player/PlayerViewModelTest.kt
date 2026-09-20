@@ -467,6 +467,45 @@ class PlayerViewModelTest {
         assertThat(state.qualityFallbackNotice).isNull()
     }
 
+    // ── Show playback keys to the resolved episode ───────────────────────
+
+    @Test
+    fun `show playback resumes from the resolved episode's progress`() = runTest(testDispatcher) {
+        val loaded = mutableListOf<Media.MediaId>()
+        val viewModel =
+            createViewModel(
+                mediaId = Media.MediaId.Show(ShowId(7)),
+                fetchVideoSource = {
+                    Outcome.Success(createVideoSource(mediaId = Media.MediaId.Episode(EpisodeId(42))))
+                },
+                loadProgress = { id ->
+                    loaded += id
+                    progress(positionSeconds = 120, durationSeconds = 3600)
+                },
+            )
+
+        assertThat(loaded).containsExactly(Media.MediaId.Episode(EpisodeId(42)))
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.positionSeconds).isEqualTo(120)
+    }
+
+    @Test
+    fun `show playback saves progress for the resolved episode`() = runTest(testDispatcher) {
+        val saved = mutableListOf<Media.MediaId>()
+        val viewModel =
+            createViewModel(
+                mediaId = Media.MediaId.Show(ShowId(7)),
+                fetchVideoSource = {
+                    Outcome.Success(createVideoSource(mediaId = Media.MediaId.Episode(EpisodeId(42))))
+                },
+                saveProgress = { id, _, _, _ -> saved += id },
+            )
+
+        viewModel.flushProgress()
+
+        assertThat(saved).containsExactly(Media.MediaId.Episode(EpisodeId(42)))
+    }
+
     // ── Stream refresh ────────────────────────────────────────────────────
 
     @Test
