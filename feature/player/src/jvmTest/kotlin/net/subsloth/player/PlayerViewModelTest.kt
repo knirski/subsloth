@@ -225,6 +225,45 @@ class PlayerViewModelTest {
         assertThat(state.positionSeconds).isEqualTo(500)
     }
 
+    // ── Progress saved on pause ───────────────────────────────────────────
+
+    @Test
+    fun `pausing saves progress immediately`() = runTest(testDispatcher) {
+        val saves = mutableListOf<Pair<Long, Long>>()
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                saveProgress = { _, position, duration, _ -> saves += position to duration },
+            )
+
+        viewModel.onPlayerSnapshot(createSnapshot(positionSeconds = 120L, durationSeconds = 3600L))
+        viewModel.onPlayerSnapshot(
+            createSnapshot(positionSeconds = 130L, durationSeconds = 3600L, isPlaying = false),
+        )
+        runCurrent()
+
+        assertThat(saves).containsExactly(130L to 3600L)
+    }
+
+    @Test
+    fun `initial paused snapshot before playback starts does not save`() = runTest(testDispatcher) {
+        val saves = mutableListOf<Long>()
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                saveProgress = { _, position, _, _ -> saves += position },
+            )
+
+        // The bridge opens the source paused at position 0, so a naive
+        // play-to-pause transition would overwrite stored resume progress.
+        viewModel.onPlayerSnapshot(
+            createSnapshot(positionSeconds = 0L, durationSeconds = 0L, isPlaying = false),
+        )
+        runCurrent()
+
+        assertThat(saves).isEmpty()
+    }
+
     // ── Disposal-safe progress flush ──────────────────────────────────────
 
     @Test
@@ -1278,10 +1317,14 @@ class PlayerViewModelTest {
         format = SubtitleFormat.SRT,
     )
 
-    private fun createSnapshot(positionSeconds: Long, durationSeconds: Long): PlayerSnapshot = PlayerSnapshot(
+    private fun createSnapshot(
+        positionSeconds: Long,
+        durationSeconds: Long,
+        isPlaying: Boolean = true,
+    ): PlayerSnapshot = PlayerSnapshot(
         positionSeconds = positionSeconds,
         durationSeconds = durationSeconds,
-        isPlaying = true,
+        isPlaying = isPlaying,
         isLoading = false,
     )
 
