@@ -46,7 +46,8 @@ gh run list --commit "$HEAD_SHA" --json databaseId,workflowName,status,conclusio
 gh run watch <run-id> --compact --exit-status
 ```
 
-After significant update, post `/review` — PR Agent doesn't rerun on every `synchronize` push.
+PR Agent re-runs on every push (`handle_push_trigger` in `.pr_agent.toml`);
+no comment command is needed.
 
 ### c. Gather State
 
@@ -103,11 +104,9 @@ If resolve fails, reply-only is acceptable — unresolved non-blocking threads d
 
 ### f. Re-request Review
 
-```bash
-gh pr comment "$PR_NUMBER" --body "/review"
-gh pr comment "$PR_NUMBER" --body "/improve"
-gh pr comment "$PR_NUMBER" --body "/gemini review"
-```
+Comment commands (`/review`, `/improve`) are not wired in this repo's
+workflow. PR Agent re-runs `/review` and `/improve` automatically on every
+push (`push_commands` in `.pr_agent.toml`).
 
 Then back to (a).
 
