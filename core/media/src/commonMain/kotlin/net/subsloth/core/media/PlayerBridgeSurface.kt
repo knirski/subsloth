@@ -100,6 +100,9 @@ fun PlayerBridgeSurface(
     LaunchedEffect(playerState, playCommands) {
         playCommands.collectLatest { cmd ->
             playerState.openUri(cmd.url, InitialPlayerState.PAUSE)
+            // Opening a source resets the renderer's playback parameters on
+            // native players, so the requested speed is applied afterwards.
+            playerState.playbackSpeed = cmd.playbackSpeed
             cmd.subtitleTrack?.let { playerState.selectSubtitleTrack(it) }
             startPlaybackMutedOnWeb(playerState)
             if (cmd.positionSeconds > 0L) {

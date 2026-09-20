@@ -195,6 +195,12 @@ class PlayerViewModel(
         val preferred = loadPreferredLanguage()
         val initialSubtitle = SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
 
+        // A retry or quality change keeps the in-session speed; otherwise the
+        // persisted preference is loaded. The bridge applies it after opening
+        // the source, which resets the player's playback parameters.
+        val currentSpeed = (uiState.value as? PlayerUiState.Content)?.playbackSpeed
+        val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
+
         // Subtitles are rendered by our own Compose layer (see
         // SubtitleTextParser), so the library's native subtitle track stays
         // disabled — its layer would be drawn under our opaque control bar.
@@ -203,6 +209,7 @@ class PlayerViewModel(
                 url = source.streamUrl,
                 positionSeconds = positionSeconds,
                 subtitleTrack = null,
+                playbackSpeed = initialSpeed,
             ),
         )
 
@@ -220,8 +227,6 @@ class PlayerViewModel(
             else -> null
         }
 
-        val currentSpeed = (uiState.value as? PlayerUiState.Content)?.playbackSpeed
-        val initialSpeed = currentSpeed ?: loadPlaybackSpeed()
         val previous = uiState.value as? PlayerUiState.Content
         val previousRefreshUsed = previous?.session?.streamRefreshUsed == true
 
