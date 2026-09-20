@@ -940,6 +940,17 @@ class PlayerViewModelTest {
     // ── Playback speed persistence (Fix 3) ─────────────────────────────────
 
     @Test
+    fun `initial play command carries the persisted playback speed`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource()) },
+                loadPlaybackSpeed = { 1.5f },
+            )
+
+        assertThat(viewModel.playCommands.first().playbackSpeed).isWithin(0.001f).of(1.5f)
+    }
+
+    @Test
     fun `initial playback speed comes from loadPlaybackSpeed`() = runTest(testDispatcher) {
         var loadCalled = false
         val viewModel = createViewModel(
