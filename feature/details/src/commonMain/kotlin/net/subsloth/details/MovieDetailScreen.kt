@@ -28,8 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -551,13 +549,4 @@ private fun DetailActionButtons(
             DownloadUnavailableNotice(modifier = Modifier.fillMaxWidth())
         }
     }
-}
-
-@Composable
-private fun isLandscapeWideScreen(): Boolean {
-    val density = LocalDensity.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val widthDp = with(density) { containerSize.width.toDp().value }
-    val heightDp = with(density) { containerSize.height.toDp().value }
-    return widthDp > heightDp && widthDp >= 800f
 }
