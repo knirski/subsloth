@@ -449,6 +449,8 @@ class WebProductionContainer : WebRuntime {
     override suspend fun loadPreferredLanguage(): LanguageCode =
         LanguageCode(userPreferences.subtitleLanguage(currentProfileKey()).first() ?: DEFAULT_LANGUAGE)
 
+    override suspend fun loadSubtitleEnabled(): Boolean = userPreferences.subtitleEnabled(currentProfileKey()).first()
+
     override fun invalidateSession() {
         containerScope.launch { sessionPort.invalidate() }
     }

@@ -671,6 +671,8 @@ class DesktopContainer(dataDirOverride: File? = null) {
     suspend fun loadPreferredLanguage(): LanguageCode =
         LanguageCode(userPreferences.subtitleLanguage(currentProfileKey()).first() ?: DEFAULT_LANGUAGE)
 
+    suspend fun loadSubtitleEnabled(): Boolean = userPreferences.subtitleEnabled(currentProfileKey()).first()
+
     /**
      * Resolves an episode's parent show id via a single `/episodes/{id}`
      * lookup; returns null on any failure (best-effort "next episode"

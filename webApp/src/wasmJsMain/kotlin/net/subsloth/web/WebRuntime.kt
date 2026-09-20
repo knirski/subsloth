@@ -91,6 +91,9 @@ interface WebRuntime {
 
     suspend fun loadPreferredLanguage(): LanguageCode
 
+    /** Whether playback starts with the preferred subtitle selected. */
+    suspend fun loadSubtitleEnabled(): Boolean
+
     fun invalidateSession()
     // ── Library / downloads ─────────────────────────────────────────────
 

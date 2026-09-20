@@ -1119,6 +1119,34 @@ class PlayerViewModelTest {
         assertThat(state.playbackError).isInstanceOf(PlaybackError.Recoverable::class.java)
     }
 
+    @Test
+    fun `subtitles disabled starts without selecting a subtitle`() = runTest(testDispatcher) {
+        val source = createVideoSource(availableSubtitles = persistentListOf(createSubtitle()))
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(source) },
+                loadSubtitleEnabled = { false },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNull()
+        assertThat(state.subtitleFallbackNotice).isNull()
+    }
+
+    @Test
+    fun `subtitles enabled selects the preferred subtitle`() = runTest(testDispatcher) {
+        val source = createVideoSource(availableSubtitles = persistentListOf(createSubtitle()))
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(source) },
+                loadSubtitleEnabled = { true },
+            )
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.selectedSubtitle).isNotNull()
+    }
+
+    @Test
     fun `subtitle selection honors preferred language`() = runTest(testDispatcher) {
         val enSubtitle = createSubtitle()
         val esSubtitle = createSpanishSubtitle()
@@ -1153,6 +1181,7 @@ class PlayerViewModelTest {
         savePlaybackSpeed: suspend (Float) -> Unit = {},
         loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
         loadPreferredLanguage: suspend () -> LanguageCode = { LanguageCode("en") },
+        loadSubtitleEnabled: suspend () -> Boolean = { true },
         resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
         fetchSubtitleText: suspend (String) -> Outcome<String> = {
             Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
@@ -1170,6 +1199,7 @@ class PlayerViewModelTest {
         savePlaybackSpeed = savePlaybackSpeed,
         loadPlaybackSpeed = loadPlaybackSpeed,
         loadPreferredLanguage = loadPreferredLanguage,
+        loadSubtitleEnabled = loadSubtitleEnabled,
         resolveShowIdForEpisode = resolveShowIdForEpisode,
         fetchSubtitleText = fetchSubtitleText,
         externalScope = externalScope,

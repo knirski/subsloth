@@ -374,6 +374,7 @@ fun SubSlothNavHost(
                                         savePlaybackSpeed = container::savePlaybackSpeed,
                                         loadPlaybackSpeed = container::loadPlaybackSpeed,
                                         loadPreferredLanguage = container::loadPreferredLanguage,
+                                        loadSubtitleEnabled = container::loadSubtitleEnabled,
                                         resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                                         fetchSubtitleText = container::fetchSubtitleText,
                                         externalScope = container.externalScope,
