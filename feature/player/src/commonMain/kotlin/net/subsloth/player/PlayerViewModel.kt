@@ -73,6 +73,8 @@ sealed interface PlayerUiState {
         val session: PlayerSession? = null,
         val snapshotCountSinceSave: Int = 0,
         val subtitleCues: ImmutableList<SubtitleCue> = persistentListOf(),
+        /** The selected subtitle track's document could not be loaded. */
+        val subtitleLoadFailed: Boolean = false,
     ) : PlayerUiState
 
     @Immutable
@@ -463,29 +465,44 @@ class PlayerViewModel(
      */
     private fun loadSubtitleCues(subtitle: Subtitle?) {
         viewModelScope.launch {
-            val cues = if (subtitle == null) {
-                emptyList()
-            } else {
-                fetchAndParseCues(subtitle)
+            val url = subtitle?.let { it.url ?: it.downloadUrl }
+            if (subtitle == null || url == null) {
+                applyCues(subtitle, cues = emptyList(), failed = false)
+                return@launch
             }
+            // Clear a previous failure right away so the retry does not show
+            // a stale error while the new fetch is in flight.
             _uiState.update { current ->
                 (current as? PlayerUiState.Content)
                     ?.takeIf { it.selectedSubtitle == subtitle }
-                    ?.copy(subtitleCues = cues.toImmutableList())
+                    ?.copy(subtitleLoadFailed = false)
                     ?: current
             }
+            fetchSubtitleText(url).fold(
+                onSuccess = { text ->
+                    applyCues(subtitle, cues = SubtitleTextParser.parse(text, subtitle.format), failed = false)
+                },
+                onFailure = { error ->
+                    log.w { "Subtitle cue load failed (${subtitle.language.value}): $error" }
+                    applyCues(subtitle, cues = emptyList(), failed = true)
+                },
+            )
         }
     }
 
-    private suspend fun fetchAndParseCues(subtitle: Subtitle): List<SubtitleCue> {
-        val url = subtitle.url ?: subtitle.downloadUrl ?: return emptyList()
-        return fetchSubtitleText(url).fold(
-            onSuccess = { text -> SubtitleTextParser.parse(text, subtitle.format) },
-            onFailure = { error ->
-                log.w { "Subtitle cue load failed (${subtitle.language.value}): $error" }
-                emptyList()
-            },
-        )
+    private fun applyCues(subtitle: Subtitle?, cues: List<SubtitleCue>, failed: Boolean) {
+        _uiState.update { current ->
+            (current as? PlayerUiState.Content)
+                ?.takeIf { it.selectedSubtitle == subtitle }
+                ?.copy(subtitleCues = cues.toImmutableList(), subtitleLoadFailed = failed)
+                ?: current
+        }
+    }
+
+    /** Re-fetches cues for the selected track after a load failure. */
+    fun retrySubtitleLoad() {
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        loadSubtitleCues(state.selectedSubtitle)
     }
 
     fun selectQuality(qualityLabel: String) {

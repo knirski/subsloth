@@ -107,6 +107,7 @@ fun PlayerScreen(
                         playerState = playerState,
                         onRetry = { viewModel.retryPlayback() },
                         onRetryWithRefresh = { viewModel.retryWithRefresh() },
+                        onRetrySubtitle = { viewModel.retrySubtitleLoad() },
                         onPlayNextEpisode = { viewModel.playNextEpisode() },
                         onDismissNextEpisode = { viewModel.dismissNextEpisode() },
                         onSetPlaybackSpeed = { viewModel.setPlaybackSpeed(it) },
@@ -130,6 +131,7 @@ fun PlayerOverlay(
     playerState: VideoPlayerState,
     onRetry: () -> Unit = {},
     onRetryWithRefresh: () -> Unit = {},
+    onRetrySubtitle: () -> Unit = {},
     onPlayNextEpisode: () -> Unit = {},
     onDismissNextEpisode: () -> Unit = {},
     onSetPlaybackSpeed: (Float) -> Unit = {},
@@ -245,6 +247,22 @@ fun PlayerOverlay(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
+            }
+
+            if (state.subtitleLoadFailed) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.player_subtitle_load_failed),
+                        color = Color.Yellow,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    TextButton(onClick = onRetrySubtitle) {
+                        Text(stringResource(Res.string.player_retry))
+                    }
+                }
             }
 
             // Push controls to the bottom of the screen
