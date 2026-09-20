@@ -38,7 +38,12 @@ class SeasonQueueDriver(
                             return
                         }
 
-                        EpisodeOutcome.Failed -> {
+                        // A removed/cancelled active item is terminal: the
+                        // queue cannot advance past it, so fail it instead of
+                        // polling for a row that will never come back.
+                        EpisodeOutcome.Removed,
+                        EpisodeOutcome.Failed,
+                        -> {
                             controller.markItemFailed(
                                 queueId,
                                 execution.activeItem,
@@ -59,20 +64,33 @@ class SeasonQueueDriver(
         }
     }
 
+    /**
+     * Waits for the active episode's download to reach a terminal state.
+     *
+     * A successful read that no longer contains the row (removed from
+     * storage) and [DownloadState.Removed] (cancelled) are both terminal.
+     * A failed [DownloadsPort.listDownloads] read is transient and keeps
+     * waiting, so a database hiccup is never mistaken for a removal.
+     */
     private suspend fun awaitEpisodeOutcome(mediaId: Media.MediaId): EpisodeOutcome {
         while (true) {
-            val state = downloadsPort.listDownloads().getOrNull()
-                ?.firstOrNull { it.mediaId == mediaId }
-            when (state) {
+            val downloads = downloadsPort.listDownloads().getOrNull()
+            if (downloads == null) {
+                delay(pollIntervalMs)
+                continue
+            }
+            when (val state = downloads.firstOrNull { it.mediaId == mediaId }) {
+                null -> return EpisodeOutcome.Removed
                 is DownloadState.Completed -> return EpisodeOutcome.Completed
                 is DownloadState.Paused -> return EpisodeOutcome.Paused
+                is DownloadState.Removed -> return EpisodeOutcome.Removed
                 is DownloadState.Failed, is DownloadState.Unavailable -> return EpisodeOutcome.Failed
                 else -> delay(pollIntervalMs)
             }
         }
     }
 
-    private enum class EpisodeOutcome { Completed, Paused, Failed }
+    private enum class EpisodeOutcome { Completed, Paused, Removed, Failed }
 
     private companion object {
         const val DEFAULT_POLL_INTERVAL_MS = 1_000L
