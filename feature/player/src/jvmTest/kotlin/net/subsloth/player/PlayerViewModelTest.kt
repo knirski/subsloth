@@ -489,6 +489,23 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `successful refresh keeps the refreshed source in the session`() = runTest(testDispatcher) {
+        val viewModel =
+            createViewModel(
+                fetchVideoSource = { Outcome.Success(createVideoSource(streamUrl = "https://example.com/stale.m3u8")) },
+                refreshStreamUrl = {
+                    Outcome.Success(createVideoSource(streamUrl = "https://example.com/fresh.m3u8"))
+                },
+            )
+
+        viewModel.retryWithRefresh()
+
+        val state = viewModel.uiState.value as PlayerUiState.Content
+        assertThat(state.session?.source?.streamUrl).isEqualTo("https://example.com/fresh.m3u8")
+        assertThat(state.session?.streamRefreshUsed).isTrue()
+    }
+
+    @Test
     fun `second refresh attempt after streamRefreshUsed is blocked`() = runTest(testDispatcher) {
         var refreshCallCount = 0
         val viewModel =
