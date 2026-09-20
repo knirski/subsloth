@@ -262,6 +262,39 @@ class DownloadControllerTest {
     }
 
     @Test
+    fun `enqueue on a completed upgrade deletes the replaced file and subtitle rows`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(
+            listOf(entity(id = 7, status = "completed", quality = "720p", localFilePath = "1/old.mp4")),
+        )
+        fixtures.subtitles.rows += subtitleRow(downloadId = 7)
+
+        val result = fixtures.controller.enqueue(movieId, Resolution.UHD_4K)
+
+        assertThat(result.getOrNull()).isEqualTo(EnqueueOutcome.Queued)
+        assertThat(fixtures.store.deleted.map { it.value }).contains("1/old.mp4")
+        assertThat(fixtures.subtitles.rows).isEmpty()
+        val row = requireNotNull(fixtures.dao.getByContent("1", "movie"))
+        assertThat(row.id).isNotEqualTo(7)
+        assertThat(row.status).isEqualTo("queued")
+        assertThat(row.localFilePath).isEmpty()
+    }
+
+    @Test
+    fun `enqueue on a quality change deletes the replaced subtitle rows`() = runTest {
+        val fixtures = fixtures()
+        fixtures.dao.set(
+            listOf(entity(id = 7, status = "failed", quality = "720p", localFilePath = "1/abc.mp4")),
+        )
+        fixtures.subtitles.rows += subtitleRow(downloadId = 7)
+
+        val result = fixtures.controller.enqueue(movieId, Resolution.UHD_4K)
+
+        assertThat(result.getOrNull()).isEqualTo(EnqueueOutcome.Queued)
+        assertThat(fixtures.subtitles.rows).isEmpty()
+    }
+
+    @Test
     fun `enqueue reports already available at higher quality`() = runTest {
         val fixtures = fixtures()
         fixtures.dao.set(listOf(entity(status = "completed", quality = "1080p", localFilePath = "videos/1.mp4")))
