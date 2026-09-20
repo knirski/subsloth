@@ -71,12 +71,21 @@ private class DriverFakeQueueDao : SeasonQueueDao {
     override suspend fun deleteCompletedQueuesOlderThan(beforeEpochSeconds: Long) = Unit
 }
 
-private class DriverFakeDownloadsPort(private val stateForMedia: (Media.MediaId) -> DownloadState?) : DownloadsPort {
+private class DriverFakeDownloadsPort(
+    /** Leading [listDownloads] calls that fail before a successful read. */
+    private var listFailures: Int = 0,
+    private val stateForMedia: (Media.MediaId) -> DownloadState?,
+) : DownloadsPort {
     val enqueued = mutableListOf<Media.MediaId>()
     val enqueuedTitles = mutableListOf<String?>()
 
-    override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> =
-        Result.success(enqueued.mapNotNull(stateForMedia).toImmutableList())
+    override suspend fun listDownloads(): Result<ImmutableList<DownloadState>> {
+        if (listFailures > 0) {
+            listFailures--
+            return Result.failure(IllegalStateException("transient listDownloads failure"))
+        }
+        return Result.success(enqueued.mapNotNull(stateForMedia).toImmutableList())
+    }
 
     override suspend fun listOfflineAssets(): Result<ImmutableList<OfflineAsset>> = Result.success(persistentListOf())
 
@@ -148,6 +157,43 @@ class SeasonQueueDriverTest {
     }
 
     @Test
+    fun `drive fails the queue when the active item is removed`() = runTest {
+        val dao = populatedDao()
+        val port = DriverFakeDownloadsPort { mediaId -> removed(mediaId) }
+        val controller = SeasonQueueController(port, dao, Clock.System)
+
+        SeasonQueueDriver(controller, port).drive(queueId)
+
+        assertThat(port.enqueued.size).isEqualTo(1)
+        assertThat(dao.getItemsForQueue(queueId.value).first { it.episodeId == "1" }.status).isEqualTo("failed")
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("failed")
+    }
+
+    @Test
+    fun `drive fails the queue when the active item disappears`() = runTest {
+        val dao = populatedDao()
+        val port = DriverFakeDownloadsPort { null }
+        val controller = SeasonQueueController(port, dao, Clock.System)
+
+        SeasonQueueDriver(controller, port).drive(queueId)
+
+        assertThat(port.enqueued.size).isEqualTo(1)
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("failed")
+    }
+
+    @Test
+    fun `drive retries a transient list failure instead of treating it as removal`() = runTest {
+        val dao = populatedDao()
+        val port = DriverFakeDownloadsPort(listFailures = 1) { mediaId -> completed(mediaId) }
+        val controller = SeasonQueueController(port, dao, Clock.System)
+
+        SeasonQueueDriver(controller, port).drive(queueId)
+
+        assertThat(port.enqueued.size).isEqualTo(2)
+        assertThat(dao.getQueue(queueId.value)?.status).isEqualTo("completed")
+    }
+
+    @Test
     fun `drive does not execute an unconfirmed queue`() = runTest {
         val dao = populatedDao(status = "pending_confirmation")
         val port = DriverFakeDownloadsPort { mediaId -> completed(mediaId) }
@@ -202,5 +248,11 @@ class SeasonQueueDriverTest {
         mediaId = mediaId,
         quality = sampleQuality,
         reason = DownloadFailureReason.DownloadFailed,
+    )
+
+    private fun removed(mediaId: Media.MediaId) = DownloadState.Removed(
+        localId = LocalMediaIdentifier(mediaId.toString()),
+        mediaId = mediaId,
+        quality = sampleQuality,
     )
 }
