@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
@@ -47,6 +48,8 @@ fun PlayerScreen(
     onNavigateToAuthRepair: () -> Unit = {},
     onFullscreenChanged: (Boolean) -> Unit = {},
     fullscreen: PlayerFullscreenControl? = null,
+    /** Platform-owned bottom inset for the controls (Android navigation bar). */
+    controlsBottomPadding: Dp = 0.dp,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -86,6 +89,7 @@ fun PlayerScreen(
                         onFullscreenChanged = onFullscreenChanged,
                         isFullscreen = fullscreen?.isFullscreen ?: playerState.isFullscreen,
                         onToggleFullscreen = fullscreen?.onToggle ?: playerState::toggleFullscreen,
+                        controlsBottomPadding = controlsBottomPadding,
                     )
                 },
             )
@@ -110,6 +114,8 @@ fun PlayerOverlay(
     onFullscreenChanged: (Boolean) -> Unit = {},
     isFullscreen: Boolean = playerState.isFullscreen,
     onToggleFullscreen: () -> Unit = playerState::toggleFullscreen,
+    /** Platform-owned bottom inset for the controls (Android navigation bar). */
+    controlsBottomPadding: Dp = 0.dp,
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
@@ -253,7 +259,10 @@ fun PlayerOverlay(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 8.dp)
+                        // Platform-owned bottom inset (Android navigation bar /
+                        // gesture area); zero on desktop, web, and previews.
+                        .padding(bottom = controlsBottomPadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     // Title and quit control live inside the bar and share

@@ -3,6 +3,7 @@
 package net.subsloth.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
@@ -123,8 +124,8 @@ internal fun PlaybackControls(
 
         Button(
             onClick = onTogglePlayPause,
-            modifier = Modifier.align(Alignment.Center).height(64.dp),
-            contentPadding = PaddingValues(horizontal = 28.dp),
+            modifier = Modifier.align(Alignment.Center).height(56.dp),
+            contentPadding = PaddingValues(horizontal = 36.dp),
         ) {
             Text(
                 text = if (isPlaying) {
@@ -163,15 +164,37 @@ internal fun PlaybackControls(
     }
 }
 
-/** A compact secondary control; [description] keeps it readable by screen readers. */
+/**
+ * A compact secondary control: a wide, short pill inside a full-height touch
+ * target, so it stays easy to hit without adding height to the bar.
+ * [description] keeps it readable by screen readers.
+ */
 @Composable
 private fun ControlChip(label: String, description: String, onClick: () -> Unit) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-        modifier = Modifier.semantics { contentDescription = description },
+    Box(
+        modifier = Modifier
+            .height(48.dp)
+            .widthIn(min = 76.dp)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge)
+        Box(
+            modifier = Modifier
+                .height(32.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(percent = 50),
+                )
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
