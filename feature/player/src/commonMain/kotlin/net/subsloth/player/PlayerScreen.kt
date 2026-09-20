@@ -66,6 +66,7 @@ fun PlayerScreen(
                         is PlayerEvent.Snapshot -> viewModel.onPlayerSnapshot(event.value)
                         is PlayerEvent.Error -> viewModel.onPlayerError(event.message)
                         is PlayerEvent.PlaybackEnded -> viewModel.onPlaybackEnded()
+                        is PlayerEvent.Attached -> viewModel.onPlayerAttached()
                     }
                 },
                 overlay = { playerState ->

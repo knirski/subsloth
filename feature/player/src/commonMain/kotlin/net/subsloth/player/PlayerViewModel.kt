@@ -143,6 +143,9 @@ class PlayerViewModel(
     /** Active next-episode countdown tick job; null when not counting. */
     private var countdownJob: Job? = null
 
+    /** True once the surface has reported its first player instance. */
+    private var hasAttachedPlayer = false
+
     init {
         loadContent()
     }
@@ -282,9 +285,47 @@ class PlayerViewModel(
         loadSubtitleCues(initialSubtitle)
     }
 
+    /**
+     * The player surface (re)created its player instance. The first attach
+     * happens during the initial composition; a later one means the host
+     * composition was recreated (for example an Android configuration
+     * change), so re-open the current source at the position playback had
+     * reached.
+     */
+    fun onPlayerAttached() {
+        if (!hasAttachedPlayer) {
+            hasAttachedPlayer = true
+            return
+        }
+        val state = _uiState.value as? PlayerUiState.Content ?: return
+        val session = state.session ?: return
+        viewModelScope.launch {
+            _playCommands.send(
+                PlayCommand(
+                    url = session.source.streamUrl,
+                    positionSeconds = state.positionSeconds,
+                    subtitleTrack = null,
+                    playbackSpeed = state.playbackSpeed,
+                ),
+            )
+        }
+    }
+
     fun onPlayerSnapshot(snapshot: PlayerSnapshot) {
         val dur = snapshot.durationSeconds
         val stateBefore = _uiState.value as? PlayerUiState.Content ?: return
+        // A freshly (re)attached player reports (0, 0, stopped) before it has
+        // opened the source. Keep the last known position instead of letting
+        // that placeholder overwrite it — otherwise leaving playback just
+        // after a configuration change would persist position 0.
+        if (snapshot.positionSeconds == 0L &&
+            dur == 0L &&
+            !snapshot.isPlaying &&
+            stateBefore.session != null &&
+            stateBefore.positionSeconds > 0L
+        ) {
+            return
+        }
         val mediaId = stateBefore.mediaId
         // A pause must persist right away; relying on the periodic tick alone
         // could lose up to 60 snapshots of progress. The bridge's initial
