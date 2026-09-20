@@ -7,10 +7,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import co.touchlab.kermit.Logger
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URI
-import java.net.URISyntaxException
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -18,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -47,6 +42,7 @@ import net.subsloth.core.media.download.StorageProvider
 import net.subsloth.core.media.download.TransferEvent
 import net.subsloth.core.media.playback.OfflineFirstPlaybackPort
 import net.subsloth.core.media.playback.OfflineSourceResolver
+import net.subsloth.core.media.subtitle.SubtitleTextLoader
 import net.subsloth.core.model.download.EnqueueOutcome
 import net.subsloth.core.model.download.DownloadState
 import net.subsloth.core.model.download.QueueId
@@ -73,7 +69,6 @@ import net.subsloth.core.model.media.ShowSummary
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.core.model.progress.PlaybackProgress
 import net.subsloth.core.network.error.NetworkErrorClassifier
-import net.subsloth.core.model.error.NetworkError
 import net.subsloth.core.network.media.api.Api
 import net.subsloth.core.network.media.client.ClientFactory
 import net.subsloth.core.network.media.mapper.Mapper
@@ -112,6 +107,9 @@ import kotlin.time.Instant
 @Suppress("TooManyFunctions") // Composition root: one small function per port callback, by design.
 class AppContainer(context: Context) {
     private val log = Logger.withTag("AppContainer")
+
+    /** Reads remote and local (`file://`) subtitle documents for the player. */
+    private val subtitleTextLoader = SubtitleTextLoader()
 
     /** Drives TV-specific quality defaults (capped resolutions). */
     private val isTelevision: Boolean =
@@ -572,40 +570,11 @@ class AppContainer(context: Context) {
     suspend fun listAllMedia(): Outcome<List<Media>> = accountMediaRuntime.listAllMedia()
 
     /**
-     * Fetches subtitle document text for the player's Compose subtitle
-     * layer. Subtitle URLs are ephemeral public streams (same trust level
-     * as the video stream URL), so a plain unauthenticated GET is used,
-     * bounded by timeouts and a response-size cap.
+     * Reads subtitle document text for the player's Compose subtitle layer.
+     * Handles remote subtitle streams and local `file://` documents alike —
+     * downloaded subtitle tracks are file URLs (see [SubtitleTextLoader]).
      */
-    suspend fun fetchSubtitleText(url: String): Outcome<String> = withContext(Dispatchers.IO) {
-        try {
-            val connection = URI(url).toURL().openConnection() as HttpURLConnection
-            connection.connectTimeout = SUBTITLE_TIMEOUT_MS
-            connection.readTimeout = SUBTITLE_TIMEOUT_MS
-            val bytes = connection.inputStream.use { input ->
-                val buffer = ByteArray(SUBTITLE_MAX_BYTES + 1)
-                var read = 0
-                while (read <= SUBTITLE_MAX_BYTES) {
-                    val count = input.read(buffer, read, buffer.size - read)
-                    if (count < 0) break
-                    read += count
-                }
-                if (read > SUBTITLE_MAX_BYTES) {
-                    throw IOException("Subtitle document from $url exceeds $SUBTITLE_MAX_BYTES bytes")
-                }
-                buffer.copyOf(read)
-            }
-            Outcome.Success(bytes.decodeToString())
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: IOException) {
-            log.e(exception) { "fetchSubtitleText failed for $url" }
-            Outcome.Failure(NetworkError.UnexpectedResponse)
-        } catch (exception: URISyntaxException) {
-            log.e(exception) { "fetchSubtitleText failed for $url" }
-            Outcome.Failure(NetworkError.UnexpectedResponse)
-        }
-    }
+    suspend fun fetchSubtitleText(url: String): Outcome<String> = subtitleTextLoader.load(url)
 
     /**
      * Maps the active session's account-scoped playback progress into the
@@ -894,11 +863,6 @@ class AppContainer(context: Context) {
     private companion object {
         private const val DEFAULT_PROFILE_KEY = "default"
         private const val DEFAULT_LANGUAGE = "en"
-
-        /** Subtitle documents are small text files; refuse larger ones. */
-        private const val SUBTITLE_MAX_BYTES = 2_000_000
-
-        private const val SUBTITLE_TIMEOUT_MS = 10_000
     }
 }
 
