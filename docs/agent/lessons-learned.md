@@ -259,3 +259,24 @@ are dropped, so re-apply them on `OnWindowFocusChangeListener`; and the CI
 emulator never grants focus, so verify with the `@Ignore`d device test
 `AndroidFullscreenWindowControllerDeviceTest` (asserts
 `rootWindowInsets.isVisible(systemBars()) == false`) plus a screenshot.
+
+## 27. WindowInsets APIs in Shared UI Break the Android Screenshot Renderer
+
+Calling Compose `WindowInsets` APIs from `commonMain` (JetBrains Compose
+artifacts) compiles to the skiko implementation, which the Android screenshot
+renderer does not ship. One `navigationBarsPadding()` in the player overlay
+failed every player preview with
+`NoClassDefFoundError: androidx/compose/foundation/layout/WindowInsetsPadding_skikoKt`
+in both `:androidApp:validateDebugScreenshotTest` (PR CI) and the manual
+`Screenshots` update run; rerunning the update task on the local emulator
+reproduces the exact stack trace, which is the fastest way to diagnose this
+class of failure.
+
+Pattern: compute the inset in the platform host and pass a plain value into
+shared UI. Android (`SubSlothNavHost`) uses
+`WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()` and
+passes it as a `Dp` (`PlayerScreen(controlsBottomPadding = ...)`); desktop,
+web, and previews keep the `0.dp` default, so the renderer never sees an
+insets API. API note for this Compose version: `getBottom` and
+`calculateBottomPadding` are members, not top-level extensions — importing
+them fails to resolve.
