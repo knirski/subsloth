@@ -64,10 +64,13 @@ class AccountMediaRuntime(
         const val EPISODE_CONTENT_TYPE = "episode"
     }
 
-    /** Profile key for the active session; [anonymousProfileKey] when signed out. */
+    /**
+     * Profile key for the active session; [anonymousProfileKey] when signed
+     * out or still restoring (recovery hasn't resolved the account yet).
+     */
     fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
         is Session.Authenticated -> AccountProfileKey(session.userId)
-        Session.Anonymous -> AccountProfileKey(anonymousProfileKey)
+        is Session.Restoring, is Session.Anonymous -> AccountProfileKey(anonymousProfileKey)
     }
 
     // ── Catalog projections ──────────────────────────────────────────────
@@ -119,7 +122,7 @@ class AccountMediaRuntime(
 
     suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> = runCatching {
         val account = when (val session = sessionPort.current()) {
-            Session.Anonymous -> emptyList()
+            is Session.Restoring, is Session.Anonymous -> emptyList()
 
             is Session.Authenticated -> accountPlaybackProgressDao()
                 .getAllForProfile(session.userId)

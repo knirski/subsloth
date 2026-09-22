@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.subsloth.catalog.HomeViewModel
@@ -40,7 +39,6 @@ import net.subsloth.core.model.download.SeasonDownloadQueue
 import net.subsloth.core.model.download.TransferPreference
 import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
-import net.subsloth.core.model.error.getOrElse
 import net.subsloth.core.model.identifier.AccountProfileKey
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
@@ -275,16 +273,7 @@ class WebProductionContainer : WebRuntime {
 
     // ── Catalog / search ────────────────────────────────────────────────
 
-    override suspend fun listCatalog(): Outcome<List<Media>> = try {
-        val movies = Mapper.mapMovies(api.listMovies().movies).items
-        val shows = Mapper.mapShows(api.listShows().shows).items
-        Outcome.Success(movies + shows)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        log.e(e) { "listCatalog failed" }
-        Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
-    }
+    override suspend fun listCatalog(): Outcome<List<Media>> = catalogRepository.listCatalog()
 
     override suspend fun getDetails(mediaId: Media.MediaId): Outcome<MediaDetails> = try {
         when (mediaId) {
@@ -299,29 +288,24 @@ class WebProductionContainer : WebRuntime {
         Outcome.Failure(NetworkErrorClassifier.classifyToNetwork(e))
     }
 
-    override fun catalogItems(type: String): Flow<List<Media>> = flow {
-        emit(
-            listCatalog().getOrElse { emptyList<Media>() }
-                .filter { media -> media.mediaTypeLabel() == type },
-        )
-    }
+    /**
+     * Cache-backed catalog flow, identical to the Android/desktop wiring:
+     * Room emits cached items immediately and again after every sync, so the
+     * Home screen never performs a network fetch just by being composed.
+     */
+    override fun catalogItems(type: String): Flow<List<Media>> = catalogRepository.catalogItems(type)
 
     override fun createHomeViewModel(): HomeViewModel = HomeViewModel(
-        catalogItems = ::catalogItems,
-        syncCatalog = {
-            when (val result = listCatalog()) {
-                is Outcome.Success -> Outcome.Success(Unit)
-                is Outcome.Failure -> result
-            }
-        },
-        isCatalogStale = { false },
+        catalogItems = { type -> catalogRepository.catalogItems(type) },
+        syncCatalog = { catalogRepository.sync() },
+        isCatalogStale = { catalogRepository.isStale() },
         listLibrary = { listLibrary() },
         listDownloads = { listDownloads() },
         listProgress = { listAccountPlaybackProgress() },
         resolveShowForEpisode = ::resolveShowIdForEpisode,
     )
 
-    override suspend fun listAllMedia(): Outcome<List<Media>> = listCatalog()
+    override suspend fun listAllMedia(): Outcome<List<Media>> = catalogRepository.listCatalog()
 
     override suspend fun listMovies(): Result<List<MovieSummary>> = runCatching {
         catalogRepository.catalogItems("movie").first().filterIsInstance<MovieSummary>()
@@ -401,7 +385,7 @@ class WebProductionContainer : WebRuntime {
 
     override suspend fun listAccountPlaybackProgress(): Result<List<PlaybackProgress>> = runCatching {
         when (val session = sessionPort.current()) {
-            Session.Anonymous -> emptyList()
+            is Session.Restoring, is Session.Anonymous -> emptyList()
 
             is Session.Authenticated -> database.accountPlaybackProgressDao()
                 .getAllForProfile(session.userId)
@@ -551,7 +535,7 @@ class WebProductionContainer : WebRuntime {
 
     override fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
         is Session.Authenticated -> AccountProfileKey(session.userId)
-        Session.Anonymous -> AccountProfileKey(DEFAULT_PROFILE_KEY)
+        is Session.Restoring, is Session.Anonymous -> AccountProfileKey(DEFAULT_PROFILE_KEY)
     }
 
     override fun writeSubtitleEnabled(enabled: Boolean) {
@@ -630,11 +614,6 @@ class WebProductionContainer : WebRuntime {
         is Media.MediaId.Movie -> "movie"
         is Media.MediaId.Show -> "show"
         is Media.MediaId.Episode -> "episode"
-    }
-
-    private fun Media.mediaTypeLabel(): String = when (this) {
-        is MovieSummary -> "movie"
-        is ShowSummary -> "show"
     }
 }
 

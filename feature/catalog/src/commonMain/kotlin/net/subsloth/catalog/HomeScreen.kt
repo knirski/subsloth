@@ -82,6 +82,7 @@ fun HomeScreen(
         isSyncing = isSyncing,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
+        onRefresh = viewModel::sync,
         onSearchClick = onSearchClick,
         onDownloadsClick = onDownloadsClick,
         onSettingsClick = onSettingsClick,
@@ -103,6 +104,7 @@ fun HomeScreenScaffold(
     isSyncing: Boolean,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    onRefresh: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onDownloadsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
@@ -146,6 +148,13 @@ fun HomeScreenScaffold(
                             strokeWidth = 2.dp,
                         )
                     } else {
+                        IconButton(onClick = onRefresh) {
+                            Text(
+                                text = "⟳",
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.semantics { contentDescription = "Synchronize" },
+                            )
+                        }
                     }
                 },
             )

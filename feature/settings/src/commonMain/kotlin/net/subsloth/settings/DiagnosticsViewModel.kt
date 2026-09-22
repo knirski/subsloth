@@ -37,4 +37,5 @@ private val Session.categoryLabel: String
     get() = when (this) {
         Session.Anonymous -> "anonymous"
         is Session.Authenticated -> "authenticated"
+        Session.Restoring -> "restoring"
     }

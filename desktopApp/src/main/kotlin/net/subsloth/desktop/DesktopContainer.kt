@@ -531,7 +531,7 @@ class DesktopContainer(dataDirOverride: File? = null) {
                 ),
             )
 
-            Session.Anonymous -> Api(ClientFactory.create(baseUrl = baseUrl))
+            is Session.Restoring, is Session.Anonymous -> Api(ClientFactory.create(baseUrl = baseUrl))
         }
     }
 

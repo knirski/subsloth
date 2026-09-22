@@ -563,7 +563,7 @@ class AppContainer(context: Context) {
                 baseUrl = baseUrl,
             )
 
-            Session.Anonymous -> ClientFactory.create(baseUrl = baseUrl)
+            is Session.Restoring, is Session.Anonymous -> ClientFactory.create(baseUrl = baseUrl)
         }
         return Api(client)
     }

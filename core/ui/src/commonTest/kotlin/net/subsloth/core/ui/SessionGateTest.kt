@@ -12,6 +12,12 @@ import kotlin.test.assertEquals
 
 class SessionGateTest {
     @Test
+    fun routeFor_Restoring_routes_to_Restoring() {
+        val state: Session = Session.Restoring
+        assertEquals("Restoring", routeFor(state).name)
+    }
+
+    @Test
     fun routeFor_Anonymous_routes_to_Login() {
         val state: Session = Session.Anonymous
         assertEquals("Login", routeFor(state).name)
@@ -60,6 +66,7 @@ class SessionGateTest {
 }
 
 private fun sessionName(session: Session): String = when (session) {
+    Session.Restoring -> "Restoring"
     Session.Anonymous -> "Anonymous"
     is Session.Authenticated -> "Authenticated"
 }
