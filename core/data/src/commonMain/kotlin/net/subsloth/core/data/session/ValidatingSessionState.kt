@@ -42,7 +42,10 @@ import kotlin.time.Clock
  * [recover] exactly once during app startup, from a coroutine (e.g. the
  * hosting `Application`'s startup scope), before relying on [state]
  * reflecting a previously-persisted session. Until [recover] completes (or
- * if it is never called), [state] starts as [Session.Anonymous].
+ * if it is never called), [state] starts as [Session.Restoring] — "not yet
+ * known", which the UI must render as a neutral startup/splash state rather
+ * than the login screen; [recover] resolves it to [Session.Anonymous] or
+ * [Session.Authenticated].
  *
  * @param credentialsPort persists and retrieves the user's login/password.
  * @param baseUrlProvider resolves the API base URL to validate against;
@@ -77,48 +80,54 @@ class ValidatingSessionState(
 
     private val log = Logger.withTag("ValidatingSessionState")
 
-    private val _state: MutableStateFlow<Session> = MutableStateFlow(Session.Anonymous)
+    private val _state: MutableStateFlow<Session> = MutableStateFlow(Session.Restoring)
     override val state: StateFlow<Session> = _state.asStateFlow()
 
     override fun current(): Session = _state.value
 
     /**
-     * Performs cold-start session recovery: reads any persisted credentials
-     * and attempts Kodi-compatible validation before updating [state].
+     * Performs cold-start session recovery: reads any persisted credentials,
+     * publishes them optimistically, then attempts Kodi-compatible
+     * validation.
      *
-     * - No stored credentials: [state] stays [Session.Anonymous]; no
-     *   network call is made.
-     * - Stored credentials validate successfully: [state] becomes
-     *   [Session.Authenticated].
-     * - Stored credentials are rejected ([AuthError.InvalidCredentials],
-     *   i.e. an HTTP 401): they are cleared via [CredentialsPort.clear] and
-     *   [state] stays [Session.Anonymous].
-     * - Validation fails for any other reason (timeout, no connectivity,
-     *   5xx, unexpected response, ...): credentials are left in place *and*
-     *   [state] becomes [Session.Authenticated] built from the stored,
-     *   previously-saved credentials, rather than staying [Session.Anonymous].
-     *   This is a deliberate "offline mode with lazy re-validation" pattern:
-     *   an offline (or backend-degraded) user with valid-but-unverifiable
-     *   stored credentials can still reach their profile-scoped library data
-     *   (favorites, playback progress, ...) instead of being locked out
-     *   merely because validation couldn't complete. Trusting locally-stored
-     *   credentials here isn't meant as indefinite/unbounded trust: the
-     *   *player* path already routes a genuine 401 through the existing Auth
-     *   Failure Repair flow (`PlayerViewModel.onAuthFailure` →
-     *   each platform composition root's `invalidateSession()` → [SessionPort.invalidate], see
-     *   also [AuthError.InvalidCredentials] and `AuthRepairScreen`) once
-     *   [net.subsloth.core.domain.policy.PlaybackErrorClassifier] detects
-     *   a [PlaybackError.AuthFailure][net.subsloth.core.domain.policy.PlaybackError.AuthFailure]
-     *   during playback. Other authenticated paths (catalog sync, library,
-     *   downloads) do not yet re-validate or clear the
-     *   session on a real 401 — closing that broader gap is out of scope for
-     *   this fix; this note only avoids overstating coverage that isn't
-     *   there yet, and still avoids treating "couldn't check" the same as
-     *   "was rejected."
+     * - No stored credentials (or the credential read itself failed):
+     *   [state] becomes [Session.Anonymous]; no network call is made.
+     * - Stored credentials are found: [state] becomes
+     *   [Session.Authenticated] *immediately*, before validation, so a
+     *   relaunch with previously-valid credentials never renders the login
+     *   screen and cached content can render without waiting on the network.
+     *   Validation then runs and adjusts the outcome:
+     *   - Success: [Session.Authenticated] stands.
+     *   - Rejection ([AuthError.InvalidCredentials], i.e. an HTTP 401):
+     *     credentials are cleared via [CredentialsPort.clear] and [state]
+     *     becomes [Session.Anonymous] (the login screen appears).
+     *   - Any other failure (timeout, no connectivity, 5xx, unexpected
+     *     response, ...): credentials are left in place and the optimistic
+     *     [Session.Authenticated] stands. This is a deliberate "offline mode
+     *     with lazy re-validation" pattern: an offline (or backend-degraded)
+     *     user with valid-but-unverifiable stored credentials can still
+     *     reach their profile-scoped library data (favorites, playback
+     *     progress, ...) instead of being locked out merely because
+     *     validation couldn't complete. Trusting locally-stored credentials
+     *     here isn't meant as indefinite/unbounded trust: the *player* path
+     *     already routes a genuine 401 through the existing Auth Failure
+     *     Repair flow (`PlayerViewModel.onAuthFailure` → each platform
+     *     composition root's `invalidateSession()` → [SessionPort.invalidate],
+     *     see also [AuthError.InvalidCredentials] and `AuthRepairScreen`)
+     *     once [net.subsloth.core.domain.policy.PlaybackErrorClassifier]
+     *     detects a
+     *     [PlaybackError.AuthFailure][net.subsloth.core.domain.policy.PlaybackError.AuthFailure]
+     *     during playback. Other authenticated paths (catalog sync, library,
+     *     downloads) do not yet re-validate or clear the session on a real
+     *     401 — closing that broader gap is out of scope for this fix; this
+     *     note only avoids overstating coverage that isn't there yet, and
+     *     still avoids treating "couldn't check" the same as "was rejected."
      *
      * Bounded by whatever timeout [ClientFactory]'s `HttpTimeout` plugin
      * already configures (currently a 30s request timeout) — no separate
-     * timeout wrapper is layered on top.
+     * timeout wrapper is layered on top. Callers that launch [recover] and do
+     * not await it still see the optimistic [Session.Authenticated] published
+     * right after the local credential read.
      */
     suspend fun recover() {
         val stored = when (val outcome = credentialsPort.read()) {
@@ -128,40 +137,45 @@ class ValidatingSessionState(
                 log.e { "Failed to read persisted credentials during recovery: ${outcome.error}" }
                 null
             }
-        } ?: return
+        }
+        if (stored == null) {
+            _state.value = Session.Anonymous
+            return
+        }
+
+        // Publish the stored session before the network round-trip so the gate
+        // never falls back to the login screen for a user who is already signed
+        // in. A genuine 401 below clears it again; a transient failure keeps it.
+        _state.value = authenticatedSession(stored)
 
         when (val result = validate(stored)) {
             is Outcome.Success -> {
-                _state.value = Session.Authenticated(
-                    userId = deriveUserId(stored.login),
-                    openedAtEpochSeconds = clock.now().epochSeconds,
-                    credentials = stored,
-                )
+                // Already published optimistically; nothing to change.
             }
 
             is Outcome.Failure -> {
                 if (result.error is AuthError.InvalidCredentials) {
                     log.i { "Persisted credentials rejected during recovery; clearing" }
                     credentialsPort.clear()
-                    // Genuine rejection: state stays Anonymous.
+                    // Genuine rejection: drop the optimistic session.
+                    _state.value = Session.Anonymous
                 } else {
                     log.w {
                         "Recovery validation failed transiently, trusting stored credentials offline: ${result.error}"
                     }
-                    // Transient failure (timeout, no connectivity, 5xx, ...): trust the
-                    // stored, previously-saved credentials so the user isn't locked out
-                    // of profile-scoped data merely because validation couldn't
-                    // complete. See recover()'s KDoc for the full "offline mode with
-                    // lazy re-validation" rationale.
-                    _state.value = Session.Authenticated(
-                        userId = deriveUserId(stored.login),
-                        openedAtEpochSeconds = clock.now().epochSeconds,
-                        credentials = stored,
-                    )
+                    // Optimistic session stands; credentials stay persisted.
+                    // See the KDoc above for the full "offline mode with lazy
+                    // re-validation" rationale.
                 }
             }
         }
     }
+
+    private suspend fun authenticatedSession(credentials: Credentials): Session.Authenticated = Session.Authenticated(
+        userId = deriveUserId(credentials.login),
+        openedAtEpochSeconds = clock.now().epochSeconds,
+        credentials = credentials,
+    )
 
     override suspend fun open(credentials: Credentials): Outcome<Unit> = when (val result = validate(credentials)) {
         is Outcome.Success ->
@@ -172,21 +186,30 @@ class ValidatingSessionState(
             // caller (login screen) instead.
             when (val saveOutcome = credentialsPort.save(credentials.login, credentials.password)) {
                 is Outcome.Success -> {
-                    _state.value = Session.Authenticated(
-                        userId = deriveUserId(credentials.login),
-                        openedAtEpochSeconds = clock.now().epochSeconds,
-                        credentials = credentials,
-                    )
+                    _state.value = authenticatedSession(credentials)
                     Outcome.Success(Unit)
                 }
 
                 is Outcome.Failure -> {
                     log.e { "Failed to persist credentials after successful validation: ${saveOutcome.error}" }
+                    resolveRestoringToAnonymous()
                     saveOutcome
                 }
             }
 
-        is Outcome.Failure -> result
+        is Outcome.Failure -> {
+            // A completed login attempt resolves a pending cold-start restore:
+            // the credentials were rejected, so the session is anonymous, not
+            // still "restoring". An existing session is left untouched.
+            resolveRestoringToAnonymous()
+            result
+        }
+    }
+
+    private fun resolveRestoringToAnonymous() {
+        if (_state.value is Session.Restoring) {
+            _state.value = Session.Anonymous
+        }
     }
 
     override suspend fun close(): Outcome<Unit> {

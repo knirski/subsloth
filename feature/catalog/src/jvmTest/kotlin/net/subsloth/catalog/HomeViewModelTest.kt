@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -448,6 +449,61 @@ class HomeViewModelTest {
         viewModel.retrySync()
         testDispatcher.scheduler.advanceUntilIdle()
         assertThat(syncCalled).isTrue()
+    }
+
+    @Test
+    fun `startup does not sync when the catalog cache is fresh`() = runTest(testDispatcher) {
+        var syncCalled = false
+        HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = suspend {
+                syncCalled = true
+                Outcome.Success(Unit)
+            },
+            isCatalogStale = { false },
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(syncCalled).isFalse()
+    }
+
+    @Test
+    fun `startup syncs when the catalog cache is stale`() = runTest(testDispatcher) {
+        var syncCalled = false
+        HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = suspend {
+                syncCalled = true
+                Outcome.Success(Unit)
+            },
+            isCatalogStale = { true },
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(syncCalled).isTrue()
+    }
+
+    @Test
+    fun `startup sync failure is silent and does not surface a sync error`() = runTest(testDispatcher) {
+        val syncGate = CompletableDeferred<Unit>()
+        var syncCalled = false
+        val viewModel = HomeViewModel(
+            catalogItems = catalogItemsFor(emptyList()),
+            syncCatalog = suspend {
+                syncCalled = true
+                syncGate.await()
+                SyncError.Unknown.asFailure()
+            },
+            isCatalogStale = { true },
+        )
+        val errors = mutableListOf<SyncError>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.syncErrors.collect { errors += it }
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(syncCalled).isTrue()
+
+        syncGate.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(errors).isEmpty()
     }
 
     @Test

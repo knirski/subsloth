@@ -112,7 +112,7 @@ class LibraryPortAdapter(
     // ── Helpers ──────────────────────────────────────────────────────
 
     private fun profileKey(): String = when (val session = sessionPort.current()) {
-        is Session.Anonymous -> DEFAULT_PROFILE_KEY
+        is Session.Restoring, is Session.Anonymous -> DEFAULT_PROFILE_KEY
         is Session.Authenticated -> session.userId
     }
 

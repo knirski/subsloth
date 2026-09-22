@@ -338,7 +338,7 @@ class WebDemoRuntime internal constructor(private val api: Api) : WebRuntime {
 
     override fun currentProfileKey(): AccountProfileKey = when (val session = sessionPort.current()) {
         is Session.Authenticated -> AccountProfileKey(session.userId)
-        Session.Anonymous -> AccountProfileKey("default")
+        is Session.Restoring, is Session.Anonymous -> AccountProfileKey("default")
     }
 
     override fun apiBaseUrlFlow(): Flow<String> =

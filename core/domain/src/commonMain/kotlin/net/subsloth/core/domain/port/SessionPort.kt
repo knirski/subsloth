@@ -6,13 +6,18 @@ import net.subsloth.core.model.error.Outcome
 /**
  * The current session state.
  *
- * `Anonymous` is the initial state. `Authenticated` carries the
- * credentials and the user identifier; production wire injects the
- * `userId` from the API's `/users/me` response. The [openedAtEpochSeconds]
- * timestamp is useful for the UI ("session started 5 minutes ago")
- * and for session-age policies.
+ * [Restoring] is the initial state for persistent-backed implementations
+ * while cold-start recovery decides whether stored credentials exist and
+ * are usable: it means "not yet known", never "signed out". Implementations
+ * without persistent credentials (e.g. [InMemorySessionState]) start as
+ * [Anonymous] instead. [Authenticated] carries the credentials and the user
+ * identifier; production wire injects the `userId` from the API's
+ * `/users/me` response. The [openedAtEpochSeconds] timestamp is useful for
+ * the UI ("session started 5 minutes ago") and for session-age policies.
  */
 sealed interface Session {
+    data object Restoring : Session
+
     data object Anonymous : Session
 
     data class Authenticated(val userId: String, val openedAtEpochSeconds: Long, val credentials: Credentials) :

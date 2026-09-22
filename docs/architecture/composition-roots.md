@@ -196,6 +196,19 @@ cover the screen, and `:core:media` clears the player flag when the browser
 leaves fullscreen on its own (Esc) because the library's own listener misses
 that case.
 
+## Cold-start session restore
+
+All three production roots wire `ValidatingSessionState`, whose `state`
+starts as `Session.Restoring` (not `Anonymous`). `SessionGate` renders a
+neutral centered progress indicator for that state instead of the login
+screen, so a relaunch with stored credentials never flashes the login form.
+Right after the local credential read, the port publishes
+`Session.Authenticated` optimistically — before the API validation
+round-trip — so the cached catalog can render immediately, even offline.
+Validation then adjusts the outcome: a genuine HTTP 401 clears the stored
+credentials and drops back to `Anonymous`, while any transient failure
+keeps the optimistic session.
+
 ## The shared non-production default
 
 `core/ui/src/commonMain/kotlin/net/subsloth/core/ui/RootContainerViewModel.kt`'s

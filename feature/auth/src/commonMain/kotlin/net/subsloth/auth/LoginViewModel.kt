@@ -97,6 +97,14 @@ class LoginViewModel(
             is Session.Anonymous -> {
                 _uiState.value = LoginUiState.LoginForm(hasOfflineLibrary = hasOffline)
             }
+
+            // Cold-start recovery is still deciding. The session gate renders a
+            // splash for this state, so this branch is defensive only; showing
+            // Loading keeps the form from flashing if the login slot is ever
+            // composed early.
+            is Session.Restoring -> {
+                _uiState.value = LoginUiState.Loading
+            }
         }
     }
 
@@ -146,6 +154,12 @@ class LoginViewModel(
                             _uiState.value = LoginUiState.LoggedIn
                         }
                     }
+
+                    // Restoring precedes the first resolved Anonymous/Authenticated
+                    // emission: leave the current UI state alone (see
+                    // checkInitialState's defensive Loading and the session gate's
+                    // splash).
+                    is Session.Restoring -> {}
                 }
             }
         }
