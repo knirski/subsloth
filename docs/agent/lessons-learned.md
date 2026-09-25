@@ -280,3 +280,20 @@ web, and previews keep the `0.dp` default, so the renderer never sees an
 insets API. API note for this Compose version: `getBottom` and
 `calculateBottomPadding` are members, not top-level extensions — importing
 them fails to resolve.
+
+## 28. Gradle 9.7+ Fails with Kotlin 2.4.20's Wasm BinaryenPlugin
+
+Upgrading the wrapper past 9.6.1 (verified on 9.7.1 and 9.8.0) makes every
+`subsloth.kmp.library` module fail at configuration time:
+
+```
+Failed to apply plugin class 'org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenPlugin'
+> Project ':core:model' cannot access 'Project.extensions' functionality on another project ':'
+```
+
+Gradle 9.7 tightened `org.gradle.isolated-projects=true` enforcement, and KGP
+2.4.20's wasm Binaryen plugin still reaches across projects. 9.6.1 is the newest
+wrapper that configures; retry once Kotlin 2.5+ (or a KGP patch) ships, rather
+than dropping isolated projects to gain the wrapper. Fastest repro without
+compiling: `./gradlew :core:model:help`.
+

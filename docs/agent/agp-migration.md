@@ -4,28 +4,30 @@
 
 | Component | Version |
 |---|---|
-| AGP | 9.4.0 |
+| AGP | 9.4.1 |
 | Gradle | 9.6.1 |
 | Kotlin | 2.4.20 |
-| KSP | 2.3.11 |
-| Compose BOM | 2026.08.00 |
-| compileSdk / targetSdk | 36 |
+| KSP | 2.3.12 |
+| Compose BOM | 2026.09.00 |
+| compileSdk / targetSdk | 37 |
 | minSdk | 26 |
 | JDK (compile) | 17 (via `jvmToolchain(17)`) |
 | JDK (daemon) | 25 (Nix flake `JAVA_HOME`) |
 | Detekt | 2.0.0-alpha.6 |
 | Spotless | 8.10.2 |
 
-## Convention Plugins (6)
+## Convention Plugins (8)
 
 All in `build-logic/convention/src/main/kotlin/`:
 
-- **`subsloth.android.application`** — `com.android.application`, spotless, detekt, `kotlin.plugin.power-assert`. Sets SDK, JUnit 5, lint `abortOnError` + `warningsAsErrors`.
-- **`subsloth.android.application.compose`** — extends app plugin, adds `kotlin.plugin.compose` + `buildFeatures.compose`.
+- **`subsloth.android.application`** — `com.android.application`, spotless, detekt, `kotlin.plugin.power-assert`. Sets SDK 37, JUnit 5, lint `abortOnError` + `warningsAsErrors`.
+- **`subsloth.android.application.compose`** — extends app plugin, adds `kotlin.plugin.compose` + `buildFeatures.compose`. Used by `:androidApp`.
 - **`subsloth.android.library`** — mirrors app plugin, no app-specific lint disables. Adds ktlint exception for PascalCase Composables.
-- **`subsloth.android.library.compose`** — extends library plugin, adds compose.
-- **`subsloth.android.feature`** — extends `android.library.compose`. Adds Compose BOM, Material3, Lifecycle, Navigation3 deps. Used by `:feature:*`.
-- **`subsloth.jvm.library`** — pure JVM. No Android SDK or lint config.
+- **`subsloth.android.library.compose`** — extends library plugin, adds compose. Used by `:testing:tv-focus-harness`.
+- **`subsloth.jvm.library`** — pure JVM. Kotlin JVM, spotless, detekt, power-assert, JUnit 5. Used by `:desktopApp` and JVM-only test modules.
+- **`subsloth.kmp.library`** — Kotlin Multiplatform (`jvm` + `wasmJs`), spotless, detekt, power-assert, JUnit 5 on JVM. Used by most `:core:*` and `:feature:*` modules.
+- **`subsloth.kmp.android.library`** — `com.android.kotlin.multiplatform.library` + Kotlin Multiplatform; compileSdk 37, buildTools 37.0.0. Used by `:core:database`, `:core:media`, `:core:preferences`.
+- **`subsloth.web.library`** — WasmJS-only web modules, spotless + detekt. Used by `:webApp`.
 
 ## Version Catalog
 
@@ -43,11 +45,16 @@ All in `build-logic/convention/src/main/kotlin/`:
 ### Gradle
 `./gradlew wrapper --gradle-version X.Y`. Check `gradle-wrapper.properties`. Verify AGP compat.
 
+> **Blocked above 9.6.1 (as of Kotlin 2.4.20):** Gradle 9.7+ fails under
+> `org.gradle.isolated-projects=true` — KGP's wasm `BinaryenPlugin` accesses
+> `Project.extensions` across projects. See lessons-learned §28; retry with
+> Kotlin 2.5+.
+
 ### Kotlin
 Update `kotlin` version in TOML. Compose compiler ships with Kotlin (plugin `kotlin.plugin.compose`) — no separate version. Update KSP at same time. Run `./gradlew clean build`, review detekt baseline.
 
 ### JDK Toolchain
-Daemon: JDK 25 (Nix `JAVA_HOME`). Compile: JDK 17 via `jvmToolchain(17)` in all 6 plugins. Discovery via `JAVA17_HOME` env var. To change: update `jvmToolchain(N)` in all plugins + `build-logic/convention/build.gradle.kts`, update `JAVA17_HOME` in `flake.nix`, update `fromEnv` in `gradle.properties`.
+Daemon: JDK 25 (Nix `JAVA_HOME`). Compile: JDK 17 via `jvmToolchain(17)` in every convention plugin. Discovery via `JAVA17_HOME` env var. To change: update `jvmToolchain(N)` in all plugins + `build-logic/convention/build.gradle.kts`, update `JAVA17_HOME` in `flake.nix`, update `fromEnv` in `gradle.properties`.
 
 ## Migration Checklist
 
@@ -72,5 +79,5 @@ Daemon: JDK 25 (Nix `JAVA_HOME`). Compile: JDK 17 via `jvmToolchain(17)` in all 
 
 ## References
 - `gradle/libs.versions.toml`, `gradle-wrapper.properties`
-- `build-logic/convention/src/main/kotlin/*.gradle.kts` (6 plugins)
+- `build-logic/convention/src/main/kotlin/*.gradle.kts` (8 plugins)
 - `settings.gradle.kts`, `gradle.properties`, `flake.nix`
