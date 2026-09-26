@@ -220,7 +220,7 @@ convention's exact configuration.
 | **Dual-subtitle playback** | Watch with two simultaneous subtitle tracks for language immersion |
 | **Catalog browsing** | Movies and series with search, filters, and sort |
 | **Detail views** | Movie and series detail screens with episode structure and metadata |
-| **Video player** | Large centered play/pause with speed, subtitle, quality, and fullscreen controls; resume support |
+| **Video player** | 10s skip, seek slider, speed, subtitles, quality, fullscreen, next-episode prompt; touch gestures (double-tap seek, long-press 2×, swipe scrub, volume/brightness) and desktop/web keyboard shortcuts. See [player controls](docs/features/player-controls.md) |
 | **Offline downloads** | Queue management, storage safety, and offline playback |
 | **Library & settings** | Personal library, central Downloads screen, settings, diagnostics |
 

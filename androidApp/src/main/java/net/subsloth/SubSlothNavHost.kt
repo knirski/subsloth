@@ -47,8 +47,10 @@ import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.MovieId
 import net.subsloth.core.model.identifier.ShowId
 import net.subsloth.core.model.media.Media
+import net.subsloth.player.AndroidBrightnessControl
 import net.subsloth.player.AndroidFullscreenWindowController
 import net.subsloth.player.AndroidKeepScreenOn
+import net.subsloth.player.AndroidVolumeControl
 import net.subsloth.player.PlayerFullscreenControl
 import net.subsloth.player.PlayerOrientationViewModel
 import net.subsloth.auth.AuthRepairScreen
@@ -327,6 +329,11 @@ fun SubSlothNavHost(
                 // Playback must not let the display dim or sleep.
                 AndroidKeepScreenOn(activity)
 
+                // Vertical swipes adjust system media volume and window
+                // brightness; desktop/web hosts pass no controls.
+                val volumeControl = remember(activity) { AndroidVolumeControl(activity) }
+                val brightnessControl = remember(activity) { AndroidBrightnessControl(activity) }
+
                 val orientationViewModel: PlayerOrientationViewModel = viewModel(
                     key = "player_orientation",
                     factory = object : ViewModelProvider.Factory {
@@ -414,6 +421,8 @@ fun SubSlothNavHost(
                         isImmersive = !isImmersive
                     },
                     controlsBottomPadding = navigationBarInset,
+                    volumeControl = volumeControl,
+                    brightnessControl = brightnessControl,
                 )
             }
 
