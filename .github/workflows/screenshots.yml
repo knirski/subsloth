@@ -45,7 +45,7 @@ jobs:
           path: |
             ~/.android/avd/
             ~/.android/system-images/
-          key: ${{ runner.os }}-avd-${{ runner.arch }}-api36-google-apis
+          key: ${{ runner.os }}-avd-${{ runner.arch }}-api37.0-google-apis
           restore-keys: |
             ${{ runner.os }}-avd-${{ runner.arch }}-
 
@@ -55,7 +55,7 @@ jobs:
         if: ${{ github.event.inputs.mode == 'verify' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 36
+          api-level: '37.0'
           target: google_apis
           arch: x86_64
           ram-size: 6144
@@ -69,7 +69,7 @@ jobs:
         if: ${{ github.event.inputs.mode == 'update' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 36
+          api-level: '37.0'
           target: google_apis
           arch: x86_64
           ram-size: 6144
