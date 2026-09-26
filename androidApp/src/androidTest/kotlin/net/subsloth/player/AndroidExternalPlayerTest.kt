@@ -2,6 +2,7 @@ package net.subsloth.player
 
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.IntentCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import net.subsloth.core.domain.port.ExternalPlaybackRequest
 import org.junit.Assert.assertArrayEquals
@@ -51,8 +52,14 @@ class AndroidExternalPlayerTest {
         val intent = buildExternalPlayerIntent(request(subtitleUrl = subtitleUrl))
 
         assertEquals(subtitleUrl, intent.getStringExtra("subtitles_location"))
-        assertEquals(Uri.parse(subtitleUrl), intent.getParcelableArrayExtra("subs", Uri::class.java)?.single())
-        assertEquals(Uri.parse(subtitleUrl), intent.getParcelableArrayExtra("subs.enable", Uri::class.java)?.single())
+        assertEquals(
+            Uri.parse(subtitleUrl),
+            IntentCompat.getParcelableArrayExtra(intent, "subs", Uri::class.java)?.single(),
+        )
+        assertEquals(
+            Uri.parse(subtitleUrl),
+            IntentCompat.getParcelableArrayExtra(intent, "subs.enable", Uri::class.java)?.single(),
+        )
         assertArrayEquals(arrayOf("movie_en.srt"), intent.getStringArrayExtra("subs.filename"))
     }
 
@@ -61,7 +68,7 @@ class AndroidExternalPlayerTest {
         val intent = buildExternalPlayerIntent(request())
 
         assertNull(intent.getStringExtra("subtitles_location"))
-        assertNull(intent.getParcelableArrayExtra("subs", Uri::class.java))
+        assertNull(IntentCompat.getParcelableArrayExtra(intent, "subs", Uri::class.java))
     }
 
     private fun request(

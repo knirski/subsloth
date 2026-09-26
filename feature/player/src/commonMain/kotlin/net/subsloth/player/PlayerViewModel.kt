@@ -8,6 +8,7 @@ import co.touchlab.kermit.Logger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -231,10 +232,21 @@ class PlayerViewModel(
      * Online playback is handed to an external player only when the
      * Android-only preference is on. Offline (downloaded) media always
      * stays in the in-app player: its app-private files are not exposed to
-     * third-party apps.
+     * third-party apps. A preference-read failure degrades to in-app
+     * playback instead of leaving the screen stuck on loading.
      */
-    private suspend fun shouldHandOffToExternalPlayer(source: VideoSource): Boolean =
-        source.playbackMode == PlaybackMode.ONLINE && loadExternalPlayerEnabled()
+    @Suppress("TooGenericExceptionCaught") // Preference read must degrade, never fail the screen.
+    private suspend fun shouldHandOffToExternalPlayer(source: VideoSource): Boolean {
+        if (source.playbackMode != PlaybackMode.ONLINE) return false
+        return try {
+            loadExternalPlayerEnabled()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.w { "External player preference read failed ($e); playing in app" }
+            false
+        }
+    }
 
     /**
      * Hands [source] to the external player, then either marks the screen

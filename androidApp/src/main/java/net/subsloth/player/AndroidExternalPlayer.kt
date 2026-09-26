@@ -34,9 +34,6 @@ private const val EXTRA_MX_SUBS_FILENAME = "subs.filename"
 /** Milliseconds per second, for the position extras. */
 private const val MILLIS_PER_SECOND = 1_000L
 
-/** How much of a stream URL a log line keeps. */
-private const val LOG_URL_PREFIX_LENGTH = 80
-
 /**
  * Routes an online stream to an installed external video player.
  *
@@ -64,7 +61,9 @@ class AndroidExternalPlayer(private val context: Context) : ExternalPlaybackPort
             context.startActivity(intent)
             Outcome.Success(Unit)
         } catch (e: Exception) {
-            log.w(e) { "No external player accepted ${request.streamUrl.take(LOG_URL_PREFIX_LENGTH)}" }
+            // Never log the URL: stream URLs are server-signed and carry an
+            // auth value in their query string.
+            log.w(e) { "No external player accepted the stream" }
             Outcome.Failure(MediaError.Unavailable)
         }
 }

@@ -1469,6 +1469,22 @@ class PlayerViewModelTest {
         assertThat(viewModel.playCommands.first().url).isEqualTo("https://example.com/fallback.mp4")
     }
 
+    @Test
+    fun `external player preference read failure falls back to in-app playback`() = runTest(testDispatcher) {
+        var handoffCalled = false
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
+            loadExternalPlayerEnabled = { throw IllegalStateException("preference read failed") },
+            openExternalPlayer = {
+                handoffCalled = true
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(handoffCalled).isFalse()
+        assertThat(viewModel.uiState.value).isInstanceOf(PlayerUiState.Content::class.java)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
