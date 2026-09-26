@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -90,6 +92,13 @@ internal fun SubtitleText(
     )
 }
 
+/**
+ * Minimum bar width for the single compact row. Below this the option chips and
+ * the transport controls cannot sit side by side without colliding, so they
+ * stack instead. Landscape phones clear this; portrait phones do not.
+ */
+private val SINGLE_ROW_MIN_WIDTH = 560.dp
+
 @Composable
 internal fun PlaybackControls(
     isPlaying: Boolean,
@@ -105,93 +114,157 @@ internal fun PlaybackControls(
     onSkipBackward: () -> Unit = {},
     onSkipForward: () -> Unit = {},
 ) {
-    // Secondary options share one edge-aligned row; the primary transport
-    // controls (rewind, play/pause, fast-forward) get their own centred row
-    // underneath, so they stay thumb-reachable and never collide with the
-    // chips on narrow phones — the media-player convention.
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    // Landscape phones and wide windows have room for one compact row: the
+    // transport controls stay centred between the edge-aligned option groups,
+    // which keeps the bar short when vertical space is scarce. Narrow portrait
+    // windows stack the options above the transport row instead, wrapping with
+    // FlowRow when even that is tight, so nothing overlaps.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val singleRow = maxWidth >= SINGLE_ROW_MIN_WIDTH
+        if (singleRow) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SecondaryOptionsStart(playbackSpeed, onToggleSpeed, onToggleSubtitles)
+                TransportControls(
+                    isPlaying = isPlaying,
+                    canSkip = canSkip,
+                    onSkipBackward = onSkipBackward,
+                    onSkipForward = onSkipForward,
+                    onTogglePlayPause = onTogglePlayPause,
+                    compact = true,
+                )
+                SecondaryOptionsEnd(qualityLabel, isFullscreen, onToggleQuality, onToggleFullscreen)
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    SecondaryOptionsStart(playbackSpeed, onToggleSpeed, onToggleSubtitles)
+                    SecondaryOptionsEnd(qualityLabel, isFullscreen, onToggleQuality, onToggleFullscreen)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                TransportControls(
+                    isPlaying = isPlaying,
+                    canSkip = canSkip,
+                    onSkipBackward = onSkipBackward,
+                    onSkipForward = onSkipForward,
+                    onTogglePlayPause = onTogglePlayPause,
+                    compact = false,
+                )
+            }
+        }
+    }
+}
+
+/** Speed and subtitle chips, aligned to the leading edge of the control bar. */
+@Composable
+private fun SecondaryOptionsStart(playbackSpeed: Float, onToggleSpeed: () -> Unit, onToggleSubtitles: () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.align(Alignment.CenterStart),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ControlChip(
-                    label = formatSpeedLabel(playbackSpeed),
-                    description = stringResource(Res.string.player_speed),
-                    onClick = onToggleSpeed,
-                )
-                ControlChip(
-                    label = stringResource(Res.string.player_subtitles_short),
-                    description = stringResource(Res.string.player_subtitles),
-                    onClick = onToggleSubtitles,
-                )
-            }
+        ControlChip(
+            label = formatSpeedLabel(playbackSpeed),
+            description = stringResource(Res.string.player_speed),
+            onClick = onToggleSpeed,
+        )
+        ControlChip(
+            label = stringResource(Res.string.player_subtitles_short),
+            description = stringResource(Res.string.player_subtitles),
+            onClick = onToggleSubtitles,
+        )
+    }
+}
 
-            Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ControlChip(
-                    label = qualityLabel ?: stringResource(Res.string.player_quality_auto_short),
-                    description = stringResource(Res.string.player_quality),
-                    onClick = onToggleQuality,
-                )
-                ControlChip(
-                    label = if (isFullscreen) {
-                        stringResource(Res.string.player_exit_fullscreen_short)
-                    } else {
-                        stringResource(Res.string.player_fullscreen_short)
-                    },
-                    description = if (isFullscreen) {
-                        stringResource(Res.string.player_exit_fullscreen)
-                    } else {
-                        stringResource(Res.string.player_fullscreen)
-                    },
-                    onClick = onToggleFullscreen,
-                )
-            }
-        }
+/** Quality and fullscreen chips, aligned to the trailing edge of the control bar. */
+@Composable
+private fun SecondaryOptionsEnd(
+    qualityLabel: String?,
+    isFullscreen: Boolean,
+    onToggleQuality: () -> Unit,
+    onToggleFullscreen: () -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ControlChip(
+            label = qualityLabel ?: stringResource(Res.string.player_quality_auto_short),
+            description = stringResource(Res.string.player_quality),
+            onClick = onToggleQuality,
+        )
+        ControlChip(
+            label = if (isFullscreen) {
+                stringResource(Res.string.player_exit_fullscreen_short)
+            } else {
+                stringResource(Res.string.player_fullscreen_short)
+            },
+            description = if (isFullscreen) {
+                stringResource(Res.string.player_exit_fullscreen)
+            } else {
+                stringResource(Res.string.player_fullscreen)
+            },
+            onClick = onToggleFullscreen,
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
+/**
+ * Rewind, play/pause, and fast-forward. [compact] narrows the play button so
+ * the single-row bar still fits on landscape phones.
+ */
+@Composable
+private fun TransportControls(
+    isPlaying: Boolean,
+    canSkip: Boolean,
+    onSkipBackward: () -> Unit,
+    onSkipForward: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    compact: Boolean,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SkipButton(
+            label = stringResource(Res.string.player_rewind_10_short),
+            description = stringResource(Res.string.player_rewind_10),
+            enabled = canSkip,
+            onClick = onSkipBackward,
+        )
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Button(
+            onClick = onTogglePlayPause,
+            modifier = Modifier.height(56.dp),
+            contentPadding = PaddingValues(horizontal = if (compact) 24.dp else 36.dp),
         ) {
-            SkipButton(
-                label = stringResource(Res.string.player_rewind_10_short),
-                description = stringResource(Res.string.player_rewind_10),
-                enabled = canSkip,
-                onClick = onSkipBackward,
-            )
-
-            Button(
-                onClick = onTogglePlayPause,
-                modifier = Modifier.height(56.dp),
-                contentPadding = PaddingValues(horizontal = 36.dp),
-            ) {
-                Text(
-                    text = if (isPlaying) {
-                        stringResource(Res.string.player_pause)
-                    } else {
-                        stringResource(Res.string.player_play)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            SkipButton(
-                label = stringResource(Res.string.player_forward_10_short),
-                description = stringResource(Res.string.player_forward_10),
-                enabled = canSkip,
-                onClick = onSkipForward,
+            Text(
+                text = if (isPlaying) {
+                    stringResource(Res.string.player_pause)
+                } else {
+                    stringResource(Res.string.player_play)
+                },
+                style = MaterialTheme.typography.titleMedium,
             )
         }
+
+        SkipButton(
+            label = stringResource(Res.string.player_forward_10_short),
+            description = stringResource(Res.string.player_forward_10),
+            enabled = canSkip,
+            onClick = onSkipForward,
+        )
     }
 }
 

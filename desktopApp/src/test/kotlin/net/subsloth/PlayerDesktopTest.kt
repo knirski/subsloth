@@ -252,8 +252,10 @@ class PlayerDesktopTest {
         composeRule.onNodeWithContentDescription("Rewind 10 seconds").performClick()
         assertEquals(20f / 120f * 1000f, playerState.lastSeekValue!!, SEEK_TOLERANCE)
 
+        // The second skip starts from the first target, proving consecutive
+        // skips accumulate even when the backend has not polled a new position.
         composeRule.onNodeWithContentDescription("Fast forward 10 seconds").performClick()
-        assertEquals(40f / 120f * 1000f, playerState.lastSeekValue!!, SEEK_TOLERANCE)
+        assertEquals(30f / 120f * 1000f, playerState.lastSeekValue!!, SEEK_TOLERANCE)
     }
 
     @Test
@@ -341,6 +343,11 @@ class PlayerDesktopTest {
         VideoPlayerState by PreviewableVideoPlayerState(
             currentTime = positionSeconds,
             duration = durationSeconds,
+            sliderPos = if (durationSeconds > 0.0) {
+                (positionSeconds / durationSeconds * 1000.0).toFloat()
+            } else {
+                0f
+            },
         ) {
         var lastSeekValue: Float? = null
 

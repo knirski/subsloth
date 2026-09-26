@@ -405,8 +405,19 @@ internal fun skipTargetSeconds(positionSeconds: Double, durationSeconds: Double,
         (positionSeconds + deltaSeconds).coerceIn(0.0, durationSeconds)
     }
 
-/** Seeks the player by [deltaSeconds] (negative rewinds) from [VideoPlayerState.currentTime]. */
+/**
+ * Seeks the player by [deltaSeconds] (negative rewinds).
+ *
+ * The base position comes from [VideoPlayerState.sliderPos] rather than
+ * [VideoPlayerState.currentTime]: native backends refresh `currentTime` only on
+ * the next position poll, so two quick skips would read the same position and
+ * one would be lost. `sliderPos` is advanced to the target before the seek so
+ * consecutive skips accumulate immediately.
+ */
 internal fun VideoPlayerState.seekBy(deltaSeconds: Long) {
-    val target = skipTargetSeconds(currentTime, duration, deltaSeconds) ?: return
-    seekTo((target / duration * SLIDER_RANGE).toFloat().coerceIn(0f, SLIDER_RANGE))
+    val positionSeconds = sliderPos.toDouble() / SLIDER_RANGE.toDouble() * duration
+    val target = skipTargetSeconds(positionSeconds, duration, deltaSeconds) ?: return
+    val targetSlider = (target / duration * SLIDER_RANGE).toFloat().coerceIn(0f, SLIDER_RANGE)
+    sliderPos = targetSlider
+    seekTo(targetSlider)
 }

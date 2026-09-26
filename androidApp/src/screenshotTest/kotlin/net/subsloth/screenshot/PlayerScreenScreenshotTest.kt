@@ -13,11 +13,13 @@ import net.subsloth.core.ui.theme.SubSlothTheme
 import net.subsloth.player.PlayerOverlay
 import net.subsloth.player.PlayerUiState
 import net.subsloth.screenshot.DEVICE_PHONE
+import net.subsloth.screenshot.DEVICE_PHONE_LANDSCAPE
 import net.subsloth.screenshot.DEVICE_TABLET
 import net.subsloth.screenshot.DEVICE_TV
 
 @PreviewTest
 @Preview(name = "Phone Light", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Phone Landscape Light", device = DEVICE_PHONE_LANDSCAPE, showBackground = true)
 @Preview(name = "Tablet Light", device = DEVICE_TABLET, showBackground = true)
 @Preview(name = "TV Light", device = DEVICE_TV, showBackground = true)
 @Composable
@@ -51,6 +53,7 @@ fun PlayerScreenLightScreenshot() {
 
 @PreviewTest
 @Preview(name = "Phone Dark", device = DEVICE_PHONE, showBackground = true)
+@Preview(name = "Phone Landscape Dark", device = DEVICE_PHONE_LANDSCAPE, showBackground = true)
 @Preview(name = "Tablet Dark", device = DEVICE_TABLET, showBackground = true)
 @Preview(name = "TV Dark", device = DEVICE_TV, showBackground = true)
 @Composable
