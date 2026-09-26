@@ -21,7 +21,13 @@ kotlin {
     }
 
     android {
-        compileSdk = 37
+        // Android 17 minor release: compile against API 37.1. The KMP DSL
+        // exposes the minor version through the compileSdk spec only.
+        compileSdk {
+            version = release(37) {
+                minorApiLevel = 1
+            }
+        }
         // Pinned to the same SDK build-tools as the JVM-target Android
         // conventions (`subsloth.android.library`/`.application`); without
         // this, KMP modules build with the AGP default build-tools version.

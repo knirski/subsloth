@@ -26,7 +26,7 @@ All in `build-logic/convention/src/main/kotlin/`:
 - **`subsloth.android.library.compose`** — extends library plugin, adds compose. Used by `:testing:tv-focus-harness`.
 - **`subsloth.jvm.library`** — pure JVM. Kotlin JVM, spotless, detekt, power-assert, JUnit 5. Used by `:desktopApp` and JVM-only test modules.
 - **`subsloth.kmp.library`** — Kotlin Multiplatform (`jvm` + `wasmJs`), spotless, detekt, power-assert, JUnit 5 on JVM. Used by most `:core:*` and `:feature:*` modules.
-- **`subsloth.kmp.android.library`** — `com.android.kotlin.multiplatform.library` + Kotlin Multiplatform; compileSdk 37, buildTools 37.0.0. Used by `:core:database`, `:core:media`, `:core:preferences`.
+- **`subsloth.kmp.android.library`** — `com.android.kotlin.multiplatform.library` + Kotlin Multiplatform; compileSdk 37.1 (`compileSdk { release(37) { minorApiLevel = 1 } }`), buildTools 37.0.0. Used by `:core:database`, `:core:media`, `:core:preferences`.
 - **`subsloth.web.library`** — WasmJS-only web modules, spotless + detekt. Used by `:webApp`.
 
 ## Version Catalog

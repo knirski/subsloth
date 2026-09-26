@@ -32,13 +32,13 @@
 
       # ── Android SDK ──────────────────────────────────────────────────────
       # One component per pin, each at the latest version relevant to the
-      # project. "37" resolves to platform 37.0, which matches
-      # compileSdk = 37 (no compileSdkMinor); 37.1 would need a minor opt-in.
+      # project. 37.1 is the newest stable platform in the pinned nixpkgs;
+      # the Android conventions opt in with compileSdkMinor = 1.
       cmdLineToolsVersion = "22.0";
 
       androidPackages = pkgs.androidenv.composeAndroidPackages {
         inherit cmdLineToolsVersion;
-        platformVersions = [ "37" ];
+        platformVersions = [ "37.1" ];
         buildToolsVersions = [ "37.0.0" ];
         platformToolsVersion = "37.0.1";
       };
@@ -51,10 +51,11 @@
       # system images, emulator add-ons, and AVDs go here).
       writableSdkRoot = "/tmp/android-sdk";
 
-      # System image for x86_64 emulation. google_apis includes Play
-      # Services and is the standard choice for app testing. No ARM images:
-      # this repo tests Android on the x86_64 emulator only.
-      systemImage = "system-images;android-37.0;google_apis;x86_64";
+      # System image for x86_64 emulation. 37.1 publishes the google_apis
+      # image for x86_64 only as the 16 KB page-size (ps16k) variant, which
+      # is also what modern devices require. No ARM images: this repo tests
+      # Android on the x86_64 emulator only.
+      systemImage = "system-images;android-37.1;google_apis_ps16k;x86_64";
       systemImageDir = "${writableSdkRoot}/${builtins.replaceStrings [ ";" ] [ "/" ] systemImage}";
       avdName = "subsloth-device";
 
@@ -96,7 +97,7 @@
 
         # Write the AVD .ini file
         cat > "$AVD_DIR/${avdName}.ini" << INI
-        target=android-37.0
+        target=android-37.1
         path=$AVD_DIR/${avdName}.avd
         INI
 
