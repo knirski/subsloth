@@ -191,9 +191,12 @@ fun PlayerOverlay(
     )
     val keyboardRequester = remember { Any() }
     controllerState.KeepVisibleWhile(keyboardRequester, keyboardController.isFastForwarding)
+    val anyPickerOpen = showSpeedPicker || showSubtitlePicker || showQualityPicker
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(enableKeyboardShortcuts) {
-        if (enableKeyboardShortcuts) focusRequester.requestFocus()
+    LaunchedEffect(enableKeyboardShortcuts, anyPickerOpen) {
+        // Picker buttons take focus while open; when the last picker closes
+        // the focused button may be gone, so hand focus back to the overlay.
+        if (enableKeyboardShortcuts && !anyPickerOpen) focusRequester.requestFocus()
     }
 
     // Auto-hide the chrome a few seconds into uninterrupted playback. Any
@@ -221,7 +224,10 @@ fun PlayerOverlay(
         Modifier
             .focusRequester(focusRequester)
             .focusable()
-            .onPreviewKeyEvent(keyboardController::onKeyEvent)
+            .onPreviewKeyEvent { event ->
+                // While a picker is open, its buttons own the keyboard.
+                if (anyPickerOpen) false else keyboardController.onKeyEvent(event)
+            }
     } else {
         Modifier
     }
@@ -399,7 +405,12 @@ fun PlayerOverlay(
                                         while (true) {
                                             val event = awaitPointerEvent(PointerEventPass.Initial)
                                             val change = event.changes.firstOrNull() ?: continue
-                                            if (seekState.preview != null && change.pressed) {
+                                            if (event.type == PointerEventType.Press) {
+                                                // The pointer-down position is the
+                                                // cancellation origin, recorded before
+                                                // the slider reports any preview.
+                                                seekState.onDragStart(change.position.y)
+                                            } else if (change.pressed) {
                                                 seekState.onDragPosition(change.position.y)
                                             }
                                         }

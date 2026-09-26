@@ -23,8 +23,18 @@ class PlayerSeekStateTest {
     @Test
     fun `moving above the threshold cancels the seek`() {
         state.onPreview(400f)
-        state.onDragPosition(500f)
+        state.onDragStart(500f)
         state.onDragPosition(350f)
+
+        assertThat(state.isCancelling).isTrue()
+        assertThat(state.commit()).isNull()
+    }
+
+    @Test
+    fun `a single move above the threshold cancels`() {
+        state.onPreview(400f)
+        state.onDragStart(500f)
+        state.onDragPosition(300f)
 
         assertThat(state.isCancelling).isTrue()
         assertThat(state.commit()).isNull()
@@ -33,7 +43,7 @@ class PlayerSeekStateTest {
     @Test
     fun `moving back below the threshold commits again`() {
         state.onPreview(400f)
-        state.onDragPosition(500f)
+        state.onDragStart(500f)
         state.onDragPosition(350f)
         state.onDragPosition(500f)
 

@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -417,6 +418,26 @@ class PlayerDesktopTest {
         composeRule.waitForIdle()
 
         assertEquals(1, playerState.pauseCalls)
+    }
+
+    @Test
+    fun playerOverlay_restoresFocusAfterPickerCloses() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(
+                    state = playerContent(isPlaying = true),
+                    playerState = playerState,
+                    enableKeyboardShortcuts = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Speed").performClick()
+        composeRule.onNodeWithText("2.0x").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).assertIsFocused()
     }
 
     @Test

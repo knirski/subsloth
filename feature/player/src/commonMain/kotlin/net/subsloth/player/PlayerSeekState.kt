@@ -30,6 +30,16 @@ class PlayerSeekState(private val cancelDistancePx: Float) {
     }
 
     /**
+     * Records the pointer-down position that later moves are measured
+     * against. Called before the slider reports any preview, so a gesture that
+     * crosses the threshold and releases without another move still cancels.
+     */
+    fun onDragStart(y: Float) {
+        dragStartY = y
+        isCancelling = false
+    }
+
+    /**
      * Tracks the pointer's vertical position while dragging. Moving
      * [cancelDistancePx] above the drag origin arms cancellation; moving back
      * disarms it again.
