@@ -8,11 +8,6 @@ This document lists features, capabilities, and integrations that are explicitly
 - Cast button, cast SDK integration, and `MediaRouteActionProvider` must not be added.
 - Remote playback session negotiation is deferred.
 
-## External Player Handoff
-
-- Handoff to external media players (e.g. VLC, MX Player) is excluded from v1.
-- `Intent`-based playback routing to third-party apps must not be implemented.
-
 ## Public-Folder Downloads
 
 - Downloading media to user-visible public folders (e.g. `Downloads/`, `Movies/`) is excluded from v1.

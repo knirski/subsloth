@@ -26,6 +26,7 @@ sealed interface SettingsUiState {
         val subtitleLanguage: String?,
         val quality: String?,
         val downloadsWifiOnly: Boolean,
+        val externalPlayerEnabled: Boolean,
         val showLogoutCleanup: Boolean = false,
     ) : SettingsUiState
 
@@ -62,10 +63,13 @@ class SettingsViewModel(
     private val readSubtitleLanguage: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
     private val readQuality: suspend (AccountProfileKey) -> Flow<String?> = { flowOf(null) },
     private val readDownloadsWifiOnly: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(true) },
+    /** Whether online streams are handed to an external player (Android). */
+    private val readExternalPlayerEnabled: suspend (AccountProfileKey) -> Flow<Boolean> = { flowOf(false) },
     private val writeSubtitleEnabled: (Boolean) -> Unit = {},
     private val writeSubtitleLanguage: (String?) -> Unit = {},
     private val writeQuality: (String?) -> Unit = {},
     private val writeDownloadsWifiOnly: (Boolean) -> Unit = {},
+    private val writeExternalPlayerEnabled: (Boolean) -> Unit = {},
     private val deleteAllDownloads: () -> Unit = {},
     private val clearPreferences: (AccountProfileKey) -> Unit = {},
     private val clearLibrary: () -> Unit = {},
@@ -89,12 +93,14 @@ class SettingsViewModel(
                     readSubtitleLanguage(key),
                     readQuality(key),
                     readDownloadsWifiOnly(key),
-                ) { enabled, lang, qual, wifi ->
+                    readExternalPlayerEnabled(key),
+                ) { enabled, lang, qual, wifi, externalPlayer ->
                     SettingsUiState.Content(
                         subtitleEnabled = enabled,
                         subtitleLanguage = lang,
                         quality = qual,
                         downloadsWifiOnly = wifi,
+                        externalPlayerEnabled = externalPlayer,
                     )
                 }.collect { content ->
                     _uiState.value = content
@@ -120,6 +126,10 @@ class SettingsViewModel(
 
     fun onDownloadsWifiOnlyChanged(wifiOnly: Boolean) {
         writeDownloadsWifiOnly(wifiOnly)
+    }
+
+    fun onExternalPlayerEnabledChanged(enabled: Boolean) {
+        writeExternalPlayerEnabled(enabled)
     }
 
     fun showLogoutCleanup() {

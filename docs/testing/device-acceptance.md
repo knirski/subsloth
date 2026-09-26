@@ -133,6 +133,21 @@ This document describes the manual device acceptance checklist for the three sup
 2. Verify the player shows a network error state (not a crash or blank screen).
 3. Restore connectivity and verify the player recovers or the user can restart playback.
 
+### 4.5 External player handoff (Android)
+1. Install an external video player (for example VLC or MX Player), then enable
+   **Settings → Quality & Playback → Open in external player**.
+2. From a movie or episode detail screen, tap **Play**. Verify the chosen external
+   player opens the stream and the in-app player screen closes itself.
+3. Verify the selected subtitle language appears in the external player when it
+   supports the handoff extras (VLC: `subtitles_location`, MX Player: `subs`), and
+   that playback resumes near the saved position.
+4. Press Back from the external player. Verify the app shows the detail screen,
+   not an empty player.
+5. Uninstall every external player and tap **Play** again: verify playback falls
+   back to the in-app player.
+6. Start playback of a **downloaded** item with the setting still enabled: verify
+   it always plays in-app.
+
 ---
 
 ## 5. Subtitles

@@ -38,6 +38,9 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
     private fun downloadsWifiOnlyKey(profileKey: AccountProfileKey) =
         booleanPreferencesKey("${profileKey.value}_downloads_wifi_only")
 
+    private fun externalPlayerEnabledKey(profileKey: AccountProfileKey) =
+        booleanPreferencesKey("${profileKey.value}_external_player_enabled")
+
     private fun catalogCacheTimestampKey(profileKey: AccountProfileKey) =
         longPreferencesKey("${profileKey.value}_catalog_cache_timestamp")
 
@@ -107,6 +110,18 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
     suspend fun setDownloadsWifiOnly(profileKey: AccountProfileKey, wifiOnly: Boolean) {
         dataStore.edit { prefs ->
             prefs[downloadsWifiOnlyKey(profileKey)] = wifiOnly
+        }
+    }
+
+    // ── External player (Android playback handoff) ───────────────────────
+
+    fun externalPlayerEnabled(profileKey: AccountProfileKey): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[externalPlayerEnabledKey(profileKey)] ?: false
+    }
+
+    suspend fun setExternalPlayerEnabled(profileKey: AccountProfileKey, enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[externalPlayerEnabledKey(profileKey)] = enabled
         }
     }
 

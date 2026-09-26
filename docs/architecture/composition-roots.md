@@ -73,6 +73,18 @@ access, and `refreshStreamUrl` returns the offline source unchanged per
 `StreamRefreshPolicy`. Media without a playable download resolves online exactly
 as before.
 
+**External player handoff is wired (Android only).** `AppContainer.externalPlayer` is an
+`AndroidExternalPlayer` implementing `:core:domain`'s `ExternalPlaybackPort`: it builds an
+`ACTION_VIEW` intent for the resolved stream and attaches the selected subtitle track through
+the extras VLC (`subtitles_location`) and MX Player (`subs`) document. `SubSlothNavHost`'s
+player entry passes `loadExternalPlayerEnabled`/`openExternalPlayer` to `PlayerViewModel`,
+which hands online sources off when the account-scoped setting is on, marks
+`PlayerUiState.ExternalPlayback` (the in-app screen closes itself), and falls back to in-app
+playback when no external app accepts the stream. Offline (downloaded) sources always stay
+in-app: their app-private files are never exposed to third-party apps. Desktop and web keep
+the feature off (`LocalExternalPlayerSupported` defaults to `false`), so the settings toggle
+is hidden there.
+
 ## Desktop — real composition root (`DesktopContainer`)
 
 `desktopApp/src/main/kotlin/net/subsloth/desktop/DesktopContainer.kt` is the desktop

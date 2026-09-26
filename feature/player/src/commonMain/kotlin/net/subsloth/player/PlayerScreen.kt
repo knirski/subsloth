@@ -92,6 +92,16 @@ fun PlayerScreen(
             }
         }
 
+        is PlayerUiState.ExternalPlayback -> {
+            // Playback continues in the external player; leave this screen
+            // so returning to the app lands on the previous destination
+            // instead of an empty player.
+            LaunchedEffect(Unit) { onNavigateBack() }
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+
         is PlayerUiState.Content -> {
             PlayerBridgeSurface(
                 modifier = modifier.fillMaxSize(),

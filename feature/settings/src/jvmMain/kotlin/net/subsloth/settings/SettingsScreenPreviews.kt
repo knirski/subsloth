@@ -10,6 +10,7 @@ fun SettingsScreenPreview() {
             subtitleLanguage = "en",
             quality = "1080p",
             downloadsWifiOnly = true,
+            externalPlayerEnabled = false,
         ),
     )
 }

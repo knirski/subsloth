@@ -3,9 +3,11 @@ package net.subsloth.screenshot
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
+import net.subsloth.core.ui.LocalExternalPlayerSupported
 import net.subsloth.core.ui.theme.SubSlothTheme
 import net.subsloth.screenshot.DEVICE_PHONE
 import net.subsloth.screenshot.DEVICE_TABLET
@@ -21,15 +23,18 @@ import net.subsloth.settings.SettingsUiState
 fun SettingsScreenLightScreenshot() {
     SubSlothTheme(darkTheme = false) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SettingsContent(
-                state =
-                    SettingsUiState.Content(
-                        subtitleEnabled = true,
-                        subtitleLanguage = "en",
-                        quality = "1080p",
-                        downloadsWifiOnly = true,
-                    ),
-            )
+            CompositionLocalProvider(LocalExternalPlayerSupported provides true) {
+                SettingsContent(
+                    state =
+                        SettingsUiState.Content(
+                            subtitleEnabled = true,
+                            subtitleLanguage = "en",
+                            quality = "1080p",
+                            downloadsWifiOnly = true,
+                            externalPlayerEnabled = true,
+                        ),
+                )
+            }
         }
     }
 }
@@ -42,15 +47,18 @@ fun SettingsScreenLightScreenshot() {
 fun SettingsScreenDarkScreenshot() {
     SubSlothTheme(darkTheme = true) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            SettingsContent(
-                state =
-                    SettingsUiState.Content(
-                        subtitleEnabled = true,
-                        subtitleLanguage = "en",
-                        quality = "1080p",
-                        downloadsWifiOnly = true,
-                    ),
-            )
+            CompositionLocalProvider(LocalExternalPlayerSupported provides true) {
+                SettingsContent(
+                    state =
+                        SettingsUiState.Content(
+                            subtitleEnabled = true,
+                            subtitleLanguage = "en",
+                            quality = "1080p",
+                            downloadsWifiOnly = true,
+                            externalPlayerEnabled = true,
+                        ),
+                )
+            }
         }
     }
 }

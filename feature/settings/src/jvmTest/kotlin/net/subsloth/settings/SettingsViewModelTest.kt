@@ -92,6 +92,52 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `loads external player setting on init`() = runTest(testDispatcher) {
+        val viewModel = SettingsViewModel(
+            profileKey = { AccountProfileKey("profile1") },
+            readSubtitleEnabled = { flowOf(true) },
+            readSubtitleLanguage = { flowOf("en") },
+            readQuality = { flowOf("1080p") },
+            readDownloadsWifiOnly = { flowOf(true) },
+            readExternalPlayerEnabled = { flowOf(true) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as SettingsUiState.Content
+            assertThat(content.externalPlayerEnabled).isTrue()
+        }
+    }
+
+    @Test
+    fun `external player setting defaults to disabled`() = runTest(testDispatcher) {
+        val viewModel = SettingsViewModel(
+            profileKey = { AccountProfileKey("profile1") },
+            readSubtitleEnabled = { flowOf(true) },
+            readSubtitleLanguage = { flowOf("en") },
+            readQuality = { flowOf("1080p") },
+            readDownloadsWifiOnly = { flowOf(true) },
+        )
+        viewModel.uiState.test {
+            val content = awaitItem() as SettingsUiState.Content
+            assertThat(content.externalPlayerEnabled).isFalse()
+        }
+    }
+
+    @Test
+    fun `updates external player setting`() = runTest(testDispatcher) {
+        var savedExternalPlayer: Boolean? = null
+        val viewModel = SettingsViewModel(
+            profileKey = { AccountProfileKey("profile1") },
+            readSubtitleEnabled = { flowOf(true) },
+            readSubtitleLanguage = { flowOf("en") },
+            readQuality = { flowOf("1080p") },
+            readDownloadsWifiOnly = { flowOf(true) },
+            writeExternalPlayerEnabled = { savedExternalPlayer = it },
+        )
+        viewModel.onExternalPlayerEnabledChanged(true)
+        assertThat(savedExternalPlayer).isTrue()
+    }
+
+    @Test
     fun `subtitle language can be cleared`() = runTest(testDispatcher) {
         var savedLanguage: String? = "en"
         val viewModel = SettingsViewModel(

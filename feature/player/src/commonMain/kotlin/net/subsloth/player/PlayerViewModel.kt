@@ -28,9 +28,11 @@ import net.subsloth.core.domain.policy.QualityFallbackPolicy
 import net.subsloth.core.domain.policy.ResumePolicy
 import net.subsloth.core.domain.policy.StreamRefreshPolicy
 import net.subsloth.core.domain.policy.SubtitlePolicy
+import net.subsloth.core.domain.port.ExternalPlaybackRequest
 import net.subsloth.core.media.PlayCommand
 import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.error.fold
 import net.subsloth.core.model.identifier.EpisodeId
@@ -48,6 +50,13 @@ import net.subsloth.core.model.progress.PlaybackProgress
 @Stable
 sealed interface PlayerUiState {
     data object Loading : PlayerUiState
+
+    /**
+     * Playback was handed off to an external player. The in-app player
+     * screen should close so returning from the external player lands on
+     * the previous destination instead of an empty player.
+     */
+    data object ExternalPlayback : PlayerUiState
 
     @Immutable
     data class Content(
@@ -126,6 +135,19 @@ class PlayerViewModel(
     },
     /** Whether playback starts with the preferred subtitle selected. */
     private val loadSubtitleEnabled: suspend () -> Boolean = { true },
+    /**
+     * Whether online streams are handed to an external player instead of
+     * the in-app player. Desktop/web always keep the default `false`.
+     */
+    private val loadExternalPlayerEnabled: suspend () -> Boolean = { false },
+    /**
+     * Opens the resolved stream in an external player. Only invoked when
+     * [loadExternalPlayerEnabled] is true and the source is online; a
+     * failure falls back to in-app playback.
+     */
+    private val openExternalPlayer: suspend (ExternalPlaybackRequest) -> Outcome<Unit> = {
+        Outcome.Failure(MediaError.Unavailable)
+    },
     private val resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
     private val fetchSubtitleText: suspend (String) -> Outcome<String> = {
         Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
@@ -158,7 +180,11 @@ class PlayerViewModel(
                     // A show route resolves to a concrete episode; resume and
                     // save under that episode so progress and watched state
                     // stay consistent with what is actually playing.
-                    startPlayback(source, positionSeconds = resumePosition(source.mediaId))
+                    if (shouldHandOffToExternalPlayer(source)) {
+                        openInExternalPlayer(source)
+                    } else {
+                        startPlayback(source, positionSeconds = resumePosition(source.mediaId))
+                    }
                 },
                 onFailure = { error ->
                     log.e { "Failed to fetch video source: $error" }
@@ -201,6 +227,60 @@ class PlayerViewModel(
         return ResumePolicy.resumablePosition(progress) ?: 0L
     }
 
+    /**
+     * Online playback is handed to an external player only when the
+     * Android-only preference is on. Offline (downloaded) media always
+     * stays in the in-app player: its app-private files are not exposed to
+     * third-party apps.
+     */
+    private suspend fun shouldHandOffToExternalPlayer(source: VideoSource): Boolean =
+        source.playbackMode == PlaybackMode.ONLINE && loadExternalPlayerEnabled()
+
+    /**
+     * Hands [source] to the external player, then either marks the screen
+     * as handed off or falls back to in-app playback when no external
+     * player accepted the stream.
+     */
+    private suspend fun openInExternalPlayer(source: VideoSource) {
+        val positionSeconds = resumePosition(source.mediaId)
+        val subtitle = selectInitialSubtitle(source, loadPreferredLanguage(), loadSubtitleEnabled())
+        val request = ExternalPlaybackRequest(
+            streamUrl = source.streamUrl,
+            subtitleUrl = subtitle?.let { it.url ?: it.downloadUrl },
+            title = source.displayName,
+            positionSeconds = positionSeconds,
+        )
+        log.d {
+            "Handing off to external player: pos=${positionSeconds}s, " +
+                "subtitle=${request.subtitleUrl != null}, url=${source.streamUrl.take(80)}"
+        }
+        openExternalPlayer(request).fold(
+            onSuccess = {
+                _uiState.value = PlayerUiState.ExternalPlayback
+            },
+            onFailure = { error ->
+                log.w { "External player handoff failed ($error); playing in app" }
+                startPlayback(source, positionSeconds = positionSeconds)
+            },
+        )
+    }
+
+    /**
+     * The subtitle track playback should start with, or null when subtitles
+     * are disabled or the source has none. The preference controls the
+     * *initial* selection only; the in-app picker can still turn a track on
+     * or off manually.
+     */
+    private fun selectInitialSubtitle(
+        source: VideoSource,
+        preferredLanguage: LanguageCode,
+        enabled: Boolean,
+    ): Subtitle? = if (enabled) {
+        SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferredLanguage)
+    } else {
+        null
+    }
+
     private suspend fun startPlayback(source: VideoSource, positionSeconds: Long = 0L) {
         log.d {
             "Starting playback: mode=${source.playbackMode}, pos=${positionSeconds}s, url=${source.streamUrl.take(80)}"
@@ -210,11 +290,7 @@ class PlayerViewModel(
         val subtitleEnabled = loadSubtitleEnabled()
         // The setting controls the *initial* selection only; the player's
         // subtitle picker can still turn a track on or off manually.
-        val initialSubtitle = if (subtitleEnabled) {
-            SubtitlePolicy.selectDefault(source.availableSubtitles, preferredLanguage = preferred)
-        } else {
-            null
-        }
+        val initialSubtitle = selectInitialSubtitle(source, preferred, subtitleEnabled)
 
         // A retry or quality change keeps the in-session speed; otherwise the
         // persisted preference is loaded. The bridge applies it after opening

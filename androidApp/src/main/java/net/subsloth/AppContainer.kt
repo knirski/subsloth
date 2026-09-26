@@ -25,6 +25,7 @@ import net.subsloth.core.domain.policy.CompletionPolicy
 import net.subsloth.core.domain.policy.DownloadPolicy
 import net.subsloth.core.domain.policy.QualityPolicy
 import net.subsloth.core.domain.port.ConnectivityPort
+import net.subsloth.core.domain.port.ExternalPlaybackPort
 import net.subsloth.core.domain.port.PlaybackPort
 import net.subsloth.core.domain.port.Session
 import net.subsloth.core.domain.port.SessionPort
@@ -91,6 +92,7 @@ import net.subsloth.preferences.CredentialStore
 import net.subsloth.preferences.CredentialsStoreAdapter
 import net.subsloth.preferences.UserPreferences
 import net.subsloth.catalog.HomeViewModel
+import net.subsloth.player.AndroidExternalPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import java.io.File
@@ -327,6 +329,15 @@ class AppContainer(context: Context) {
     }
 
     val playbackPort: PlaybackPort get() = currentPlaybackPort
+
+    /**
+     * Hands an online stream to an installed external video player
+     * (VLC, MX Player, …). Android-only; the setting that enables it is
+     * hidden everywhere else (see `LocalExternalPlayerSupported`).
+     */
+    val externalPlayer: ExternalPlaybackPort by lazy {
+        AndroidExternalPlayer(context.applicationContext)
+    }
 
     /**
      * Production [net.subsloth.core.domain.port.LibraryPort] implementation:
@@ -751,6 +762,10 @@ class AppContainer(context: Context) {
         containerScope.launch { userPreferences.setDownloadsWifiOnly(currentProfileKey(), wifiOnly) }
     }
 
+    fun writeExternalPlayerEnabled(enabled: Boolean) {
+        containerScope.launch { userPreferences.setExternalPlayerEnabled(currentProfileKey(), enabled) }
+    }
+
     /**
      * Deletes every locally-downloaded media item. [downloadController]'s
      * backing DAOs carry no profile key (downloads are shared across
@@ -857,6 +872,10 @@ class AppContainer(context: Context) {
 
     suspend fun loadSubtitleEnabled(): Boolean =
         userPreferences.subtitleEnabled(currentProfileKey()).first()
+
+    /** Whether online streams should be handed to an external player. */
+    suspend fun loadExternalPlayerEnabled(): Boolean =
+        userPreferences.externalPlayerEnabled(currentProfileKey()).first()
 
     /**
      * Resolves an episode's parent show id via a single `/episodes/{id}`

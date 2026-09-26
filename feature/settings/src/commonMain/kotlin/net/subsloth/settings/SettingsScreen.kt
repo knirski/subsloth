@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.subsloth.core.ui.AdaptiveContentFrame
+import net.subsloth.core.ui.LocalExternalPlayerSupported
 import net.subsloth.core.ui.SubSlothBackButton
 import net.subsloth.core.ui.tvSafeHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
@@ -43,6 +44,8 @@ import subsloth.feature.settings.generated.resources.settings_cancel
 import subsloth.feature.settings.generated.resources.settings_diagnostics
 import subsloth.feature.settings.generated.resources.settings_downloads_section
 import subsloth.feature.settings.generated.resources.settings_downloads_wifi_only
+import subsloth.feature.settings.generated.resources.settings_external_player
+import subsloth.feature.settings.generated.resources.settings_external_player_description
 import subsloth.feature.settings.generated.resources.settings_logout
 import subsloth.feature.settings.generated.resources.settings_logout_cancel
 import subsloth.feature.settings.generated.resources.settings_logout_cleanup_clear_library
@@ -105,6 +108,7 @@ fun SettingsScreen(
                     onSubtitleLanguageChanged = viewModel::onSubtitleLanguageChanged,
                     onQualityChanged = viewModel::onQualityChanged,
                     onDownloadsWifiOnlyChanged = viewModel::onDownloadsWifiOnlyChanged,
+                    onExternalPlayerEnabledChanged = viewModel::onExternalPlayerEnabledChanged,
                     onLogoutClick = viewModel::showLogoutCleanup,
                     onNavigateToDiagnostics = onNavigateToDiagnostics,
                     onPerformLogoutCleanup = viewModel::performLogoutCleanup,
@@ -123,11 +127,15 @@ fun SettingsContent(
     onSubtitleLanguageChanged: (String?) -> Unit = {},
     onQualityChanged: (String?) -> Unit = {},
     onDownloadsWifiOnlyChanged: (Boolean) -> Unit = {},
+    onExternalPlayerEnabledChanged: (Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onNavigateToDiagnostics: () -> Unit = {},
     onPerformLogoutCleanup: (Boolean, Boolean, Boolean) -> Unit = { _, _, _ -> },
     onDismissLogoutCleanup: () -> Unit = {},
 ) {
+    // Read outside the LazyColumn content: LazyListScope is not a
+    // composable context, so composition locals cannot be read there.
+    val externalPlayerSupported = LocalExternalPlayerSupported.current
     AdaptiveContentFrame(modifier = modifier) {
         LazyColumn(
             modifier = Modifier
@@ -201,6 +209,15 @@ fun SettingsContent(
                 }
             }
 
+            if (externalPlayerSupported) {
+                item {
+                    ExternalPlayerRow(
+                        enabled = state.externalPlayerEnabled,
+                        onEnabledChanged = onExternalPlayerEnabledChanged,
+                    )
+                }
+            }
+
             item {
                 Text(
                     text = stringResource(Res.string.settings_downloads_section),
@@ -262,6 +279,29 @@ fun SettingsContent(
                 onDismiss = onDismissLogoutCleanup,
             )
         }
+    }
+}
+
+@Composable
+private fun ExternalPlayerRow(enabled: Boolean, onEnabledChanged: (Boolean) -> Unit) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.settings_external_player),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Checkbox(checked = enabled, onCheckedChange = onEnabledChanged)
+        }
+        Text(
+            text = stringResource(Res.string.settings_external_player_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

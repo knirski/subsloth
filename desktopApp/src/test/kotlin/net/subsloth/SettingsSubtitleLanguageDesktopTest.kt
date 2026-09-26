@@ -21,6 +21,7 @@ class SettingsSubtitleLanguageDesktopTest {
         subtitleLanguage = language,
         quality = null,
         downloadsWifiOnly = true,
+        externalPlayerEnabled = false,
     )
 
     @Test
