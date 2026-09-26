@@ -17,6 +17,10 @@ variables by default. The API base URL is read from `SUBSLOTH_API_BASE_URL` (fal
 the default `front.media-mirror.tv` endpoint). Fallback to `-Pemail=... -Ppassword=...`
 Gradle properties.
 
+In this repository, put the values in `.env.local` at the repo root (gitignored;
+`.envrc` loads it through direnv). Non-interactive shells such as CI and agent
+commands do not run the direnv hook, so prefix them with `direnv exec .`.
+
 Calls 5 Kodi endpoints (`/movies`, `/shows`, `/movies/{id}`, `/shows/{id}`, `/episodes/{id}`), applies sanitization, writes to `testing/api-contract/src/main/resources/media/`. Implementation in `CaptureApi.kt`.
 
 ### Web-discovery fixtures (`exportFixtures`)

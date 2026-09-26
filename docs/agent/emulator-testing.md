@@ -113,7 +113,9 @@ adb -e shell am instrument -w \
   `BuildConfig.SUBSLOTH_API_BASE_URL` when the arg is absent.
 - Credentials are passed as instrumentation arguments only — never commit
   them, never pass them to Gradle tasks, and keep the base URL out of
-  committed files.
+  committed files. In this repository they come from `.env.local`
+  (gitignored, loaded by direnv); non-interactive shells can wrap the
+  instrumentation command with `direnv exec .`.
 - Headless emulators work: no manual interaction is needed because the login
   credentials come from instrumentation args.
 

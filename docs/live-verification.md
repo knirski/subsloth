@@ -423,7 +423,7 @@ nix shell nixpkgs#chromium --command chromium \
   --user-data-dir=/home/krzysiek/.config/content-provider-profile
 
 # In another terminal (or agent session):
-export SUBSLOTH_LOGIN SUBSLOTH_PASSWORD  # from ~/.env
+export SUBSLOTH_LOGIN SUBSLOTH_PASSWORD  # from .env.local (direnv)
 ./agent-browser --cdp 9222 snapshot -i
 ```
 
