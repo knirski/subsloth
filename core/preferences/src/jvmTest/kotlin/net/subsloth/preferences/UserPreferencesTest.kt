@@ -70,6 +70,26 @@ class UserPreferencesTest {
     }
 
     @Test
+    fun `external player defaults to false`() = runTest {
+        prefs.externalPlayerEnabled(profileA).test {
+            assertThat(awaitItem()).isFalse()
+        }
+    }
+
+    @Test
+    fun `external player preference is isolated per profile`() = runTest {
+        prefs.setExternalPlayerEnabled(profileA, true)
+        prefs.setExternalPlayerEnabled(profileB, false)
+
+        prefs.externalPlayerEnabled(profileA).test {
+            assertThat(awaitItem()).isTrue()
+        }
+        prefs.externalPlayerEnabled(profileB).test {
+            assertThat(awaitItem()).isFalse()
+        }
+    }
+
+    @Test
     fun `catalog cache timestamp defaults to null`() = runTest {
         prefs.catalogCacheTimestamp(profileA).test {
             assertThat(awaitItem()).isNull()
@@ -175,6 +195,7 @@ class UserPreferencesTest {
         prefs.setQuality(profileA, "1080p")
         prefs.setPlaybackSpeed(profileA, 1.5f)
         prefs.setDownloadsWifiOnly(profileA, false)
+        prefs.setExternalPlayerEnabled(profileA, true)
         prefs.setSubtitleLanguage(profileA, "en")
 
         prefs.clearProfilePreferences(profileA)
@@ -182,6 +203,7 @@ class UserPreferencesTest {
         prefs.quality(profileA).test { assertThat(awaitItem()).isNull() }
         prefs.playbackSpeed(profileA).test { assertThat(awaitItem()).isEqualTo(1.0f) }
         prefs.downloadsWifiOnly(profileA).test { assertThat(awaitItem()).isTrue() }
+        prefs.externalPlayerEnabled(profileA).test { assertThat(awaitItem()).isFalse() }
         prefs.subtitleLanguage(profileA).test { assertThat(awaitItem()).isNull() }
     }
 

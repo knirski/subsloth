@@ -18,8 +18,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.subsloth.core.domain.policy.PlaybackSpeedPolicy
+import net.subsloth.core.domain.port.ExternalPlaybackRequest
 import net.subsloth.core.media.PlayerSnapshot
 import net.subsloth.core.model.Availability
+import net.subsloth.core.model.error.MediaError
 import net.subsloth.core.model.error.Outcome
 import net.subsloth.core.model.identifier.EpisodeId
 import net.subsloth.core.model.identifier.LanguageCode
@@ -1342,6 +1344,147 @@ class PlayerViewModelTest {
         assertThat(state.selectedSubtitle?.language?.value).isEqualTo("es")
     }
 
+    // ── External player handoff ───────────────────────────────────────────
+
+    @Test
+    fun `external player enabled hands the online source off without in-app playback`() = runTest(testDispatcher) {
+        val source = createVideoSource(
+            streamUrl = "https://example.com/movie.m3u8",
+            displayName = "Black Fire Orchid",
+            availableSubtitles = persistentListOf(createSubtitle()),
+        )
+        var request: ExternalPlaybackRequest? = null
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = { handedOff ->
+                request = handedOff
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(viewModel.uiState.value).isEqualTo(PlayerUiState.ExternalPlayback)
+        assertThat(request?.streamUrl).isEqualTo("https://example.com/movie.m3u8")
+        assertThat(request?.title).isEqualTo("Black Fire Orchid")
+        assertThat(request?.subtitleUrl).isEqualTo("https://example.com/sub.srt")
+    }
+
+    @Test
+    fun `external player handoff carries the resume position`() = runTest(testDispatcher) {
+        var request: ExternalPlaybackRequest? = null
+        createViewModel(
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
+            loadProgress = { progress(positionSeconds = 120, durationSeconds = 3600) },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = { handedOff ->
+                request = handedOff
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(request?.positionSeconds).isEqualTo(120L)
+    }
+
+    @Test
+    fun `external player handoff honors the preferred subtitle language`() = runTest(testDispatcher) {
+        val source = createVideoSource(
+            availableSubtitles = persistentListOf(createSubtitle(), createSpanishSubtitle()),
+        )
+        var request: ExternalPlaybackRequest? = null
+        createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            loadPreferredLanguage = { LanguageCode("es") },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = { handedOff ->
+                request = handedOff
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(request?.subtitleUrl).isEqualTo("https://example.com/sub-es.srt")
+    }
+
+    @Test
+    fun `external player handoff omits subtitles when they are disabled`() = runTest(testDispatcher) {
+        val source = createVideoSource(availableSubtitles = persistentListOf(createSubtitle()))
+        var request: ExternalPlaybackRequest? = null
+        createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            loadSubtitleEnabled = { false },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = { handedOff ->
+                request = handedOff
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(request).isNotNull()
+        assertThat(request?.subtitleUrl).isNull()
+    }
+
+    @Test
+    fun `external player preference off plays in app`() = runTest(testDispatcher) {
+        var handoffCalled = false
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
+            loadExternalPlayerEnabled = { false },
+            openExternalPlayer = {
+                handoffCalled = true
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(handoffCalled).isFalse()
+        assertThat(viewModel.uiState.value).isInstanceOf(PlayerUiState.Content::class.java)
+    }
+
+    @Test
+    fun `offline sources always play in app even with the external player enabled`() = runTest(testDispatcher) {
+        var handoffCalled = false
+        val viewModel = createViewModel(
+            fetchVideoSource = {
+                Outcome.Success(createVideoSource(playbackMode = PlaybackMode.OFFLINE))
+            },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = {
+                handoffCalled = true
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(handoffCalled).isFalse()
+        assertThat(viewModel.uiState.value).isInstanceOf(PlayerUiState.Content::class.java)
+    }
+
+    @Test
+    fun `failed external player handoff falls back to in-app playback`() = runTest(testDispatcher) {
+        val source = createVideoSource(streamUrl = "https://example.com/fallback.mp4")
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(source) },
+            loadExternalPlayerEnabled = { true },
+            openExternalPlayer = { Outcome.Failure(MediaError.Unavailable) },
+        )
+
+        assertThat(viewModel.uiState.value).isInstanceOf(PlayerUiState.Content::class.java)
+        assertThat(viewModel.playCommands.first().url).isEqualTo("https://example.com/fallback.mp4")
+    }
+
+    @Test
+    fun `external player preference read failure falls back to in-app playback`() = runTest(testDispatcher) {
+        var handoffCalled = false
+        val viewModel = createViewModel(
+            fetchVideoSource = { Outcome.Success(createVideoSource()) },
+            loadExternalPlayerEnabled = { throw IllegalStateException("preference read failed") },
+            openExternalPlayer = {
+                handoffCalled = true
+                Outcome.Success(Unit)
+            },
+        )
+
+        assertThat(handoffCalled).isFalse()
+        assertThat(viewModel.uiState.value).isInstanceOf(PlayerUiState.Content::class.java)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private fun createViewModel(
@@ -1363,6 +1506,10 @@ class PlayerViewModelTest {
         loadPlaybackSpeed: suspend () -> Float = { PlaybackSpeedPolicy.defaultSpeed() },
         loadPreferredLanguage: suspend () -> LanguageCode = { LanguageCode("en") },
         loadSubtitleEnabled: suspend () -> Boolean = { true },
+        loadExternalPlayerEnabled: suspend () -> Boolean = { false },
+        openExternalPlayer: suspend (ExternalPlaybackRequest) -> Outcome<Unit> = {
+            Outcome.Failure(MediaError.Unavailable)
+        },
         resolveShowIdForEpisode: suspend (EpisodeId) -> ShowId? = { null },
         fetchSubtitleText: suspend (String) -> Outcome<String> = {
             Outcome.Failure(net.subsloth.core.model.error.DecodeError.SerializationFailed)
@@ -1381,6 +1528,8 @@ class PlayerViewModelTest {
         loadPlaybackSpeed = loadPlaybackSpeed,
         loadPreferredLanguage = loadPreferredLanguage,
         loadSubtitleEnabled = loadSubtitleEnabled,
+        loadExternalPlayerEnabled = loadExternalPlayerEnabled,
+        openExternalPlayer = openExternalPlayer,
         resolveShowIdForEpisode = resolveShowIdForEpisode,
         fetchSubtitleText = fetchSubtitleText,
         externalScope = externalScope,

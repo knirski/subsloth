@@ -1,5 +1,6 @@
 package net.subsloth.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
@@ -10,11 +11,13 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import net.subsloth.core.ui.LocalExternalPlayerSupported
 import net.subsloth.settings.SettingsContent
 import net.subsloth.settings.SettingsUiState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -34,6 +37,7 @@ class SettingsScreenTest {
             subtitleLanguage = null,
             quality = null,
             downloadsWifiOnly = true,
+            externalPlayerEnabled = false,
             showLogoutCleanup = false,
         )
 
@@ -193,6 +197,34 @@ class SettingsScreenTest {
         // Click the last toggleable Checkbox in the settings content
         composeTestRule.onAllNodes(isToggleable())[1].performClick()
         assertTrue(toggledValue != null, "Expected downloads wifi-only callback to be invoked")
+    }
+
+    @Test
+    fun externalPlayerRow_hiddenWhenThePlatformDoesNotSupportIt() {
+        composeTestRule.setContent {
+            SettingsContent(state = defaultContentState)
+        }
+
+        composeTestRule.onNodeWithText("Open in external player").assertDoesNotExist()
+    }
+
+    @Test
+    fun externalPlayerRow_visibleAndTogglesWhenSupported() {
+        var toggledValue: Boolean? = null
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalExternalPlayerSupported provides true) {
+                SettingsContent(
+                    state = defaultContentState.copy(externalPlayerEnabled = true),
+                    onExternalPlayerEnabledChanged = { toggledValue = it },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Open in external player").assertIsDisplayed()
+        // Toggle order: subtitles, external player, downloads on Wi-Fi only.
+        composeTestRule.onAllNodes(isToggleable())[1].performClick()
+        assertEquals(false, toggledValue)
     }
 
     @Test

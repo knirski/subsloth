@@ -49,6 +49,7 @@ class SettingsFlowTest {
                             subtitleLanguage = "English",
                             quality = "1080p",
                             downloadsWifiOnly = true,
+                            externalPlayerEnabled = false,
                             showLogoutCleanup = false,
                         ),
                     onNavigateToDiagnostics = onNavigateToDiagnostics,

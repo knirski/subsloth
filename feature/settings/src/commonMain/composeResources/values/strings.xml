@@ -9,6 +9,8 @@
     <string name="settings_cancel">Cancel</string>
     <string name="settings_quality_playback_section">Quality &amp; Playback</string>
     <string name="settings_preferred_quality">Preferred quality</string>
+    <string name="settings_external_player">Open in external player</string>
+    <string name="settings_external_player_description">Hand streams to VLC, MX Player, or another installed video player. Subtitles are attached when the player supports it.</string>
     <string name="settings_downloads_section">Downloads</string>
     <string name="settings_downloads_wifi_only">Downloads on Wi-Fi only</string>
     <string name="settings_diagnostics">Diagnostics</string>

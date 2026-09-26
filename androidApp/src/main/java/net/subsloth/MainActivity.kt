@@ -31,6 +31,7 @@ import net.subsloth.core.domain.policy.ApiBaseUrlPolicy
 import net.subsloth.core.media.download.DownloadForegroundService
 import net.subsloth.core.ui.AppNavKey
 import net.subsloth.core.ui.DownloadsKey
+import net.subsloth.core.ui.LocalExternalPlayerSupported
 import net.subsloth.core.ui.LocalIsTelevision
 import net.subsloth.core.ui.OfflineLibraryKey
 import net.subsloth.core.ui.RootContainerViewModel
@@ -51,7 +52,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val destination by deepLinkDestination.collectAsStateWithLifecycle()
-            CompositionLocalProvider(LocalIsTelevision provides isTelevision) {
+            CompositionLocalProvider(
+                LocalIsTelevision provides isTelevision,
+                LocalExternalPlayerSupported provides true,
+            ) {
                 SubSlothTheme {
                     Surface(modifier = Modifier.fillMaxSize()) {
                     val app = LocalContext.current.applicationContext

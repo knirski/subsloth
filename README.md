@@ -221,11 +221,12 @@ convention's exact configuration.
 | **Catalog browsing** | Movies and series with search, filters, and sort |
 | **Detail views** | Movie and series detail screens with episode structure and metadata |
 | **Video player** | 10s skip, seek slider, speed, subtitles, quality, fullscreen, next-episode prompt; touch gestures (double-tap seek, long-press 2×, swipe scrub, volume/brightness) and desktop/web keyboard shortcuts. See [player controls](docs/features/player-controls.md) |
+| **External player (Android)** | Optional setting hands online streams (with subtitles and resume position) to VLC, MX Player, or another installed video player |
 | **Offline downloads** | Queue management, storage safety, and offline playback |
 | **Library & settings** | Personal library, central Downloads screen, settings, diagnostics |
 
-Comments, Chromecast, external player handoff, Play Store billing, and
-multi-profile switching are explicitly out of scope for v1. See the
+Comments, Chromecast, Play Store billing, and multi-profile switching are
+explicitly out of scope for v1. See the
 [scope exclusions](docs/policies/scope-exclusions.md).
 
 ## Platform support

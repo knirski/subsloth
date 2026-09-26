@@ -385,6 +385,8 @@ fun SubSlothNavHost(
                                         loadPlaybackSpeed = container::loadPlaybackSpeed,
                                         loadPreferredLanguage = container::loadPreferredLanguage,
                                         loadSubtitleEnabled = container::loadSubtitleEnabled,
+                                        loadExternalPlayerEnabled = container::loadExternalPlayerEnabled,
+                                        openExternalPlayer = { request -> container.externalPlayer.open(request) },
                                         resolveShowIdForEpisode = container::resolveShowIdForEpisode,
                                         fetchSubtitleText = container::fetchSubtitleText,
                                         externalScope = container.externalScope,
@@ -488,10 +490,14 @@ fun SubSlothNavHost(
                                         readDownloadsWifiOnly = { key ->
                                             container.userPreferences.downloadsWifiOnly(key)
                                         },
+                                        readExternalPlayerEnabled = { key ->
+                                            container.userPreferences.externalPlayerEnabled(key)
+                                        },
                                         writeSubtitleEnabled = container::writeSubtitleEnabled,
                                         writeSubtitleLanguage = container::writeSubtitleLanguage,
                                         writeQuality = container::writeQuality,
                                         writeDownloadsWifiOnly = container::writeDownloadsWifiOnly,
+                                        writeExternalPlayerEnabled = container::writeExternalPlayerEnabled,
                                         deleteAllDownloads = container::deleteAllDownloads,
                                         clearPreferences = container::clearPreferences,
                                         clearLibrary = container::clearLibrary,

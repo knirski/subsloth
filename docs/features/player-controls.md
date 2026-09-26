@@ -101,6 +101,23 @@ when the last picker closes.
 
 ---
 
+## External player handoff (Android)
+
+An account-scoped setting (`Settings → Quality & Playback → Open in external player`) routes
+online streams to an installed third-party player instead of the in-app player. Tapping Play
+resolves the signed stream URL and hands it to the system `ACTION_VIEW` chooser; the selected
+subtitle track (when subtitles are enabled) and the resume position are attached through the
+extras VLC and MX Player document, so players that support them start on the right track and
+position. The in-app player screen closes itself once the handoff succeeds, and falls back to
+in-app playback when no external app accepts the stream.
+
+Downloaded (offline) media always plays in-app: its app-private files are not exposed to
+third-party apps. External playback is fire-and-forget — the external player does not report
+position or completion back, so in-app progress is not updated by an external session, and the
+in-app stream-refresh flow cannot apply once the URL has been handed off.
+
+---
+
 ## Behaviour notes
 
 - Skips and scrubs are clamped to `0..duration`; non-finite positions or

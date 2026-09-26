@@ -234,6 +234,7 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleLanguage = "English",
             quality = "1080p",
             downloadsWifiOnly = true,
+            externalPlayerEnabled = false,
         )
 
         composeRule.setContent {
@@ -257,6 +258,7 @@ class LibrarySettingsDownloadsDesktopTest {
             subtitleLanguage = null,
             quality = "1080p",
             downloadsWifiOnly = false,
+            externalPlayerEnabled = false,
         )
 
         composeRule.setContent {
