@@ -527,8 +527,8 @@
           chromium
 
           # Headless X server for Compose Desktop UI tests (CI has no display)
-          xorg.xvfb
-          xorg.xorgserver
+          xvfb
+          xorg-server
 
           # Utilities (not provided by stdenv)
           act
