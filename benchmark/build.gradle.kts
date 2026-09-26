@@ -8,6 +8,7 @@ android {
     // Match the convention-plugin pin; AGP's default (36.0.0) is not in the
     // Nix SDK and would be auto-installed into the read-only store.
     buildToolsVersion = "37.0.0"
+    compileSdkMinor = 1
 
     defaultConfig {
         minSdk = 26

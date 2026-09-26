@@ -53,13 +53,14 @@ All scripts emit `UPPER_CASE` signals on stdout (errors on stderr). Parse stdout
 
 Instrumented tests run on every PR and push to main via GitHub Actions:
 [`reactivecircus/android-emulator-runner@v2`](https://github.com/reactivecircus/android-emulator-runner),
-API 37.0, `google_apis`, `x86_64`, `swiftshader_indirect`.
+API 37.1, `google_apis_ps16k` (16 KB page size), `x86_64`,
+`swiftshader_indirect`.
 
 ### Performance Optimisations
 
 | Technique | What it saves | Implementation | Notes |
 |---|---|---|---|
-| **AVD + system image cache** | ~1–2 min (no re-download) | `actions/cache@v6` on `~/.android/avd/` and `~/.android/system-images/` keyed by `runner.os` + `runner.arch` + `api37.0-google-apis` | Works on all branches; first run after cache eviction downloads fresh |
+| **AVD + system image cache** | ~1–2 min (no re-download) | `actions/cache@v6` on `~/.android/avd/` and `~/.android/system-images/` keyed by `runner.os` + `runner.arch` + `api37.1-google_apis_ps16k` | Works on all branches; first run after cache eviction downloads fresh |
 | **Emulator RAM boost** | Faster test execution | `ram-size: 6144`, `heap-size: 1024`, Gradle capped at `-Xmx768m` + Kotlin daemon at `-Xmx256m` | 6 GB emulator on 7 GB runner — QEMU's `ram-size` is virtual address space, physical usage tracks guest demand; Gradle/Kotlin trimmed because this job only runs tests, not compilation |
 | **Extended boot timeout** | Prevents timeout with larger RAM | `emulator-boot-timeout: 600` (10 min) | Safety net — default 300 s can be tight with 2048 MB |
 

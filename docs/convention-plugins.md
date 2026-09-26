@@ -132,7 +132,7 @@ kotlin {
 - `org.jetbrains.kotlin.plugin.power-assert`
 
 **Defaults:**
-- `compileSdk = 37`, `buildToolsVersion = "37.0.0"`
+- `compileSdk = 37` + `compileSdkMinor = 1` (API 37.1), `buildToolsVersion = "37.0.0"`
 - `applicationId = "net.subsloth"` (can be overridden per-module)
 - `minSdk = 26`, `targetSdk = 37`
 
@@ -162,7 +162,7 @@ kotlin {
 - `org.jetbrains.kotlin.plugin.power-assert`
 
 **Defaults:**
-- `compileSdk = 37`, `buildToolsVersion = "37.0.0"`
+- `compileSdk = 37` + `compileSdkMinor = 1` (API 37.1), `buildToolsVersion = "37.0.0"`
 - `minSdk = 26`
 
 **Lint:**

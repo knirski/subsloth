@@ -41,6 +41,9 @@ tasks.withType<Test>().configureEach {
 
 android {
     compileSdk = 37
+    // Android 17 minor release: compile against API 37.1 (platform 37.1
+    // is pinned in flake.nix). targetSdk stays at the 37.0 baseline.
+    compileSdkMinor = 1
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
