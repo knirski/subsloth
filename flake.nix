@@ -31,15 +31,15 @@
       };
 
       # ── Android SDK ──────────────────────────────────────────────────────
+      # One component per pin, each at the latest version relevant to the
+      # project. "37" resolves to platform 37.0, which matches
+      # compileSdk = 37 (no compileSdkMinor); 37.1 would need a minor opt-in.
+      cmdLineToolsVersion = "22.0";
+
       androidPackages = pkgs.androidenv.composeAndroidPackages {
-        cmdLineToolsVersion = "17.0";
+        inherit cmdLineToolsVersion;
         platformVersions = [ "37" ];
-        # 37 is the default for compileSdk 37. 36 is required by AGP 9's
-        # com.android.kotlin.multiplatform.library plugin — without it the
-        # plugin tries to install build-tools 36 via sdkmanager into the
-        # read-only Nix store and fails. 36 is inert (only satisfies the
-        # bootstrap check); actual compilation uses 37.
-        buildToolsVersions = [ "37.0.0" "36.0.0" ];
+        buildToolsVersions = [ "37.0.0" ];
         platformToolsVersion = "37.0.1";
       };
 
@@ -52,8 +52,9 @@
       writableSdkRoot = "/tmp/android-sdk";
 
       # System image for x86_64 emulation. google_apis includes Play
-      # Services and is the standard choice for app testing.
-      systemImage = "system-images;android-36;google_apis;x86_64";
+      # Services and is the standard choice for app testing. No ARM images:
+      # this repo tests Android on the x86_64 emulator only.
+      systemImage = "system-images;android-37.0;google_apis;x86_64";
       systemImageDir = "${writableSdkRoot}/${builtins.replaceStrings [ ";" ] [ "/" ] systemImage}";
       avdName = "subsloth-device";
 
@@ -95,7 +96,7 @@
 
         # Write the AVD .ini file
         cat > "$AVD_DIR/${avdName}.ini" << INI
-        target=android-36
+        target=android-37.0
         path=$AVD_DIR/${avdName}.avd
         INI
 
@@ -586,22 +587,24 @@
           export ORG_GRADLE_PROJECT_desktopGioModulesPath="$GIO_EXTRA_MODULES"
 
           # Add cmdline-tools to PATH (sdkmanager, avdmanager)
-          CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/17.0/bin"
+          CMDLINE_TOOLS_BIN="$ANDROID_HOME/cmdline-tools/${cmdLineToolsVersion}/bin"
           if [ -d "$CMDLINE_TOOLS_BIN" ]; then
             export PATH="$CMDLINE_TOOLS_BIN:$PATH"
           fi
 
-          # Ensure a writable SDK root for sdkmanager operations
+          # Ensure a writable SDK root for sdkmanager operations. Copy the
+          # pinned cmdline-tools version only, so a version bump replaces the
+          # previously cached copy instead of being shadowed by it.
           export ANDROID_WRITABLE_SDK="${writableSdkRoot}"
-          if [ ! -d "$ANDROID_WRITABLE_SDK/cmdline-tools" ]; then
-            mkdir -p "$ANDROID_WRITABLE_SDK"
-            cp -rs "$ANDROID_HOME/cmdline-tools" "$ANDROID_WRITABLE_SDK/" 2>/dev/null || \
-            cp -r "$ANDROID_HOME/cmdline-tools" "$ANDROID_WRITABLE_SDK/" 2>/dev/null || true
+          mkdir -p "$ANDROID_WRITABLE_SDK/cmdline-tools"
+          if [ ! -d "$ANDROID_WRITABLE_SDK/cmdline-tools/${cmdLineToolsVersion}" ]; then
+            cp -rs "$ANDROID_HOME/cmdline-tools/${cmdLineToolsVersion}" "$ANDROID_WRITABLE_SDK/cmdline-tools/" 2>/dev/null || \
+            cp -r "$ANDROID_HOME/cmdline-tools/${cmdLineToolsVersion}" "$ANDROID_WRITABLE_SDK/cmdline-tools/" 2>/dev/null || true
           fi
 
           # Add writable SDK's cmdline-tools to PATH (comes after Nix's
           # so sdkmanager writes to the writable root by default).
-          WRITABLE_CMDLINE_TOOLS_BIN="$ANDROID_WRITABLE_SDK/cmdline-tools/17.0/bin"
+          WRITABLE_CMDLINE_TOOLS_BIN="$ANDROID_WRITABLE_SDK/cmdline-tools/${cmdLineToolsVersion}/bin"
           if [ -d "$WRITABLE_CMDLINE_TOOLS_BIN" ]; then
             export PATH="$WRITABLE_CMDLINE_TOOLS_BIN:$PATH"
           fi

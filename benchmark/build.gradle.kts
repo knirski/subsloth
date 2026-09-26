@@ -5,6 +5,9 @@ plugins {
 android {
     namespace = "net.subsloth.benchmark"
     compileSdk = 37
+    // Match the convention-plugin pin; AGP's default (36.0.0) is not in the
+    // Nix SDK and would be auto-installed into the read-only store.
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         minSdk = 26
