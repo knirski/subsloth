@@ -3,6 +3,7 @@
 package net.subsloth.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -23,17 +26,33 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.subsloth.core.media.PlayerBridgeSurface
 import net.subsloth.core.media.PlayerEvent
 import net.subsloth.core.model.media.Subtitle
@@ -50,6 +69,8 @@ fun PlayerScreen(
     fullscreen: PlayerFullscreenControl? = null,
     /** Platform-owned bottom inset for the controls (Android navigation bar). */
     controlsBottomPadding: Dp = 0.dp,
+    /** Desktop/web hosts enable keyboard shortcuts; touch-first hosts do not. */
+    enableKeyboardShortcuts: Boolean = false,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -90,6 +111,7 @@ fun PlayerScreen(
                         isFullscreen = fullscreen?.isFullscreen ?: playerState.isFullscreen,
                         onToggleFullscreen = fullscreen?.onToggle ?: playerState::toggleFullscreen,
                         controlsBottomPadding = controlsBottomPadding,
+                        enableKeyboardShortcuts = enableKeyboardShortcuts,
                     )
                 },
             )
@@ -116,15 +138,36 @@ fun PlayerOverlay(
     onToggleFullscreen: () -> Unit = playerState::toggleFullscreen,
     /** Platform-owned bottom inset for the controls (Android navigation bar). */
     controlsBottomPadding: Dp = 0.dp,
+    /** Desktop/web hosts enable keyboard shortcuts; touch-first hosts do not. */
+    enableKeyboardShortcuts: Boolean = false,
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
     var showQualityPicker by remember { mutableStateOf(false) }
-    var draggingPosition by remember { mutableStateOf<Float?>(null) }
-    var controlsVisible by remember { mutableStateOf(true) }
-    // Bumped by interactions that do not otherwise change a tracked key
-    // (skips), so the auto-hide timer restarts after them too.
-    var interactionTick by remember { mutableStateOf(0) }
+
+    val controllerState = rememberPlayerControllerState()
+    val density = LocalDensity.current
+    val seekState = remember(density) {
+        PlayerSeekState(cancelDistancePx = with(density) { SEEK_CANCEL_DISTANCE.toPx() })
+    }
+    val togglePlayPause = {
+        if (playerState.isPlaying) playerState.pause() else playerState.play()
+    }
+
+    // Pickers and an in-flight slider drag keep the chrome on screen while
+    // playback continues; the auto-hide timer only flips isFullVisible.
+    val speedPickerRequester = remember { Any() }
+    val subtitlePickerRequester = remember { Any() }
+    val qualityPickerRequester = remember { Any() }
+    val seekRequester = remember { Any() }
+    controllerState.KeepVisibleWhile(speedPickerRequester, showSpeedPicker)
+    controllerState.KeepVisibleWhile(subtitlePickerRequester, showSubtitlePicker)
+    controllerState.KeepVisibleWhile(qualityPickerRequester, showQualityPicker)
+    controllerState.KeepVisibleWhile(seekRequester, seekState.preview != null)
+
+    // Last pointer family seen over the video: a finger tap toggles the
+    // chrome, a mouse click toggles playback (desktop/web convention).
+    var lastPointerType by remember { mutableStateOf(PointerType.Touch) }
 
     // The player library owns the fullscreen mode (it opens a dedicated
     // video window on desktop and lays the video out full-screen on web and
@@ -139,28 +182,54 @@ fun PlayerOverlay(
         onDispose { onFullscreenChanged(false) }
     }
 
+    // Keyboard shortcuts (desktop/web): space toggles playback, arrows seek
+    // and accelerate when held, F toggles fullscreen.
+    val keyboardController = rememberPlayerKeyboardController(
+        playerState = playerState,
+        controllerState = controllerState,
+        onToggleFullscreen = onToggleFullscreen,
+    )
+    val keyboardRequester = remember { Any() }
+    controllerState.KeepVisibleWhile(keyboardRequester, keyboardController.isFastForwarding)
+    val anyPickerOpen = showSpeedPicker || showSubtitlePicker || showQualityPicker
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(enableKeyboardShortcuts, anyPickerOpen) {
+        // Picker buttons take focus while open; when the last picker closes
+        // the focused button may be gone, so hand focus back to the overlay.
+        if (enableKeyboardShortcuts && !anyPickerOpen) focusRequester.requestFocus()
+    }
+
     // Auto-hide the chrome a few seconds into uninterrupted playback. Any
-    // user interaction (tap, drag, skip, open picker) either re-shows the
-    // controls or changes a tracked key, restarting this timer; paused
-    // playback always keeps the controls on screen.
+    // interaction either shows the chrome or bumps lastInteraction, which
+    // restarts this timer; requesters suspend hiding entirely, and paused
+    // playback always keeps the chrome on screen.
     LaunchedEffect(
-        controlsVisible,
+        controllerState.isVisible,
+        controllerState.alwaysOn,
+        controllerState.lastInteraction,
         state.isPlaying,
-        showSpeedPicker,
-        showSubtitlePicker,
-        showQualityPicker,
-        draggingPosition,
-        interactionTick,
     ) {
-        if (controlsVisible && state.isPlaying && showSpeedPicker.not() && showSubtitlePicker.not() &&
-            showQualityPicker.not() && draggingPosition == null
-        ) {
-            delay(CONTROLS_AUTO_HIDE_MS)
-            controlsVisible = false
-        } else if (!state.isPlaying) {
+        if (!state.isPlaying) {
             // Paused playback always keeps the chrome on screen.
-            controlsVisible = true
+            if (!controllerState.isVisible) controllerState.show()
+            return@LaunchedEffect
         }
+        if (controllerState.isVisible && !controllerState.alwaysOn) {
+            delay(CONTROLS_AUTO_HIDE_MS)
+            controllerState.hide()
+        }
+    }
+
+    val keyboardModifier = if (enableKeyboardShortcuts) {
+        Modifier
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                // While a picker is open, its buttons own the keyboard.
+                if (anyPickerOpen) false else keyboardController.onKeyEvent(event)
+            }
+    } else {
+        Modifier
     }
 
     // No background here: the video surface renders behind the Compose
@@ -170,10 +239,40 @@ fun PlayerOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                // Taps on the video toggle the chrome; taps on controls are
-                // consumed by their own handlers and never reach here.
-                detectTapGestures { controlsVisible = !controlsVisible }
+            .testTag(PLAYER_OVERLAY_TAG)
+            .then(keyboardModifier)
+            // Observe pointer events without consuming them: the family of the
+            // last pointer decides tap semantics, and mouse movement shows the
+            // chrome (desktop/web convention).
+            .pointerInput(controllerState) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull() ?: continue
+                        lastPointerType = change.type
+                        if (change.type == PointerType.Mouse && event.type == PointerEventType.Move) {
+                            controllerState.show()
+                        }
+                    }
+                }
+            }
+            .pointerInput(controllerState) {
+                // Taps on the video toggle chrome or playback; taps on controls
+                // are consumed by their own handlers and never reach here.
+                detectTapGestures(
+                    onTap = {
+                        when (lastPointerType) {
+                            PointerType.Touch -> controllerState.toggle()
+                            else -> togglePlayPause()
+                        }
+                    },
+                    onDoubleTap = {
+                        when (lastPointerType) {
+                            PointerType.Touch -> togglePlayPause()
+                            else -> onToggleFullscreen()
+                        }
+                    },
+                )
             },
     ) {
         if (state.playbackError != null) {
@@ -252,11 +351,11 @@ fun PlayerOverlay(
                 cues = state.subtitleCues,
                 playerState = playerState,
                 durationSeconds = state.durationSeconds,
-                modifier = Modifier.padding(bottom = if (controlsVisible) 0.dp else 32.dp),
+                modifier = Modifier.padding(bottom = if (controllerState.isVisible) 0.dp else 32.dp),
             )
 
-            if (controlsVisible) {
-                val barDisplaySeconds = draggingPosition?.let {
+            if (controllerState.isVisible) {
+                val barDisplaySeconds = seekState.preview?.let {
                     (it / 1000f * state.durationSeconds).toLong()
                 } ?: state.positionSeconds
                 Column(
@@ -295,19 +394,59 @@ fun PlayerOverlay(
                     )
 
                     if (state.durationSeconds > 0) {
-                        Slider(
-                            value = draggingPosition ?: playerState.sliderPos,
-                            onValueChange = { value ->
-                                draggingPosition = value
-                                playerState.seekStart(value)
-                            },
-                            onValueChangeFinished = {
-                                playerState.seekFinished()
-                                draggingPosition = null
-                            },
-                            valueRange = 0f..1000f,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                // Observe the drag without consuming it, so a
+                                // pointer moving far above the slider cancels
+                                // the seek on release.
+                                .pointerInput(seekState) {
+                                    awaitPointerEventScope {
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            val change = event.changes.firstOrNull() ?: continue
+                                            if (event.type == PointerEventType.Press) {
+                                                // The pointer-down position is the
+                                                // cancellation origin, recorded before
+                                                // the slider reports any preview.
+                                                seekState.onDragStart(change.position.y)
+                                            } else if (change.pressed) {
+                                                seekState.onDragPosition(change.position.y)
+                                            }
+                                        }
+                                    }
+                                },
+                        ) {
+                            Slider(
+                                // The preview is UI state only; the player is
+                                // seeked once, on release.
+                                value = seekState.preview ?: playerState.sliderPos,
+                                onValueChange = seekState::onPreview,
+                                onValueChangeFinished = {
+                                    seekState.commit()?.let(playerState::seekTo)
+                                },
+                                valueRange = 0f..1000f,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                            )
+
+                            if (seekState.isCancelling) {
+                                Text(
+                                    text = stringResource(Res.string.player_seek_cancel_hint),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = (-22).dp)
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.6f),
+                                            shape = RoundedCornerShape(4.dp),
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
 
                         Text(
                             text = formatTime(state.durationSeconds),
@@ -321,7 +460,8 @@ fun PlayerOverlay(
                     PlaybackControls(
                         isPlaying = state.isPlaying,
                         onTogglePlayPause = {
-                            if (playerState.isPlaying) playerState.pause() else playerState.play()
+                            togglePlayPause()
+                            controllerState.show()
                         },
                         onToggleSpeed = { showSpeedPicker = !showSpeedPicker },
                         onToggleSubtitles = { showSubtitlePicker = !showSubtitlePicker },
@@ -333,11 +473,11 @@ fun PlayerOverlay(
                         canSkip = state.durationSeconds > 0,
                         onSkipBackward = {
                             playerState.seekBy(-SKIP_SECONDS)
-                            interactionTick++
+                            controllerState.show()
                         },
                         onSkipForward = {
                             playerState.seekBy(SKIP_SECONDS)
-                            interactionTick++
+                            controllerState.show()
                         },
                     )
                 }
@@ -386,6 +526,12 @@ fun PlayerOverlay(
 
 /** Controls hide this long into uninterrupted playback; a tap brings them back. */
 private const val CONTROLS_AUTO_HIDE_MS = 4_000L
+
+/** How far a pointer must move above the slider to cancel the seek on release. */
+private val SEEK_CANCEL_DISTANCE = 144.dp
+
+/** Test tag for the player overlay root; UI tests drive taps and keys through it. */
+const val PLAYER_OVERLAY_TAG = "player-overlay"
 
 /** Seconds moved by one tap on a rewind or fast-forward control. */
 internal const val SKIP_SECONDS = 10L

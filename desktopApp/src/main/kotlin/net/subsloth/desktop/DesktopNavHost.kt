@@ -436,6 +436,7 @@ private fun PlayerContent(
             modifier = Modifier,
             onNavigateBack = onNavigateBack,
             onNavigateToAuthRepair = onNavigateToAuthRepair,
+            enableKeyboardShortcuts = true,
         )
     }
 }
