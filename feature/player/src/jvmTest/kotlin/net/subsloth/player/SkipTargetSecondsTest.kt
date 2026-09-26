@@ -39,4 +39,26 @@ class SkipTargetSecondsTest {
 
         assertThat(target).isNull()
     }
+
+    @Test
+    fun `NaN duration has no target`() {
+        val target = skipTargetSeconds(positionSeconds = 30.0, durationSeconds = Double.NaN, deltaSeconds = 10L)
+
+        assertThat(target).isNull()
+    }
+
+    @Test
+    fun `NaN position has no target`() {
+        val target = skipTargetSeconds(positionSeconds = Double.NaN, durationSeconds = 120.0, deltaSeconds = 10L)
+
+        assertThat(target).isNull()
+    }
+
+    @Test
+    fun `infinite duration has no target`() {
+        val target =
+            skipTargetSeconds(positionSeconds = 30.0, durationSeconds = Double.POSITIVE_INFINITY, deltaSeconds = 10L)
+
+        assertThat(target).isNull()
+    }
 }

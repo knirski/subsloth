@@ -395,11 +395,13 @@ private const val SLIDER_RANGE = 1000f
 
 /**
  * Target of a skip from [positionSeconds], clamped to `0..durationSeconds`.
- * Returns null when the duration is unknown (live stream or source still
- * opening), so callers leave the player untouched instead of seeking to zero.
+ * Returns null when the duration or position is unknown (live stream, source
+ * still opening, or the platform reporting NaN/Infinity — browsers expose
+ * `NaN` as `HTMLVideoElement.duration` until metadata arrives), so callers
+ * leave the player untouched instead of seeking to zero or to `NaN`.
  */
 internal fun skipTargetSeconds(positionSeconds: Double, durationSeconds: Double, deltaSeconds: Long): Double? =
-    if (durationSeconds <= 0.0) {
+    if (durationSeconds <= 0.0 || !durationSeconds.isFinite() || !positionSeconds.isFinite()) {
         null
     } else {
         (positionSeconds + deltaSeconds).coerceIn(0.0, durationSeconds)
