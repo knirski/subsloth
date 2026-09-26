@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -28,6 +29,7 @@ import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
 import net.subsloth.player.PLAYER_OVERLAY_TAG
+import net.subsloth.player.PLAYER_SWIPE_PROGRESS_TAG
 import net.subsloth.player.PlayerOverlay
 import net.subsloth.player.PlayerUiState
 import org.junit.Rule
@@ -438,6 +440,171 @@ class PlayerDesktopTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).assertIsFocused()
+    }
+
+    @Test
+    fun playerOverlay_doubleTapLeftSeeksBackward() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            doubleClick(Offset(width * 0.2f, height * 0.5f))
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(20f / 120f * 1000f, playerState.seekValues.single(), SEEK_TOLERANCE)
+    }
+
+    @Test
+    fun playerOverlay_doubleTapRightSeeksForward() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            doubleClick(Offset(width * 0.8f, height * 0.5f))
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(40f / 120f * 1000f, playerState.seekValues.single(), SEEK_TOLERANCE)
+    }
+
+    @Test
+    fun playerOverlay_doubleTapMiddleTogglesPlayback() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            doubleClick(Offset(width * 0.5f, height * 0.5f))
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(1, playerState.pauseCalls)
+    }
+
+    @Test
+    fun playerOverlay_longPressFastForwardsAndRestores() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        val overlay = composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG)
+        overlay.performTouchInput { down(center) }
+        composeRule.mainClock.advanceTimeBy(1_000)
+        assertEquals(2.5f, playerState.playbackSpeed)
+
+        overlay.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(1f, playerState.playbackSpeed)
+    }
+
+    @Test
+    fun playerOverlay_horizontalSwipeSeeksOnRelease() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            down(center)
+            moveBy(Offset(200f, 0f))
+            moveBy(Offset(100f, 0f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(playerState.seekValues.isNotEmpty(), "a horizontal swipe should seek")
+        assertTrue(
+            playerState.seekValues.last() > 250f,
+            "swiping right should seek forward, got ${playerState.seekValues.last()}",
+        )
+    }
+
+    @Test
+    fun playerOverlay_swipeUpCancelsScrub() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            down(center)
+            moveBy(Offset(150f, 0f))
+            moveBy(Offset(0f, -160f))
+            moveBy(Offset(0f, -160f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(playerState.seekValues.isEmpty(), "a cancelled scrub must not seek")
+    }
+
+    @Test
+    fun playerOverlay_verticalSwipeOnRightChangesVolume() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            down(Offset(width * 0.8f, height * 0.5f))
+            moveBy(Offset(0f, 120f))
+            moveBy(Offset(0f, 120f))
+            moveBy(Offset(0f, 120f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(
+            playerState.volume < 1f,
+            "swiping down on the right third should lower the volume, got ${playerState.volume}",
+        )
+    }
+
+    @Test
+    fun playerOverlay_swipeShowsDetachedProgressWhenControlsHidden() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        // A touch tap hides the chrome (waiting out the double-tap window).
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput { click(center) }
+        composeRule.mainClock.advanceTimeBy(500)
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput {
+            down(center)
+            moveBy(Offset(150f, 0f))
+            moveBy(Offset(50f, 0f))
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(PLAYER_SWIPE_PROGRESS_TAG).assertExists()
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput { up() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(PLAYER_SWIPE_PROGRESS_TAG).assertDoesNotExist()
     }
 
     @Test

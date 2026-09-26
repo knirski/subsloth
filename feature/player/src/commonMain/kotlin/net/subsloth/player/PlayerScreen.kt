@@ -4,6 +4,8 @@ package net.subsloth.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -32,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -51,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.subsloth.core.media.PlayerBridgeSurface
@@ -58,6 +64,7 @@ import net.subsloth.core.media.PlayerEvent
 import net.subsloth.core.model.media.Subtitle
 import org.jetbrains.compose.resources.stringResource
 import subsloth.feature.player.generated.resources.*
+import kotlin.math.roundToInt
 
 @Composable
 fun PlayerScreen(
@@ -71,6 +78,10 @@ fun PlayerScreen(
     controlsBottomPadding: Dp = 0.dp,
     /** Desktop/web hosts enable keyboard shortcuts; touch-first hosts do not. */
     enableKeyboardShortcuts: Boolean = false,
+    /** Android: system media volume. Null falls back to the player volume. */
+    volumeControl: PlayerValueControl? = null,
+    /** Android: window brightness. Null disables the brightness swipe. */
+    brightnessControl: PlayerValueControl? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -112,6 +123,8 @@ fun PlayerScreen(
                         onToggleFullscreen = fullscreen?.onToggle ?: playerState::toggleFullscreen,
                         controlsBottomPadding = controlsBottomPadding,
                         enableKeyboardShortcuts = enableKeyboardShortcuts,
+                        volumeControl = volumeControl,
+                        brightnessControl = brightnessControl,
                     )
                 },
             )
@@ -140,6 +153,10 @@ fun PlayerOverlay(
     controlsBottomPadding: Dp = 0.dp,
     /** Desktop/web hosts enable keyboard shortcuts; touch-first hosts do not. */
     enableKeyboardShortcuts: Boolean = false,
+    /** Android: system media volume. Null falls back to the player volume. */
+    volumeControl: PlayerValueControl? = null,
+    /** Android: window brightness. Null disables the brightness swipe. */
+    brightnessControl: PlayerValueControl? = null,
 ) {
     var showSpeedPicker by remember { mutableStateOf(false) }
     var showSubtitlePicker by remember { mutableStateOf(false) }
@@ -168,6 +185,30 @@ fun PlayerOverlay(
     // Last pointer family seen over the video: a finger tap toggles the
     // chrome, a mouse click toggles playback (desktop/web convention).
     var lastPointerType by remember { mutableStateOf(PointerType.Touch) }
+
+    // Gesture state: drag routing (scrub vs. brightness/volume), the transient
+    // indicator pill, the touch fast-forward hold, and the pointer-down
+    // position that x-third decisions are based on.
+    val dragState = remember(density) {
+        PlayerDragState(cancelDistancePx = with(density) { SEEK_CANCEL_DISTANCE.toPx() })
+    }
+    val transientIndicator = remember { PlayerTransientIndicatorState() }
+    var isTouchFastForwarding by remember { mutableStateOf(false) }
+    var lastPressPosition by remember { mutableStateOf(Offset.Zero) }
+
+    val playerVolumeControl = remember(playerState) {
+        object : PlayerValueControl {
+            override val isSupported = true
+
+            override fun get(): Float = playerState.volume
+
+            override fun set(value: Float) {
+                playerState.volume = value
+            }
+        }
+    }
+    val effectiveVolumeControl = volumeControl?.takeIf { it.isSupported } ?: playerVolumeControl
+    val effectiveBrightnessControl = brightnessControl?.takeIf { it.isSupported }
 
     // The player library owns the fullscreen mode (it opens a dedicated
     // video window on desktop and lays the video out full-screen on web and
@@ -220,6 +261,27 @@ fun PlayerOverlay(
         }
     }
 
+    // The transient gesture indicator (double-tap skips) hides itself.
+    LaunchedEffect(transientIndicator.shownAt) {
+        if (transientIndicator.text != null) {
+            delay(GESTURE_INDICATOR_MS)
+            transientIndicator.clear()
+        }
+    }
+
+    // A touch long-press temporarily speeds playback up; releasing (or leaving
+    // the composition) restores the previous speed.
+    LaunchedEffect(isTouchFastForwarding) {
+        if (!isTouchFastForwarding) return@LaunchedEffect
+        val previousSpeed = playerState.playbackSpeed
+        playerState.playbackSpeed = TOUCH_FAST_FORWARD_SPEED
+        try {
+            awaitCancellation()
+        } finally {
+            playerState.playbackSpeed = previousSpeed
+        }
+    }
+
     val keyboardModifier = if (enableKeyboardShortcuts) {
         Modifier
             .focusRequester(focusRequester)
@@ -230,6 +292,31 @@ fun PlayerOverlay(
             }
     } else {
         Modifier
+    }
+
+    // Held gestures (scrub, vertical value swipes, fast-forward) drive the
+    // indicator directly; double-tap skips use the transient one-shot text.
+    val gestureIndicatorText: String? = when {
+        dragState.isActive && dragState.mode == PlayerDragMode.Scrub ->
+            if (dragState.isCancelling) {
+                stringResource(Res.string.player_seek_cancel_hint)
+            } else {
+                formatSeekDelta(dragState.seekDeltaSeconds)
+            }
+
+        dragState.isActive && dragState.mode is PlayerDragMode.Value -> {
+            val swipeValue = (dragState.mode as PlayerDragMode.Value).value
+            val label = when (swipeValue) {
+                PlayerSwipeValue.Volume -> stringResource(Res.string.player_volume)
+                PlayerSwipeValue.Brightness -> stringResource(Res.string.player_brightness)
+            }
+            "$label ${(dragState.value * 100).roundToInt()}%"
+        }
+
+        isTouchFastForwarding || keyboardController.isFastForwarding ->
+            formatSpeedLabel(TOUCH_FAST_FORWARD_SPEED)
+
+        else -> transientIndicator.text
     }
 
     // No background here: the video surface renders behind the Compose
@@ -250,6 +337,9 @@ fun PlayerOverlay(
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val change = event.changes.firstOrNull() ?: continue
                         lastPointerType = change.type
+                        if (event.type == PointerEventType.Press) {
+                            lastPressPosition = change.position
+                        }
                         if (change.type == PointerType.Mouse && event.type == PointerEventType.Move) {
                             controllerState.show()
                         }
@@ -266,10 +356,62 @@ fun PlayerOverlay(
                             else -> togglePlayPause()
                         }
                     },
-                    onDoubleTap = {
+                    onDoubleTap = { offset ->
                         when (lastPointerType) {
-                            PointerType.Touch -> togglePlayPause()
+                            PointerType.Touch -> {
+                                // Left/right thirds skip, the middle toggles.
+                                val delta = skipDeltaForTap(offset.x, size.width.toFloat())
+                                if (delta != null) {
+                                    playerState.seekBy(delta)
+                                    transientIndicator.show(formatSkipDelta(delta))
+                                } else {
+                                    togglePlayPause()
+                                }
+                            }
+
                             else -> onToggleFullscreen()
+                        }
+                    },
+                )
+            }
+            .pointerInput(controllerState) {
+                // A touch long-press speeds playback up until the finger lifts.
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        if (lastPointerType == PointerType.Touch) isTouchFastForwarding = true
+                    },
+                    onDragEnd = { isTouchFastForwarding = false },
+                    onDragCancel = { isTouchFastForwarding = false },
+                    onDrag = { change, _ -> change.consume() },
+                )
+            }
+            .pointerInput(controllerState, effectiveVolumeControl, effectiveBrightnessControl) {
+                // Touch drags: horizontal scrubs, vertical adjusts brightness
+                // (left third) or volume (right third).
+                detectDragGestures(
+                    onDragStart = {
+                        if (lastPointerType == PointerType.Touch) {
+                            dragState.start(
+                                offset = lastPressPosition,
+                                widthPx = size.width.toFloat(),
+                                heightPx = size.height.toFloat(),
+                                volume = effectiveVolumeControl.get(),
+                                brightness = effectiveBrightnessControl?.get() ?: 0f,
+                            )
+                        }
+                    },
+                    onDragEnd = {
+                        dragState.end()?.let { delta -> playerState.seekBy(delta) }
+                    },
+                    onDragCancel = { dragState.cancel() },
+                    onDrag = { change, dragAmount ->
+                        if (!dragState.isActive) return@detectDragGestures
+                        change.consume()
+                        val value = dragState.drag(dragAmount) ?: return@detectDragGestures
+                        when ((dragState.mode as? PlayerDragMode.Value)?.value) {
+                            PlayerSwipeValue.Volume -> effectiveVolumeControl.set(value)
+                            PlayerSwipeValue.Brightness -> effectiveBrightnessControl?.set(value)
+                            null -> Unit
                         }
                     },
                 )
@@ -521,6 +663,66 @@ fun PlayerOverlay(
                 }
             }
         }
+
+        if (gestureIndicatorText != null) {
+            PlayerGestureIndicator(
+                text = gestureIndicatorText,
+                value = (dragState.mode as? PlayerDragMode.Value)?.let { dragState.value },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 24.dp),
+            )
+        }
+
+        // While scrubbing with the chrome hidden, show a detached progress
+        // line instead of revealing the whole control bar.
+        if (dragState.isActive && dragState.mode == PlayerDragMode.Scrub &&
+            !controllerState.isVisible && state.durationSeconds > 0
+        ) {
+            val preview = (
+                (state.positionSeconds + dragState.seekDeltaSeconds).coerceIn(0L, state.durationSeconds) /
+                    state.durationSeconds.toFloat()
+                ).coerceIn(0f, 1f)
+            LinearProgressIndicator(
+                progress = { preview },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .testTag(PLAYER_SWIPE_PROGRESS_TAG),
+            )
+        }
+    }
+}
+
+/**
+ * The top-centre gesture pill: held scrub/value/fast-forward feedback, with a
+ * progress bar when a vertical swipe is adjusting a 0..1 value.
+ */
+@Composable
+private fun PlayerGestureIndicator(text: String, value: Float?, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .background(
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(percent = 50),
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+        )
+        if (value != null) {
+            LinearProgressIndicator(
+                progress = { value },
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .width(120.dp),
+            )
+        }
     }
 }
 
@@ -532,6 +734,9 @@ private val SEEK_CANCEL_DISTANCE = 144.dp
 
 /** Test tag for the player overlay root; UI tests drive taps and keys through it. */
 const val PLAYER_OVERLAY_TAG = "player-overlay"
+
+/** Test tag for the detached scrub progress shown while the chrome is hidden. */
+const val PLAYER_SWIPE_PROGRESS_TAG = "player-swipe-progress"
 
 /** Seconds moved by one tap on a rewind or fast-forward control. */
 internal const val SKIP_SECONDS = 10L
