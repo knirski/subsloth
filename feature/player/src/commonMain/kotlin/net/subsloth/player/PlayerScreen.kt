@@ -122,6 +122,9 @@ fun PlayerOverlay(
     var showQualityPicker by remember { mutableStateOf(false) }
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
+    // Bumped by interactions that do not otherwise change a tracked key
+    // (skips), so the auto-hide timer restarts after them too.
+    var interactionTick by remember { mutableStateOf(0) }
 
     // The player library owns the fullscreen mode (it opens a dedicated
     // video window on desktop and lays the video out full-screen on web and
@@ -137,7 +140,7 @@ fun PlayerOverlay(
     }
 
     // Auto-hide the chrome a few seconds into uninterrupted playback. Any
-    // user interaction (tap, drag, open picker) either re-shows the
+    // user interaction (tap, drag, skip, open picker) either re-shows the
     // controls or changes a tracked key, restarting this timer; paused
     // playback always keeps the controls on screen.
     LaunchedEffect(
@@ -147,6 +150,7 @@ fun PlayerOverlay(
         showSubtitlePicker,
         showQualityPicker,
         draggingPosition,
+        interactionTick,
     ) {
         if (controlsVisible && state.isPlaying && showSpeedPicker.not() && showSubtitlePicker.not() &&
             showQualityPicker.not() && draggingPosition == null
@@ -326,6 +330,15 @@ fun PlayerOverlay(
                         onToggleFullscreen = onToggleFullscreen,
                         playbackSpeed = state.playbackSpeed,
                         qualityLabel = state.selectedQualityLabel,
+                        canSkip = state.durationSeconds > 0,
+                        onSkipBackward = {
+                            playerState.seekBy(-SKIP_SECONDS)
+                            interactionTick++
+                        },
+                        onSkipForward = {
+                            playerState.seekBy(SKIP_SECONDS)
+                            interactionTick++
+                        },
                     )
                 }
 
@@ -373,3 +386,40 @@ fun PlayerOverlay(
 
 /** Controls hide this long into uninterrupted playback; a tap brings them back. */
 private const val CONTROLS_AUTO_HIDE_MS = 4_000L
+
+/** Seconds moved by one tap on a rewind or fast-forward control. */
+internal const val SKIP_SECONDS = 10L
+
+/** Slider scale expected by [VideoPlayerState.seekTo]. */
+private const val SLIDER_RANGE = 1000f
+
+/**
+ * Target of a skip from [positionSeconds], clamped to `0..durationSeconds`.
+ * Returns null when the duration or position is unknown (live stream, source
+ * still opening, or the platform reporting NaN/Infinity — browsers expose
+ * `NaN` as `HTMLVideoElement.duration` until metadata arrives), so callers
+ * leave the player untouched instead of seeking to zero or to `NaN`.
+ */
+internal fun skipTargetSeconds(positionSeconds: Double, durationSeconds: Double, deltaSeconds: Long): Double? =
+    if (durationSeconds <= 0.0 || !durationSeconds.isFinite() || !positionSeconds.isFinite()) {
+        null
+    } else {
+        (positionSeconds + deltaSeconds).coerceIn(0.0, durationSeconds)
+    }
+
+/**
+ * Seeks the player by [deltaSeconds] (negative rewinds).
+ *
+ * The base position comes from [VideoPlayerState.sliderPos] rather than
+ * [VideoPlayerState.currentTime]: native backends refresh `currentTime` only on
+ * the next position poll, so two quick skips would read the same position and
+ * one would be lost. `sliderPos` is advanced to the target before the seek so
+ * consecutive skips accumulate immediately.
+ */
+internal fun VideoPlayerState.seekBy(deltaSeconds: Long) {
+    val positionSeconds = sliderPos.toDouble() / SLIDER_RANGE.toDouble() * duration
+    val target = skipTargetSeconds(positionSeconds, duration, deltaSeconds) ?: return
+    val targetSlider = (target / duration * SLIDER_RANGE).toFloat().coerceIn(0f, SLIDER_RANGE)
+    sliderPos = targetSlider
+    seekTo(targetSlider)
+}

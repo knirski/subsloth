@@ -55,9 +55,10 @@ declare -A MAPPING=(
   ["SeriesDetailLightScreenshot_Tablet.png"]="series-light-tablet.png"
   ["SeriesDetailDarkScreenshot_Tablet.png"]="series-dark-tablet.png"
 
-  # Player — phone only, both themes
-  ["PlayerScreenLightScreenshot_Phone.png"]="player-light-phone.png"
-  ["PlayerScreenDarkScreenshot_Phone.png"]="player-dark-phone.png"
+  # Player — portrait phone only, both themes. The theme word is part of the
+  # prefix so the "Phone Landscape <theme>" previews do not shadow these.
+  ["PlayerScreenLightScreenshot_Phone Light.png"]="player-light-phone.png"
+  ["PlayerScreenDarkScreenshot_Phone Dark.png"]="player-dark-phone.png"
 
   # Downloads — phone only, both themes
   ["DownloadsScreenLightScreenshot_Phone.png"]="downloads-light-phone.png"

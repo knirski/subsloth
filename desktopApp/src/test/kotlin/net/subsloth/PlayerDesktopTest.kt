@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -21,6 +22,9 @@ import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+/** Slider-value tolerance for the 0..1000 scale used by the player library. */
+private const val SEEK_TOLERANCE = 0.01f
 
 class PlayerDesktopTest {
 
@@ -216,6 +220,77 @@ class PlayerDesktopTest {
     }
 
     @Test
+    fun playerOverlay_skipsBackwardAndForwardByTenSeconds() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(
+                    state = PlayerUiState.Content(
+                        title = "Test",
+                        positionSeconds = 30L,
+                        durationSeconds = 120L,
+                        isPlaying = true,
+                        playbackSpeed = 1.0f,
+                        selectedSubtitle = null,
+                        availableSubtitles = persistentListOf(),
+                        availableQualities = persistentListOf(),
+                        selectedQualityLabel = null,
+                        nextEpisode = null,
+                        showNextEpisodePrompt = false,
+                        playbackError = null,
+                        playbackMode = PlaybackMode.ONLINE,
+                        qualityFallbackNotice = null,
+                        subtitleFallbackNotice = null,
+                    ),
+                    playerState = playerState,
+                )
+            }
+        }
+
+        // The controls carry the full wording as their accessibility
+        // description; the compact label is decorative.
+        composeRule.onNodeWithContentDescription("Rewind 10 seconds").performClick()
+        assertEquals(20f / 120f * 1000f, playerState.lastSeekValue!!, SEEK_TOLERANCE)
+
+        // The second skip starts from the first target, proving consecutive
+        // skips accumulate even when the backend has not polled a new position.
+        composeRule.onNodeWithContentDescription("Fast forward 10 seconds").performClick()
+        assertEquals(30f / 120f * 1000f, playerState.lastSeekValue!!, SEEK_TOLERANCE)
+    }
+
+    @Test
+    fun playerOverlay_disablesSkipControlsWhenDurationIsUnknown() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 0.0, durationSeconds = 0.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(
+                    state = PlayerUiState.Content(
+                        title = "Test",
+                        positionSeconds = 0L,
+                        durationSeconds = 0L,
+                        isPlaying = true,
+                        playbackSpeed = 1.0f,
+                        selectedSubtitle = null,
+                        availableSubtitles = persistentListOf(),
+                        availableQualities = persistentListOf(),
+                        selectedQualityLabel = null,
+                        nextEpisode = null,
+                        showNextEpisodePrompt = false,
+                        playbackError = null,
+                        playbackMode = PlaybackMode.ONLINE,
+                        qualityFallbackNotice = null,
+                        subtitleFallbackNotice = null,
+                    ),
+                    playerState = playerState,
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Rewind 10 seconds").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Fast forward 10 seconds").assertIsNotEnabled()
+    }
+
+    @Test
     fun playerOverlay_togglesFullscreen() {
         val playerState = FakeFullscreenVideoPlayerState()
         var reportedFullscreen: Boolean? = null
@@ -261,6 +336,23 @@ class PlayerDesktopTest {
 
         override fun toggleFullscreen() {
             isFullscreen = !isFullscreen
+        }
+    }
+
+    private class RecordingSeekVideoPlayerState(positionSeconds: Double, durationSeconds: Double) :
+        VideoPlayerState by PreviewableVideoPlayerState(
+            currentTime = positionSeconds,
+            duration = durationSeconds,
+            sliderPos = if (durationSeconds > 0.0) {
+                (positionSeconds / durationSeconds * 1000.0).toFloat()
+            } else {
+                0f
+            },
+        ) {
+        var lastSeekValue: Float? = null
+
+        override fun seekTo(value: Float) {
+            lastSeekValue = value
         }
     }
 }

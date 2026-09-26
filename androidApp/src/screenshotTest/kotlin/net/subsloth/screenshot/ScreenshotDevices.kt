@@ -3,6 +3,9 @@ package net.subsloth.screenshot
 /** Device spec for phone form factor. */
 const val DEVICE_PHONE = "spec:width=411dp,height=731dp,dpi=420"
 
+/** Device spec for phone form factor in landscape, where vertical space is scarce. */
+const val DEVICE_PHONE_LANDSCAPE = "spec:width=731dp,height=411dp,dpi=420"
+
 /** Device spec for tablet form factor. */
 const val DEVICE_TABLET = "spec:width=800dp,height=1280dp,dpi=320"
 
