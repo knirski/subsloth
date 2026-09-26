@@ -7,6 +7,8 @@ local.properties
 
 # direnv
 .direnv/
+# Local secrets loaded by direnv (see .envrc); never commit.
+.env.local
 
 # Log/OS Files
 *.log

@@ -41,9 +41,12 @@ DISPLAY=:0 \
 ```
 
 `SUBSLOTH_API_BASE_URL` must include the API version path (for example
-`/api/v2/`). The stream-resolution step retries briefly: the upstream CDN
-occasionally answers an otherwise valid API request with a bot challenge page
-right after the catalog-sync burst, and a retry succeeds.
+`/api/v2/`). Inside the repository, `.env.local` (gitignored) is loaded by
+direnv, so the inline environment above is only needed for one-off runs;
+non-interactive shells can use `direnv exec . ./gradlew …`. The
+stream-resolution step retries briefly: the upstream CDN occasionally answers
+an otherwise valid API request with a bot challenge page right after the
+catalog-sync burst, and a retry succeeds.
 
 Desktop tests must never touch the real user profile: pass a temporary
 directory to `DesktopContainer(dataDirOverride)` — preferences, the Room

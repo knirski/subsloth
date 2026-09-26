@@ -8,11 +8,20 @@ Calls the API directly — no browser needed.
 
 ### Using environment variables (automated, recommended)
 
+Put the values in `.env.local` at the repository root — it is gitignored and
+direnv loads it into every shell in this directory:
+
+```sh
+SUBSLOTH_LOGIN=you@example.com
+SUBSLOTH_PASSWORD=your-password
+SUBSLOTH_API_BASE_URL=https://custom-api.example.com/api/v2
+```
+
+Non-interactive shells (CI, agents) do not run the direnv hook; prefix the
+command with `direnv exec .` there:
+
 ```bash
-export SUBSLOTH_LOGIN=you@example.com
-export SUBSLOTH_PASSWORD=your-password
-export SUBSLOTH_API_BASE_URL=https://custom-api.example.com/api/v2
-./gradlew :testing:api-contract:captureApi
+direnv exec . ./gradlew :testing:api-contract:captureApi
 ```
 
 Credentials are read from `SUBSLOTH_LOGIN` and `SUBSLOTH_PASSWORD`
