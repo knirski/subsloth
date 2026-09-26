@@ -342,33 +342,13 @@ private fun ShowDetailCompactLayout(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 300.dp)
-                .aspectRatio(16f / 9f)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.tertiaryContainer,
-                            MaterialTheme.colorScheme.surface,
-                        ),
-                    ),
-                )
-                .semantics { contentDescription = posterContentDescription },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = details.title.take(1),
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.3f),
-            )
-            MediaArtwork(
-                url = details.backdropUrl ?: details.posterUrl,
-                contentDescription = null,
-                modifier = Modifier.matchParentSize(),
-            )
-        }
+        DetailHero(
+            title = details.title,
+            artworkUrl = details.backdropUrl ?: details.posterUrl,
+            posterContentDescription = posterContentDescription,
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            onContainerColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
 
         Column(modifier = Modifier.padding(horizontal = tvSafeHorizontalPadding(16.dp), vertical = 16.dp)) {
             Text(
