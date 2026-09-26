@@ -6,6 +6,7 @@
     <string name="player_forward_10">Fast forward 10 seconds</string>
     <string name="player_rewind_10_short">«10s</string>
     <string name="player_forward_10_short">10s»</string>
+    <string name="player_seek_cancel_hint">Release to cancel</string>
     <string name="player_speed">Speed</string>
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>

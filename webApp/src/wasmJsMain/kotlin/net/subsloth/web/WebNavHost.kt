@@ -597,6 +597,7 @@ private fun PlayerContent(
             onNavigateBack = onNavigateBack,
             onNavigateToAuthRepair = onNavigateToAuthRepair,
             onFullscreenChanged = onFullscreenChanged,
+            enableKeyboardShortcuts = true,
         )
     }
 }

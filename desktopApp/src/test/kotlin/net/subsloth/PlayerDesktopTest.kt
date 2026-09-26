@@ -4,18 +4,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pressKey
 import io.github.kdroidfilter.composemediaplayer.PreviewableVideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import kotlinx.collections.immutable.persistentListOf
 import net.subsloth.core.model.playback.PlaybackError
 import net.subsloth.core.model.playback.PlaybackMode
+import net.subsloth.player.PLAYER_OVERLAY_TAG
 import net.subsloth.player.PlayerOverlay
 import net.subsloth.player.PlayerUiState
 import org.junit.Rule
@@ -291,6 +302,124 @@ class PlayerDesktopTest {
     }
 
     @Test
+    fun playerOverlay_mouseClickTogglesPlayback() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performMouseInput { click(center) }
+        // A click waits out the double-click window before it fires.
+        composeRule.mainClock.advanceTimeBy(500)
+
+        assertEquals(1, playerState.pauseCalls)
+    }
+
+    @Test
+    fun playerOverlay_touchTapTogglesControls() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput { click(center) }
+        // A touch tap waits out the double-tap window before it fires.
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithText("Pause").assertDoesNotExist()
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performTouchInput { click(center) }
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithText("Pause").assertIsDisplayed()
+    }
+
+    @Test
+    fun playerOverlay_skipPressRestartsAutoHide() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(isPlaying = true), playerState = playerState)
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(3_500)
+        composeRule.onNodeWithContentDescription("Fast forward 10 seconds").performClick()
+
+        composeRule.mainClock.advanceTimeBy(3_500)
+        composeRule.onNodeWithContentDescription("Fast forward 10 seconds").assertIsDisplayed()
+
+        composeRule.mainClock.advanceTimeBy(1_000)
+        composeRule.onNodeWithContentDescription("Fast forward 10 seconds").assertDoesNotExist()
+    }
+
+    @Test
+    fun playerOverlay_swipeUpCancelsSeek() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        seekSlider().performTouchInput {
+            down(center)
+            // Start a horizontal drag first (a mostly-vertical gesture is
+            // treated as a tap and commits immediately), then move up far
+            // enough to arm the cancel.
+            moveBy(Offset(60f, 0f))
+            moveBy(Offset(0f, -160f))
+            moveBy(Offset(0f, -160f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(playerState.seekValues.isEmpty(), "a cancelled swipe must not seek")
+    }
+
+    @Test
+    fun playerOverlay_sliderDragSeeksOnRelease() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(state = playerContent(), playerState = playerState)
+            }
+        }
+
+        seekSlider().performTouchInput {
+            down(center)
+            moveBy(Offset(150f, 0f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(1, playerState.seekValues.size)
+        assertTrue(playerState.seekValues.single() > 250f, "dragging right should seek forward")
+    }
+
+    @Test
+    fun playerOverlay_keyboardSpaceTogglesPlayback() {
+        val playerState = RecordingSeekVideoPlayerState(positionSeconds = 30.0, durationSeconds = 120.0)
+        composeRule.setContent {
+            MaterialTheme {
+                PlayerOverlay(
+                    state = playerContent(isPlaying = true),
+                    playerState = playerState,
+                    enableKeyboardShortcuts = true,
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(PLAYER_OVERLAY_TAG).performKeyInput { pressKey(Key.Spacebar) }
+        composeRule.waitForIdle()
+
+        assertEquals(1, playerState.pauseCalls)
+    }
+
+    @Test
     fun playerOverlay_togglesFullscreen() {
         val playerState = FakeFullscreenVideoPlayerState()
         var reportedFullscreen: Boolean? = null
@@ -331,6 +460,30 @@ class PlayerDesktopTest {
         assertEquals(true, reportedFullscreen, "host should observe the fullscreen change")
     }
 
+    private fun playerContent(isPlaying: Boolean = false, positionSeconds: Long = 30L, durationSeconds: Long = 120L) =
+        PlayerUiState.Content(
+            title = "Test",
+            positionSeconds = positionSeconds,
+            durationSeconds = durationSeconds,
+            isPlaying = isPlaying,
+            playbackSpeed = 1.0f,
+            selectedSubtitle = null,
+            availableSubtitles = persistentListOf(),
+            availableQualities = persistentListOf(),
+            selectedQualityLabel = null,
+            nextEpisode = null,
+            showNextEpisodePrompt = false,
+            playbackError = null,
+            playbackMode = PlaybackMode.ONLINE,
+            qualityFallbackNotice = null,
+            subtitleFallbackNotice = null,
+        )
+
+    /** The only node with progress-bar semantics is the seek slider. */
+    private fun seekSlider() = composeRule.onNode(
+        SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo),
+    )
+
     private class FakeFullscreenVideoPlayerState : VideoPlayerState by PreviewableVideoPlayerState() {
         override var isFullscreen: Boolean by mutableStateOf(false)
 
@@ -339,20 +492,37 @@ class PlayerDesktopTest {
         }
     }
 
-    private class RecordingSeekVideoPlayerState(positionSeconds: Double, durationSeconds: Double) :
-        VideoPlayerState by PreviewableVideoPlayerState(
-            currentTime = positionSeconds,
-            duration = durationSeconds,
-            sliderPos = if (durationSeconds > 0.0) {
-                (positionSeconds / durationSeconds * 1000.0).toFloat()
-            } else {
-                0f
-            },
-        ) {
+    private class RecordingSeekVideoPlayerState(
+        positionSeconds: Double,
+        durationSeconds: Double,
+        initiallyPlaying: Boolean = true,
+    ) : VideoPlayerState by PreviewableVideoPlayerState(
+        currentTime = positionSeconds,
+        duration = durationSeconds,
+        isPlaying = initiallyPlaying,
+        sliderPos = if (durationSeconds > 0.0) {
+            (positionSeconds / durationSeconds * 1000.0).toFloat()
+        } else {
+            0f
+        },
+    ) {
+        override var isPlaying = initiallyPlaying
         var lastSeekValue: Float? = null
+        val seekValues = mutableListOf<Float>()
+        var playCalls = 0
+        var pauseCalls = 0
 
         override fun seekTo(value: Float) {
             lastSeekValue = value
+            seekValues += value
+        }
+
+        override fun play() {
+            playCalls++
+        }
+
+        override fun pause() {
+            pauseCalls++
         }
     }
 }
