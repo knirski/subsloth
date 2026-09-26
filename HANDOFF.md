@@ -5,7 +5,7 @@
 The user is building **subsloth**, a native Kotlin Multiplatform app for the some-content-provider.com
 media streaming service. This session covered:
 
-1. **PR #194** — adding API drift CI workflow, Kodi client alignment, and `SUBSLOTH_URL` support
+1. **PR #194** — adding API drift CI workflow, Kodi client alignment, and `SUBSLOTH_API_BASE_URL` support
 2. **Skip intro/outro feature exploration** — reverse-engineering the web player for future implementation
 3. **Various PR #194 review loops, CI fixes, and merge** (PR #194 is **merged**)
 
@@ -24,21 +24,21 @@ media streaming service. This session covered:
 | Change | Files |
 |--------|-------|
 | API drift CI workflow (`workflow_dispatch`) | `.github/workflows/api-drift.yml` |
-| ApiLiveDriftTest reads `SUBSLOTH_URL`, uses `apiCall{}` wrapper, has connectivity check | `core/network/src/jvmTest/.../ApiLiveDriftTest.kt` |
+| ApiLiveDriftTest reads `SUBSLOTH_API_BASE_URL`, uses `apiCall{}` wrapper, has connectivity check | `core/network/src/jvmTest/.../ApiLiveDriftTest.kt` |
 | `Content-Type: application/json` header added | `core/network/.../client/ClientFactory.kt` |
 | HTTP 402 handling added to `ResponseValidationPlugin` | `core/network/.../client/ResponseValidationPlugin.kt` |
 | `DEFAULT_BASE_URL` made `internal` for test access | `core/network/.../client/ClientFactory.kt` |
-| `CaptureApi` reads `SUBSLOTH_URL` from env | `testing/.../CaptureApi.kt` |
+| `CaptureApi` reads `SUBSLOTH_API_BASE_URL` from env | `testing/.../CaptureApi.kt` |
 | `--info` flag for verbose test output in CI | `.github/workflows/api-drift.yml` |
 | Docs updated | `scripts/capture/README.md`, `docs/agent/capture-workflow.md`, `docs/project-assessment.md` |
 
 ### Current blockers
 
 **API Drift CI workflow** fails with `ResponseValidationException` because the
-`SUBSLOTH_URL` GitHub secret points to the web frontend hostname (e.g. `https://some-content-provider.com`)
+`SUBSLOTH_API_BASE_URL` GitHub secret points to the web frontend hostname (e.g. `https://some-content-provider.com`)
 instead of the Kodi API endpoint (`https://front.some-content-provider.com/api/v2`). The
 diagnostic message now clearly tells the user this. The user needs to update the
-`SUBSLOTH_URL` secret to include `/api/v2/` path, or the test will keep failing.
+`SUBSLOTH_API_BASE_URL` secret to include `/api/v2/` path, or the test will keep failing.
 
 ---
 
@@ -54,7 +54,7 @@ diagnostic message now clearly tells the user this. The user needs to update the
 - Kodi plugin repository: `https://some-content-provider.com/kodi/plugin.video.some-content-providertv/` (v4.0.4)
 
 ### Credentials & Secrets
-- GitHub secrets: `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD`, `SUBSLOTH_URL`
+- GitHub secrets: `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD`, `SUBSLOTH_API_BASE_URL`
 - kermit Logger for KMP logging
 - `${{ secrets.* }}` syntax in CI, `System.getenv("SUBSLOTH_*")` in Kotlin tests
 - Prefer `providers.environmentVariable()` in Gradle config over `System.getenv()` for config-cache compatibility
@@ -72,7 +72,7 @@ diagnostic message now clearly tells the user this. The user needs to update the
 - Spotless for formatting, Detekt for linting
 - Pre-commit: `./gradlew spotlessApply spotlessCheck detekt :core:model:compileKotlinJvm :core:domain:compileKotlinJvm :androidApp:assembleDebug test`
 - CI runs 7 checks: changes, conventional-title, pre-checks, JVM/Desktop, Web/wasmJs, Android, CodeRabbit
-- Keep `SUBSLOTH_URL` — the actual site hostname — out of committed files per user instruction
+- Keep `SUBSLOTH_API_BASE_URL` — the actual site hostname — out of committed files per user instruction
 
 ---
 
@@ -103,7 +103,7 @@ Full analysis in `docs/features/skip-intro-outro.md`.
 
 ## Next Steps
 
-1. **Fix SUBSLOTH_URL in GitHub secrets** — the user needs to update it to include `/api/v2/` path
+1. **Fix SUBSLOTH_API_BASE_URL in GitHub secrets** — the user needs to update it to include `/api/v2/` path
 2. **Delete the local branch** — PR #194 is already merged. The local branch `feat/api-drift-ci` can be cleaned up.
 3. **Skip intro/outro** — not prioritized for v1, document exists at `docs/features/skip-intro-outro.md`
 

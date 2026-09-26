@@ -320,7 +320,7 @@ Speed selection uses two latency bands:
 - ✅ `Content-Type: application/json` header added
 - ✅ HTTP 402 (free limit) handling added to `ResponseValidationPlugin`
 - ✅ `DEFAULT_BASE_URL` made `internal` for test access
-- ✅ `SUBSLOTH_URL` env var support for tests and capture scripts
+- ✅ `SUBSLOTH_API_BASE_URL` env var support for tests and capture scripts
 - ✅ API drift CI workflow
 
 ### Remaining Gaps
@@ -340,11 +340,11 @@ Speed selection uses two latency bands:
 - Auth via Basic header with env vars `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD`
 
 ### ApiLiveDriftTest (`core/network/src/jvmTest/`)
-- Reads `SUBSLOTH_URL`, `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD` from env
+- Reads `SUBSLOTH_API_BASE_URL`, `SUBSLOTH_LOGIN`, `SUBSLOTH_PASSWORD` from env
 - Hits all 5 endpoints via the Ktor client
 - Uses `apiCall{}` wrapper for structured error handling
 - Has connectivity check + diagnostic messages
-- **Requires `SUBSLOTH_URL` to include `/api/v2/` path** (GitHub secret needs update)
+- **Requires `SUBSLOTH_API_BASE_URL` to include `/api/v2/` path** (GitHub secret needs update)
 
 ---
 
