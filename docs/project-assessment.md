@@ -290,12 +290,12 @@ SubSloth is a **well-engineered, spec-driven Kotlin Multiplatform media applicat
 ### Short-term (v1.1 / Next)
 1. ✅ **Automated offline fixture/schema validation** — 
    - Credential capture now reads `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD` env vars (no CLI history exposure)
-   - `CaptureApi` reads `SUBSLOTH_URL` for API base URL (falls back to default endpoint)
+   - `CaptureApi` reads `SUBSLOTH_API_BASE_URL` for API base URL (falls back to default endpoint)
    - `FixtureSchemaValidationTest` extended to cover all JSON endpoints (native + web-discovery), including structural and round-trip checks
    - Added `:testing:api-contract:validateFixtures` (offline) and `:testing:api-contract:captureAndValidate` (full pipeline) Gradle tasks
    - Shell script `scripts/capture/validate-fixtures.sh` for one-command pipeline
    - See PR #192
-2. ✅ **API drift detection CI** — manually-triggered workflow using `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD`/`SUBSLOTH_URL` secrets to run `ApiLiveDriftTest` against the live API; detects schema or endpoint drift before it reaches users
+2. ✅ **API drift detection CI** — manually-triggered workflow using `SUBSLOTH_LOGIN`/`SUBSLOTH_PASSWORD`/`SUBSLOTH_API_BASE_URL` secrets to run `ApiLiveDriftTest` against the live API; detects schema or endpoint drift before it reaches users
    - See PR #193
 3. ✅ **Add `androidTarget()` to KMP convention** —
    - New `subsloth.kmp.android.library` convention plugin with `androidTarget()`, `jvm()`, `wasmJs()` targets
