@@ -45,7 +45,7 @@ jobs:
           path: |
             ~/.android/avd/
             ~/.android/system-images/
-          key: ${{ runner.os }}-avd-${{ runner.arch }}-api37.0-google-apis
+          key: ${{ runner.os }}-avd-${{ runner.arch }}-api36-google-apis
           restore-keys: |
             ${{ runner.os }}-avd-${{ runner.arch }}-
 
@@ -55,7 +55,10 @@ jobs:
         if: ${{ github.event.inputs.mode == 'verify' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: '37.0'
+          # API 36, not 37: API 37 images break Espresso's InputManager
+          # reflection and therefore every Compose instrumented test. See
+          # ci.yml for details.
+          api-level: 36
           target: google_apis
           arch: x86_64
           ram-size: 6144
@@ -69,7 +72,10 @@ jobs:
         if: ${{ github.event.inputs.mode == 'update' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: '37.0'
+          # API 36, not 37: API 37 images break Espresso's InputManager
+          # reflection and therefore every Compose instrumented test. See
+          # ci.yml for details.
+          api-level: 36
           target: google_apis
           arch: x86_64
           ram-size: 6144

@@ -54,7 +54,14 @@
       # System image for x86_64 emulation. google_apis includes Play
       # Services and is the standard choice for app testing. No ARM images:
       # this repo tests Android on the x86_64 emulator only.
-      systemImage = "system-images;android-37.0;google_apis;x86_64";
+      #
+      # Kept at API 36 even though the platform/build-tools are 37: Espresso's
+      # InputManagerEventInjectionStrategy reflects on
+      # InputManager.getInstance(), which the API 37 image no longer exposes,
+      # so every Compose instrumented test (createComposeRule) fails there
+      # with NoSuchMethodException. Bump this together with androidx.test once
+      # a release supports API 37.
+      systemImage = "system-images;android-36;google_apis;x86_64";
       systemImageDir = "${writableSdkRoot}/${builtins.replaceStrings [ ";" ] [ "/" ] systemImage}";
       avdName = "subsloth-device";
 
@@ -96,7 +103,7 @@
 
         # Write the AVD .ini file
         cat > "$AVD_DIR/${avdName}.ini" << INI
-        target=android-37.0
+        target=android-36
         path=$AVD_DIR/${avdName}.avd
         INI
 
